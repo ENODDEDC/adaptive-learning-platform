@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ export default function RegisterPage() {
   const [message, setMessage] = useState('');
   const [step, setStep] = useState(1); // 1 for registration, 2 for OTP
   const [otp, setOtp] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
 
@@ -28,9 +30,17 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
     setMessage('');
+    setIsLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      setIsLoading(false);
       return;
     }
 
@@ -53,12 +63,15 @@ export default function RegisterPage() {
       }
     } catch (error) {
       setError('An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
     try {
       const res = await fetch('/api/auth/verify-otp', {
@@ -70,219 +83,340 @@ export default function RegisterPage() {
       });
 
       if (res.ok) {
-        router.push('/login');
+        router.push('/login?verified=true');
       } else {
         const data = await res.json();
         setError(data.message);
       }
     } catch (error) {
       setError('An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        {step === 1 ? (
-          <>
-            <h1 className="text-2xl font-bold text-center">Register</h1>
-            <form onSubmit={handleRegister} className="space-y-6">
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Name
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 mt-1 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="middleName"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Middle Name (optional)
-                </label>
-                <input
-                  id="middleName"
-                  type="text"
-                  value={formData.middleName}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 mt-1 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="surname"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Surname
-                </label>
-                <input
-                  id="surname"
-                  type="text"
-                  value={formData.surname}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 mt-1 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="suffix"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Suffix (optional)
-                </label>
-                <input
-                  id="suffix"
-                  type="text"
-                  value={formData.suffix}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 mt-1 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 mt-1 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 mt-1 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Confirm Password
-                </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 mt-1 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div className="flex items-center">
-                <input
-                  id="privacy"
-                  type="checkbox"
-                  required
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <label
-                  htmlFor="privacy"
-                  className="block ml-2 text-sm text-gray-900"
-                >
-                  I agree to the{' '}
-                  <a href="#" className="text-indigo-600 hover:underline">
-                    Privacy Policy
-                  </a>
-                </label>
-              </div>
-              <div className="flex items-center">
-                <input
-                  id="terms"
-                  type="checkbox"
-                  required
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <label
-                  htmlFor="terms"
-                  className="block ml-2 text-sm text-gray-900"
-                >
-                  I agree to the{' '}
-                  <a href="#" className="text-indigo-600 hover:underline">
-                    Terms and Conditions
-                  </a>
-                </label>
-              </div>
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <button
-                type="submit"
-                className="w-full px-4 py-2 font-bold text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-              >
-                Register
-              </button>
-            </form>
-            <div className="text-sm text-center">
-              <p>
-                Already have an account?{' '}
-                <a
-                  href="/login"
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
-                >
-                  Login
-                </a>
-              </p>
+    <div className="flex min-h-screen">
+      {/* Left side - Branding */}
+      <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:justify-center lg:px-8 bg-gradient-to-br from-indigo-600 to-purple-700">
+        <div className="mx-auto max-w-md text-center">
+          <div className="mb-8">
+            <div className="mx-auto h-16 w-16 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-2xl font-bold text-indigo-600">AL</span>
             </div>
-          </>
-        ) : (
-          <>
-            <h1 className="text-2xl font-bold text-center">Verify OTP</h1>
-            <p className="text-sm text-center text-gray-600">{message}</p>
-            <form onSubmit={handleVerifyOtp} className="space-y-6">
-              <div>
-                <label
-                  htmlFor="otp"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  OTP
-                </label>
-                <input
-                  id="otp"
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 mt-1 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-4">
+            Join Assistive Learning
+          </h1>
+          <p className="text-lg text-indigo-100 mb-8">
+            Start your personalized learning journey today and unlock your potential with adaptive technology.
+          </p>
+          <div className="space-y-4 text-indigo-100">
+            <div className="flex items-center justify-center">
+              <CheckIcon className="h-5 w-5 mr-3" />
+              <span>Free to get started</span>
+            </div>
+            <div className="flex items-center justify-center">
+              <CheckIcon className="h-5 w-5 mr-3" />
+              <span>Adaptive learning technology</span>
+            </div>
+            <div className="flex items-center justify-center">
+              <CheckIcon className="h-5 w-5 mr-3" />
+              <span>Comprehensive progress tracking</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Registration form */}
+      <div className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-md">
+          {step === 1 ? (
+            <>
+              <div className="text-center mb-8">
+                <div className="lg:hidden mb-6">
+                  <div className="mx-auto h-12 w-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <span className="text-lg font-bold text-white">AL</span>
+                  </div>
+                </div>
+                <h2 className="text-3xl font-bold text-gray-900">Create your account</h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  Already have an account?{' '}
+                  <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                    Sign in here
+                  </Link>
+                </p>
               </div>
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <button
-                type="submit"
-                className="w-full px-4 py-2 font-bold text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-              >
-                Verify
-              </button>
-            </form>
-          </>
-        )}
+
+              <div className="card p-8">
+                <form onSubmit={handleRegister} className="space-y-6">
+                  {/* Name fields */}
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                        First Name *
+                      </label>
+                      <input
+                        id="name"
+                        type="text"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                        className="input-field"
+                        placeholder="Enter your first name"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="surname" className="block text-sm font-medium text-gray-700 mb-2">
+                        Last Name *
+                      </label>
+                      <input
+                        id="surname"
+                        type="text"
+                        value={formData.surname}
+                        onChange={handleChange}
+                        required
+                        className="input-field"
+                        placeholder="Enter your last name"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="middleName" className="block text-sm font-medium text-gray-700 mb-2">
+                        Middle Name
+                      </label>
+                      <input
+                        id="middleName"
+                        type="text"
+                        value={formData.middleName}
+                        onChange={handleChange}
+                        className="input-field"
+                        placeholder="Optional"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="suffix" className="block text-sm font-medium text-gray-700 mb-2">
+                        Suffix
+                      </label>
+                      <input
+                        id="suffix"
+                        type="text"
+                        value={formData.suffix}
+                        onChange={handleChange}
+                        className="input-field"
+                        placeholder="Jr., Sr., etc."
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address *
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      className="input-field"
+                      placeholder="Enter your email address"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                      Password *
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      className="input-field"
+                      placeholder="Create a strong password"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Must be at least 8 characters long</p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                      Confirm Password *
+                    </label>
+                    <input
+                      id="confirmPassword"
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      required
+                      className="input-field"
+                      placeholder="Confirm your password"
+                    />
+                  </div>
+
+                  {/* Agreement checkboxes */}
+                  <div className="space-y-3">
+                    <div className="flex items-start">
+                      <input
+                        id="terms"
+                        type="checkbox"
+                        required
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
+                      />
+                      <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
+                        I agree to the{' '}
+                        <Link href="/terms" className="text-blue-600 hover:text-blue-500 font-medium">
+                          Terms and Conditions
+                        </Link>
+                      </label>
+                    </div>
+                    <div className="flex items-start">
+                      <input
+                        id="privacy"
+                        type="checkbox"
+                        required
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
+                      />
+                      <label htmlFor="privacy" className="ml-2 block text-sm text-gray-700">
+                        I agree to the{' '}
+                        <Link href="/privacy" className="text-blue-600 hover:text-blue-500 font-medium">
+                          Privacy Policy
+                        </Link>
+                      </label>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-sm text-red-600">{error}</p>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="btn-primary w-full flex justify-center items-center"
+                  >
+                    {isLoading ? (
+                      <>
+                        <LoadingSpinner className="h-4 w-4 mr-2" />
+                        Creating account...
+                      </>
+                    ) : (
+                      'Create Account'
+                    )}
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-center mb-8">
+                <div className="mx-auto h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <MailIcon className="h-6 w-6 text-green-600" />
+                </div>
+                <h2 className="text-3xl font-bold text-gray-900">Check your email</h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  We've sent a verification code to <strong>{formData.email}</strong>
+                </p>
+              </div>
+
+              <div className="card p-8">
+                {message && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                    <p className="text-sm text-blue-600">{message}</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleVerifyOtp} className="space-y-6">
+                  <div>
+                    <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">
+                      Verification Code
+                    </label>
+                    <input
+                      id="otp"
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      required
+                      className="input-field text-center text-lg tracking-widest"
+                      placeholder="Enter 6-digit code"
+                      maxLength="6"
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-sm text-red-600">{error}</p>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="btn-primary w-full flex justify-center items-center"
+                  >
+                    {isLoading ? (
+                      <>
+                        <LoadingSpinner className="h-4 w-4 mr-2" />
+                        Verifying...
+                      </>
+                    ) : (
+                      'Verify Email'
+                    )}
+                  </button>
+                </form>
+
+                <div className="mt-6 text-center">
+                  <p className="text-sm text-gray-600">
+                    Didn't receive the code?{' '}
+                    <button
+                      onClick={() => setStep(1)}
+                      className="font-medium text-blue-600 hover:text-blue-500"
+                    >
+                      Go back and try again
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+
+          <p className="mt-8 text-center text-xs text-gray-500">
+            By creating an account, you agree to our{' '}
+            <Link href="/terms" className="font-medium text-blue-600 hover:text-blue-500">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="font-medium text-blue-600 hover:text-blue-500">
+              Privacy Policy
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
 }
+
+// Icon components
+const CheckIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+  </svg>
+);
+
+const LoadingSpinner = ({ className }) => (
+  <svg className={`${className} animate-spin`} fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+  </svg>
+);
+
+const MailIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 21.75 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+  </svg>
+);
