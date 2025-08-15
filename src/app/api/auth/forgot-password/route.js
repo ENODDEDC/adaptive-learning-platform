@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import connectMongoDB from '@/lib/mongodb';
 import User from '@/models/User';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 
 export async function POST(req) {
   try {
-    await connectToDatabase();
+    await connectMongoDB();
 
     const { email } = await req.json();
 
