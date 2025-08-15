@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 import clientPromise from "../lib/mongodb";
 import Image from 'next/image'
-=======
-import React from 'react';
->>>>>>> c34f51ede7616db8b7ee680e64e20b9789785a9e
 
 export default async function Home() {
   let isConnected = false;
@@ -15,7 +11,6 @@ export default async function Home() {
   }
 
   return (
-<<<<<<< HEAD
     <div className="flex flex-col items-center justify-center min-h-screen py-2 bg-gray-900 text-white">
       <h1 className="text-6xl font-bold mb-4">
         Welcome to{' '}
@@ -80,10 +75,6 @@ export default async function Home() {
           />
         </a>
       </footer>
-=======
-    <div className="bg-white p-8 rounded-lg shadow-md h-full">
-      {/* Main panel content goes here */}
->>>>>>> c34f51ede7616db8b7ee680e64e20b9789785a9e
     </div>
   );
 }
