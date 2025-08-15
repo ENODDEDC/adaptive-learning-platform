@@ -1,18 +1,9 @@
-import clientPromise from "../lib/mongodb";
 import Image from 'next/image'
 
 export default async function Home() {
-  let isConnected = false;
-  try {
-    await clientPromise;
-    isConnected = true;
-  } catch (e) {
-    console.error(e);
-  }
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2 bg-gray-900 text-white">
-      <h1 className="text-6xl font-bold mb-4">
+    <div className="flex flex-col items-center justify-center min-h-screen py-2 text-white bg-gray-900">
+      <h1 className="mb-4 text-6xl font-bold">
         Welcome to{' '}
         <a className="text-blue-500 hover:text-blue-400" href="https://nextjs.org">
           Next.js!
@@ -27,19 +18,10 @@ export default async function Home() {
         and the App Router.
       </p>
 
-      <div className="mt-6 text-2xl">
-        MongoDB connection status:{' '}
-        {isConnected ? (
-          <span className="text-green-500">Connected</span>
-        ) : (
-          <span className="text-red-500">Not Connected</span>
-        )}
-      </div>
-
       <div className="flex flex-wrap items-center justify-around max-w-4xl mt-6 sm:w-full">
         <a
           href="https://nextjs.org/docs"
-          className="p-6 mt-6 text-left border-2 border-gray-700 w-96 rounded-xl hover:text-blue-500 hover:border-blue-500 focus:text-blue-500 transition-colors"
+          className="p-6 mt-6 text-left transition-colors border-2 border-gray-700 w-96 rounded-xl hover:text-blue-500 hover:border-blue-500 focus:text-blue-500"
         >
           <h3 className="text-2xl font-bold">Documentation &rarr;</h3>
           <p className="mt-4 text-xl">
@@ -49,7 +31,7 @@ export default async function Home() {
 
         <a
           href="https://tailwindcss.com/docs"
-          className="p-6 mt-6 text-left border-2 border-gray-700 w-96 rounded-xl hover:text-blue-500 hover:border-blue-500 focus:text-blue-500 transition-colors"
+          className="p-6 mt-6 text-left transition-colors border-2 border-gray-700 w-96 rounded-xl hover:text-blue-500 hover:border-blue-500 focus:text-blue-500"
         >
           <h3 className="text-2xl font-bold">Tailwind CSS Docs &rarr;</h3>
           <p className="mt-4 text-xl">
@@ -58,7 +40,7 @@ export default async function Home() {
         </a>
       </div>
 
-      <footer className="flex items-center justify-center w-full h-24 border-t border-gray-700 mt-8">
+      <footer className="flex items-center justify-center w-full h-24 mt-8 border-t border-gray-700">
         <a
           className="flex items-center justify-center"
           href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
