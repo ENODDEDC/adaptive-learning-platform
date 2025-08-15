@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import connectMongoDB from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
@@ -7,7 +7,7 @@ import { otpEmailTemplate } from '@/emails/OtpEmail';
 
 export async function POST(req) {
   try {
-    await connectToDatabase();
+    await connectMongoDB();
 
     const { name, middleName, surname, suffix, email, password } = await req.json();
 
