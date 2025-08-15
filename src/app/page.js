@@ -1,6 +1,15 @@
+import clientPromise from "../lib/mongodb";
 import Image from 'next/image'
 
-export default function Home() {
+export default async function Home() {
+  let isConnected = false;
+  try {
+    await clientPromise;
+    isConnected = true;
+  } catch (e) {
+    console.error(e);
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2 bg-gray-900 text-white">
       <h1 className="text-6xl font-bold mb-4">
@@ -17,6 +26,15 @@ export default function Home() {
         </code>{' '}
         and the App Router.
       </p>
+
+      <div className="mt-6 text-2xl">
+        MongoDB connection status:{' '}
+        {isConnected ? (
+          <span className="text-green-500">Connected</span>
+        ) : (
+          <span className="text-red-500">Not Connected</span>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-center justify-around max-w-4xl mt-6 sm:w-full">
         <a
