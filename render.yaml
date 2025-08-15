@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: assistive-learning-platform
+    env: node
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "npm start"
+    envVars:
+      - key: MONGODB_URI
+        sync: false
