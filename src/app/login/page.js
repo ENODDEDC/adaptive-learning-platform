@@ -24,10 +24,12 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
+        localStorage.setItem('token', data.token);
         router.push('/');
       } else {
-        const data = await res.json();
         setError(data.message);
       }
     } catch (error) {
