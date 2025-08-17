@@ -23,3 +23,10 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+html,
+body {
+  background-color: #F6F3FA; /* Apply the base background color */
+  color: #4B4B4B; /* Apply the global font color */
+  font-family: 'Lexend', sans-serif; /* Apply the global font */
+}

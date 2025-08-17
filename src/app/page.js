@@ -1,14 +1,15 @@
+// src/app/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Navbar from '@/components/Navbar';
+// Navbar is now in Layout.js
 import CreateCourseModal from '@/components/CreateCourseModal';
 import JoinCourseModal from '@/components/JoinCourseModal';
 
 export default function Home() {
   const [isCreateCourseModalOpen, setIsCreateCourseModalOpen] = useState(false);
-  const [isJoinCourseModalOpen, setIsJoinCourseModalOpen] = useState(false);
+  const [isJoinCourseModalOpen, setIsJoinCourseModal] = useState(false);
   const [courses, setCourses] = useState([]);
 
   useEffect(() => {
@@ -107,11 +108,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <Navbar
-        onCreateCourseClick={handleCreateCourseClick}
-        onJoinCourseClick={handleJoinCourseClick}
-      />
+    <div className="min-h-screen bg-base-light text-text-primary">
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
         onClose={() => setIsCreateCourseModalOpen(false)}
@@ -119,31 +116,31 @@ export default function Home() {
       />
       <JoinCourseModal
         isOpen={isJoinCourseModalOpen}
-        onClose={() => setIsJoinCourseModalOpen(false)}
+        onClose={() => setIsJoinCourseModal(false)}
         onJoinCourse={handleJoinCourse}
       />
 
-      <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">Your Courses</h1>
+      <main className="container mx-auto px-4 py-6">
+        <h1 className="text-2l font-bold mb-6">Your Courses</h1>
         {courses.length === 0 ? (
-          <p className="text-gray-400">No courses created yet or joined. Click the &quot;+&quot; button to create or join one!</p>
+          <p className="text-gray-500 text-xs">No courses created yet or joined. Click the &quot;+&quot; button to create or join one!</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {courses.map((course) => (
               <div
                 key={course._id}
-                className="bg-gray-800 rounded-lg shadow-lg overflow-hidden"
+                className="bg-white rounded-md shadow-md overflow-hidden border border-divider-light"
               >
                 <div
-                  className="h-32 w-full"
+                  className="h-20 w-full"
                   style={{ backgroundColor: course.coverColor }}
                 ></div>
-                <div className="p-4">
-                  <h3 className="text-xl font-semibold text-gray-100">{course.subject}</h3>
-                  <p className="text-gray-300">Section: {course.section}</p>
-                  <p className="text-gray-300">Teacher: {course.teacherName}</p>
-                  <p className="text-gray-300">Course Key: {course.uniqueKey}</p>
-                  <button className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md text-sm">
+                <div className="p-2">
+                  <h3 className="text-md font-semibold text-text-primary truncate">{course.subject}</h3>
+                  <p className="text-gray-500 text-xs">Section: {course.section}</p>
+                  <p className="text-gray-500 text-xs truncate">Teacher: {course.teacherName}</p>
+                  <p className="text-gray-500 text-xs">Course Key: {course.uniqueKey}</p>
+                  <button className="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded text-xs">
                     Go to Course
                   </button>
                 </div>
@@ -153,7 +150,7 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="flex items-center justify-center w-full h-24 mt-8 border-t border-gray-700">
+      <footer className="flex items-center justify-center w-full h-20 mt-6 border-t border-divider-light">
         <a
           className="flex items-center justify-center"
           href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
@@ -164,9 +161,9 @@ export default function Home() {
           <Image
             src="/vercel.svg"
             alt="Vercel Logo"
-            className="h-4 ml-2"
-            width={76}
-            height={16}
+            className="h-3 ml-2"
+            width={57}
+            height={12}
           />
         </a>
       </footer>

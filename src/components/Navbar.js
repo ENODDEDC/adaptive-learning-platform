@@ -142,7 +142,7 @@ const Navbar = ({ onCreateCourseClick, onJoinCourseClick }) => {
   }, []);
 
   return (
-    <nav className="bg-gray-600 shadow-md p-4 flex justify-between items-center relative">
+    <nav className="bg-base-light border-b border-divider-light py-4 px-4 flex justify-between items-center relative"> {/* Reduced padding to py-2 */}
       <div>{/* Left-aligned content if any */}</div>
       <div className="flex items-center">
         {/* Course creation button - only show if user is logged in */}
@@ -151,7 +151,7 @@ const Navbar = ({ onCreateCourseClick, onJoinCourseClick }) => {
             <button
               ref={buttonRef}
               onClick={toggleOptionsModal}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold h-10 w-10 flex items-center justify-center rounded-full mr-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+              className="bg-text-primary hover:bg-gray-700 text-white font-bold py-1 px-3 rounded mr-4 text-base focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50" // Changed background, removed rounded-full, adjusted padding and text size
             >
               +
             </button>
@@ -190,11 +190,11 @@ const Navbar = ({ onCreateCourseClick, onJoinCourseClick }) => {
             <button
               ref={profileRef}
               onClick={toggleProfileMenu}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 flex items-center"
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-normal text-sm py-2 px-3 rounded focus:outline-none focus:ring-1 focus:ring-gray-300 focus:ring-opacity-50 flex items-center" // Reduced font, padding, and ring size
             >
-              <UserIcon className="h-4 w-4 mr-2" />
+              <UserIcon className="h-4 w-4 mr-1" /> {/* Adjusted margin */}
               Profile
-              <ChevronDownIcon className="h-4 w-4 ml-2" />
+              <ChevronDownIcon className="h-4 w-4 ml-1" /> {/* Adjusted margin */}
             </button>
             
             {showProfileMenu && (
