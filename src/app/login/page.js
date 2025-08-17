@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/firebase';
+import { auth } from '@/config/firebaseConfig';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 
 export default function LoginPage() {

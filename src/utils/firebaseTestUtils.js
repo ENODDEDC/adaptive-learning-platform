@@ -1,5 +1,5 @@
 // Simple Firebase connection test
-import { auth } from './firebase';
+import { auth } from '../config/firebaseConfig';
 
 export const testFirebaseConnection = () => {
   console.log('Firebase Auth instance:', auth);

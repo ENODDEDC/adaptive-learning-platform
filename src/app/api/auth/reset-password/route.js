@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import connectMongoDB from '@/lib/mongodb';
+import connectMongoDB from '@/config/mongoConfig';
 import User from '@/models/User';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';

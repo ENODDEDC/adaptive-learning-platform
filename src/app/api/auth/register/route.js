@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import connectMongoDB from '@/lib/mongodb';
+import connectMongoDB from '@/config/mongoConfig';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
@@ -50,7 +50,7 @@ export async function POST(req) {
       });
 
       const mailOptions = {
-        from: process.env.FROM_EMAIL,
+        from: `"AssistEd" <${process.env.FROM_EMAIL}>`,
         to: email,
         subject: 'Email Verification OTP',
         html: otpEmailTemplate(otp),

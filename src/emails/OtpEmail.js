@@ -74,7 +74,7 @@ export const otpEmailTemplate = (otp) => `
       <p>Thanks,<br>The Team</p>
     </div>
     <div class="footer">
-      <p>&copy; ${new Date().getFullYear()} Your Company. All rights reserved.</p>
+      <p>&copy; ${new Date().getFullYear()} AssistEd. All rights reserved.</p>
     </div>
   </div>
 </body>
