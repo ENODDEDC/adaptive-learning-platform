@@ -1,4 +1,4 @@
-# Project Name
+# AssistED
 
 > **Status:** Currently under development  
 > **Current Version:** release/2025-08-17-EDC-002
