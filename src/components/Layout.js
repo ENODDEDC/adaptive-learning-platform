@@ -1,7 +1,7 @@
 // src/components/Layout.js
 'use client';
 
-import React, { useState, cloneElement } from 'react';
+import React, { useState, cloneElement, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
@@ -13,6 +13,12 @@ const Layout = ({ children }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCreateCourseModalOpen, setIsCreateCourseModalOpen] = useState(false);
   const [isJoinCourseModalOpen, setIsJoinCourseModalOpen] = useState(false);
+
+  // State to prevent hydration mismatch
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -35,9 +41,12 @@ const Layout = ({ children }) => {
     handleJoinCourse: children.props.handleJoinCourse,
   });
 
+  const sidebarState = isMounted ? isSidebarCollapsed : false;
+  const mainContentMargin = isMounted && isSidebarCollapsed ? 'ml-20' : 'ml-56';
+
   return (
     <div className="bg-base-light min-h-screen">
-      <Sidebar pathname={pathname} isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
+      <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
         onClose={() => setIsCreateCourseModalOpen(false)}
@@ -48,7 +57,7 @@ const Layout = ({ children }) => {
         onClose={() => setIsJoinCourseModalOpen(false)}
         onJoinCourse={pageContent.props.handleJoinCourse}
       />
-      <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-56'}`}>
+      <div className={`transition-all duration-300 ${mainContentMargin}`}>
         <Navbar onCreateCourseClick={handleCreateCourseClick} onJoinCourseClick={handleJoinCourseClick} />
         <main className="p-8">{pageContent}</main>
       </div>
