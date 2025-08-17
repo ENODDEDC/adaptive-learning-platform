@@ -1,7 +1,7 @@
 # Project Name
 
 > **Status:** Currently under development  
-> **Current Version:** release/2025-08-16-EDC-001
+> **Current Version:** release/2025-08-17-EDC-002
 
 ## About
 
