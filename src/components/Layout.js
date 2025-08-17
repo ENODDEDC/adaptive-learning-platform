@@ -1,42 +1,56 @@
 // src/components/Layout.js
 'use client';
 
-import React from 'react';
+import React, { useState, cloneElement } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
-import Navbar from './Navbar'; // Import Navbar
+import Navbar from './Navbar';
+import CreateCourseModal from '@/components/CreateCourseModal';
+import JoinCourseModal from '@/components/JoinCourseModal';
 
 const Layout = ({ children }) => {
   const pathname = usePathname();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isCreateCourseModalOpen, setIsCreateCourseModalOpen] = useState(false);
+  const [isJoinCourseModalOpen, setIsJoinCourseModalOpen] = useState(false);
 
-  // Check if current page is an auth page
-  const isAuthPage = ['/login', '//register', '/forgot-password', '/reset-password'].some(
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const handleCreateCourseClick = () => setIsCreateCourseModalOpen(true);
+  const handleJoinCourseClick = () => setIsJoinCourseModalOpen(true);
+
+  const isAuthPage = ['/login', '/register', '/forgot-password', '/reset-password'].some(
     path => pathname?.startsWith(path)
   );
 
-  // For auth pages, render without sidebar/navbar
   if (isAuthPage) {
-    return (
-      <div className="min-h-screen bg-base-light">
-        {children}
-      </div>
-    );
+    return <div className="min-h-screen bg-base-light">{children}</div>;
   }
 
+  // Inject props into the page component
+  const pageContent = cloneElement(children, {
+    handleCreateCourse: children.props.handleCreateCourse,
+    handleJoinCourse: children.props.handleJoinCourse,
+  });
+
   return (
-    <div className="flex flex-col h-screen bg-base-light"> {/* Changed to flex-col to stack Navbar on top */}
-      <Navbar
-        // Pass necessary props to Navbar if needed.
-        // These props would typically come from a context or a higher-level state.
-        // For now, I'm assuming default behavior or that Navbar handles its own state.
-        // If onCreateCourseClick/onJoinCourseClick are still needed here,
-        // you'll need to lift their state/handlers up to RootLayout or a context provider.
+    <div className="bg-base-light min-h-screen">
+      <Sidebar pathname={pathname} isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
+      <CreateCourseModal
+        isOpen={isCreateCourseModalOpen}
+        onClose={() => setIsCreateCourseModalOpen(false)}
+        onCreateCourse={pageContent.props.handleCreateCourse}
       />
-      <div className="flex flex-1"> {/* This div now holds Sidebar and main content side-by-side */}
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto bg-base-light ml-8">
-          {children}
-        </main>
+      <JoinCourseModal
+        isOpen={isJoinCourseModalOpen}
+        onClose={() => setIsJoinCourseModalOpen(false)}
+        onJoinCourse={pageContent.props.handleJoinCourse}
+      />
+      <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-56'}`}>
+        <Navbar onCreateCourseClick={handleCreateCourseClick} onJoinCourseClick={handleJoinCourseClick} />
+        <main className="p-8">{pageContent}</main>
       </div>
     </div>
   );
