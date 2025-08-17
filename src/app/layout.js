@@ -2,7 +2,7 @@ import "./globals.css";
 import Layout from "../components/Layout";
 
 export const metadata = {
-  title: "Assistive Learning Platform",
+  title: "AssistEd",
   description: "A modern learning platform designed to enhance educational experiences",
 };
 

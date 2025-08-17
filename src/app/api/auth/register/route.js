@@ -50,7 +50,7 @@ export async function POST(req) {
       });
 
       const mailOptions = {
-        from: process.env.FROM_EMAIL,
+        from: `"AssistEd" <${process.env.FROM_EMAIL}>`,
         to: email,
         subject: 'Email Verification OTP',
         html: otpEmailTemplate(otp),

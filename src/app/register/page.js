@@ -106,10 +106,10 @@ export default function RegisterPage() {
             </div>
           </div>
           <h1 className="text-3xl font-bold text-white mb-4">
-            Join Assistive Learning
+            Join AssistEd
           </h1>
           <p className="text-lg text-indigo-100 mb-8">
-            Start your personalized learning journey today and unlock your potential with adaptive technology.
+            Start your personalized learning journey today and unlock your potential with AssistEd.
           </p>
           <div className="space-y-4 text-indigo-100">
             <div className="flex items-center justify-center">
