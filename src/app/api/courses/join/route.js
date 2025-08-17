@@ -1,7 +1,7 @@
-import connectMongoDB from '@/lib/mongodb';
+import connectMongoDB from '@/config/mongoConfig';
 import Course from '@/models/Course';
 import { NextResponse } from 'next/server';
-import { getUserIdFromToken } from '@/lib/auth';
+import { getUserIdFromToken } from '@/services/authService';
 
 export async function POST(request) {
   try {
