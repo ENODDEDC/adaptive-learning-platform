@@ -1,7 +1,7 @@
 # AssistED
 
 > **Status:** Currently under development  
-> **Current Version:** release/2025-08-17-EDC-002
+> **Current Version:** release/2025-08-18-EDC-003
 
 ## About
 
