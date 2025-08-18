@@ -3,13 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-// Navbar is now in Layout.js
-import CreateCourseModal from '@/components/CreateCourseModal';
-import JoinCourseModal from '@/components/JoinCourseModal';
 
 export default function Home() {
-  const [isCreateCourseModalOpen, setIsCreateCourseModalOpen] = useState(false);
-  const [isJoinCourseModalOpen, setIsJoinCourseModal] = useState(false);
   const [courses, setCourses] = useState([]);
 
   useEffect(() => {
@@ -35,14 +30,6 @@ export default function Home() {
     fetchCourses();
   }, []);
 
-  const handleCreateCourseClick = () => {
-    setIsCreateCourseModalOpen(true);
-  };
-
-  const handleJoinCourseClick = () => {
-    setIsJoinCourseModalOpen(true);
-  };
-
   const handleCreateCourse = async (courseData) => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -67,7 +54,7 @@ export default function Home() {
 
       const data = await res.json();
       setCourses([...courses, data.course]);
-      setIsCreateCourseModalOpen(false);
+      // The modal is now closed from the Layout component
     } catch (error) {
       console.error('Error creating course:', error);
       alert(`Error: ${error.message}`);
@@ -100,32 +87,27 @@ export default function Home() {
         setCourses([...courses, data.course]);
       }
       
-      setIsJoinCourseModalOpen(false);
+      // The modal is now closed from the Layout component
     } catch (error) {
       console.error('Error joining course:', error);
       alert(`Error: ${error.message}`);
     }
   };
+  
+  // Expose handlers for Layout to use
+  Home.defaultProps = {
+    handleCreateCourse,
+    handleJoinCourse,
+  };
 
   return (
     <div className="min-h-screen bg-base-light text-text-primary">
-      <CreateCourseModal
-        isOpen={isCreateCourseModalOpen}
-        onClose={() => setIsCreateCourseModalOpen(false)}
-        onCreateCourse={handleCreateCourse}
-      />
-      <JoinCourseModal
-        isOpen={isJoinCourseModalOpen}
-        onClose={() => setIsJoinCourseModal(false)}
-        onJoinCourse={handleJoinCourse}
-      />
-
       <main className="container mx-auto px-4 py-6">
         <h1 className="text-2l font-bold mb-6">Your Courses</h1>
         {courses.length === 0 ? (
           <p className="text-gray-500 text-xs">No courses created yet or joined. Click the &quot;+&quot; button to create or join one!</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,250px)] gap-4 justify-center">
             {courses.map((course) => (
               <div
                 key={course._id}
@@ -149,24 +131,6 @@ export default function Home() {
           </div>
         )}
       </main>
-
-      <footer className="flex items-center justify-center w-full h-20 mt-6 border-t border-divider-light">
-        <a
-          className="flex items-center justify-center"
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <Image
-            src="/vercel.svg"
-            alt="Vercel Logo"
-            className="h-3 ml-2"
-            width={57}
-            height={12}
-          />
-        </a>
-      </footer>
     </div>
   );
 }
