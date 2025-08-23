@@ -32,7 +32,7 @@ export default function LoginPage() {
       if (res.ok) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        router.push('/');
+        router.push('/home');
       } else {
         setError(data.message);
       }
@@ -80,7 +80,7 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(data.user));
         
         console.log('Google user synced to MongoDB and logged in');
-        router.push('/');
+        router.push('/home');
       } else {
         setError(data.message || 'Failed to complete Google sign-in');
       }

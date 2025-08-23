@@ -27,8 +27,8 @@ const Layout = ({ children }) => {
   const handleCreateCourseClick = () => setIsCreateCourseModalOpen(true);
   const handleJoinCourseClick = () => setIsJoinCourseModalOpen(true);
 
-  const isAuthPage = ['/login', '/register', '/forgot-password', '/reset-password'].some(
-    path => pathname?.startsWith(path)
+  const isAuthPage = ['/', '/login', '/register', '/forgot-password', '/reset-password'].some(
+    path => pathname === path || (path !== '/' && pathname?.startsWith(path))
   );
 
   if (isAuthPage) {
