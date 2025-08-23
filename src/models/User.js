@@ -40,6 +40,17 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: {
     type: Date,
   },
+  googleId: {
+    type: String,
+  },
+  photoURL: {
+    type: String,
+  },
+  authProvider: {
+    type: String,
+    enum: ['email', 'google'],
+    default: 'email',
+  },
 }, { timestamps: true });
 
 export default mongoose.models.User || mongoose.model('User', userSchema);

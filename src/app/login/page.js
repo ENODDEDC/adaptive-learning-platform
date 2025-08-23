@@ -31,6 +31,7 @@ export default function LoginPage() {
 
       if (res.ok) {
         localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         router.push('/');
       } else {
         setError(data.message);
@@ -53,23 +54,36 @@ export default function LoginPage() {
       
       console.log('Google Sign-In successful:', user);
       
-      // Get the Firebase ID token
-      const idToken = await user.getIdToken();
-      
-      // Store the token in localStorage so the Navbar can detect the user is logged in
-      localStorage.setItem('token', idToken);
-      
-      // Optionally store user info for display purposes
-      localStorage.setItem('user', JSON.stringify({
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        provider: 'google'
-      }));
-      
-      console.log('Google user data stored in localStorage');
-      router.push('/');
+      // Send Google user data to our backend
+      const res = await fetch('/api/auth/google-signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firebaseUser: {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+          }
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // Store our app's JWT token (not Firebase token)
+        localStorage.setItem('token', data.token);
+        
+        // Store user info for display purposes
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        console.log('Google user synced to MongoDB and logged in');
+        router.push('/');
+      } else {
+        setError(data.message || 'Failed to complete Google sign-in');
+      }
     } catch (error) {
       console.error('Google Sign-In error:', error);
       setError('Failed to sign in with Google. Please try again.');

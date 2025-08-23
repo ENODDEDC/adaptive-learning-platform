@@ -26,11 +26,27 @@ export async function POST(req) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1d',
-    });
+    const token = jwt.sign(
+      { 
+        userId: user._id, 
+        email: user.email,
+        provider: user.authProvider || 'email'
+      }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '7d' }
+    );
 
-    return NextResponse.json({ token }, { status: 200 });
+    return NextResponse.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        photoURL: user.photoURL,
+        provider: user.authProvider || 'email'
+      }
+    }, { status: 200 });
   } catch (error) {
     console.error('Login Error:', error.message);
     console.error('Stack:', error.stack);
