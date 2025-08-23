@@ -1,7 +1,7 @@
-# AssistED
+# Intelevo
 
 > **Status:** Currently under development  
-> **Current Version:** release/2025-08-18-EDC-003
+> **Current Version:** release/2025-08-18-EDC-003 (INVALIDATED)
 
 ## About
 
@@ -19,4 +19,4 @@ The project is hosted on [Render](https://render.com).
 
 ## Live Demo
 
-Access the live application here: [https://assistive-learning-platform.onrender.com/](https://assistive-learning-platform.onrender.com/)
+Access the live application here: [https://intelevo.onrender.com](https://intelevo.onrender.com)
