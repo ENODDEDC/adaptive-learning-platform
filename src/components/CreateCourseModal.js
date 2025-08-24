@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 
-const CreateCourseModal = ({ isOpen, onClose, onCreateCourse }) => {
+const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
   const [subject, setSubject] = useState('');
   const [section, setSection] = useState('');
-  const [teacherName, setTeacherName] = useState('');
   const [coverColor, setCoverColor] = useState('#60a5fa'); // Default blue
 
   const colorOptions = [
@@ -19,62 +18,48 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onCreateCourse({ subject, section, teacherName, coverColor });
+    onCreateCourse({ subject, section, teacherName: adminName, coverColor });
     onClose(); // Close modal after submission
     // Reset form fields
     setSubject('');
     setSection('');
-    setTeacherName('');
     setCoverColor('#60a5fa');
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md mx-auto">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">Create New Course</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50">
+      <div className="w-full max-w-md p-6 mx-auto bg-white rounded-lg shadow-xl">
+        <h2 className="mb-4 text-2xl font-bold text-gray-800">Create New Course</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="subject" className="block text-gray-700 text-sm font-bold mb-2">
+            <label htmlFor="subject" className="block mb-2 text-sm font-bold text-gray-700">
               Subject:
             </label>
             <input
               type="text"
               id="subject"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="section" className="block text-gray-700 text-sm font-bold mb-2">
+            <label htmlFor="section" className="block mb-2 text-sm font-bold text-gray-700">
               Section:
             </label>
             <input
               type="text"
               id="section"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
               value={section}
               onChange={(e) => setSection(e.target.value)}
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="teacherName" className="block text-gray-700 text-sm font-bold mb-2">
-              Teacher Name:
-            </label>
-            <input
-              type="text"
-              id="teacherName"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={teacherName}
-              onChange={(e) => setTeacherName(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="coverColor" className="block text-gray-700 text-sm font-bold mb-2">
+            <label htmlFor="coverColor" className="block mb-2 text-sm font-bold text-gray-700">
               Cover Photo Color:
             </label>
             <div className="flex flex-wrap gap-2">
@@ -98,13 +83,16 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse }) => {
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mr-2 focus:outline-none focus:shadow-outline"
+              className="px-4 py-2 mr-2 font-bold text-gray-800 bg-gray-300 rounded hover:bg-gray-400 focus:outline-none focus:shadow-outline"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              disabled={!adminName} // Disable if adminName is empty
+              className={`px-4 py-2 font-bold text-white rounded focus:outline-none focus:shadow-outline ${
+                !adminName ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700'
+              }`}
             >
               Create Course
             </button>

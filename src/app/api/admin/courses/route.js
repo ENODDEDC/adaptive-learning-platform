@@ -29,8 +29,17 @@ export async function GET(req) {
   }
 
   try {
-    const courses = await Course.find({});
-    return NextResponse.json(courses);
+    const courses = await Course.find({})
+      .populate('createdBy', 'name email role') // Populate creator details
+      .lean(); // Use .lean() for plain JavaScript objects
+
+    // Add enrolledUsersCount to each course
+    const coursesWithCounts = courses.map(course => ({
+      ...course,
+      enrolledUsersCount: course.enrolledUsers ? course.enrolledUsers.length : 0,
+    }));
+
+    return NextResponse.json(coursesWithCounts);
   } catch (error) {
     console.error('Error fetching courses:', error);
     return NextResponse.json({ message: 'Server error' }, { status: 500 });
@@ -44,14 +53,21 @@ export async function POST(req) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { title, description } = await req.json();
+  const { subject, section, teacherName, coverColor, uniqueKey } = await req.json();
 
-  if (!title || !description) {
-    return NextResponse.json({ message: 'Title and description are required' }, { status: 400 });
+  if (!subject || !teacherName || !uniqueKey) {
+    return NextResponse.json({ message: 'Subject, teacher name, and unique key are required' }, { status: 400 });
   }
 
   try {
-    const newCourse = await Course.create({ title, description, creator: adminId });
+    const newCourse = await Course.create({
+      subject,
+      section,
+      teacherName,
+      coverColor,
+      uniqueKey,
+      createdBy: adminId,
+    });
     return NextResponse.json({ message: 'Course created successfully', course: newCourse }, { status: 201 });
   } catch (error) {
     console.error('Error creating course:', error);
@@ -66,9 +82,9 @@ export async function PUT(req) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id, title, description } = await req.json();
+  const { id, subject, section, teacherName, coverColor, uniqueKey } = await req.json();
 
-  if (!id || !title || !description) {
+  if (!id || !subject || !teacherName || !uniqueKey) {
     return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
   }
 
@@ -78,8 +94,11 @@ export async function PUT(req) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
     }
 
-    course.title = title;
-    course.description = description;
+    course.subject = subject;
+    course.section = section;
+    course.teacherName = teacherName;
+    course.coverColor = coverColor;
+    course.uniqueKey = uniqueKey;
     await course.save();
 
     return NextResponse.json({ message: 'Course updated successfully', course });

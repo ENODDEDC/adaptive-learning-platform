@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import CreateCourseModal from '@/components/CreateCourseModal';
 
 export default function AdminCourseManagementPage() {
   const [courses, setCourses] = useState([]);
@@ -10,13 +11,39 @@ export default function AdminCourseManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingCourse, setEditingCourse] = useState(null);
   const [editFormData, setEditFormData] = useState({
-    title: '',
-    description: '',
+    subject: '',
+    section: '',
+    teacherName: '',
+    coverColor: '',
+    uniqueKey: '',
   });
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [isCreateCourseModalOpen, setIsCreateCourseModalOpen] = useState(false);
+  const [adminName, setAdminName] = useState('');
   const router = useRouter();
 
   useEffect(() => {
     fetchCourses();
+    const fetchAdminName = async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        if (token) {
+          const res = await fetch('/api/admin/profile', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setAdminName(data.name);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch admin name:', error);
+      }
+    };
+    fetchAdminName();
   }, []);
 
   const fetchCourses = async () => {
@@ -55,8 +82,11 @@ export default function AdminCourseManagementPage() {
   const handleEditClick = (course) => {
     setEditingCourse(course._id);
     setEditFormData({
-      title: course.title,
-      description: course.description,
+      subject: course.subject,
+      section: course.section,
+      teacherName: course.teacherName,
+      coverColor: course.coverColor,
+      uniqueKey: course.uniqueKey,
     });
   };
 
@@ -132,12 +162,87 @@ export default function AdminCourseManagementPage() {
     }
   };
 
+  const handleViewClick = async (courseId) => {
+    setLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        router.push('/admin/login');
+        return;
+      }
+
+      const res = await fetch(`/api/admin/courses/${courseId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          router.push('/admin/login');
+        }
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      setSelectedCourse(data);
+      setShowViewModal(true);
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to fetch course details:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCloseViewModal = () => {
+    setShowViewModal(false);
+    setSelectedCourse(null);
+  };
+
+  const handleCreateCourse = async (courseData) => {
+    setError('');
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        router.push('/admin/login');
+        return;
+      }
+
+      const res = await fetch('/api/admin/courses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(courseData),
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          router.push('/admin/login');
+        }
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+
+      await res.json();
+      setIsCreateCourseModalOpen(false);
+      fetchCourses(); // Refresh the course list
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to create course:', err);
+    }
+  };
+
   const filteredCourses = courses.filter(course => {
-    const title = course.title || '';
-    const description = course.description || '';
+    const subject = course.subject || '';
+    const section = course.section || '';
+    const createdBy = course.createdBy?.name || '';
     return (
-      title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      description.toLowerCase().includes(searchTerm.toLowerCase())
+      subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      section.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      createdBy.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
 
@@ -154,7 +259,15 @@ export default function AdminCourseManagementPage() {
       <h1 className="mb-6 text-3xl font-bold">Course Management</h1>
 
       <div className="p-6 bg-white rounded-lg shadow-md">
-        <h2 className="mb-4 text-2xl font-semibold">All Courses</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-semibold">All Courses</h2>
+          <button
+            onClick={() => setIsCreateCourseModalOpen(true)}
+            className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700"
+          >
+            Create Course
+          </button>
+        </div>
         <div className="mb-4">
           <input
             type="text"
@@ -168,8 +281,10 @@ export default function AdminCourseManagementPage() {
           <table className="min-w-full bg-white">
             <thead>
               <tr>
-                <th className="px-4 py-2 text-left border-b">Title</th>
-                <th className="px-4 py-2 text-left border-b">Description</th>
+                <th className="px-4 py-2 text-left border-b">Course Name</th>
+                <th className="px-4 py-2 text-left border-b">Course Description</th>
+                <th className="px-4 py-2 text-left border-b">Created By</th>
+                <th className="px-4 py-2 text-left border-b">Students Joined</th>
                 <th className="px-4 py-2 text-left border-b">Actions</th>
               </tr>
             </thead>
@@ -181,20 +296,50 @@ export default function AdminCourseManagementPage() {
                       <td className="px-4 py-2 border-b">
                         <input
                           type="text"
-                          name="title"
-                          value={editFormData.title}
+                          name="subject"
+                          value={editFormData.subject}
                           onChange={handleEditFormChange}
                           className="w-full p-1 border rounded"
                         />
                       </td>
                       <td className="px-4 py-2 border-b">
                         <textarea
-                          name="description"
-                          value={editFormData.description}
+                          name="section"
+                          value={editFormData.section}
                           onChange={handleEditFormChange}
                           className="w-full p-1 border rounded"
                           rows="3"
                         ></textarea>
+                      </td>
+                      <td className="px-4 py-2 border-b">
+                        <input
+                          type="text"
+                          name="teacherName"
+                          value={editFormData.teacherName}
+                          onChange={handleEditFormChange}
+                          className="w-full p-1 border rounded"
+                        />
+                      </td>
+                      <td className="px-4 py-2 border-b">
+                        <input
+                          type="text"
+                          name="coverColor"
+                          value={editFormData.coverColor}
+                          onChange={handleEditFormChange}
+                          className="w-full p-1 border rounded"
+                        />
+                      </td>
+                      <td className="px-4 py-2 border-b">
+                        <input
+                          type="text"
+                          name="uniqueKey"
+                          value={editFormData.uniqueKey}
+                          onChange={handleEditFormChange}
+                          className="w-full p-1 border rounded"
+                        />
+                      </td>
+                      <td className="px-4 py-2 border-b">
+                        {selectedCourse?.enrolledUsers?.length || 0} Students
                       </td>
                       <td className="px-4 py-2 border-b">
                         <button
@@ -213,9 +358,21 @@ export default function AdminCourseManagementPage() {
                     </>
                   ) : (
                     <>
-                      <td className="px-4 py-2 border-b">{course.title}</td>
-                      <td className="px-4 py-2 border-b">{course.description}</td>
+                      <td className="px-4 py-2 border-b">{course.subject}</td>
+                      <td className="px-4 py-2 border-b">{course.section}</td>
                       <td className="px-4 py-2 border-b">
+                        {course.createdBy?.name} ({course.createdBy?.email}, {course.createdBy?.role})
+                      </td>
+                      <td className="px-4 py-2 border-b">
+                        {course.enrolledUsersCount} Students
+                      </td>
+                      <td className="px-4 py-2 border-b">
+                        <button
+                          onClick={() => handleViewClick(course._id)}
+                          className="mr-2 text-green-500 hover:underline"
+                        >
+                          View
+                        </button>
                         <button
                           onClick={() => handleEditClick(course)}
                           className="mr-2 text-blue-500 hover:underline"
@@ -237,6 +394,47 @@ export default function AdminCourseManagementPage() {
           </table>
         </div>
       </div>
+
+      <CreateCourseModal
+        isOpen={isCreateCourseModalOpen}
+        onClose={() => setIsCreateCourseModalOpen(false)}
+        onCreateCourse={handleCreateCourse}
+        adminName={adminName}
+      />
+
+      {showViewModal && selectedCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl p-8 bg-white rounded-lg shadow-lg">
+            <h3 className="mb-4 text-2xl font-bold">Course Details: {selectedCourse.subject}</h3>
+            <p><strong>Course Name:</strong> {selectedCourse.subject}</p>
+            <p><strong>Course Description:</strong> {selectedCourse.section}</p>
+            <p><strong>Date Created:</strong> {new Date(selectedCourse.createdAt).toLocaleDateString()}</p>
+            <p><strong>Created By:</strong> {selectedCourse.createdBy?.name} ({selectedCourse.createdBy?.email}, {selectedCourse.createdBy?.role})</p>
+            <p><strong>Teacher Name:</strong> {selectedCourse.teacherName}</p>
+            <p><strong>Unique Key:</strong> {selectedCourse.uniqueKey}</p>
+            <p><strong>Students Joined:</strong> {selectedCourse.enrolledUsers ? selectedCourse.enrolledUsers.length : 0}</p>
+            <h4 className="mt-4 mb-2 text-xl font-semibold">Enrolled Members:</h4>
+            {selectedCourse.enrolledUsers && selectedCourse.enrolledUsers.length > 0 ? (
+              <ul>
+                {selectedCourse.enrolledUsers.map(user => (
+                  <li key={user._id} className="ml-4 list-disc">
+                    {user.name} ({user.email}, {user.role})
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="ml-4">No students enrolled yet.</p>
+            )}
+            {/* TODO: Add activity logs */}
+            <button
+              onClick={handleCloseViewModal}
+              className="px-4 py-2 mt-6 text-white bg-blue-500 rounded hover:bg-blue-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
