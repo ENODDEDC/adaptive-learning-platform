@@ -42,7 +42,7 @@ const Layout = ({ children }) => {
   });
 
   const sidebarState = isMounted ? isSidebarCollapsed : false;
-  const mainContentMargin = isMounted && isSidebarCollapsed ? 'ml-20' : 'ml-56';
+  const mainContentMargin = isMounted && isSidebarCollapsed ? 'ml-16' : 'ml-56';
 
   return (
     <div className="bg-base-light min-h-screen">
@@ -58,7 +58,6 @@ const Layout = ({ children }) => {
         onJoinCourse={pageContent.props.handleJoinCourse}
       />
       <div className={`transition-all duration-300 ${mainContentMargin}`}>
-        <Navbar onCreateCourseClick={handleCreateCourseClick} onJoinCourseClick={handleJoinCourseClick} />
         <main className="p-8">{pageContent}</main>
       </div>
     </div>

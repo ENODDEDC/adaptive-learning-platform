@@ -2,31 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom CSS for Auth Pages Only */
-.btn-primary {
-  @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
-}
-
-.input-field {
-  @apply w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200;
-}
-
-.card {
-  @apply bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden;
-}
-
-.fade-in {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-html,
 body {
-  background-color: #F6F3FA; /* Apply the base background color */
-  color: #4B4B4B; /* Apply the global font color */
-  font-family: 'Lexend', sans-serif; /* Apply the global font */
+  background-color: #F0F2F5; 
+  color: #1a202c;
+  font-family: 'Inter', sans-serif;
 }
