@@ -13,6 +13,7 @@ import {
 const navigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: HomeIcon },
   { name: 'Users', href: '/admin/users', icon: UsersIcon },
+  { name: 'Courses', href: '/admin/courses', icon: Cog6ToothIcon }, // Using Cog6ToothIcon for now, can be changed
   // Add more admin navigation items here
 ];
 
