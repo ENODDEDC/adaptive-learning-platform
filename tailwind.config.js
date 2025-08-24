@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+const config = {
   content: [
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}", // Updated path for App Router
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -17,4 +17,5 @@ module.exports = {
     },
   },
   plugins: [],
-}
+};
+export default config;
