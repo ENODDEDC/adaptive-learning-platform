@@ -4,6 +4,7 @@ import React from 'react';
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { Bars3Icon, BellIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
@@ -39,10 +40,12 @@ export default function AdminNavbar({ toggleSidebar }) {
             <Menu.Button className="relative flex items-center max-w-xs text-sm bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
               <span className="absolute -inset-1.5" />
               <span className="sr-only">Open user menu</span>
-              <img
+              <Image
                 className="w-8 h-8 rounded-full"
                 src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
                 alt=""
+                width={32}
+                height={32}
               />
               <span className="ml-2 text-white">Admin Name</span> {/* Replace with actual admin name */}
               <ChevronDownIcon className="w-5 h-5 ml-1 text-gray-400" aria-hidden="true" />

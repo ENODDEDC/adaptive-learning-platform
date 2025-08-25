@@ -19,7 +19,7 @@ export default function AdminUserManagementPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const fetchUsers = async () => {
     setLoading(true);

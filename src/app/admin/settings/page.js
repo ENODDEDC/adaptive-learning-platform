@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function AdminSettingsPage() {
   const [adminData, setAdminData] = useState({
@@ -19,7 +20,7 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     fetchAdminProfile();
-  }, []);
+  }, [fetchAdminProfile]);
 
   const fetchAdminProfile = async () => {
     setLoading(true);
@@ -262,10 +263,12 @@ export default function AdminSettingsPage() {
         <div className="p-6 bg-white rounded-lg shadow-md">
           <h2 className="mb-4 text-2xl font-semibold">Profile Picture</h2>
           <div className="flex items-center mb-4">
-            <img
+            <Image
               className="object-cover w-24 h-24 mr-4 rounded-full"
               src={adminData.photoURL}
               alt="Admin Profile"
+              width={96}
+              height={96}
             />
             <div>
               <label htmlFor="profile-picture-upload" className="inline-flex items-center px-4 py-2 font-bold text-white bg-blue-500 rounded cursor-pointer hover:bg-blue-700">

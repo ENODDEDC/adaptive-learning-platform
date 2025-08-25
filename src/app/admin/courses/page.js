@@ -44,7 +44,7 @@ export default function AdminCourseManagementPage() {
       }
     };
     fetchAdminName();
-  }, []);
+  }, [fetchCourses]);
 
   const fetchCourses = async () => {
     setLoading(true);
