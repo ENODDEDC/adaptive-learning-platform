@@ -10,7 +10,7 @@ export const getUserIdFromToken = (req) => {
   
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return decoded.id;
+    return decoded.userId;
   } catch (error) {
     return null;
   }
