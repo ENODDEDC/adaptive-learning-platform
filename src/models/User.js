@@ -51,6 +51,11 @@ const userSchema = new mongoose.Schema({
     enum: ['email', 'google'],
     default: 'email',
   },
+  role: {
+    type: String,
+    enum: ['admin', 'instructor', 'student'],
+    default: 'student',
+  },
 }, { timestamps: true });
 
 export default mongoose.models.User || mongoose.model('User', userSchema);

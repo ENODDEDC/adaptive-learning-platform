@@ -5,6 +5,8 @@ import React, { useState, cloneElement, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
+import AdminSidebar from './AdminSidebar';
+import AdminNavbar from './AdminNavbar';
 import CreateCourseModal from '@/components/CreateCourseModal';
 import JoinCourseModal from '@/components/JoinCourseModal';
 
@@ -31,8 +33,25 @@ const Layout = ({ children }) => {
     path => pathname === path || (path !== '/' && pathname?.startsWith(path))
   );
 
-  if (isAuthPage) {
+  const isAdminLoginPage = pathname === '/admin/login';
+  const isAdminPage = pathname?.startsWith('/admin') && !isAdminLoginPage;
+
+  if (isAuthPage || isAdminLoginPage) {
     return <div className="min-h-screen bg-base-light">{children}</div>;
+  }
+
+  if (isAdminPage) {
+    const sidebarState = isMounted ? isSidebarCollapsed : false;
+    const mainContentMargin = isMounted && isSidebarCollapsed ? 'ml-20' : 'ml-56';
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <AdminSidebar isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
+        <div className={`transition-all duration-300 ${mainContentMargin}`}>
+          <AdminNavbar toggleSidebar={toggleSidebar} />
+          <main className="p-8">{children}</main>
+        </div>
+      </div>
+    );
   }
 
   // Inject props into the page component
@@ -42,10 +61,10 @@ const Layout = ({ children }) => {
   });
 
   const sidebarState = isMounted ? isSidebarCollapsed : false;
-  const mainContentMargin = isMounted && isSidebarCollapsed ? 'ml-16' : 'ml-56';
+  const mainContentMargin = isMounted && isSidebarCollapsed ? 'ml-20' : 'ml-56';
 
   return (
-    <div className="bg-base-light min-h-screen">
+    <div className="min-h-screen bg-base-light">
       <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
@@ -58,6 +77,7 @@ const Layout = ({ children }) => {
         onJoinCourse={pageContent.props.handleJoinCourse}
       />
       <div className={`transition-all duration-300 ${mainContentMargin}`}>
+        <Navbar onCreateCourseClick={handleCreateCourseClick} onJoinCourseClick={handleJoinCourseClick} />
         <main className="p-8">{pageContent}</main>
       </div>
     </div>
