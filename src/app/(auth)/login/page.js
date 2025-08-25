@@ -145,53 +145,71 @@ export default function LoginPage() {
 
           <div className="card p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email address
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="input-field"
-                  placeholder="Enter your email"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="input-field"
-                  placeholder="Enter your password"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                    Remember me
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Email address
                   </label>
+                  <div className="mt-1">
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="input-field"
+                      placeholder="Enter your email"
+                    />
+                  </div>
                 </div>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Forgot password?
-                </Link>
+
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Password
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="input-field"
+                      placeholder="Enter your password"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <input
+                      id="remember-me"
+                      type="checkbox"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label
+                      htmlFor="remember-me"
+                      className="ml-2 block text-sm text-gray-700"
+                    >
+                      Remember me
+                    </label>
+                  </div>
+
+                  <div className="text-sm">
+                    <Link
+                      href="/forgot-password"
+                      className="font-medium text-blue-600 hover:text-blue-500"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                </div>
               </div>
 
               {error && (
@@ -200,11 +218,12 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="btn-primary w-full flex justify-center items-center"
-              >
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="btn-primary w-full flex justify-center items-center"
+                >
                 {isLoading ? (
                   <>
                     <LoadingSpinner className="h-4 w-4 mr-2" />
@@ -214,6 +233,7 @@ export default function LoginPage() {
                   'Sign in'
                 )}
               </button>
+              </div>
             </form>
 
             <div className="mt-6">

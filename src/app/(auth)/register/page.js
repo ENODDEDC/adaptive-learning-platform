@@ -150,142 +150,199 @@ export default function RegisterPage() {
 
               <div className="card p-8">
                 <form onSubmit={handleRegister} className="space-y-6">
-                  {/* Name fields */}
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="name"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         First Name *
                       </label>
-                      <input
-                        id="name"
-                        type="text"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                        className="input-field"
-                        placeholder="Enter your first name"
-                      />
+                      <div className="mt-1">
+                        <input
+                          id="name"
+                          type="text"
+                          value={formData.name}
+                          onChange={handleChange}
+                          required
+                          className="input-field"
+                          placeholder="Enter your first name"
+                        />
+                      </div>
                     </div>
+
                     <div>
-                      <label htmlFor="surname" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="surname"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Last Name *
                       </label>
-                      <input
-                        id="surname"
-                        type="text"
-                        value={formData.surname}
-                        onChange={handleChange}
-                        required
-                        className="input-field"
-                        placeholder="Enter your last name"
-                      />
+                      <div className="mt-1">
+                        <input
+                          id="surname"
+                          type="text"
+                          value={formData.surname}
+                          onChange={handleChange}
+                          required
+                          className="input-field"
+                          placeholder="Enter your last name"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="middleName" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="middleName"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Middle Name
                       </label>
-                      <input
-                        id="middleName"
-                        type="text"
-                        value={formData.middleName}
-                        onChange={handleChange}
-                        className="input-field"
-                        placeholder="Optional"
-                      />
+                      <div className="mt-1">
+                        <input
+                          id="middleName"
+                          type="text"
+                          value={formData.middleName}
+                          onChange={handleChange}
+                          className="input-field"
+                          placeholder="Optional"
+                        />
+                      </div>
                     </div>
+
                     <div>
-                      <label htmlFor="suffix" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="suffix"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Suffix
                       </label>
-                      <input
-                        id="suffix"
-                        type="text"
-                        value={formData.suffix}
-                        onChange={handleChange}
-                        className="input-field"
-                        placeholder="Jr., Sr., etc."
-                      />
+                      <div className="mt-1">
+                        <input
+                          id="suffix"
+                          type="text"
+                          value={formData.suffix}
+                          onChange={handleChange}
+                          className="input-field"
+                          placeholder="Jr., Sr., etc."
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className="input-field"
-                      placeholder="Enter your email address"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                      Password *
-                    </label>
-                    <input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      className="input-field"
-                      placeholder="Create a strong password"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Must be at least 8 characters long</p>
-                  </div>
-
-                  <div>
-                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirm Password *
-                    </label>
-                    <input
-                      id="confirmPassword"
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                      className="input-field"
-                      placeholder="Confirm your password"
-                    />
-                  </div>
-
-                  {/* Agreement checkboxes */}
-                  <div className="space-y-3">
-                    <div className="flex items-start">
-                      <input
-                        id="terms"
-                        type="checkbox"
-                        required
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
-                      />
-                      <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-                        I agree to the{' '}
-                        <Link href="/terms" className="text-blue-600 hover:text-blue-500 font-medium">
-                          Terms and Conditions
-                        </Link>
+                  <div className="space-y-6">
+                    <div>
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Email Address *
                       </label>
+                      <div className="mt-1">
+                        <input
+                          id="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          required
+                          className="input-field"
+                          placeholder="Enter your email address"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="password"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Password *
+                      </label>
+                      <div className="mt-1">
+                        <input
+                          id="password"
+                          type="password"
+                          value={formData.password}
+                          onChange={handleChange}
+                          required
+                          className="input-field"
+                          placeholder="Create a strong password"
+                        />
+                      </div>
+                      <p className="mt-2 text-xs text-gray-500">
+                        Must be at least 8 characters long
+                      </p>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="confirmPassword"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Confirm Password *
+                      </label>
+                      <div className="mt-1">
+                        <input
+                          id="confirmPassword"
+                          type="password"
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          required
+                          className="input-field"
+                          placeholder="Confirm your password"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          id="terms"
+                          type="checkbox"
+                          required
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <label
+                          htmlFor="terms"
+                          className="font-medium text-gray-700"
+                        >
+                          I agree to the{' '}
+                          <Link
+                            href="/terms"
+                            className="text-blue-600 hover:text-blue-500"
+                          >
+                            Terms and Conditions
+                          </Link>
+                        </label>
+                      </div>
                     </div>
                     <div className="flex items-start">
-                      <input
-                        id="privacy"
-                        type="checkbox"
-                        required
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
-                      />
-                      <label htmlFor="privacy" className="ml-2 block text-sm text-gray-700">
-                        I agree to the{' '}
-                        <Link href="/privacy" className="text-blue-600 hover:text-blue-500 font-medium">
-                          Privacy Policy
-                        </Link>
-                      </label>
+                      <div className="flex items-center h-5">
+                        <input
+                          id="privacy"
+                          type="checkbox"
+                          required
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <label
+                          htmlFor="privacy"
+                          className="font-medium text-gray-700"
+                        >
+                          I agree to the{' '}
+                          <Link
+                            href="/privacy"
+                            className="text-blue-600 hover:text-blue-500"
+                          >
+                            Privacy Policy
+                          </Link>
+                        </label>
+                      </div>
                     </div>
                   </div>
 
@@ -295,20 +352,22 @@ export default function RegisterPage() {
                     </div>
                   )}
 
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="btn-primary w-full flex justify-center items-center"
-                  >
-                    {isLoading ? (
-                      <>
-                        <LoadingSpinner className="h-4 w-4 mr-2" />
-                        Creating account...
-                      </>
-                    ) : (
-                      'Create Account'
-                    )}
-                  </button>
+                  <div className="pt-4">
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="btn-primary w-full flex justify-center items-center"
+                    >
+                      {isLoading ? (
+                        <>
+                          <LoadingSpinner className="h-4 w-4 mr-2" />
+                          Creating account...
+                        </>
+                      ) : (
+                        'Create Account'
+                      )}
+                    </button>
+                  </div>
                 </form>
               </div>
             </>
@@ -320,7 +379,7 @@ export default function RegisterPage() {
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900">Check your email</h2>
                 <p className="mt-2 text-sm text-gray-600">
-                  We&apos;ve sent a verification code to <strong>{formData.email}</strong>
+                  We've sent a verification code to <strong>{formData.email}</strong>
                 </p>
               </div>
 
@@ -372,7 +431,7 @@ export default function RegisterPage() {
 
                 <div className="mt-6 text-center">
                   <p className="text-sm text-gray-600">
-                    Didn&apos;t receive the code?{' '}
+                    Didn't receive the code?{' '}
                     <button
                       onClick={() => setStep(1)}
                       className="font-medium text-blue-600 hover:text-blue-500"

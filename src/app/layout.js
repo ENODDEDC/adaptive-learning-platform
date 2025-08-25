@@ -1,5 +1,6 @@
 import "./globals.css";
 import Layout from "../components/Layout";
+import { LayoutProvider } from "../context/LayoutContext";
 
 export const metadata = {
   title: "AssistEd",
@@ -10,7 +11,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Layout>{children}</Layout>
+        <LayoutProvider>
+          <Layout>{children}</Layout>
+        </LayoutProvider>
       </body>
     </html>
   );

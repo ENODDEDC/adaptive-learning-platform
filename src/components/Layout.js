@@ -9,12 +9,17 @@ import AdminSidebar from './AdminSidebar';
 import AdminNavbar from './AdminNavbar';
 import CreateCourseModal from '@/components/CreateCourseModal';
 import JoinCourseModal from '@/components/JoinCourseModal';
+import { useLayout } from '../context/LayoutContext';
 
 const Layout = ({ children }) => {
   const pathname = usePathname();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isCreateCourseModalOpen, setIsCreateCourseModalOpen] = useState(false);
-  const [isJoinCourseModalOpen, setIsJoinCourseModalOpen] = useState(false);
+  const {
+    isCreateCourseModalOpen,
+    closeCreateCourseModal,
+    isJoinCourseModalOpen,
+    closeJoinCourseModal,
+  } = useLayout();
   const [userName, setUserName] = useState(''); // For both admin and regular users
 
   // State to prevent hydration mismatch
@@ -59,8 +64,6 @@ const Layout = ({ children }) => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  const handleCreateCourseClick = () => setIsCreateCourseModalOpen(true);
-  const handleJoinCourseClick = () => setIsJoinCourseModalOpen(true);
 
   const isAuthPage = ['/', '/login', '/register', '/forgot-password', '/reset-password'].some(
     path => pathname === path || (path !== '/' && pathname?.startsWith(path))
@@ -88,7 +91,6 @@ const Layout = ({ children }) => {
   }
 
   // Inject props into the page component (no longer passing handleJoinCourse from children)
-  const pageContent = cloneElement(children, {});
 
   const sidebarState = isMounted ? isSidebarCollapsed : false;
   const mainContentMargin = isMounted && isSidebarCollapsed ? 'ml-20' : 'ml-56';
@@ -98,7 +100,7 @@ const Layout = ({ children }) => {
       <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
-        onClose={() => setIsCreateCourseModalOpen(false)}
+        onClose={closeCreateCourseModal}
         onCreateCourse={async (courseData) => {
           try {
             console.log('Course data before sending to API:', courseData); // Added console.log
@@ -119,7 +121,7 @@ const Layout = ({ children }) => {
               throw new Error(`Error: ${res.status} ${res.statusText}`);
             }
             console.log('Course created successfully by user.');
-            setIsCreateCourseModalOpen(false);
+            closeCreateCourseModal();
           } catch (error) {
             console.error('Failed to create course by user:', error);
           }
@@ -128,7 +130,7 @@ const Layout = ({ children }) => {
       />
       <JoinCourseModal
         isOpen={isJoinCourseModalOpen}
-        onClose={() => setIsJoinCourseModalOpen(false)}
+        onClose={closeJoinCourseModal}
         onJoinCourse={async (courseKey) => {
           try {
             const token = localStorage.getItem('token');
@@ -148,7 +150,7 @@ const Layout = ({ children }) => {
               throw new Error(`Error: ${res.status} ${res.statusText}`);
             }
             console.log('Successfully joined course.');
-            setIsJoinCourseModalOpen(false);
+            closeJoinCourseModal();
             // Optionally, trigger a refresh of courses on the home page
             // This would require a way to communicate from Layout to Home, e.g., context or a global state management.
             // For now, we'll assume the user will see the updated list on next page load or manual refresh.
@@ -158,8 +160,7 @@ const Layout = ({ children }) => {
         }}
       />
       <div className={`transition-all duration-300 ${mainContentMargin}`}>
-        <Navbar onCreateCourseClick={handleCreateCourseClick} onJoinCourseClick={handleJoinCourseClick} />
-        <main className="p-8">{pageContent}</main>
+        <main className="p-8">{children}</main>
       </div>
     </div>
   );

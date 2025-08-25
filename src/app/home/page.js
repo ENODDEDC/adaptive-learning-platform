@@ -6,13 +6,17 @@ import {
   ChevronRightIcon,
   PlusIcon,
 } from '@heroicons/react/24/outline';
+import EmptyState from '@/components/EmptyState';
+import { useLayout } from '../../context/LayoutContext';
 
 export default function Home({ userName }) { // Accept userName as prop
+  const { openCreateCourseModal, openJoinCourseModal } = useLayout();
   const [user, setUser] = useState({ name: 'User' });
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isMounted, setIsMounted] = useState(false); // Add isMounted state
+  const [isCourseMenuOpen, setIsCourseMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true); // Set to true on client mount
@@ -70,11 +74,7 @@ export default function Home({ userName }) { // Accept userName as prop
     }
   };
 
-  const recentActivities = [
-    { id: 1 },
-    { id: 2 },
-    { id: 3 },
-  ];
+  const recentActivities = [];
 
   if (loading) {
     return <div className="flex-1 min-h-screen p-8 text-center bg-gray-100">Loading courses...</div>;
@@ -85,112 +85,210 @@ export default function Home({ userName }) { // Accept userName as prop
   }
 
   return (
-    <div className="flex-1 min-h-screen p-8 bg-gray-100">
-      <div className="p-4 mb-6 bg-white shadow-sm rounded-xl">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-          <h1 className="text-xl font-semibold text-gray-800">Hello, {user.name || 'User'}!</h1>
+    <div className="flex-1 p-8 bg-gray-100">
+      <div className="flex items-center mb-8">
+        <div className="w-8 h-8 mr-4 bg-gray-200 rounded-full flex items-center justify-center">
+          <SparklesIcon className="w-5 h-5 text-gray-600" />
         </div>
+        <h1 className="text-2xl font-semibold text-gray-800">How can I help you today?</h1>
       </div>
 
-      <div className="p-4 mb-8 bg-white shadow-sm rounded-xl">
-        <div className="flex items-center justify-between">
-          <input
-            type="text"
-            placeholder="Type something..."
-            className="flex-1 pl-2 text-base text-gray-700 placeholder-gray-500 bg-transparent border-none outline-none"
-          />
+      <div className="p-4 bg-white shadow-lg rounded-xl">
+        <textarea
+          placeholder="Ask or find anything from your workspace..."
+          className="w-full p-2 text-base text-gray-700 placeholder-gray-500 bg-transparent border-none resize-none focus:outline-none"
+          rows="3"
+        ></textarea>
+        <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-2">
-            <button className="bg-gray-800 text-white text-xs font-semibold px-3 py-1.5 rounded-md hover:bg-gray-900 transition-colors">
-              Build
+            <button className="flex items-center gap-1 px-3 py-1 text-sm font-semibold text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+              <span>Ask</span>
+              <ChevronDownIcon className="w-4 h-4" />
             </button>
-            <button className="flex items-center justify-center bg-gray-200 rounded-full w-7 h-7 hover:bg-gray-300">
-              <PlusIcon className="w-4 h-4 text-gray-700" />
+            <button className="px-3 py-1 text-sm font-semibold text-gray-700 rounded-md hover:bg-gray-200">
+              Research
             </button>
-            <div className="relative">
-              <button className="flex items-center justify-center bg-black rounded-full w-7 h-7">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                </svg>
-              </button>
-              <span className="absolute flex items-center justify-center w-4 h-4 text-xs text-white bg-red-500 rounded-full -top-1 -right-1">1</span>
-            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="p-2 text-gray-500 rounded-full hover:bg-gray-200">
+              <WebIcon className="w-5 h-5" />
+            </button>
+            <button className="flex items-center gap-1 p-2 text-gray-500 rounded-full hover:bg-gray-200">
+              <DocumentTextIcon className="w-5 h-5" />
+              <span>All sources</span>
+              <ChevronDownIcon className="w-4 h-4" />
+            </button>
+            <button className="p-2 text-gray-500 rounded-full hover:bg-gray-200">
+              <PaperClipIcon className="w-5 h-5" />
+            </button>
+            <button className="p-2 text-white bg-gray-800 rounded-full hover:bg-gray-900">
+              <ArrowUpIcon className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
+     <div className="grid grid-cols-1 gap-8 mt-8 lg:grid-cols-3">
+       <div className="lg:col-span-2">
+         <div className="flex items-center justify-between mb-6">
+           <h2 className="text-2xl font-semibold text-gray-800">My Course</h2>
+           <div className="relative">
+             <button
+               onClick={() => setIsCourseMenuOpen(!isCourseMenuOpen)}
+               className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300"
+             >
+               <PlusIcon className="w-5 h-5 text-gray-700" />
+             </button>
+             {isCourseMenuOpen && (
+               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                 <button
+                   onClick={() => {
+                     openCreateCourseModal();
+                     setIsCourseMenuOpen(false);
+                   }}
+                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                 >
+                   Create Course
+                 </button>
+                 <button
+                   onClick={() => {
+                     openJoinCourseModal();
+                     setIsCourseMenuOpen(false);
+                   }}
+                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                 >
+                   Join Course
+                 </button>
+               </div>
+             )}
+           </div>
+         </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800">My Course</h2>
-            <button className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full hover:bg-gray-300">
-              <PlusIcon className="w-5 h-5 text-gray-700" />
-            </button>
-          </div>
+         <div className="flex items-center gap-4 mb-6">
+           <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H5a2 2 0 00-2 2v2" />
+           </svg>
+           <span className="font-medium text-gray-600">Cluster1</span>
+         </div>
 
-          <div className="flex items-center gap-4 mb-6">
-            <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H5a2 2 0 00-2 2v2" />
-            </svg>
-            <span className="font-medium text-gray-600">Cluster1</span>
-          </div>
+         <div className="relative">
+           {courses.length === 0 ? (
+             <EmptyState type="courses" />
+           ) : (
+             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+               {courses.map((course) => (
+                 <div key={course.id} className="flex flex-col overflow-hidden bg-white shadow-md rounded-2xl">
+                   <div className={`h-40 relative p-6 flex flex-col justify-between ${course.color}`}>
+                     <div className="flex items-start justify-between">
+                       <div></div>
+                       <button className="text-white opacity-70 hover:opacity-100">
+                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                           <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                         </svg>
+                       </button>
+                     </div>
+                     <div className={`absolute bottom-4 right-4 w-12 h-12 ${course.progressColor} rounded-full`}></div>
+                   </div>
 
-          <div className="relative">
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-              {courses.map((course) => (
-                <div key={course.id} className="flex flex-col overflow-hidden bg-white shadow-md rounded-2xl">
-                  <div className={`h-40 relative p-6 flex flex-col justify-between ${course.color}`}>
-                    <div className="flex items-start justify-between">
-                      <div></div>
-                      <button className="text-white opacity-70 hover:opacity-100">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className={`absolute bottom-4 right-4 w-12 h-12 ${course.progressColor} rounded-full`}></div>
-                  </div>
+                   <div className="flex flex-col flex-grow p-6">
+                     <h3 className="mb-2 text-lg font-bold text-gray-800">{course.title}</h3>
+                     <p className="mb-2 text-sm text-gray-500">{course.code}</p>
+                     <p className="mb-4 text-sm text-gray-500">{course.instructor}</p>
+                     
+                     <div className="flex items-center gap-2 mt-auto">
+                       <svg className="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
+                       </svg>
+                       <span className="text-lg font-bold text-orange-500">{course.progress}</span>
+                     </div>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           )}
 
-                  <div className="flex flex-col flex-grow p-6">
-                    <h3 className="mb-2 text-lg font-bold text-gray-800">{course.title}</h3>
-                    <p className="mb-2 text-sm text-gray-500">{course.code}</p>
-                    <p className="mb-4 text-sm text-gray-500">{course.instructor}</p>
-                    
-                    <div className="flex items-center gap-2 mt-auto">
-                      <svg className="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
-                      </svg>
-                      <span className="text-lg font-bold text-orange-500">{course.progress}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+           {courses.length > 0 && (
+             <>
+               <button className="absolute left-0 flex items-center justify-center w-10 h-10 transition-colors -translate-x-6 -translate-y-1/2 bg-white rounded-full shadow-lg top-1/2 hover:bg-gray-100">
+                 <ChevronLeftIcon className="w-5 h-5 text-gray-700" />
+               </button>
+               <button className="absolute right-0 flex items-center justify-center w-10 h-10 transition-colors translate-x-6 -translate-y-1/2 bg-white rounded-full shadow-lg top-1/2 hover:bg-gray-100">
+                 <ChevronRightIcon className="w-5 h-5 text-gray-700" />
+               </button>
+             </>
+           )}
+         </div>
 
-            <button className="absolute left-0 flex items-center justify-center w-10 h-10 transition-colors -translate-x-6 -translate-y-1/2 bg-white rounded-full shadow-lg top-1/2 hover:bg-gray-100">
-              <ChevronLeftIcon className="w-5 h-5 text-gray-700" />
-            </button>
-            <button className="absolute right-0 flex items-center justify-center w-10 h-10 transition-colors translate-x-6 -translate-y-1/2 bg-white rounded-full shadow-lg top-1/2 hover:bg-gray-100">
-              <ChevronRightIcon className="w-5 h-5 text-gray-700" />
-            </button>
-          </div>
+         {courses.length > 0 && (
+           <div className="flex justify-end mt-6">
+             <button className="font-medium text-gray-600 transition-colors hover:text-gray-900">See All</button>
+           </div>
+         )}
+       </div>
 
-          <div className="flex justify-end mt-6">
-            <button className="font-medium text-gray-600 transition-colors hover:text-gray-900">See All</button>
-          </div>
-        </div>
-
-        <div>
-          <div className="p-6 bg-white shadow-md rounded-2xl">
-            <h3 className="mb-6 text-lg font-semibold text-gray-800">Recent</h3>
-            <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="h-20 bg-gray-200 rounded-lg"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+       <div>
+         <div className="p-6 bg-white shadow-md rounded-2xl">
+           <h3 className="mb-6 text-lg font-semibold text-gray-800">Recent</h3>
+           <div className="space-y-4">
+             {recentActivities.length === 0 ? (
+               <EmptyState type="recent" />
+             ) : (
+               recentActivities.map((activity) => (
+                 <div key={activity.id} className="h-20 bg-gray-200 rounded-lg"></div>
+               ))
+             )}
+           </div>
+         </div>
+       </div>
+     </div>
     </div>
   );
 }
+
+const SparklesIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.5 13.5h.008v.008h-.008v-.008z" />
+  </svg>
+);
+
+const ChevronDownIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+  </svg>
+);
+
+const WebIcon = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="2" y1="12" x2="22" y2="12" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+);
+
+const DocumentTextIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+  </svg>
+);
+
+const PaperClipIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3.375 3.375 0 0119.5 7.372l-8.45 8.45a1.875 1.875 0 11-2.652-2.652L16.5 6" />
+  </svg>
+);
+
+const ArrowUpIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+  </svg>
+);
