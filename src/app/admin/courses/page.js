@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import CreateCourseModal from '@/components/CreateCourseModal';
 
@@ -46,7 +46,7 @@ export default function AdminCourseManagementPage() {
     fetchAdminName();
   }, [fetchCourses]);
 
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -77,7 +77,7 @@ export default function AdminCourseManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   const handleEditClick = (course) => {
     setEditingCourse(course._id);
