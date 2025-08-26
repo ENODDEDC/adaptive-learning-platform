@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function AdminUserManagementPage() {
@@ -17,11 +17,7 @@ export default function AdminUserManagementPage() {
   });
   const router = useRouter();
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -52,7 +48,11 @@ export default function AdminUserManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleEditClick = (user) => {
     setEditingUser(user._id);

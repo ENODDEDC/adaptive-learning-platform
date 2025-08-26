@@ -4,6 +4,7 @@ import React from 'react';
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { Bars3Icon, BellIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');

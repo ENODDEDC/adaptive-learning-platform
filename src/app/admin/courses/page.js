@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import CreateCourseModal from '@/components/CreateCourseModal';
 
@@ -23,30 +23,7 @@ export default function AdminCourseManagementPage() {
   const [adminName, setAdminName] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    fetchCourses();
-    const fetchAdminName = async () => {
-      try {
-        const token = localStorage.getItem('adminToken');
-        if (token) {
-          const res = await fetch('/api/admin/profile', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setAdminName(data.name);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch admin name:', error);
-      }
-    };
-    fetchAdminName();
-  }, [fetchCourses]);
-
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -77,7 +54,30 @@ export default function AdminCourseManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    fetchCourses();
+    const fetchAdminName = async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        if (token) {
+          const res = await fetch('/api/admin/profile', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setAdminName(data.name);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch admin name:', error);
+      }
+    };
+    fetchAdminName();
+  }, [fetchCourses]);
 
   const handleEditClick = (course) => {
     setEditingCourse(course._id);

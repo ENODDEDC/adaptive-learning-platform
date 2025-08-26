@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function AdminSettingsPage() {
   const [adminData, setAdminData] = useState({
@@ -17,11 +18,7 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchAdminProfile();
-  }, [fetchAdminProfile]);
-
-  const fetchAdminProfile = async () => {
+  const fetchAdminProfile = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -57,7 +54,11 @@ export default function AdminSettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    fetchAdminProfile();
+  }, [fetchAdminProfile]);
 
   const handleProfileChange = (e) => {
     setAdminData({ ...adminData, [e.target.name]: e.target.value });

@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/20/solid';
 import { Menu, Transition } from '@headlessui/react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
