@@ -86,11 +86,11 @@ export default function Home({ userName }) { // Accept userName as prop
 
   return (
     <div className="flex-1 p-8 bg-gray-100">
-      <div className="flex items-center mb-8">
-        <div className="w-8 h-8 mr-4 bg-gray-200 rounded-full flex items-center justify-center">
-          <SparklesIcon className="w-5 h-5 text-gray-600" />
+      <div className="flex items-center justify-center mb-8">
+        <div className="w-12 h-12 mr-4 bg-white rounded-full flex items-center justify-center shadow-md">
+          <SparklesIcon className="w-8 h-8" />
         </div>
-        <h1 className="text-2xl font-semibold text-gray-800">How can I help you today?</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Hello User!</h1>
       </div>
 
       <div className="p-4 bg-white shadow-lg rounded-xl">
@@ -107,6 +107,9 @@ export default function Home({ userName }) { // Accept userName as prop
             </button>
             <button className="px-3 py-1 text-sm font-semibold text-gray-700 rounded-md hover:bg-gray-200">
               Research
+            </button>
+            <button className="px-3 py-1 text-sm font-semibold text-gray-700 rounded-md hover:bg-gray-200">
+              Text to Docs
             </button>
           </div>
           <div className="flex items-center gap-2">
@@ -245,9 +248,21 @@ export default function Home({ userName }) { // Accept userName as prop
 }
 
 const SparklesIcon = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.5 13.5h.008v.008h-.008v-.008z" />
-  </svg>
+<svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" {...props}>
+<mask id="mask0_171_151" style={{maskType:'alpha'}} maskUnits="userSpaceOnUse" x="0" y="0" width="42" height="42">
+<circle cx="21" cy="21" r="21" fill="white"/>
+</mask>
+<g mask="url(#mask0_171_151)">
+<circle cx="21" cy="21" r="21" fill="white"/>
+<rect x="5.88" y="3.15564" width="26.7393" height="38.8443" fill="url(#pattern0_171_151)"/>
+</g>
+<defs>
+<pattern id="pattern0_171_151" patternContentUnits="objectBoundingBox" width="1" height="1">
+<use xlinkHref="#image0_171_151" transform="scale(0.00675676 0.00465116)"/>
+</pattern>
+<image id="image0_171_151" width="148" height="215" preserveAspectRatio="none" xlinkHref="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJQAAADXCAYAAAD88HgWAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAORSURBVHhe7dyxixxlAIfh71QIWuQaQwo9WwuRgxAMaG0pIvYKsUhhJRLQylpLFSwES4n/R4goIhwxoI3gjohiglzE4oq49nPVee8luZ3ngW1+s+XLfDA77NZ6vV4PiDwyH+A4BEVKUKQERUpQpARFSlCkBEVKUKQERUpQpARFSlCkBEVKUKQERUpQpARFSlCkBEVKUKQERUpQpARFSlCkBEVKUKQERUpQpARFSlCkBEVKUKQERUpQpARFSlCktpb6L8A3b/0z9u/+O58fmOefe3xsn31sPp86iw1q99LeWE0H8/mB2ft2dzzz9Jn5fOo48kgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmK1GJfsHv/g1/G/v69+Xxk03Qwrn/993w+sk15wW6xQVW+/Or2ePudn+fzkW1KUI48UoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUosN6sLFq+Pc+cvj3PnL80scw2KD4mQIipSgjml7+9Gxs3Pm2J9Nsdg3Ni9cvDqm6c4YY4w///hifpn/yR2KlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipTf8sYYL7347PzyfffJx2+NnZ0n5/OpI6iHxPfffbQRQTnySC32DjVNt+fTfffGm5+OH26txtigO9Rig3oYvPrah+PGjZ/G2KCgHHmkBEVKUKQERUpQpARFarGPDV55/cex+vVgPmf2vtmdT4ds4mODxQa1e2lvrKaTC+qv316YT4dsYlCOPFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIrW1Xq/X83EJPvv897F/9958zrz37lPz6ZBr166P1XRnjDHGlSsvj+2zT8y/cuosNihOhiOPlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYrUfzBLotLFhVAoAAAAAElFTkSuQmCC"/>
+</defs>
+</svg>
 );
 
 const ChevronDownIcon = (props) => (
