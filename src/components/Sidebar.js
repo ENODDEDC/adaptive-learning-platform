@@ -1,24 +1,31 @@
 import React, { useState } from "react";
 import Link from 'next/link';
-import { 
-  ChevronDownIcon, 
-  Bars3Icon, 
-  HomeIcon, 
-  BellIcon, 
-  BookOpenIcon, 
-  CheckCircleIcon, 
-  CalendarIcon, 
-  Squares2X2Icon, 
-  Cog6ToothIcon 
+import { useRouter } from 'next/navigation';
+import {
+  ChevronDownIcon,
+  Bars3Icon,
+  HomeIcon,
+  BellIcon,
+  BookOpenIcon,
+  CheckCircleIcon,
+  CalendarIcon,
+  Squares2X2Icon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const router = useRouter();
+
+  const handleSignOut = () => {
+    localStorage.removeItem('token');
+    router.push('/login');
+  };
 
   const links = [
     { href: "/home", label: "Home" },
     { href: "/notifications", label: "Notifications" },
-    { href: "/course", label: "Course" },
+    { href: "/courses", label: "Course" },
     { href: "/todo", label: "To-Do" },
     { href: "/schedule", label: "Schedule" },
     { href: "/cluster", label: "Cluster" },
@@ -58,7 +65,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                 <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Profile
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <button
+                  onClick={handleSignOut}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
                   Sign Out
                 </button>
               </div>

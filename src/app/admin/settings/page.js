@@ -18,10 +18,6 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchAdminProfile();
-  }, [fetchAdminProfile]);
-
   const fetchAdminProfile = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -59,6 +55,10 @@ export default function AdminSettingsPage() {
       setLoading(false);
     }
   }, [router]);
+
+  useEffect(() => {
+    fetchAdminProfile();
+  }, [fetchAdminProfile]);
 
   const handleProfileChange = (e) => {
     setAdminData({ ...adminData, [e.target.name]: e.target.value });

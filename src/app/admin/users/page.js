@@ -17,10 +17,6 @@ export default function AdminUserManagementPage() {
   });
   const router = useRouter();
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -53,6 +49,10 @@ export default function AdminUserManagementPage() {
       setLoading(false);
     }
   }, [router]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleEditClick = (user) => {
     setEditingUser(user._id);
