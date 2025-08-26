@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  ChevronLeftIcon, 
+import Link from 'next/link'; // Import Link
+import {
+  ChevronLeftIcon,
   ChevronRightIcon,
   PlusIcon,
 } from '@heroicons/react/24/outline';
@@ -179,32 +180,34 @@ export default function Home({ userName }) { // Accept userName as prop
            ) : (
              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                {courses.map((course) => (
-                 <div key={course.id} className="flex flex-col overflow-hidden bg-white shadow-md rounded-2xl">
-                   <div className={`h-40 relative p-6 flex flex-col justify-between ${course.color}`}>
-                     <div className="flex items-start justify-between">
-                       <div></div>
-                       <button className="text-white opacity-70 hover:opacity-100">
-                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                           <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                         </svg>
-                       </button>
+                 <Link key={course.id} href={`/courses?slug=${course.title.toLowerCase().replace(/\s+/g, '-')}`} className="block">
+                   <div className="flex flex-col overflow-hidden bg-white shadow-md rounded-2xl cursor-pointer">
+                     <div className={`h-40 relative p-6 flex flex-col justify-between ${course.color}`}>
+                       <div className="flex items-start justify-between">
+                         <div></div>
+                         <button className="text-white opacity-70 hover:opacity-100">
+                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                           </svg>
+                         </button>
+                       </div>
+                       <div className={`absolute bottom-4 right-4 w-12 h-12 ${course.progressColor} rounded-full`}></div>
                      </div>
-                     <div className={`absolute bottom-4 right-4 w-12 h-12 ${course.progressColor} rounded-full`}></div>
-                   </div>
 
-                   <div className="flex flex-col flex-grow p-6">
-                     <h3 className="mb-2 text-lg font-bold text-gray-800">{course.title}</h3>
-                     <p className="mb-2 text-sm text-gray-500">{course.code}</p>
-                     <p className="mb-4 text-sm text-gray-500">{course.instructor}</p>
-                     
-                     <div className="flex items-center gap-2 mt-auto">
-                       <svg className="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
-                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
-                       </svg>
-                       <span className="text-lg font-bold text-orange-500">{course.progress}</span>
+                     <div className="flex flex-col flex-grow p-6">
+                       <h3 className="mb-2 text-lg font-bold text-gray-800">{course.title}</h3>
+                       <p className="mb-2 text-sm text-gray-500">{course.code}</p>
+                       <p className="mb-4 text-sm text-gray-500">{course.instructor}</p>
+                       
+                       <div className="flex items-center gap-2 mt-auto">
+                         <svg className="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
+                         </svg>
+                         <span className="text-lg font-bold text-orange-500">{course.progress}</span>
+                       </div>
                      </div>
                    </div>
-                 </div>
+                 </Link>
                ))}
              </div>
            )}
