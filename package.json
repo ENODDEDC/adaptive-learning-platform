@@ -10,10 +10,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
     "bcryptjs": "^3.0.2",
+    "docx": "^9.5.1",
     "dotenv": "^17.2.1",
+    "file-saver": "^2.0.5",
     "firebase": "^12.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.18.0",

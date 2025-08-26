@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   ChevronLeftIcon, 
   ChevronRightIcon,
@@ -11,12 +12,15 @@ import { useLayout } from '../../context/LayoutContext';
 
 export default function Home({ userName }) { // Accept userName as prop
   const { openCreateCourseModal, openJoinCourseModal } = useLayout();
+  const router = useRouter();
   const [user, setUser] = useState({ name: 'User' });
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isMounted, setIsMounted] = useState(false); // Add isMounted state
   const [isCourseMenuOpen, setIsCourseMenuOpen] = useState(false);
+  const [selectedMode, setSelectedMode] = useState('Ask'); // Track selected mode
+  const [promptText, setPromptText] = useState(''); // Track textarea content
 
   useEffect(() => {
     setIsMounted(true); // Set to true on client mount
@@ -74,6 +78,13 @@ export default function Home({ userName }) { // Accept userName as prop
     }
   };
 
+  const handleSubmit = () => {
+    if (selectedMode === 'Text to Docs' && promptText.trim()) {
+      // Navigate to text-to-docs with the prompt as a URL parameter
+      router.push(`/text-to-docs?prompt=${encodeURIComponent(promptText)}`);
+    }
+  };
+
   const recentActivities = [];
 
   if (loading) {
@@ -95,20 +106,43 @@ export default function Home({ userName }) { // Accept userName as prop
 
       <div className="p-4 bg-white shadow-lg rounded-xl">
         <textarea
+          value={promptText}
+          onChange={(e) => setPromptText(e.target.value)}
           placeholder="Ask or find anything from your workspace..."
           className="w-full p-2 text-base text-gray-700 placeholder-gray-500 bg-transparent border-none resize-none focus:outline-none"
           rows="3"
-        ></textarea>
+        />
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1 px-3 py-1 text-sm font-semibold text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+            <button 
+              onClick={() => setSelectedMode('Ask')}
+              className={`flex items-center gap-1 px-3 py-1 text-sm font-semibold rounded-md ${
+                selectedMode === 'Ask' 
+                  ? 'text-gray-700 bg-gray-200' 
+                  : 'text-gray-700 hover:bg-gray-200'
+              }`}
+            >
               <span>Ask</span>
               <ChevronDownIcon className="w-4 h-4" />
             </button>
-            <button className="px-3 py-1 text-sm font-semibold text-gray-700 rounded-md hover:bg-gray-200">
+            <button 
+              onClick={() => setSelectedMode('Research')}
+              className={`px-3 py-1 text-sm font-semibold rounded-md ${
+                selectedMode === 'Research' 
+                  ? 'text-gray-700 bg-gray-200' 
+                  : 'text-gray-700 hover:bg-gray-200'
+              }`}
+            >
               Research
             </button>
-            <button className="px-3 py-1 text-sm font-semibold text-gray-700 rounded-md hover:bg-gray-200">
+            <button 
+              onClick={() => setSelectedMode('Text to Docs')}
+              className={`px-3 py-1 text-sm font-semibold rounded-md ${
+                selectedMode === 'Text to Docs' 
+                  ? 'text-white bg-blue-600' 
+                  : 'text-gray-700 hover:bg-gray-200'
+              }`}
+            >
               Text to Docs
             </button>
           </div>
@@ -124,7 +158,10 @@ export default function Home({ userName }) { // Accept userName as prop
             <button className="p-2 text-gray-500 rounded-full hover:bg-gray-200">
               <PaperClipIcon className="w-5 h-5" />
             </button>
-            <button className="p-2 text-white bg-gray-800 rounded-full hover:bg-gray-900">
+            <button 
+              onClick={handleSubmit}
+              className="p-2 text-white bg-gray-800 rounded-full hover:bg-gray-900"
+            >
               <ArrowUpIcon className="w-5 h-5" />
             </button>
           </div>

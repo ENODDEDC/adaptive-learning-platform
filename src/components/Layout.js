@@ -77,8 +77,8 @@ const Layout = ({ children }) => {
   }
 
   if (isAdminPage) {
-    const sidebarState = isMounted ? isSidebarCollapsed : false;
-    const mainContentMargin = isMounted && isSidebarCollapsed ? 'ml-20' : 'ml-56';
+    const sidebarState = isSidebarCollapsed;
+    const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-56';
     return (
       <div className="min-h-screen bg-gray-100">
         <AdminSidebar isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
@@ -92,8 +92,9 @@ const Layout = ({ children }) => {
 
   // Inject props into the page component (no longer passing handleJoinCourse from children)
 
-  const sidebarState = isMounted ? isSidebarCollapsed : false;
-  const mainContentMargin = isMounted && isSidebarCollapsed ? 'ml-20' : 'ml-56';
+  // Prevent hydration mismatch by using consistent initial state
+  const sidebarState = isSidebarCollapsed;
+  const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-56';
 
   return (
     <div className="min-h-screen bg-base-light">
@@ -159,8 +160,8 @@ const Layout = ({ children }) => {
           }
         }}
       />
-      <div className={`transition-all duration-300 ${mainContentMargin}`}>
-        <main className="p-8">{children}</main>
+      <div className={`transition-all duration-300 ease-in-out ${mainContentMargin}`}>
+        <main className="p-8 transition-all duration-300 ease-in-out">{children}</main>
       </div>
     </div>
   );
