@@ -10,7 +10,8 @@ import {
   CheckCircleIcon,
   CalendarIcon,
   Squares2X2Icon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
@@ -26,6 +27,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     { href: "/home", label: "Home" },
     { href: "/notifications", label: "Notifications" },
     { href: "/courses", label: "Course" },
+    { href: "/text-to-docs", label: "Text to Docs" },
     { href: "/todo", label: "To-Do" },
     { href: "/schedule", label: "Schedule" },
     { href: "/cluster", label: "Cluster" },
@@ -33,7 +35,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   ];
 
   return (
-    <aside 
+    <aside
       className={`bg-gray-100 border-r border-gray-200 fixed top-0 left-0 h-full z-30 flex flex-col p-6 transition-all duration-300 ${isCollapsed ? 'w-20 items-center' : 'w-64'}`}
     >
       {/* Hamburger toggle always at the top */}
@@ -54,11 +56,11 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
               <div className="w-8 h-8 bg-gray-400 rounded-full"></div>
               <span className="text-gray-800 font-semibold">User123</span>
             </div>
-            <ChevronDownIcon 
-              className={`w-5 h-5 text-gray-500 transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`} 
+            <ChevronDownIcon
+              className={`w-5 h-5 text-gray-500 transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`}
             />
           </button>
-          
+
           {isUserDropdownOpen && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
               <div className="py-2">
@@ -86,11 +88,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`flex items-center rounded-lg text-base font-medium transition-colors ${
-                    pathname === link.href
-                      ? 'bg-gray-200 text-gray-900'
-                      : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-                  } ${isCollapsed ? 'justify-center p-2' : 'gap-3 px-4 py-3'}`}
+                  className={`flex items-center rounded-lg text-base font-medium transition-colors ${pathname === link.href
+                    ? 'bg-gray-200 text-gray-900'
+                    : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                    } ${isCollapsed ? 'justify-center p-2' : 'gap-3 px-4 py-3'}`}
                 >
                   {IconComponent && <IconComponent className="flex-shrink-0 w-6 h-6 md:w-7 md:h-7 text-gray-700" />}
                   {!isCollapsed && <span>{link.label}</span>}
@@ -112,6 +113,8 @@ const getIconForLink = (label) => {
       return BellIcon;
     case 'Course':
       return BookOpenIcon;
+    case 'Text to Docs':
+      return DocumentTextIcon;
     case 'To-Do':
       return CheckCircleIcon;
     case 'Schedule':

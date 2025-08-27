@@ -79,7 +79,9 @@ export default function Home({ userName }) { // Accept userName as prop
   };
 
   const handleSubmit = () => {
-    if (selectedMode === 'Text to Docs' && promptText.trim()) {
+    if (selectedMode === 'Ask' && promptText.trim()) {
+      router.push(`/ask?q=${encodeURIComponent(promptText)}`);
+    } else if (selectedMode === 'Text to Docs' && promptText.trim()) {
       // Navigate to text-to-docs with the prompt as a URL parameter
       router.push(`/text-to-docs?prompt=${encodeURIComponent(promptText)}`);
     }
