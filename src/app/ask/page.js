@@ -8,18 +8,61 @@ function AskPageClient({ initialQuery }) {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [conversationHistory, setConversationHistory] = useState([]); // Add conversation memory
+  const [promptCount, setPromptCount] = useState(0); // Track prompts in session
+  const [lastSentTime, setLastSentTime] = useState(0); // Track last message time
+  const [isOnCooldown, setIsOnCooldown] = useState(false); // Cooldown state
+  const [toast, setToast] = useState({ show: false, message: '', type: '' }); // Toast notifications
   const initialQuerySent = useRef(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (initialQuery && !initialQuerySent.current) {
-      handleSend(initialQuery);
+      // Process initial query without counting against limit
+      handleInitialQuery(initialQuery);
       initialQuerySent.current = true;
       
       // Clean up URL after processing initial query
       window.history.replaceState({}, '', '/ask');
     }
   }, [initialQuery]);
+
+  const handleInitialQuery = async (currentQuery) => {
+    const userMessage = { text: currentQuery, sender: 'user' };
+    setMessages((prev) => [...prev, userMessage]);
+    
+    const newConversationHistory = [userMessage];
+    setConversationHistory(newConversationHistory);
+    
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          query: currentQuery,
+          conversationHistory: newConversationHistory
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
+      const aiResponse = { text: data.response, sender: 'ai' };
+      setMessages((prev) => [...prev, aiResponse]);
+      setConversationHistory(prev => [...prev, aiResponse]);
+    } catch (error) {
+      console.error('Error fetching AI response:', error);
+      const errorMessage = { text: 'Sorry, I had trouble getting a response. Please try again.', sender: 'ai' };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -30,8 +73,30 @@ function AskPageClient({ initialQuery }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: '' });
+    }, 3000);
+  };
+
   const handleSend = async (currentQuery) => {
     if (!currentQuery.trim()) return;
+
+    // Check if user has exceeded prompt limit
+    if (promptCount >= 20) {
+      showToast('You have reached the limit of 20 prompts per session. Please start a new session or upgrade for unlimited prompts.', 'error');
+      return;
+    }
+
+    // Check cooldown (30 seconds = 30000ms)
+    const now = Date.now();
+    const timeSinceLastMessage = now - lastSentTime;
+    if (lastSentTime > 0 && timeSinceLastMessage < 30000) {
+      const remainingTime = Math.ceil((30000 - timeSinceLastMessage) / 1000);
+      showToast(`Please wait ${remainingTime} seconds before sending another message.`, 'warning');
+      return;
+    }
 
     const userMessage = { text: currentQuery, sender: 'user' };
     setMessages((prev) => [...prev, userMessage]);
@@ -39,6 +104,14 @@ function AskPageClient({ initialQuery }) {
     // Update conversation history for context
     const newConversationHistory = [...conversationHistory, userMessage];
     setConversationHistory(newConversationHistory);
+    
+    // Update prompt count and last sent time
+    setPromptCount(prev => prev + 1);
+    setLastSentTime(now);
+    
+    // Start cooldown
+    setIsOnCooldown(true);
+    setTimeout(() => setIsOnCooldown(false), 30000);
     
     setQuery('');
     setIsLoading(true);
@@ -138,12 +211,28 @@ function AskPageClient({ initialQuery }) {
         {/* Header */}
         <div className="bg-white border-b border-gray-200 shadow-sm px-6 flex-shrink-0">
           <div className="max-w-4xl mx-auto py-3">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
-                <SparklesIcon className="w-8 h-8" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
+                  <SparklesIcon className="w-8 h-8" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-semibold text-gray-900">Intelevo AI</h1>
+                </div>
               </div>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">Intelevo AI</h1>
+              
+              {/* Session Counter Badge */}
+              <div className="flex items-center space-x-2">
+                <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  promptCount >= 18 ? 'bg-red-100 text-red-700' : 
+                  promptCount >= 15 ? 'bg-yellow-100 text-yellow-700' : 
+                  'bg-blue-100 text-blue-700'
+                }`}>
+                  {promptCount}/20 prompts
+                </div>
+                <button className="text-xs bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1 rounded-full hover:from-purple-700 hover:to-blue-700 transition-colors">
+                  Upgrade for Unlimited
+                </button>
               </div>
             </div>
           </div>
@@ -281,8 +370,23 @@ function AskPageClient({ initialQuery }) {
         </div>
 
         {/* Fixed Input Area at Bottom */}
-        <div className="border-t border-gray-200/50 px-6 py-4 flex-shrink-0 bg-transparent backdrop-blur-sm">
+        <div className="border-t border-gray-200/50 px-6 py-4 flex-shrink-0 bg-transparent backdrop-blur-sm relative">
           <div className="max-w-4xl mx-auto">
+            {/* Toast Notification */}
+            {toast.show && (
+              <div className={`absolute bottom-full right-0 mb-2 px-4 py-2 rounded-lg shadow-lg text-sm font-medium z-10 animate-pulse ${
+                toast.type === 'error' ? 'bg-red-500 text-white' :
+                toast.type === 'warning' ? 'bg-yellow-500 text-white' :
+                'bg-blue-500 text-white'
+              }`}>
+                {toast.message}
+                <div className={`absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-transparent ${
+                  toast.type === 'error' ? 'border-t-4 border-t-red-500' :
+                  toast.type === 'warning' ? 'border-t-4 border-t-yellow-500' :
+                  'border-t-4 border-t-blue-500'
+                }`}></div>
+              </div>
+            )}
             <div className="relative flex items-center bg-gray-50 rounded-xl border border-gray-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all duration-200">
               <input
                 type="text"
@@ -308,8 +412,13 @@ function AskPageClient({ initialQuery }) {
                 {/* Send button */}
                 <button
                   onClick={() => handleSend(query)}
-                  disabled={isLoading || !query.trim()}
-                  className="p-1 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100"
+                  disabled={isLoading || !query.trim() || isOnCooldown || promptCount >= 20}
+                  className={`p-1 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 ${
+                    isLoading || !query.trim() || isOnCooldown || promptCount >= 20
+                      ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  }`}
+                  title={isOnCooldown ? 'Please wait 30 seconds between messages' : promptCount >= 20 ? 'Prompt limit reached' : ''}
                 >
                   {isLoading ? (
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -325,30 +434,50 @@ function AskPageClient({ initialQuery }) {
               </div>
             </div>
             
-            {/* Quick suggestions */}
-            <div className="flex flex-wrap gap-2 mt-3">
-              <button
-                onClick={() => setQuery('Explain a concept')}
-                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-full transition-colors"
-                disabled={isLoading}
-              >
-                💡 Explain a concept
-              </button>
-              <button
-                onClick={() => setQuery('Help me with homework')}
-                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-full transition-colors"
-                disabled={isLoading}
-              >
-                📚 Help me with homework
-              </button>
-              <button
-                onClick={() => setQuery('Create a study plan')}
-                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-full transition-colors"
-                disabled={isLoading}
-              >
-                📅 Create a study plan
-              </button>
-            </div>
+            {/* Quick suggestions or limit reached message */}
+            {promptCount >= 20 ? (
+              <div className="flex flex-col items-center gap-3 mt-3">
+                <div className="text-center">
+                  <p className="text-red-600 font-medium mb-2">Session limit reached (20/20 prompts)</p>
+                  <p className="text-gray-600 text-sm mb-3">Start a new session or upgrade for unlimited prompts</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Start New Session
+                  </button>
+                  <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors">
+                    Upgrade Now
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2 mt-3">
+                <button
+                  onClick={() => setQuery('Explain a concept')}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-full transition-colors"
+                  disabled={isLoading || isOnCooldown}
+                >
+                  💡 Explain a concept
+                </button>
+                <button
+                  onClick={() => setQuery('Help me with homework')}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-full transition-colors"
+                  disabled={isLoading || isOnCooldown}
+                >
+                  📚 Help me with homework
+                </button>
+                <button
+                  onClick={() => setQuery('Create a study plan')}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-full transition-colors"
+                  disabled={isLoading || isOnCooldown}
+                >
+                  📅 Create a study plan
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
