@@ -153,56 +153,222 @@ function AskPageClient({ initialQuery }) {
     // Split by double line breaks for paragraphs, then by single line breaks
     const paragraphs = text.split(/\n\s*\n/).filter(Boolean);
     
-    return paragraphs.map((paragraph, pIndex) => (
-      <div key={pIndex} className={pIndex > 0 ? 'mt-2' : ''}>
-        {paragraph.split('\n').map((line, lIndex) => {
-          // Handle Markdown headers (## text)
-          if (/^##\s/.test(line)) {
+    return paragraphs.map((paragraph, pIndex) => {
+      // Check if this paragraph is a table
+      if (paragraph.includes('|') && paragraph.split('\n').some(line => line.includes('|'))) {
+        return renderTable(paragraph, pIndex);
+      }
+      
+      // Check if this paragraph contains definition lists (term: description pattern)
+      const lines = paragraph.split('\n');
+      const hasDefinitionPattern = lines.some(line => /^[A-Z][^:]*:\s/.test(line.trim()));
+      
+      if (hasDefinitionPattern) {
+        return renderDefinitionList(lines, pIndex);
+      }
+      
+      return (
+        <div key={pIndex} className={pIndex > 0 ? 'mt-4' : ''}>
+          {lines.map((line, lIndex) => {
+            // Handle different levels of Markdown headers
+            if (/^###\s/.test(line)) {
+              return (
+                <div key={lIndex} className="text-lg font-bold text-gray-900 mb-3 mt-4 border-l-4 border-blue-500 pl-3">
+                  {line.replace(/^###\s/, '')}
+                </div>
+              );
+            }
+            
+            if (/^##\s/.test(line)) {
+              return (
+                <div key={lIndex} className="text-xl font-bold text-gray-900 mb-3 mt-5 border-b border-gray-300 pb-2">
+                  {line.replace(/^##\s/, '')}
+                </div>
+              );
+            }
+            
+            if (/^#\s/.test(line)) {
+              return (
+                <div key={lIndex} className="text-2xl font-bold text-gray-900 mb-4 mt-6">
+                  {line.replace(/^#\s/, '')}
+                </div>
+              );
+            }
+            
+            // Handle numbered lists
+            if (/^\d+\.\s/.test(line)) {
+              return (
+                <div key={lIndex} className="mb-2 flex items-start">
+                  <span className="font-semibold text-blue-600 mr-2 text-sm min-w-[20px]">{line.match(/^\d+\./)[0]}</span>
+                  <span className="text-sm leading-relaxed">{line.replace(/^\d+\.\s/, '')}</span>
+                </div>
+              );
+            }
+            
+            // Handle bullet points
+            if (/^[\-\*\+]\s/.test(line)) {
+              return (
+                <div key={lIndex} className="mb-2 ml-4 flex items-start">
+                  <span className="text-blue-600 mr-2 text-sm font-bold">•</span>
+                  <span className="text-sm leading-relaxed">{line.replace(/^[\-\*\+]\s/, '')}</span>
+                </div>
+              );
+            }
+            
+            // Handle bold text **text**
+            if (line.includes('**')) {
+              const parts = line.split(/\*\*(.*?)\*\*/g);
+              return (
+                <div key={lIndex} className={`text-sm leading-relaxed ${lIndex > 0 ? 'mt-2' : ''}`}>
+                  {parts.map((part, partIndex) => 
+                    partIndex % 2 === 1 ? 
+                      <strong key={partIndex} className="font-semibold text-gray-900">{part}</strong> : 
+                      part
+                  )}
+                </div>
+              );
+            }
+            
+            // Handle horizontal rules (---)
+            if (/^---+$/.test(line.trim())) {
+              return (
+                <hr key={lIndex} className="my-4 border-gray-300" />
+              );
+            }
+            
+            // Handle lines that look like section headers (end with colon)
+            if (line.endsWith(':') && line.length < 80 && !line.includes('.')) {
+              return (
+                <div key={lIndex} className="font-semibold text-gray-900 mb-2 mt-3 text-sm">
+                  {line}
+                </div>
+              );
+            }
+            
+            // Handle empty lines
+            if (!line.trim()) {
+              return <div key={lIndex} className="h-2"></div>;
+            }
+            
+            // Regular lines
             return (
-              <div key={lIndex} className="text-base font-bold text-gray-900 mb-2 mt-3">
-                {line.replace(/^##\s/, '')}
-              </div>
-            );
-          }
-          
-          // Handle numbered lists
-          if (/^\d+\.\s/.test(line)) {
-            return (
-              <div key={lIndex} className="mb-1 flex items-start">
-                <span className="font-semibold text-purple-600 mr-1 text-sm">{line.match(/^\d+\./)[0]}</span>
-                <span className="text-sm leading-tight">{line.replace(/^\d+\.\s/, '')}</span>
-              </div>
-            );
-          }
-          
-          // Handle bullet points
-          if (/^[\-\*\+]\s/.test(line)) {
-            return (
-              <div key={lIndex} className="mb-1 ml-2 flex items-start">
-                <span className="text-purple-600 mr-1 text-sm font-bold">•</span>
-                <span className="text-sm leading-tight">{line.replace(/^[\-\*\+]\s/, '')}</span>
-              </div>
-            );
-          }
-          
-          // Handle headers (lines ending with colon or starting with uppercase and short)
-          if (line.endsWith(':') && line.length < 50) {
-            return (
-              <div key={lIndex} className="font-semibold text-gray-900 mb-1 mt-2 text-sm">
+              <div key={lIndex} className={`text-sm leading-relaxed text-gray-700 ${lIndex > 0 ? 'mt-1' : ''}`}>
                 {line}
               </div>
             );
-          }
-          
-          // Regular lines
-          return (
-            <div key={lIndex} className={`text-sm leading-tight ${lIndex > 0 ? 'mt-0.5' : ''}`}>
-              {line}
-            </div>
-          );
-        })}
+          })}
+        </div>
+      );
+    });
+  };
+
+  const renderTable = (tableText, pIndex) => {
+    const lines = tableText.split('\n').filter(line => line.trim());
+    const tableLines = lines.filter(line => line.includes('|'));
+    
+    if (tableLines.length === 0) return null;
+    
+    // Parse table header and rows
+    const headerLine = tableLines[0];
+    const headers = headerLine.split('|')
+      .map(cell => cell.trim())
+      .filter(cell => cell.length > 0);
+    
+    const dataLines = tableLines.slice(1).filter(line => !line.includes('---'));
+    const rows = dataLines.map(line => 
+      line.split('|')
+        .map(cell => cell.trim())
+        .filter(cell => cell.length > 0)
+    );
+    
+    return (
+      <div key={`table-${pIndex}`} className="my-4 overflow-x-auto">
+        <table className="min-w-full bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              {headers.map((header, index) => (
+                <th key={index} className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {rows.map((row, rowIndex) => (
+              <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                {row.map((cell, cellIndex) => (
+                  <td key={cellIndex} className="px-4 py-3 text-sm text-gray-700 border-r border-gray-200 last:border-r-0">
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    ));
+    );
+  };
+
+  const renderDefinitionList = (lines, pIndex) => {
+    const definitionItems = [];
+    let currentItem = null;
+    
+    lines.forEach((line, lineIndex) => {
+      const trimmedLine = line.trim();
+      
+      // Check if this line starts a new definition (Term: Description pattern)
+      if (/^[A-Z][^:]*:\s/.test(trimmedLine)) {
+        // Save previous item if exists
+        if (currentItem) {
+          definitionItems.push(currentItem);
+        }
+        
+        // Start new definition item
+        const colonIndex = trimmedLine.indexOf(':');
+        const term = trimmedLine.substring(0, colonIndex).trim();
+        const description = trimmedLine.substring(colonIndex + 1).trim();
+        
+        currentItem = {
+          term,
+          description: [description].filter(Boolean),
+          lineIndex
+        };
+      } else if (currentItem && trimmedLine) {
+        // Add continuation of description
+        currentItem.description.push(trimmedLine);
+      } else if (!trimmedLine && currentItem) {
+        // Empty line - finalize current item
+        definitionItems.push(currentItem);
+        currentItem = null;
+      }
+    });
+    
+    // Add the last item if exists
+    if (currentItem) {
+      definitionItems.push(currentItem);
+    }
+    
+    return (
+      <div key={`definition-list-${pIndex}`} className="my-4 space-y-3">
+        {definitionItems.map((item, itemIndex) => (
+          <div key={itemIndex} className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0 mt-1">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-900 text-sm mb-1">
+                  {item.term}
+                </div>
+                <div className="text-sm text-gray-700 leading-relaxed">
+                  {item.description.join(' ')}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
