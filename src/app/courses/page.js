@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-const CoursePage = () => {
+const CourseContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const slug = searchParams.get('slug');
@@ -38,41 +38,32 @@ const CoursePage = () => {
     );
   }
 
-  // // Display list of courses
-  // return (
-  //   <div className="p-8">
-  //     <div className="flex justify-between items-center mb-8">
-  //       <h1 className="text-2xl font-bold">Course-1</h1>
-  //       <button className="bg-gray-200 px-4 py-2 rounded-md">Upload</button>
-  //     </div>
-  //     <div className="flex gap-8 mb-8 border-b">
-  //       <button className="py-2 border-b-2 border-black">All</button>
-  //       <button className="py-2 text-gray-500">Document</button>
-  //       <button className="py-2 text-gray-500">Video</button>
-  //       <button className="py-2 text-gray-500">Audio</button>
-  //     </div>
-  //     <div className="space-y-4">
-  //       <Link href="/courses?slug=fundamentals-of-programming-i" className="block">
-  //         <div className="bg-gray-200 p-4 rounded-md flex justify-between items-center cursor-pointer">
-  //           <span>Fundamentals of Programming I</span>
-  //           <button>Test Your Skills</button>
-  //         </div>
-  //       </Link>
-  //       <Link href="/courses?slug=fundamentals-of-programming-ii" className="block">
-  //         <div className="bg-gray-200 p-4 rounded-md flex justify-between items-center cursor-pointer">
-  //           <span>Fundamentals of Programming II</span>
-  //           <button>Test Your Skills</button>
-  //         </div>
-  //       </Link>
-  //       <Link href="/courses?slug=fundamentals-of-programming-iii" className="block">
-  //         <div className="bg-gray-200 p-4 rounded-md flex justify-between items-center cursor-pointer">
-  //           <span>Fundamentals of Programming III</span>
-  //           <button>Test Your Skills</button>
-  //         </div>
-  //       </Link>
-  //     </div>
-  //   </div>
-  // );
+  // Default fallback - no slug provided
+  return (
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold">Courses</h1>
+        <button className="bg-gray-200 px-4 py-2 rounded-md">Upload</button>
+      </div>
+      <div className="flex gap-8 mb-8 border-b">
+        <button className="py-2 border-b-2 border-black">All</button>
+        <button className="py-2 text-gray-500">Document</button>
+        <button className="py-2 text-gray-500">Video</button>
+        <button className="py-2 text-gray-500">Audio</button>
+      </div>
+      <div className="space-y-4">
+        <p className="text-gray-500">No course selected. Please select a course from the home page.</p>
+      </div>
+    </div>
+  );
+};
+
+const CoursePage = () => {
+  return (
+    <Suspense fallback={<div className="p-8">Loading course...</div>}>
+      <CourseContent />
+    </Suspense>
+  );
 };
 
 export default CoursePage;
