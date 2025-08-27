@@ -7,6 +7,7 @@ function AskPageClient({ initialQuery }) {
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState([]); // Add conversation memory
   const initialQuerySent = useRef(false);
   const messagesEndRef = useRef(null);
 
@@ -14,6 +15,9 @@ function AskPageClient({ initialQuery }) {
     if (initialQuery && !initialQuerySent.current) {
       handleSend(initialQuery);
       initialQuerySent.current = true;
+      
+      // Clean up URL after processing initial query
+      window.history.replaceState({}, '', '/ask');
     }
   }, [initialQuery]);
 
@@ -31,6 +35,11 @@ function AskPageClient({ initialQuery }) {
 
     const userMessage = { text: currentQuery, sender: 'user' };
     setMessages((prev) => [...prev, userMessage]);
+    
+    // Update conversation history for context
+    const newConversationHistory = [...conversationHistory, userMessage];
+    setConversationHistory(newConversationHistory);
+    
     setQuery('');
     setIsLoading(true);
 
@@ -40,7 +49,10 @@ function AskPageClient({ initialQuery }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: currentQuery }),
+        body: JSON.stringify({ 
+          query: currentQuery,
+          conversationHistory: newConversationHistory.slice(-6) // Send last 6 messages for context
+        }),
       });
 
       if (!response.ok) {
@@ -50,6 +62,9 @@ function AskPageClient({ initialQuery }) {
       const data = await response.json();
       const aiResponse = { text: data.response, sender: 'ai' };
       setMessages((prev) => [...prev, aiResponse]);
+      
+      // Add AI response to conversation history
+      setConversationHistory(prev => [...prev, aiResponse]);
     } catch (error) {
       console.error('Error fetching AI response:', error);
       const errorMessage = { text: 'Sorry, I had trouble getting a response. Please try again.', sender: 'ai' };
