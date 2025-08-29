@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import jwt from 'jsonwebtoken';
+import CreateUserModal from '@/components/CreateUserModal';
 
 export default function AdminUserManagementPage() {
   const [users, setUsers] = useState([]);
@@ -15,6 +17,8 @@ export default function AdminUserManagementPage() {
     email: '',
     role: '',
   });
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [adminRole, setAdminRole] = useState('');
   const router = useRouter();
 
   const fetchUsers = useCallback(async () => {
@@ -25,6 +29,10 @@ export default function AdminUserManagementPage() {
       if (!token) {
         router.push('/admin/login');
         return;
+      }
+      const decodedToken = jwt.decode(token);
+      if (decodedToken && decodedToken.role) {
+        setAdminRole(decodedToken.role);
       }
 
       const res = await fetch('/api/admin/users', {
@@ -136,6 +144,51 @@ export default function AdminUserManagementPage() {
     }
   };
 
+  const handleCreateUser = async (userData) => {
+  setError('');
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      router.push('/admin/login');
+      return;
+    }
+
+    const res = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
+
+      let errorMsg = `Error: ${res.status} ${res.statusText}`;
+      try {
+        const data = await res.json();
+        if (data?.message) errorMsg = data.message;
+      } catch {
+        // response was not JSON
+      }
+
+      throw new Error(errorMsg);
+    }
+
+    await res.json();
+    setIsCreateUserModalOpen(false);
+    fetchUsers(); // Refresh the user list
+  } catch (err) {
+    setError(err.message);
+    console.error('Failed to create user:', err);
+  }
+};
+
+
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.surname.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -152,118 +205,139 @@ export default function AdminUserManagementPage() {
   }
 
   return (
-    <div className="min-h-screen p-8 bg-gray-100">
-      <h1 className="mb-6 text-3xl font-bold">User Management</h1>
+    <>
+      <div className="min-h-screen p-8 bg-gray-100">
+        <h1 className="mb-6 text-3xl font-bold">User Management</h1>
 
-      <div className="p-6 bg-white rounded-lg shadow-md">
-        <h2 className="mb-4 text-2xl font-semibold">All Users</h2>
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
-            <thead>
-              <tr>
-                <th className="px-4 py-2 text-left border-b">Name</th>
-                <th className="px-4 py-2 text-left border-b">Surname</th>
-                <th className="px-4 py-2 text-left border-b">Email</th>
-                <th className="px-4 py-2 text-left border-b">Role</th>
-                <th className="px-4 py-2 text-left border-b">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map(user => (
-                <tr key={user._id}>
-                  {editingUser === user._id ? (
-                    <>
-                      <td className="px-4 py-2 border-b">
-                        <input
-                          type="text"
-                          name="name"
-                          value={editFormData.name}
-                          onChange={handleEditFormChange}
-                          className="w-full p-1 border rounded"
-                        />
-                      </td>
-                      <td className="px-4 py-2 border-b">
-                        <input
-                          type="text"
-                          name="surname"
-                          value={editFormData.surname}
-                          onChange={handleEditFormChange}
-                          className="w-full p-1 border rounded"
-                        />
-                      </td>
-                      <td className="px-4 py-2 border-b">
-                        <input
-                          type="email"
-                          name="email"
-                          value={editFormData.email}
-                          onChange={handleEditFormChange}
-                          className="w-full p-1 border rounded"
-                        />
-                      </td>
-                      <td className="px-4 py-2 border-b">
-                        <select
-                          name="role"
-                          value={editFormData.role}
-                          onChange={handleEditFormChange}
-                          className="w-full p-1 border rounded"
-                        >
-                          <option value="student">Student</option>
-                          <option value="instructor">Instructor</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                      </td>
-                      <td className="px-4 py-2 border-b">
-                        <button
-                          onClick={() => handleSaveEdit(user._id)}
-                          className="px-2 py-1 mr-2 text-xs font-bold text-white bg-green-500 rounded hover:bg-green-700"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingUser(null)}
-                          className="px-2 py-1 text-xs font-bold text-white bg-gray-500 rounded hover:bg-gray-700"
-                        >
-                          Cancel
-                        </button>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-4 py-2 border-b">{user.name}</td>
-                      <td className="px-4 py-2 border-b">{user.surname}</td>
-                      <td className="px-4 py-2 border-b">{user.email}</td>
-                      <td className="px-4 py-2 border-b">{user.role}</td>
-                      <td className="px-4 py-2 border-b">
-                        <button
-                          onClick={() => handleEditClick(user)}
-                          className="mr-2 text-blue-500 hover:underline"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(user._id)}
-                          className="text-red-500 hover:underline"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </>
-                  )}
+        <div className="p-6 bg-white rounded-lg shadow-md">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">All Users</h2>
+            <button
+              onClick={() => setIsCreateUserModalOpen(true)}
+              className="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700"
+            >
+              Add User
+            </button>
+          </div>
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 text-left border-b">Name</th>
+                  <th className="px-4 py-2 text-left border-b">Surname</th>
+                  <th className="px-4 py-2 text-left border-b">Email</th>
+                  <th className="px-4 py-2 text-left border-b">Role</th>
+                  <th className="px-4 py-2 text-left border-b">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredUsers.map(user => (
+                  <tr key={user._id}>
+                    {editingUser === user._id ? (
+                      <>
+                        <td className="px-4 py-2 border-b">
+                          <input
+                            type="text"
+                            name="name"
+                            value={editFormData.name}
+                            onChange={handleEditFormChange}
+                            className="w-full p-1 border rounded"
+                          />
+                        </td>
+                        <td className="px-4 py-2 border-b">
+                          <input
+                            type="text"
+                            name="surname"
+                            value={editFormData.surname}
+                            onChange={handleEditFormChange}
+                            className="w-full p-1 border rounded"
+                          />
+                        </td>
+                        <td className="px-4 py-2 border-b">
+                          <input
+                            type="email"
+                            name="email"
+                            value={editFormData.email}
+                            onChange={handleEditFormChange}
+                            className="w-full p-1 border rounded"
+                          />
+                        </td>
+                        <td className="px-4 py-2 border-b">
+                          <select
+                            name="role"
+                            value={editFormData.role}
+                            onChange={handleEditFormChange}
+                            className="w-full p-1 border rounded"
+                          >
+                            <option value="student">Student</option>
+                            <option value="instructor">Instructor</option>
+                            <option value="admin">Admin</option>
+                            {adminRole === 'super admin' && (
+                              <option value="super admin">Super Admin</option>
+                            )}
+                          </select>
+                        </td>
+                        <td className="px-4 py-2 border-b">
+                          <button
+                            onClick={() => handleSaveEdit(user._id)}
+                            className="px-2 py-1 mr-2 text-xs font-bold text-white bg-green-500 rounded hover:bg-green-700"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingUser(null)}
+                            className="px-2 py-1 text-xs font-bold text-white bg-gray-500 rounded hover:bg-gray-700"
+                          >
+                            Cancel
+                          </button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-4 py-2 border-b">{user.name}</td>
+                        <td className="px-4 py-2 border-b">{user.surname}</td>
+                        <td className="px-4 py-2 border-b">{user.email}</td>
+                        <td className="px-4 py-2 border-b">{user.role}</td>
+                        <td className="px-4 py-2 border-b">
+                          <button
+                            onClick={() => handleEditClick(user)}
+                            className="mr-2 text-blue-500 hover:underline"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user._id)}
+                            className="text-red-500 hover:underline"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
+      {isCreateUserModalOpen && (
+        <CreateUserModal
+          isOpen={isCreateUserModalOpen}
+          onClose={() => setIsCreateUserModalOpen(false)}
+          onCreateUser={handleCreateUser}
+          adminRole={adminRole}
+        />
+      )}
+    </>
   );
 }

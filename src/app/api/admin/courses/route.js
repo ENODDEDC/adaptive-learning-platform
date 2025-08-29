@@ -12,7 +12,7 @@ const verifyAdminToken = (req) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role === 'admin') {
+    if (decoded.role === 'admin' || decoded.role === 'super admin') {
       return decoded.id;
     }
     return null;

@@ -16,7 +16,7 @@ export async function POST(req) {
   try {
     const user = await User.findOne({ email });
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'super admin')) {
       return NextResponse.json({ message: 'Invalid credentials or not an admin' }, { status: 401 });
     }
 
