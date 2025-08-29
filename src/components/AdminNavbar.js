@@ -92,7 +92,8 @@ export default function AdminNavbar({ toggleSidebar }) {
                   <button
                     onClick={() => {
                       localStorage.removeItem('adminToken');
-                      window.location.href = '/admin/login';
+                      document.cookie = 'token=; Max-Age=0; path=/;'; // Clear the cookie
+                      window.location.href = '/admin/login'; // Using window.location.href for full page reload
                     }}
                     className={classNames(
                       active ? 'bg-gray-100' : '',
