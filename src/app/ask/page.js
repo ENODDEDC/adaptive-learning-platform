@@ -663,10 +663,15 @@ const SparklesIcon = (props) => (
   />
 );
 
-export default function AskPage() {
+// Component that uses useSearchParams - must be inside Suspense
+function SearchParamsWrapper() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
+  
+  return <AskPageClient initialQuery={initialQuery} />;
+}
 
+export default function AskPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center h-full bg-gray-900 text-white">
@@ -676,7 +681,7 @@ export default function AskPage() {
         </div>
       </div>
     }>
-      <AskPageClient initialQuery={initialQuery} />
+      <SearchParamsWrapper />
     </Suspense>
   );
 }
