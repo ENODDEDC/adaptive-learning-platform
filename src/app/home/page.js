@@ -80,7 +80,9 @@ export default function Home({ userName }) { // Accept userName as prop
   };
 
   const handleSubmit = () => {
-    if (selectedMode === 'Text to Docs' && promptText.trim()) {
+    if (selectedMode === 'Ask' && promptText.trim()) {
+      router.push(`/ask?q=${encodeURIComponent(promptText)}`);
+    } else if (selectedMode === 'Text to Docs' && promptText.trim()) {
       // Navigate to text-to-docs with the prompt as a URL parameter
       router.push(`/text-to-docs?prompt=${encodeURIComponent(promptText)}`);
     }
@@ -288,21 +290,12 @@ export default function Home({ userName }) { // Accept userName as prop
 }
 
 const SparklesIcon = (props) => (
-<svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" {...props}>
-<mask id="mask0_171_151" style={{maskType:'alpha'}} maskUnits="userSpaceOnUse" x="0" y="0" width="42" height="42">
-<circle cx="21" cy="21" r="21" fill="white"/>
-</mask>
-<g mask="url(#mask0_171_151)">
-<circle cx="21" cy="21" r="21" fill="white"/>
-<rect x="5.88" y="3.15564" width="26.7393" height="38.8443" fill="url(#pattern0_171_151)"/>
-</g>
-<defs>
-<pattern id="pattern0_171_151" patternContentUnits="objectBoundingBox" width="1" height="1">
-<use xlinkHref="#image0_171_151" transform="scale(0.00675676 0.00465116)"/>
-</pattern>
-<image id="image0_171_151" width="148" height="215" preserveAspectRatio="none" xlinkHref="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJQAAADXCAYAAAD88HgWAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAORSURBVHhe7dyxixxlAIfh71QIWuQaQwo9WwuRgxAMaG0pIvYKsUhhJRLQylpLFSwES4n/R4goIhwxoI3gjohiglzE4oq49nPVee8luZ3ngW1+s+XLfDA77NZ6vV4PiDwyH+A4BEVKUKQERUpQpARFSlCkBEVKUKQERUpQpARFSlCkBEVKUKQERUpQpARFSlCkBEVKUKQERUpQpARFSlCkBEVKUKQERUpQpARFSlCkBEVKUKQERUpQpARFSlCktpb6L8A3b/0z9u/+O58fmOefe3xsn31sPp86iw1q99LeWE0H8/mB2ft2dzzz9Jn5fOo48kgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmK1GJfsHv/g1/G/v69+Xxk03Qwrn/993w+sk15wW6xQVW+/Or2ePudn+fzkW1KUI48UoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUosN6sLFq+Pc+cvj3PnL80scw2KD4mQIipSgjml7+9Gxs3Pm2J9Nsdg3Ni9cvDqm6c4YY4w///hifpn/yR2KlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipTf8sYYL7347PzyfffJx2+NnZ0n5/OpI6iHxPfffbQRQTnySC32DjVNt+fTfffGm5+OH26txtigO9Rig3oYvPrah+PGjZ/G2KCgHHmkBEVKUKQERUpQpARFarGPDV55/cex+vVgPmf2vtmdT4ds4mODxQa1e2lvrKaTC+qv316YT4dsYlCOPFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIiUoUoIiJShSgiIlKFKCIrW1Xq/X83EJPvv897F/9958zrz37lPz6ZBr166P1XRnjDHGlSsvj+2zT8y/cuosNihOhiOPlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYqUoEgJipSgSAmKlKBICYrUfzBLotLFhVAoAAAAAElFTkSuQmCC"/>
-</defs>
-</svg>
+  <img 
+    src="/platform_icon.png" 
+    alt="Intelevo AI" 
+    className="w-10 h-10 object-cover rounded-full"
+    {...props}
+  />
 );
 
 const ChevronDownIcon = (props) => (

@@ -15,6 +15,9 @@ export default function TextToDocsClient() {
       setPrompt(urlPrompt);
       // Automatically generate document when coming from home page
       generateDocumentFromPrompt(urlPrompt);
+      
+      // Clean up URL after processing initial prompt
+      window.history.replaceState({}, '', '/text-to-docs');
     }
   }, [searchParams]);
 
