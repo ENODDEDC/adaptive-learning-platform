@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 
 function AskPageClient({ initialQuery }) {
   const [query, setQuery] = useState('');
@@ -421,7 +422,7 @@ function AskPageClient({ initialQuery }) {
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to Intelevo AI</h3>
-                <p className="text-gray-500 max-w-md mx-auto text-center">Start a conversation by asking me anything. I'm here to help!</p>
+                <p className="text-gray-500 max-w-md mx-auto text-center">Start a conversation by asking me anything. I&apos;m here to help!</p>
               </div>
             )}
             
@@ -652,18 +653,25 @@ function AskPageClient({ initialQuery }) {
 }
 
 const SparklesIcon = (props) => (
-  <img 
+  <Image 
     src="/platform_icon.png" 
     alt="Intelevo AI" 
+    width={32}
+    height={32}
     className="w-8 h-8 object-cover rounded-full"
     {...props}
   />
 );
 
-export default function AskPage() {
+// Component that uses useSearchParams - must be inside Suspense
+function SearchParamsWrapper() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
+  
+  return <AskPageClient initialQuery={initialQuery} />;
+}
 
+export default function AskPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center h-full bg-gray-900 text-white">
@@ -673,7 +681,7 @@ export default function AskPage() {
         </div>
       </div>
     }>
-      <AskPageClient initialQuery={initialQuery} />
+      <SearchParamsWrapper />
     </Suspense>
   );
 }

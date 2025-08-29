@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link'; // Import Link
+import Image from 'next/image';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -290,9 +291,11 @@ export default function Home({ userName }) { // Accept userName as prop
 }
 
 const SparklesIcon = (props) => (
-  <img 
+  <Image 
     src="/platform_icon.png" 
     alt="Intelevo AI" 
+    width={40}
+    height={40}
     className="w-10 h-10 object-cover rounded-full"
     {...props}
   />
