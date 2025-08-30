@@ -285,7 +285,7 @@ const CourseDetailPage = ({ params }) => {
               </svg>
             </div>
             <h4 className="font-semibold text-gray-900 mb-2">No Recent Activity</h4>
-            <p className="text-sm text-gray-500 leading-relaxed">You don't have any recent activity to show here.</p>
+            <p className="text-sm text-gray-500 leading-relaxed">You don&apos;t have any recent activity to show here.</p>
           </div>
         </div>
       </div>
