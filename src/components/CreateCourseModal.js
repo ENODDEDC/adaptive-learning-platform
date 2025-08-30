@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useLayout } from '../context/LayoutContext';
 
 const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
+  const { refreshCourses } = useLayout();
   const [subject, setSubject] = useState('');
   const [section, setSection] = useState('');
   const [coverColor, setCoverColor] = useState('#60a5fa'); // Default blue
@@ -20,6 +22,7 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
     e.preventDefault();
     onCreateCourse({ subject, section, teacherName: adminName, coverColor });
     onClose(); // Close modal after submission
+    refreshCourses(); // Refresh courses on the home page
     // Reset form fields
     setSubject('');
     setSection('');

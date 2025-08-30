@@ -9,12 +9,15 @@ export const useLayout = () => useContext(LayoutContext);
 export const LayoutProvider = ({ children }) => {
   const [isCreateCourseModalOpen, setIsCreateCourseModalOpen] = useState(false);
   const [isJoinCourseModalOpen, setIsJoinCourseModalOpen] = useState(false);
+  const [shouldRefreshCourses, setShouldRefreshCourses] = useState(false);
 
   const openCreateCourseModal = () => setIsCreateCourseModalOpen(true);
   const closeCreateCourseModal = () => setIsCreateCourseModalOpen(false);
 
   const openJoinCourseModal = () => setIsJoinCourseModalOpen(true);
   const closeJoinCourseModal = () => setIsJoinCourseModalOpen(false);
+
+  const refreshCourses = () => setShouldRefreshCourses(prev => !prev);
 
   return (
     <LayoutContext.Provider
@@ -25,6 +28,8 @@ export const LayoutProvider = ({ children }) => {
         isJoinCourseModalOpen,
         openJoinCourseModal,
         closeJoinCourseModal,
+        shouldRefreshCourses,
+        refreshCourses,
       }}
     >
       {children}

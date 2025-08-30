@@ -30,6 +30,10 @@ const courseSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'User',
   }],
+  coTeachers: [{
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  }],
 }, { timestamps: true });
 
 const Course = mongoose.models.Course || mongoose.model('Course', courseSchema);
