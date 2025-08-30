@@ -36,70 +36,139 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
 
   return (
     <aside
-      className={`bg-gray-100 border-r border-gray-200 fixed top-0 left-0 h-full z-30 flex flex-col p-6 transition-all duration-300 ${isCollapsed ? 'w-20 items-center' : 'w-64'}`}
+      className={`bg-white border-r border-gray-200 fixed top-0 left-0 h-full z-30 flex flex-col shadow-sm transition-all duration-300 ${isCollapsed ? 'w-20 items-center' : 'w-64'}`}
     >
-      {/* Hamburger toggle always at the top */}
-      <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} mb-8 w-full`}>
-        <button onClick={toggleSidebar} className="p-1 rounded hover:bg-gray-200">
-          <Bars3Icon className="w-6 h-6 text-gray-700" />
-        </button>
+      {/* Header Section */}
+      <div className={`${isCollapsed ? 'p-4' : 'p-6'} border-b border-gray-100`}>
+        {/* Hamburger toggle */}
+        <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} mb-4`}>
+          <button 
+            onClick={toggleSidebar} 
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+          >
+            <Bars3Icon className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+
+        {/* User profile section - only when expanded */}
+        {!isCollapsed && (
+          <div className="relative">
+            <button
+              onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+              className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all duration-200 border border-gray-200"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                  <span className="text-white font-semibold text-sm">U1</span>
+                </div>
+                <div className="text-left">
+                  <div className="text-gray-900 font-semibold text-sm">User123</div>
+                  <div className="text-gray-500 text-xs">Student</div>
+                </div>
+              </div>
+              <ChevronDownIcon
+                className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isUserDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {isUserDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                <div className="py-2">
+                  <button className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-gray-300"></div>
+                      Profile
+                    </div>
+                  </button>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-red-300"></div>
+                      Sign Out
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Collapsed user avatar */}
+        {isCollapsed && (
+          <div className="flex justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-sm">
+              <span className="text-white font-semibold text-sm">U1</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* User dropdown only when expanded */}
-      {!isCollapsed && (
-        <div className="relative mb-8 w-full">
-          <button
-            onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-            className="w-full flex items-center justify-between p-3 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gray-400 rounded-full"></div>
-              <span className="text-gray-800 font-semibold">User123</span>
-            </div>
-            <ChevronDownIcon
-              className={`w-5 h-5 text-gray-500 transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-
-          {isUserDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <div className="py-2">
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                  Profile
-                </button>
-                <button
-                  onClick={handleSignOut}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Navigation links */}
-      <nav className="flex-1 w-full">
-        <ul className="space-y-2">
+      {/* Navigation Section */}
+      <nav className={`flex-1 ${isCollapsed ? 'p-2' : 'p-6'} pt-6`}>
+        {!isCollapsed && (
+          <div className="mb-6">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3">Navigation</h3>
+          </div>
+        )}
+        
+        <ul className="space-y-1">
           {links.map(link => {
             const IconComponent = getIconForLink(link.label);
+            const isActive = pathname === link.href;
             return (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`flex items-center rounded-lg text-base font-medium transition-colors ${pathname === link.href
-                    ? 'bg-gray-200 text-gray-900'
-                    : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-                    } ${isCollapsed ? 'justify-center p-2' : 'gap-3 px-4 py-3'}`}
+                  className={`group flex items-center rounded-xl font-medium transition-all duration-200 relative ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-200'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  } ${
+                    isCollapsed ? 'justify-center p-3 mx-1' : 'gap-3 px-4 py-3 mx-1'
+                  }`}
                 >
-                  {IconComponent && <IconComponent className="flex-shrink-0 w-6 h-6 md:w-7 md:h-7 text-gray-700" />}
-                  {!isCollapsed && <span>{link.label}</span>}
+                  {isActive && !isCollapsed && (
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-r-full"></div>
+                  )}
+                  {IconComponent && (
+                    <IconComponent 
+                      className={`flex-shrink-0 w-5 h-5 transition-colors ${
+                        isActive ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-700'
+                      }`} 
+                    />
+                  )}
+                  {!isCollapsed && (
+                    <span className="text-sm font-medium">{link.label}</span>
+                  )}
+                  {isCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+                      {link.label}
+                    </div>
+                  )}
                 </Link>
               </li>
             );
           })}
         </ul>
+        
+        {/* Footer section */}
+        {!isCollapsed && (
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <div className="px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span className="text-blue-600 text-xs font-bold">AI</span>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-blue-900">Intelevo AI</div>
+                  <div className="text-xs text-blue-600">Your learning assistant</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
     </aside>
   );

@@ -78,7 +78,7 @@ const Layout = ({ children }) => {
 
   if (isAdminPage) {
     const sidebarState = isSidebarCollapsed;
-    const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-56';
+    const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-64';
     return (
       <div className="min-h-screen bg-gray-100">
         <AdminSidebar isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
@@ -94,7 +94,7 @@ const Layout = ({ children }) => {
 
   // Prevent hydration mismatch by using consistent initial state
   const sidebarState = isSidebarCollapsed;
-  const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-56';
+  const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-64';
 
   return (
     <div className="min-h-screen bg-base-light">
