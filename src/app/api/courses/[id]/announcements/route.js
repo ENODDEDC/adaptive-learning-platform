@@ -11,7 +11,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: courseId } = params;
+    const { id: courseId } = await params;
     const { content } = await request.json();
 
     await connectMongoDB();
@@ -46,7 +46,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: courseId } = params;
+    const { id: courseId } = await params;
     await connectMongoDB();
 
     const course = await Course.findById(courseId);

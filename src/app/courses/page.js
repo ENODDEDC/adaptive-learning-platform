@@ -199,7 +199,7 @@ const CourseContent = () => {
           </div>
         ) : (
           courses.map((course) => (
-            <Link key={course.id} href={`/courses?slug=${course.title.toLowerCase().replace(/\s+/g, '-')}`} className="block group">
+            <Link key={course.id} href={`/courses/${course.id}`} className="block group">
               <div className="flex flex-col overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-gray-300 transition-all duration-300 cursor-pointer transform hover:-translate-y-1">
                 <div className={`h-32 relative p-5 flex flex-col justify-between ${course.color} bg-gradient-to-br from-current to-opacity-90`}>
                   <div className="flex items-start justify-between">
