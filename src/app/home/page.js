@@ -251,7 +251,7 @@ export default function Home({ userName }) { // Accept userName as prop
              <div className="overflow-hidden">
                <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                  {getVisibleCourses().map((course) => (
-                   <Link key={course.id} href={`/courses?slug=${course.title.toLowerCase().replace(/\s+/g, '-')}`} className="block">
+                   <Link key={course.id} href={`/courses/${course.title.toLowerCase().replace(/\s+/g, '-')}`} className="block">
                      <div className="flex flex-col overflow-hidden bg-white shadow-md rounded-2xl cursor-pointer">
                        <div className={`h-40 relative p-6 flex flex-col justify-between ${course.color}`}>
                          <div className="flex items-start justify-between">
