@@ -95,9 +95,14 @@ const Layout = ({ children }) => {
   // Prevent hydration mismatch by using consistent initial state
   const sidebarState = isSidebarCollapsed;
   const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-64';
+  
+  // Determine if current page needs scrolling
+  const needsScrolling = pathname === '/text-to-docs';
+  const containerOverflow = needsScrolling ? 'overflow-hidden' : 'overflow-hidden';
+  const contentOverflow = needsScrolling ? 'overflow-y-auto' : 'overflow-hidden';
 
   return (
-    <div className="min-h-screen bg-base-light">
+    <div className="h-screen bg-base-light overflow-hidden">
       <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
@@ -160,8 +165,8 @@ const Layout = ({ children }) => {
           }
         }}
       />
-      <div className={`transition-all duration-300 ease-in-out ${mainContentMargin}`}>
-        <main className="p-8 transition-all duration-300 ease-in-out">{children}</main>
+      <div className={`transition-all duration-300 ease-in-out ${mainContentMargin} h-screen ${containerOverflow}`}>
+        <main className={`h-full ${contentOverflow}`}>{children}</main>
       </div>
     </div>
   );

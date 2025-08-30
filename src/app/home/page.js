@@ -127,9 +127,9 @@ export default function Home({ userName }) {
   }
 
   return (
-    <div className="flex-1 p-8 bg-gray-50 min-h-screen">
+    <div className="h-full bg-gray-50 p-8 overflow-y-auto">
       {/* Welcome Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mx-4 mt-4 mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -152,7 +152,7 @@ export default function Home({ userName }) {
       </div>
 
       {/* AI Assistant */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mx-4 mb-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Assistant</h3>
         
         <textarea
@@ -228,7 +228,7 @@ export default function Home({ userName }) {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 mx-4">
         {/* Courses Section */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">

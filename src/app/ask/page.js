@@ -373,42 +373,41 @@ function AskPageClient({ initialQuery }) {
   };
 
   return (
-    <div className="p-4">
-      <div className="flex flex-col bg-gradient-to-br from-slate-50 to-gray-100 rounded-lg shadow-lg overflow-hidden" style={{height: 'calc(100vh - 96px)'}}>
+    <div className="h-full bg-gray-50 p-8 overflow-hidden">
+      <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 h-full">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 shadow-sm px-6 flex-shrink-0">
-          <div className="max-w-4xl mx-auto py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
-                  <SparklesIcon className="w-8 h-8" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-semibold text-gray-900">Intelevo AI</h1>
-                </div>
+        <div className="bg-white rounded-t-2xl border-b border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                <SparklesIcon className="w-7 h-7" />
               </div>
-              
-              {/* Session Counter Badge */}
-              <div className="flex items-center space-x-2">
-                <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  promptCount >= 18 ? 'bg-red-100 text-red-700' : 
-                  promptCount >= 15 ? 'bg-yellow-100 text-yellow-700' : 
-                  'bg-blue-100 text-blue-700'
-                }`}>
-                  {promptCount}/20 prompts
-                </div>
-                <button className="text-xs bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1 rounded-full hover:from-purple-700 hover:to-blue-700 transition-colors">
-                  Upgrade for Unlimited
-                </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">AI Assistant</h1>
+                <p className="text-sm text-gray-500">Ask me anything about your studies</p>
               </div>
+            </div>
+            
+            {/* Session Counter Badge */}
+            <div className="flex items-center space-x-2">
+              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                promptCount >= 18 ? 'bg-red-100 text-red-700' : 
+                promptCount >= 15 ? 'bg-yellow-100 text-yellow-700' : 
+                'bg-blue-100 text-blue-700'
+              }`}>
+                {promptCount}/20 prompts
+              </div>
+              <button className="text-xs bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1 rounded-full hover:from-purple-700 hover:to-blue-700 transition-colors">
+                Upgrade for Unlimited
+              </button>
             </div>
           </div>
         </div>
 
         {/* Chat Messages Container */}
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden bg-gray-50">
           <div 
-            className="h-full px-6 overflow-y-auto" 
+            className="h-full px-6 py-4 overflow-y-auto" 
             style={{
               scrollbarWidth: 'thin',
               scrollbarColor: '#D1D5DB #F3F4F6'
@@ -421,13 +420,13 @@ function AskPageClient({ initialQuery }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to Intelevo AI</h3>
-                <p className="text-gray-500 max-w-md mx-auto text-center">Start a conversation by asking me anything. I&apos;m here to help!</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to AI Assistant</h3>
+                <p className="text-gray-500 max-w-md mx-auto text-center">Start a conversation by asking me anything. I&apos;m here to help with your studies!</p>
               </div>
             )}
             
             {messages.length > 0 && (
-              <div className="h-full flex flex-col max-w-4xl mx-auto">
+              <div className="h-full flex flex-col max-w-6xl mx-auto">
                 <div className="flex-1 space-y-3 py-4">
                   {messages.map((msg, index) => (
                     <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -507,7 +506,7 @@ function AskPageClient({ initialQuery }) {
             )}
 
             {!messages.length && isLoading && (
-              <div className="h-full flex flex-col max-w-4xl mx-auto">
+              <div className="h-full flex flex-col max-w-6xl mx-auto">
                 <div className="flex-1 space-y-3 py-4">
                   <div className="flex justify-start">
                     <div className="flex">
@@ -537,8 +536,8 @@ function AskPageClient({ initialQuery }) {
         </div>
 
         {/* Fixed Input Area at Bottom */}
-        <div className="border-t border-gray-200/50 px-6 py-4 flex-shrink-0 bg-transparent backdrop-blur-sm relative">
-          <div className="max-w-4xl mx-auto">
+        <div className="border-t border-gray-200 px-6 py-4 flex-shrink-0 bg-white rounded-b-2xl relative">
+          <div className="max-w-6xl mx-auto">
             {/* Toast Notification */}
             {toast.show && (
               <div className={`absolute bottom-full right-0 mb-2 px-4 py-2 rounded-lg shadow-lg text-sm font-medium z-10 animate-pulse ${
@@ -653,14 +652,9 @@ function AskPageClient({ initialQuery }) {
 }
 
 const SparklesIcon = (props) => (
-  <Image 
-    src="/platform_icon.png" 
-    alt="Intelevo AI" 
-    width={32}
-    height={32}
-    className="w-8 h-8 object-cover rounded-full"
-    {...props}
-  />
+  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+  </svg>
 );
 
 // Component that uses useSearchParams - must be inside Suspense

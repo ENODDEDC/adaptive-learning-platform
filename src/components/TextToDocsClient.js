@@ -308,7 +308,7 @@ export default function TextToDocsClient() {
   // Show loading state
   if (isGenerating) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="h-full bg-gray-50 p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Generating Document...</h2>
@@ -323,7 +323,7 @@ export default function TextToDocsClient() {
     const pages = splitContentIntoPages(generatedContent);
     
     return (
-      <div className="bg-gray-300 overflow-y-auto" style={{ margin: 0, padding: 0 }}>
+      <div className="h-full bg-gray-300 overflow-y-auto" style={{ margin: 0, padding: 0 }}>
 
         {/* Multiple Pages Layout */}
         <div className="max-w-4xl mx-auto space-y-8 pt-16">
@@ -399,7 +399,8 @@ export default function TextToDocsClient() {
 
   // Show form when no content is generated (fallback)
   return (
-      <div className="max-w-4xl mx-auto p-6">
+    <div className="h-full bg-gray-50 p-8 overflow-y-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-6">Text to Docs</h1>
           <p className="text-gray-600 mb-8">
@@ -438,5 +439,6 @@ export default function TextToDocsClient() {
           </div>
         </div>
       </div>
+    </div>
   );
 }
