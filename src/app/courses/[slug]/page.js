@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
+import CreateClassworkModal from '@/components/CreateClassworkModal';
 
 const CourseDetailPage = ({ params }) => {
   const { slug } = React.use(params); // slug is now courseId
@@ -13,6 +14,11 @@ const CourseDetailPage = ({ params }) => {
   const [newAnnouncementContent, setNewAnnouncementContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [assignments, setAssignments] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [isCreateClassworkModalOpen, setIsCreateClassworkModalOpen] = useState(false);
+  const [editingClasswork, setEditingClasswork] = useState(null);
 
   const fetchCourseDetails = useCallback(async () => {
     setLoading(true);
@@ -122,6 +128,70 @@ const CourseDetailPage = ({ params }) => {
     setExpandedActivities({});
   }, [activeTab]);
 
+  const fetchAssignments = useCallback(async () => {
+    if (!courseDetails) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('User not authenticated.');
+        return;
+      }
+
+      const res = await fetch(`/api/courses/${courseDetails._id}/classwork`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      setAssignments(data.classwork);
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to fetch assignments:', err);
+    }
+  }, [courseDetails]);
+
+  const fetchPeople = useCallback(async () => {
+    if (!courseDetails) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('User not authenticated.');
+        return;
+      }
+
+      const res = await fetch(`/api/courses/${courseDetails._id}/people`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      setTeachers(data.coTeachers ? [courseDetails.createdBy, ...data.coTeachers] : [courseDetails.createdBy]);
+      setStudents(data.enrolledUsers || []);
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to fetch people:', err);
+    }
+  }, [courseDetails]);
+
+  useEffect(() => {
+    if (courseDetails) {
+      fetchAssignments();
+      fetchPeople();
+    }
+  }, [courseDetails, fetchAssignments, fetchPeople]);
+
   // Toggle activity expansion
   const toggleActivityExpansion = (activityId) => {
     setExpandedActivities(prev => ({
@@ -171,7 +241,7 @@ const CourseDetailPage = ({ params }) => {
           <h2 className="mb-6 text-lg font-semibold text-gray-900">Course Modules</h2>
           <div className="space-y-4">
             {/* Module 1 */}
-            <div className="flex items-center gap-4 p-3 transition-colors rounded-lg hover:bg-gray-50">
+            <div key="module-1" className="flex items-center gap-4 p-3 transition-colors rounded-lg hover:bg-gray-50">
               <div className="flex flex-col items-center">
                 <div className="w-4 h-4 bg-blue-600 rounded-full"></div>
                 <div className="w-0.5 h-8 bg-gray-300 mt-1"></div>
@@ -180,7 +250,7 @@ const CourseDetailPage = ({ params }) => {
             </div>
             
             {/* Module 2 */}
-            <div className="flex items-center gap-4 p-3 transition-colors rounded-lg hover:bg-gray-50">
+            <div key="module-2" className="flex items-center gap-4 p-3 transition-colors rounded-lg hover:bg-gray-50">
               <div className="flex flex-col items-center">
                 <div className="w-4 h-4 bg-blue-600 rounded-full"></div>
                 <div className="w-0.5 h-8 bg-gray-300 mt-1"></div>
@@ -189,7 +259,7 @@ const CourseDetailPage = ({ params }) => {
             </div>
             
             {/* Module 3 - Current */}
-            <div className="flex items-center gap-4 p-3 border border-blue-200 rounded-lg bg-blue-50">
+            <div key="module-3" className="flex items-center gap-4 p-3 border border-blue-200 rounded-lg bg-blue-50">
               <div className="flex flex-col items-center">
                 <div className="w-4 h-4 bg-blue-600 rounded-full ring-2 ring-blue-200"></div>
               </div>
@@ -405,14 +475,11 @@ const CourseDetailPage = ({ params }) => {
               {isInstructor && (
                 <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
                   <h2 className="mb-4 text-2xl font-bold text-gray-900">Manage Classwork</h2>
-                  <button className="px-4 py-2 mb-4 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700">
-                    Create New Assignment
-                  </button>
-                  <button className="px-4 py-2 mb-4 ml-2 text-sm font-medium text-white transition-colors bg-green-600 rounded-lg hover:bg-green-700">
-                    Create New Quiz
-                  </button>
-                  <button className="px-4 py-2 mb-4 ml-2 text-sm font-medium text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700">
-                    Add New Material
+                  <button
+                    onClick={() => { setEditingClasswork(null); setIsCreateClassworkModalOpen(true); }}
+                    className="px-4 py-2 mb-4 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
+                  >
+                    Create New Classwork
                   </button>
                 </div>
               )}
@@ -421,46 +488,34 @@ const CourseDetailPage = ({ params }) => {
               <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
                 <h2 className="mb-4 text-2xl font-bold text-gray-900">Assignments</h2>
                 <div className="space-y-4">
-                  {/* Assignment Card */}
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Homework 1: Introduction to Algorithms</h3>
-                      <p className="text-sm text-gray-600">Due: Sep 15, 2025</p>
-                    </div>
-                    {isInstructor ? (
-                      <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full">Assigned</span>
-                        <button className="p-2 text-gray-600 transition-colors rounded-lg hover:bg-gray-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
-                        <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
+                  {assignments.length === 0 ? (
+                    <p className="text-gray-600">No assignments yet.</p>
+                  ) : (
+                    assignments.map((assignment) => (
+                      <div key={assignment._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{assignment.title}</h3>
+                          <p className="text-sm text-gray-600">Due: {assignment.dueDate ? format(new Date(assignment.dueDate), 'MMM dd, yyyy') : 'No due date'}</p>
+                        </div>
+                        {isInstructor ? (
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full">Assigned</span>
+                            <button
+                              onClick={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
+                              className="p-2 text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
+                            <button onClick={() => handleDeleteClasswork(assignment._id)} className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <button className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full hover:bg-blue-200">Submit</button>
+                        )}
                       </div>
-                    ) : (
-                      <button className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full hover:bg-blue-200">Submit</button>
-                    )}
-                  </div>
-                  {/* Another Assignment Card */}
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Project: Simple Calculator App</h3>
-                      <p className="text-sm text-gray-600">Due: Oct 1, 2025</p>
-                    </div>
-                    {isInstructor ? (
-                      <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 text-sm font-medium text-yellow-700 bg-yellow-100 rounded-full">Missing</span>
-                        <button className="p-2 text-gray-600 transition-colors rounded-lg hover:bg-gray-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
-                        <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      </div>
-                    ) : (
-                      <button className="px-3 py-1 text-sm font-medium text-red-700 bg-red-100 rounded-full hover:bg-red-200">Submit Late</button>
-                    )}
-                  </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -468,26 +523,34 @@ const CourseDetailPage = ({ params }) => {
               <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
                 <h2 className="mb-4 text-2xl font-bold text-gray-900">Quizzes</h2>
                 <div className="space-y-4">
-                  {/* Quiz Card */}
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Quiz 1: Basic Syntax</h3>
-                      <p className="text-sm text-gray-600">Due: Sep 10, 2025</p>
-                    </div>
-                    {isInstructor ? (
-                      <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 text-sm font-medium text-green-700 bg-green-100 rounded-full">Completed</span>
-                        <button className="p-2 text-gray-600 transition-colors rounded-lg hover:bg-gray-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
-                        <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
+                  {assignments.filter(a => a.type === 'quiz').length === 0 ? (
+                    <p className="text-gray-600">No quizzes yet.</p>
+                  ) : (
+                    assignments.filter(a => a.type === 'quiz').map((quiz) => (
+                      <div key={quiz._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{quiz.title}</h3>
+                          <p className="text-sm text-gray-600">Due: {quiz.dueDate ? format(new Date(quiz.dueDate), 'MMM dd, yyyy') : 'No due date'}</p>
+                        </div>
+                        {isInstructor ? (
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1 text-sm font-medium text-green-700 bg-green-100 rounded-full">Completed</span>
+                            <button
+                              onClick={() => { setEditingClasswork(quiz); setIsCreateClassworkModalOpen(true); }}
+                              className="p-2 text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
+                            <button onClick={() => handleDeleteClasswork(quiz._id)} className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="px-3 py-1 text-sm font-medium text-green-700 bg-green-100 rounded-full">Completed</span>
+                        )}
                       </div>
-                    ) : (
-                      <span className="px-3 py-1 text-sm font-medium text-green-700 bg-green-100 rounded-full">Completed</span>
-                    )}
-                  </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -495,26 +558,36 @@ const CourseDetailPage = ({ params }) => {
               <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
                 <h2 className="mb-4 text-2xl font-bold text-gray-900">Materials</h2>
                 <div className="space-y-4">
-                  {/* Material Card */}
-                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Lecture Slides: Week 1</h3>
-                      <p className="text-sm text-gray-600">Posted: Aug 28, 2025</p>
-                    </div>
-                    {isInstructor ? (
-                      <div className="flex items-center gap-2">
-                        <button className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full hover:bg-blue-200">View</button>
-                        <button className="p-2 text-gray-600 transition-colors rounded-lg hover:bg-gray-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
-                        <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
+                  {assignments.filter(a => a.type === 'material').length === 0 ? (
+                    <p className="text-gray-600">No materials yet.</p>
+                  ) : (
+                    assignments.filter(a => a.type === 'material').map((material) => (
+                      <div key={material._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{material.title}</h3>
+                          <p className="text-sm text-gray-600">Posted: {format(new Date(material.createdAt), 'MMM dd, yyyy')}</p>
+                        </div>
+                        {isInstructor ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => { setEditingClasswork(material); setIsCreateClassworkModalOpen(true); }}
+                              className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full hover:bg-blue-200"
+                            >
+                              View
+                            </button>
+                            <button className="p-2 text-gray-600 transition-colors rounded-lg hover:bg-gray-100">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
+                            <button onClick={() => handleDeleteClasswork(material._id)} className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <button className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full hover:bg-blue-200">View</button>
+                        )}
                       </div>
-                    ) : (
-                      <button className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full hover:bg-blue-200">View</button>
-                    )}
-                  </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -538,34 +611,25 @@ const CourseDetailPage = ({ params }) => {
                 <div>
                   <h3 className="mb-3 text-xl font-semibold text-gray-900">Teachers</h3>
                   <div className="space-y-3">
-                    {/* Teacher 1 */}
-                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full">
-                          <span className="text-sm font-semibold text-white">MF</span>
+                    {teachers.length === 0 ? (
+                      <p className="text-gray-600">No teachers found.</p>
+                    ) : (
+                      teachers.map((teacher) => (
+                        <div key={teacher._id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full">
+                              <span className="text-sm font-semibold text-white">{teacher.name ? teacher.name.charAt(0).toUpperCase() : 'U'}</span>
+                            </div>
+                            <span className="font-medium text-gray-800">{teacher.name || 'Unknown Teacher'}</span>
+                          </div>
+                          {isInstructor && (
+                            <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                          )}
                         </div>
-                        <span className="font-medium text-gray-800">Mr. Fernandez</span>
-                      </div>
-                      {isInstructor && (
-                        <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      )}
-                    </div>
-                    {/* Teacher 2 */}
-                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-green-500 rounded-full">
-                          <span className="text-sm font-semibold text-white">JS</span>
-                        </div>
-                        <span className="font-medium text-gray-800">Ms. Smith (Co-teacher)</span>
-                      </div>
-                      {isInstructor && (
-                        <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      )}
-                    </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -573,34 +637,25 @@ const CourseDetailPage = ({ params }) => {
                 <div>
                   <h3 className="mb-3 text-xl font-semibold text-gray-900">Students</h3>
                   <div className="space-y-3">
-                    {/* Student 1 */}
-                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-purple-500 rounded-full">
-                          <span className="text-sm font-semibold text-white">U1</span>
+                    {students.length === 0 ? (
+                      <p className="text-gray-600">No students enrolled.</p>
+                    ) : (
+                      students.map((student) => (
+                        <div key={student._id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-purple-500 rounded-full">
+                              <span className="text-sm font-semibold text-white">{student.name ? student.name.charAt(0).toUpperCase() : 'U'}</span>
+                            </div>
+                            <span className="font-medium text-gray-800">{student.name || 'Unknown Student'}</span>
+                          </div>
+                          {isInstructor && (
+                            <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                          )}
                         </div>
-                        <span className="font-medium text-gray-800">User 1</span>
-                      </div>
-                      {isInstructor && (
-                        <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      )}
-                    </div>
-                    {/* Student 2 */}
-                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-red-500 rounded-full">
-                          <span className="text-sm font-semibold text-white">U2</span>
-                        </div>
-                        <span className="font-medium text-gray-800">User 2</span>
-                      </div>
-                      {isInstructor && (
-                        <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      )}
-                    </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -629,7 +684,7 @@ const CourseDetailPage = ({ params }) => {
                     <h3 className="mb-3 text-xl font-semibold text-gray-900">Student Grades Overview</h3>
                     <div className="space-y-3">
                       {/* Student 1 Grades */}
-                      <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div key="student-grade-1" className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900">User 1</h4>
                           <p className="text-sm text-gray-600">Overall: 88%</p>
@@ -637,7 +692,7 @@ const CourseDetailPage = ({ params }) => {
                         <button className="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full hover:bg-blue-200">View Details</button>
                       </div>
                       {/* Student 2 Grades */}
-                      <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div key="student-grade-2" className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900">User 2</h4>
                           <p className="text-sm text-gray-600">Overall: 75%</p>
@@ -666,7 +721,7 @@ const CourseDetailPage = ({ params }) => {
                     <h3 className="mb-3 text-xl font-semibold text-gray-900">Assignment Grades</h3>
                     <div className="space-y-3">
                       {/* Assignment 1 Grade */}
-                      <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div key="assignment-grade-1" className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900">Homework 1: Introduction to Algorithms</h4>
                           <p className="text-sm text-gray-600">Feedback: Good effort, but review recursion.</p>
@@ -674,7 +729,7 @@ const CourseDetailPage = ({ params }) => {
                         <span className="px-3 py-1 text-lg font-bold text-blue-700 bg-blue-100 rounded-full">88%</span>
                       </div>
                       {/* Assignment 2 Grade */}
-                      <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div key="assignment-grade-2" className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900">Quiz 1: Basic Syntax</h4>
                           <p className="text-sm text-gray-600">Feedback: Excellent!</p>
@@ -682,7 +737,7 @@ const CourseDetailPage = ({ params }) => {
                         <span className="px-3 py-1 text-lg font-bold text-green-700 bg-green-100 rounded-full">95%</span>
                       </div>
                       {/* Assignment 3 Grade */}
-                      <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div key="assignment-grade-3" className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900">Project: Simple Calculator App</h4>
                           <p className="text-sm text-gray-600">Status: Pending Review</p>
