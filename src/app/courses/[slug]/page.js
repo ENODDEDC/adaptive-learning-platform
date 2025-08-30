@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 
 const CourseDetailPage = ({ params }) => {
-  const { slug } = params; // slug is now courseId
+  const { slug } = React.use(params); // slug is now courseId
   const [expandedActivities, setExpandedActivities] = useState({});
   const [activeTab, setActiveTab] = useState('stream'); // Default to 'Stream' tab
   const [isInstructor, setIsInstructor] = useState(true); // For demonstration, set to true for instructor view
@@ -82,6 +82,40 @@ const CourseDetailPage = ({ params }) => {
       fetchAnnouncements();
     }
   }, [courseDetails, fetchAnnouncements]);
+
+  const handlePostAnnouncement = useCallback(async () => {
+    if (!newAnnouncementContent.trim() || !courseDetails?._id) {
+      setError('Announcement content cannot be empty.');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('User not authenticated.');
+        return;
+      }
+
+      const res = await fetch(`/api/courses/${courseDetails._id}/announcements`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: newAnnouncementContent }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+
+      setNewAnnouncementContent('');
+      fetchAnnouncements(); // Refresh announcements
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to post announcement:', err);
+    }
+  }, [newAnnouncementContent, courseDetails, fetchAnnouncements]);
 
   useEffect(() => {
     // Reset expanded activities when tab changes

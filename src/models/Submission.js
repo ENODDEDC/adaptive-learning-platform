@@ -12,26 +12,33 @@ const submissionSchema = new Schema(
       ref: 'User',
       required: true,
     },
-    submissionContent: {
-      type: String, // Can be text, or a URL to a file
-      required: true,
+    content: {
+      type: String,
     },
+    attachments: [
+      {
+        fileName: String,
+        fileUrl: String,
+      },
+    ],
     submittedAt: {
       type: Date,
       default: Date.now,
     },
-    grade: { // Embedding grade directly for simplicity, can be a ref to a Grade model
+    grade: {
       type: Number,
       min: 0,
       max: 100,
     },
+    gradedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    gradedAt: {
+      type: Date,
+    },
     feedback: {
       type: String,
-    },
-    status: {
-      type: String,
-      enum: ['submitted', 'graded', 'missing', 'late'],
-      default: 'submitted',
     },
   },
   { timestamps: true }
