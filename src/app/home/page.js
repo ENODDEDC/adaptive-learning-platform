@@ -23,6 +23,7 @@ export default function Home({ userName }) { // Accept userName as prop
   const [isCourseMenuOpen, setIsCourseMenuOpen] = useState(false);
   const [selectedMode, setSelectedMode] = useState('Ask'); // Track selected mode
   const [promptText, setPromptText] = useState(''); // Track textarea content
+  const [currentCourseIndex, setCurrentCourseIndex] = useState(0); // Track current course carousel position
 
   useEffect(() => {
     setIsMounted(true); // Set to true on client mount
@@ -38,6 +39,13 @@ export default function Home({ userName }) { // Accept userName as prop
       fetchUserCourses();
     }
   }, [userName, isMounted]); // Depend on userName and isMounted
+
+  // Reset carousel position when courses change
+  useEffect(() => {
+    if (currentCourseIndex >= courses.length - 1) {
+      setCurrentCourseIndex(Math.max(0, courses.length - 2));
+    }
+  }, [courses.length, currentCourseIndex]);
 
   const fetchUserCourses = async () => {
     setLoading(true);
@@ -88,6 +96,28 @@ export default function Home({ userName }) { // Accept userName as prop
       router.push(`/text-to-docs?prompt=${encodeURIComponent(promptText)}`);
     }
   };
+
+  // Carousel navigation functions
+  const nextCourse = () => {
+    if (currentCourseIndex < courses.length - 2) {
+      setCurrentCourseIndex(currentCourseIndex + 1);
+    }
+  };
+
+  const prevCourse = () => {
+    if (currentCourseIndex > 0) {
+      setCurrentCourseIndex(currentCourseIndex - 1);
+    }
+  };
+
+  // Get visible courses (2 at a time)
+  const getVisibleCourses = () => {
+    return courses.slice(currentCourseIndex, currentCourseIndex + 2);
+  };
+
+  // Check if navigation arrows should be shown
+  const showPrevArrow = currentCourseIndex > 0;
+  const showNextArrow = currentCourseIndex < courses.length - 2;
 
   const recentActivities = [];
 
@@ -218,54 +248,82 @@ export default function Home({ userName }) { // Accept userName as prop
            {courses.length === 0 ? (
              <EmptyState type="courses" />
            ) : (
-             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-               {courses.map((course) => (
-                 <Link key={course.id} href={`/courses?slug=${course.title.toLowerCase().replace(/\s+/g, '-')}`} className="block">
-                   <div className="flex flex-col overflow-hidden bg-white shadow-md rounded-2xl cursor-pointer">
-                     <div className={`h-40 relative p-6 flex flex-col justify-between ${course.color}`}>
-                       <div className="flex items-start justify-between">
-                         <div></div>
-                         <button className="text-white opacity-70 hover:opacity-100">
-                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                           </svg>
-                         </button>
+             <div className="overflow-hidden">
+               <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                 {getVisibleCourses().map((course) => (
+                   <Link key={course.id} href={`/courses?slug=${course.title.toLowerCase().replace(/\s+/g, '-')}`} className="block">
+                     <div className="flex flex-col overflow-hidden bg-white shadow-md rounded-2xl cursor-pointer">
+                       <div className={`h-40 relative p-6 flex flex-col justify-between ${course.color}`}>
+                         <div className="flex items-start justify-between">
+                           <div></div>
+                           <button className="text-white opacity-70 hover:opacity-100">
+                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                             </svg>
+                           </button>
+                         </div>
+                         <div className={`absolute bottom-4 right-4 w-12 h-12 ${course.progressColor} rounded-full`}></div>
                        </div>
-                       <div className={`absolute bottom-4 right-4 w-12 h-12 ${course.progressColor} rounded-full`}></div>
-                     </div>
 
-                     <div className="flex flex-col flex-grow p-6">
-                       <h3 className="mb-2 text-lg font-bold text-gray-800">{course.title}</h3>
-                       <p className="mb-2 text-sm text-gray-500">{course.code}</p>
-                       <p className="mb-4 text-sm text-gray-500">{course.instructor}</p>
-                       
-                       <div className="flex items-center gap-2 mt-auto">
-                         <svg className="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
-                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
-                         </svg>
-                         <span className="text-lg font-bold text-orange-500">{course.progress}</span>
+                       <div className="flex flex-col flex-grow p-6">
+                         <h3 className="mb-2 text-lg font-bold text-gray-800">{course.title}</h3>
+                         <p className="mb-2 text-sm text-gray-500">{course.code}</p>
+                         <p className="mb-4 text-sm text-gray-500">{course.instructor}</p>
+                         
+                         <div className="flex items-center gap-2 mt-auto">
+                           <svg className="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
+                           </svg>
+                           <span className="text-lg font-bold text-orange-500">{course.progress}</span>
+                         </div>
                        </div>
                      </div>
-                   </div>
-                 </Link>
-               ))}
+                   </Link>
+                 ))}
+               </div>
              </div>
            )}
 
-           {courses.length > 0 && (
+           {courses.length > 2 && (
              <>
-               <button className="absolute left-0 flex items-center justify-center w-10 h-10 transition-colors -translate-x-6 -translate-y-1/2 bg-white rounded-full shadow-lg top-1/2 hover:bg-gray-100">
-                 <ChevronLeftIcon className="w-5 h-5 text-gray-700" />
-               </button>
-               <button className="absolute right-0 flex items-center justify-center w-10 h-10 transition-colors translate-x-6 -translate-y-1/2 bg-white rounded-full shadow-lg top-1/2 hover:bg-gray-100">
-                 <ChevronRightIcon className="w-5 h-5 text-gray-700" />
-               </button>
+               {showPrevArrow && (
+                 <button 
+                   onClick={prevCourse}
+                   className="absolute left-0 flex items-center justify-center w-10 h-10 transition-colors -translate-x-6 -translate-y-1/2 bg-white rounded-full shadow-lg top-1/2 hover:bg-gray-100 z-10"
+                 >
+                   <ChevronLeftIcon className="w-5 h-5 text-gray-700" />
+                 </button>
+               )}
+               {showNextArrow && (
+                 <button 
+                   onClick={nextCourse}
+                   className="absolute right-0 flex items-center justify-center w-10 h-10 transition-colors translate-x-6 -translate-y-1/2 bg-white rounded-full shadow-lg top-1/2 hover:bg-gray-100 z-10"
+                 >
+                   <ChevronRightIcon className="w-5 h-5 text-gray-700" />
+                 </button>
+               )}
              </>
            )}
          </div>
 
+         {courses.length > 2 && (
+           <div className="flex justify-center mt-6">
+             <div className="flex gap-2">
+               {Array.from({ length: Math.max(0, courses.length - 1) }).map((_, index) => (
+                 <button
+                   key={index}
+                   onClick={() => setCurrentCourseIndex(index)}
+                   className={`w-2 h-2 rounded-full transition-colors ${
+                     index === currentCourseIndex ? 'bg-gray-800' : 'bg-gray-300'
+                   }`}
+                 />
+               ))}
+             </div>
+           </div>
+         )}
+
          {courses.length > 0 && (
-           <div className="flex justify-end mt-6">
+           <div className="flex justify-end mt-4">
              <button className="font-medium text-gray-600 transition-colors hover:text-gray-900">See All</button>
            </div>
          )}
