@@ -1,0 +1,74 @@
+import connectMongoDB from '@/config/mongoConfig';
+import Announcement from '@/models/Announcement';
+import Course from '@/models/Course';
+import { NextResponse } from 'next/server';
+import { getUserIdFromToken } from '@/services/authService';
+
+export async function POST(request, { params }) {
+  try {
+    const userId = getUserIdFromToken(request);
+    if (!userId) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id: courseId } = params;
+    const { content } = await request.json();
+
+    await connectMongoDB();
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return NextResponse.json({ message: 'Course not found' }, { status: 404 });
+    }
+
+    // Only the course creator can post announcements
+    if (course.createdBy.toString() !== userId) {
+      return NextResponse.json({ message: 'Forbidden: Only instructors can post announcements' }, { status: 403 });
+    }
+
+    const newAnnouncement = await Announcement.create({
+      courseId,
+      content,
+      postedBy: userId,
+    });
+
+    return NextResponse.json({ message: 'Announcement posted', announcement: newAnnouncement }, { status: 201 });
+  } catch (error) {
+    console.error('Create Announcement Error:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function GET(request, { params }) {
+  try {
+    const userId = getUserIdFromToken(request);
+    if (!userId) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id: courseId } = params;
+    await connectMongoDB();
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return NextResponse.json({ message: 'Course not found' }, { status: 404 });
+    }
+
+    // Check if the user is either the creator or enrolled in the course
+    const isCreator = course.createdBy.toString() === userId;
+    const isEnrolled = course.enrolledUsers.includes(userId);
+
+    if (!isCreator && !isEnrolled) {
+      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    }
+
+    const announcements = await Announcement.find({ courseId })
+      .populate('postedBy', 'name') // Populate postedBy with user's name
+      .sort({ createdAt: -1 }); // Sort by most recent
+
+    return NextResponse.json({ announcements });
+  } catch (error) {
+    console.error('Get Announcements Error:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+  }
+}
