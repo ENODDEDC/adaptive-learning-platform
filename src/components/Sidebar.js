@@ -27,7 +27,6 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     { href: "/home", label: "Home" },
     { href: "/notifications", label: "Notifications" },
     { href: "/courses", label: "Course" },
-    { href: "/text-to-docs", label: "Text to Docs" },
     { href: "/todo", label: "To-Do" },
     { href: "/schedule", label: "Schedule" },
     { href: "/cluster", label: "Cluster" },
