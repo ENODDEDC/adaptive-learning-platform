@@ -17,8 +17,16 @@ const announcementSchema = new Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+announcementSchema.virtual('comments', {
+  ref: 'Comment',
+  localField: '_id',
+  foreignField: 'onItem',
+  justOne: false,
+  match: { onModel: 'Announcement' }
+});
 
 const Announcement = mongoose.models.Announcement || mongoose.model('Announcement', announcementSchema);
 

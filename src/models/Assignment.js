@@ -34,8 +34,16 @@ const assignmentSchema = new Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+assignmentSchema.virtual('comments', {
+  ref: 'Comment',
+  localField: '_id',
+  foreignField: 'onItem',
+  justOne: false,
+  match: { onModel: 'Assignment' }
+});
 
 const Assignment = mongoose.models.Assignment || mongoose.model('Assignment', assignmentSchema);
 
