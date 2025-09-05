@@ -1,6 +1,7 @@
 import connectMongoDB from '@/config/mongoConfig';
 import Announcement from '@/models/Announcement';
 import Course from '@/models/Course';
+import Notification from '@/models/Notification';
 import { NextResponse } from 'next/server';
 import { getUserIdFromToken } from '@/services/authService';
 
@@ -32,9 +33,22 @@ export async function POST(request, { params }) {
       postedBy: userId,
     });
 
-    return NextResponse.json({ message: 'Announcement posted', announcement: newAnnouncement }, { status: 201 });
-  } catch (error) {
-    console.error('Create Announcement Error:', error);
+    // Create notifications for all enrolled users
+    const notificationPromises = course.enrolledUsers.map(async (userId) => {
+      return Notification.create({
+        recipient: userId,
+        sender: newAnnouncement.postedBy,
+        course: courseId,
+        type: 'announcement',
+        message: `New announcement in ${course.subject}: "${content.substring(0, 50)}..."`,
+        link: `/courses/${courseId}/announcements/${newAnnouncement._id}`,
+      });
+    });
+    await Promise.all(notificationPromises);
+ 
+     return NextResponse.json({ message: 'Announcement posted', announcement: newAnnouncement }, { status: 201 });
+   } catch (error) {
+     console.error('Create Announcement Error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
