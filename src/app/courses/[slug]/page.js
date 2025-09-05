@@ -2,8 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
+import dynamic from 'next/dynamic';
 import CreateClassworkModal from '@/components/CreateClassworkModal';
 import SubmitAssignmentModal from '@/components/SubmitAssignmentModal';
+import UploadContentModal from '@/components/UploadContentModal';
+import CourseContentTab from '@/components/CourseContentTab';
+
+const ContentViewer = dynamic(() => import('@/components/ContentViewer.client'), { ssr: false });
 
 const CourseDetailPage = ({ params }) => {
   const { slug } = React.use(params); // slug is now courseId
@@ -25,6 +30,10 @@ const CourseDetailPage = ({ params }) => {
   const [classworkType, setClassworkType] = useState('assignment');
   const [isSubmitAssignmentModalOpen, setIsSubmitAssignmentModalOpen] = useState(false);
   const [submittingAssignmentId, setSubmittingAssignmentId] = useState(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [courseContent, setCourseContent] = useState([]);
+  const [selectedContent, setSelectedContent] = useState(null);
+  const [contentFilter, setContentFilter] = useState('all');
 
   const fetchCourseDetails = useCallback(async () => {
     setLoading(true);
@@ -260,7 +269,7 @@ const CourseDetailPage = ({ params }) => {
     }
   }, [courseDetails]);
 
-const handleDeleteClasswork = useCallback(async (classworkId) => {
+  const handleDeleteClasswork = useCallback(async (classworkId) => {
     if (!window.confirm('Are you sure you want to delete this classwork?')) {
       return;
     }
@@ -311,8 +320,6 @@ const handleDeleteClasswork = useCallback(async (classworkId) => {
   if (!courseDetails) {
     return <div className="flex-1 min-h-screen p-8 text-center bg-gray-100">Course not found.</div>;
   }
-
-  const courseTitle = courseDetails.subject;
 
   return (
     <>
@@ -384,6 +391,12 @@ const handleDeleteClasswork = useCallback(async (classworkId) => {
                 onClick={() => setActiveTab('classwork')}
               >
                 Classwork
+              </button>
+              <button
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${activeTab === 'content' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                onClick={() => setActiveTab('content')}
+              >
+                Content
               </button>
               <button
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${activeTab === 'people' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
@@ -797,6 +810,15 @@ const handleDeleteClasswork = useCallback(async (classworkId) => {
               </div>
             )}
 
+            {activeTab === 'content' && (
+              <div className="space-y-6">
+                <CourseContentTab 
+                  courseId={slug} 
+                  isInstructor={isInstructor}
+                />
+              </div>
+            )}
+
             {activeTab === 'people' && (
               <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
                 <h2 className="mb-4 text-2xl font-bold text-gray-900">People</h2>
@@ -995,6 +1017,23 @@ const handleDeleteClasswork = useCallback(async (classworkId) => {
         courseId={courseDetails?._id}
         onSubmissionSuccess={fetchAssignments} // Refresh assignments to show submission status if needed
       />
+
+      <UploadContentModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        courseId={slug}
+        onUploadSuccess={(newContent) => {
+          setCourseContent(prev => [newContent, ...prev]);
+        }}
+      />
+
+      {selectedContent && (
+        <ContentViewer
+          content={selectedContent}
+          onClose={() => setSelectedContent(null)}
+          isModal={true}
+        />
+      )}
     </>
   );
 };

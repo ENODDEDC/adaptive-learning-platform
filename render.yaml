@@ -3,7 +3,7 @@ services:
     name: assistive-learning-platform
     env: node
     plan: free
-    buildCommand: "npm install && npm run build"
+    buildCommand: "apt-get update && apt-get install -y pandoc && npm install && npm run build"
     startCommand: "npm start"
     envVars:
       - key: MONGODB_URI

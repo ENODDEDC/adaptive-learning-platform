@@ -11,7 +11,8 @@ import {
   CalendarIcon,
   Squares2X2Icon,
   Cog6ToothIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  AcademicCapIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
@@ -25,9 +26,8 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
 
   const links = [
     { href: "/home", label: "Home" },
-    { href: "/notifications", label: "Notifications" },
     { href: "/courses", label: "Course" },
-    { href: "/text-to-docs", label: "Text to Docs" },
+    { href: "/learning-styles", label: "Learning Styles" },
     { href: "/todo", label: "To-Do" },
     { href: "/schedule", label: "Schedule" },
     { href: "/cluster", label: "Cluster" },
@@ -80,6 +80,13 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                       Profile
                     </div>
                   </button>
+                  <button className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-blue-300"></div> {/* Using blue for notifications */}
+                      Notifications
+                    </div>
+                  </button>
+                  
                   <button
                     onClick={handleSignOut}
                     className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -182,12 +189,13 @@ const getIconForLink = (label) => {
       return BellIcon;
     case 'Course':
       return BookOpenIcon;
+    case 'Learning Styles':
+      return AcademicCapIcon;
     case 'Text to Docs':
       return DocumentTextIcon;
     case 'To-Do':
       return CheckCircleIcon;
     case 'Schedule':
-      return CalendarIcon;
     case 'Cluster':
       return Squares2X2Icon;
     case 'Settings':
