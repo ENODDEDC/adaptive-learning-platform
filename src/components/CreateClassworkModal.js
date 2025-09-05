@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 
-const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, initialData = null }) => {
+const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, initialData = null, type: initialType = 'assignment' }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [type, setType] = useState('assignment'); // 'assignment', 'quiz', 'material'
+  const [type, setType] = useState(initialType); // 'assignment', 'quiz assignment', 'question', 'material', 'reuse post', 'topic'
   const [attachments, setAttachments] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,7 +21,7 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
       setTitle('');
       setDescription('');
       setDueDate('');
-      setType('assignment');
+      setType(initialType);
       setAttachments([]);
     }
     setError('');
@@ -38,12 +38,33 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
       return;
     }
 
+    let uploadedAttachmentUrls = [];
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         setError('User not authenticated.');
         setLoading(false);
         return;
+      }
+
+      if (attachments.length > 0) {
+        const formData = new FormData();
+        attachments.forEach(file => {
+          formData.append('files', file);
+        });
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          const errorData = await uploadRes.json();
+          throw new Error(errorData.message || `Error uploading files: ${uploadRes.status} ${uploadRes.statusText}`);
+        }
+
+        const uploadData = await uploadRes.json();
+        uploadedAttachmentUrls = uploadData.urls.map(url => ({ url, name: url.split('/').pop() }));
       }
 
       const method = initialData ? 'PUT' : 'POST';
@@ -61,7 +82,7 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
           description,
           dueDate: dueDate || null,
           type,
-          attachments,
+          attachments: [...(initialData?.attachments || []), ...uploadedAttachmentUrls],
         }),
       });
 
@@ -129,11 +150,23 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
               required
             >
               <option value="assignment">Assignment</option>
-              <option value="quiz">Quiz</option>
+              <option value="quiz assignment">Quiz assignment</option>
+              <option value="question">Question</option>
               <option value="material">Material</option>
+              <option value="reuse post">Reuse post</option>
+              <option value="topic">Topic</option>
             </select>
           </div>
-          {/* Attachments input can be added here */}
+          <div className="mb-4">
+            <label htmlFor="attachments" className="block mb-2 text-sm font-medium text-gray-700">Attachments</label>
+            <input
+              type="file"
+              id="attachments"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              multiple
+              onChange={(e) => setAttachments(Array.from(e.target.files))}
+            />
+          </div>
           <div className="flex justify-end gap-4">
             <button
               type="button"

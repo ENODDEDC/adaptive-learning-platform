@@ -1,0 +1,100 @@
+import React, { useState, useEffect } from 'react';
+
+const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSuccess, initialContent = '', initialAttachments = [] }) => {
+  const [content, setContent] = useState(initialContent);
+  const [attachments, setAttachments] = useState(initialAttachments);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setContent(initialContent);
+      setAttachments(initialAttachments);
+      setError('');
+    }
+  }, [isOpen, initialContent, initialAttachments]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('User not authenticated.');
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch(`/api/courses/${assignmentId}/submissions`, { // Note: assignmentId is used as courseId in the API route
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          assignmentId,
+          content,
+          attachments,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
+      }
+
+      onSubmissionSuccess();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to submit assignment:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-xl">
+        <h2 className="mb-6 text-2xl font-bold text-gray-900">Submit Assignment</h2>
+        {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label htmlFor="content" className="block mb-2 text-sm font-medium text-gray-700">Your Work (Optional)</label>
+            <textarea
+              id="content"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="5"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+            ></textarea>
+          </div>
+          {/* Attachments input can be added here */}
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 text-sm font-medium text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
+              disabled={loading}
+            >
+              {loading ? 'Submitting...' : 'Submit'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default SubmitAssignmentModal;
