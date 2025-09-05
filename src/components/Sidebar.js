@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,10 +14,43 @@ import {
   DocumentTextIcon,
   AcademicCapIcon
 } from '@heroicons/react/24/outline';
+import ProfileModal from './ProfileModal';
 
 const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [openProfileModal, setOpenProfileModal] = useState(false);
+  const [user, setUser] = useState(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          // router.replace('/login'); // Do not redirect here, let Navbar handle it if needed
+          return;
+        }
+
+        const response = await fetch('/api/auth/profile', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user profile');
+        }
+
+        const userData = await response.json();
+        setUser(userData);
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        setUser(null);
+      }
+    };
+
+    fetchUserProfile();
+  }, []); // Empty dependency array to run once on mount
 
   const handleSignOut = () => {
     localStorage.removeItem('token');
@@ -35,20 +68,21 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   ];
 
   return (
-    <aside
-      className={`bg-white border-r border-gray-200 fixed top-0 left-0 h-full z-30 flex flex-col shadow-sm transition-all duration-300 ${isCollapsed ? 'w-20 items-center' : 'w-64'}`}
-    >
-      {/* Header Section */}
-      <div className={`${isCollapsed ? 'p-4' : 'p-6'} border-b border-gray-100`}>
-        {/* Hamburger toggle */}
-        <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} mb-4`}>
-          <button 
-            onClick={toggleSidebar} 
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-          >
-            <Bars3Icon className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
+    <React.Fragment>
+      <aside
+        className={`bg-white border-r border-gray-200 fixed top-0 left-0 h-full z-30 flex flex-col shadow-sm transition-all duration-300 ${isCollapsed ? 'w-20 items-center' : 'w-64'}`}
+      >
+        {/* Header Section */}
+        <div className={`${isCollapsed ? 'p-4' : 'p-6'} border-b border-gray-100`}>
+          {/* Hamburger toggle */}
+          <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} mb-4`}>
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+            >
+              <Bars3Icon className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
 
         {/* User profile section - only when expanded */}
         {!isCollapsed && (
@@ -74,7 +108,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
             {isUserDropdownOpen && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
                 <div className="py-2">
-                  <button className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                  <button
+                    onClick={() => setOpenProfileModal(true)}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-4 h-4 rounded-full bg-gray-300"></div>
                       Profile
@@ -177,7 +214,9 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
           </div>
         )}
       </nav>
-    </aside>
+      </aside>
+      <ProfileModal open={openProfileModal} setOpen={setOpenProfileModal} user={user} />
+    </React.Fragment>
   );
 };
 

@@ -19,6 +19,8 @@ const Layout = ({ children }) => {
     closeCreateCourseModal,
     isJoinCourseModalOpen,
     closeJoinCourseModal,
+    openCreateCourseModal, // Re-add extraction
+    openJoinCourseModal,   // Re-add extraction
   } = useLayout();
   const [userName, setUserName] = useState(''); // For both admin and regular users
 
@@ -104,6 +106,7 @@ const Layout = ({ children }) => {
   return (
     <div className="h-screen bg-base-light overflow-hidden">
       <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
+      <Navbar onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
         onClose={closeCreateCourseModal}
