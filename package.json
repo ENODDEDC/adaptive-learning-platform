@@ -21,15 +21,20 @@
     "firebase": "^12.1.0",
     "jose": "^6.1.0",
     "jsonwebtoken": "^9.0.2",
+    "libreoffice-convert": "^1.6.1",
+    "mammoth": "^1.10.0",
     "mongodb": "^6.18.0",
     "mongoose": "^8.17.1",
     "next": "15.4.6",
     "nodemailer": "^7.0.5",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-doc-viewer": "^0.1.14",
+    "react-dom": "19.1.0",
+    "react-office-viewer": "^1.0.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@tailwindcss/typography": "^0.5.16",
     "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "15.4.6",

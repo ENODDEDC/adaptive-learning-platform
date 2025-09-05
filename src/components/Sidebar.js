@@ -11,7 +11,8 @@ import {
   CalendarIcon,
   Squares2X2Icon,
   Cog6ToothIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  AcademicCapIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
@@ -27,6 +28,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     { href: "/home", label: "Home" },
     { href: "/notifications", label: "Notifications" },
     { href: "/courses", label: "Course" },
+    { href: "/learning-styles", label: "Learning Styles" },
     { href: "/todo", label: "To-Do" },
     { href: "/schedule", label: "Schedule" },
     { href: "/cluster", label: "Cluster" },
@@ -181,6 +183,8 @@ const getIconForLink = (label) => {
       return BellIcon;
     case 'Course':
       return BookOpenIcon;
+    case 'Learning Styles':
+      return AcademicCapIcon;
     case 'Text to Docs':
       return DocumentTextIcon;
     case 'To-Do':
