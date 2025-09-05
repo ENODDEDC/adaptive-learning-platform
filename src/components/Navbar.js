@@ -96,11 +96,6 @@ export default function Navbar({ onCreateCourseClick, onJoinCourseClick }) {
             </Transition>
           </Menu>
 
-          <button type="button" className="-m-2.5 p-2.5 text-text-secondary hover:text-gray-500">
-            <span className="sr-only">View notifications</span>
-            <BellIcon className="w-6 h-6" aria-hidden="true" />
-          </button>
-
           {/* Profile dropdown */}
           <Menu as="div" className="relative">
             <Menu.Button className="-m-1.5 flex items-center p-1.5">
@@ -128,7 +123,20 @@ export default function Navbar({ onCreateCourseClick, onJoinCourseClick }) {
               leaveFrom="transform opacity-100 scale-100"
               leaveTo="transform opacity-0 scale-95"
             >
-              <Menu.Items className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+              <Menu.Items className="absolute right-0 z-10 mt-2.5 w-48 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+                <Menu.Item>
+                  {({ active }) => (
+                    <a
+                      href="/notifications"
+                      className={classNames(
+                        active ? 'bg-gray-50' : '',
+                        'block px-3 py-1 text-sm leading-6 text-gray-900'
+                      )}
+                    >
+                      Notifications
+                    </a>
+                  )}
+                </Menu.Item>
                 <Menu.Item>
                   {({ active }) => (
                     <a
