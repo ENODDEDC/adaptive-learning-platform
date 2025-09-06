@@ -10,12 +10,9 @@ export default function RootPage() {
     // Redirect to /home if authenticated, or /login if not.
     // This logic is now primarily handled by middleware.js.
     // This client-side check is a fallback/initial redirect for the root path.
-    const token = localStorage.getItem('token');
-    if (token) {
-      router.replace('/home');
-    } else {
-      router.replace('/login');
-    }
+    // The middleware.js now handles redirection based on the presence of the HTTP-only cookie.
+    // This client-side check is no longer needed.
+    router.replace('/home'); // Default redirect, middleware will handle unauthenticated users
   }, [router]);
 
   return (

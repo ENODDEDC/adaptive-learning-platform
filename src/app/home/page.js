@@ -59,18 +59,7 @@ export default function Home() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch('/api/auth/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch('/api/auth/profile'); // No need for manual token header, cookie is sent automatically
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
@@ -91,18 +80,7 @@ export default function Home() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch('/api/courses', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch('/api/courses'); // No need for manual token header, cookie is sent automatically
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
@@ -203,8 +181,8 @@ export default function Home() {
             <div className="flex items-center justify-center w-12 h-12 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
               <SparklesIcon className="w-7 h-7" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Hello {user?.name || 'User'}!</h1>
+            <div className="flex flex-col justify-center">
+              <h1 className="text-2xl font-bold text-gray-900">Hello {user?.fullname || user?.name || 'User'}!</h1>
               <p className="text-sm text-gray-500">Welcome back to your learning dashboard</p>
             </div>
           </div>

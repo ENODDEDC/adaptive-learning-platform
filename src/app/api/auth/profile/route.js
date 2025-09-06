@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/config/mongoConfig';
 import User from '@/models/User';
-import jwt from 'jsonwebtoken';
-import { getUserIdFromToken } from '@/services/authService';
+import { verifyToken } from '@/utils/auth';
 
 export async function GET(req) {
   await connectMongoDB();
-  const userId = getUserIdFromToken(req);
-  if (!userId) {
+  const payload = await verifyToken();
+  if (!payload) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+  const { userId } = payload;
 
   try {
     const user = await User.findById(userId, '-password'); // Exclude password

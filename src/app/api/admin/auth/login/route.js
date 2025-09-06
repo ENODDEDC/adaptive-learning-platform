@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers'; // Import cookies
 import connectMongoDB from '@/config/mongoConfig';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
@@ -30,15 +31,25 @@ export async function POST(req) {
       expiresIn: '1h',
     });
 
-    return NextResponse.json({
-      token,
+    const response = NextResponse.json({
+      message: 'Admin login successful',
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
       },
+    }, { status: 200 });
+
+    cookies().set('adminToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: '/',
+      sameSite: 'Lax',
     });
+
+    return response;
   } catch (error) {
     console.error('Admin login error:', error);
     return NextResponse.json({ message: 'Server error' }, { status: 500 });

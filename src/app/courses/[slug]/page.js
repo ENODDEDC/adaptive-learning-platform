@@ -39,18 +39,7 @@ const CourseDetailPage = ({ params }) => {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch(`/api/courses/${slug}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(`/api/courses/${slug}`); // No need for manual token header, cookie is sent automatically
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
@@ -74,19 +63,9 @@ const CourseDetailPage = ({ params }) => {
     if (!courseDetails) return;
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        return;
-      }
-
       const [announcementsRes, classworkRes] = await Promise.all([
-        fetch(`/api/courses/${courseDetails._id}/announcements`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`/api/courses/${courseDetails._id}/classwork`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        fetch(`/api/courses/${courseDetails._id}/announcements`), // No need for manual token header
+        fetch(`/api/courses/${courseDetails._id}/classwork`), // No need for manual token header
       ]);
 
       if (!announcementsRes.ok) {
@@ -107,9 +86,7 @@ const CourseDetailPage = ({ params }) => {
       // Fetch comments for each item
       const commentsPromises = combinedItems.map(async (item) => {
         // Assuming comments API is structured as /api/courses/:courseId/:itemType/:itemId/comments
-        const commentsRes = await fetch(`/api/courses/${courseDetails._id}/${item.type === 'announcement' ? 'announcements' : 'classwork'}/${item._id}/comments`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const commentsRes = await fetch(`/api/courses/${courseDetails._id}/${item.type === 'announcement' ? 'announcements' : 'classwork'}/${item._id}/comments`);
         if (!commentsRes.ok) {
           console.error(`Failed to fetch comments for item ${item._id}:`, commentsRes.statusText);
           return { itemId: item._id, comments: [] };
@@ -145,17 +122,10 @@ const CourseDetailPage = ({ params }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        return;
-      }
-
       const res = await fetch(`/api/courses/${courseDetails._id}/announcements`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ content: newAnnouncementContent }),
       });
@@ -180,17 +150,10 @@ const CourseDetailPage = ({ params }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        return;
-      }
-
       const res = await fetch(`/api/courses/${courseDetails._id}/${itemType}/${itemId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ content }),
       });
@@ -216,17 +179,7 @@ const CourseDetailPage = ({ params }) => {
     if (!courseDetails) return;
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        return;
-      }
-
-      const res = await fetch(`/api/courses/${courseDetails._id}/classwork`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(`/api/courses/${courseDetails._id}/classwork`); // No need for manual token header
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
@@ -244,17 +197,7 @@ const CourseDetailPage = ({ params }) => {
     if (!courseDetails) return;
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        return;
-      }
-
-      const res = await fetch(`/api/courses/${courseDetails._id}/people`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(`/api/courses/${courseDetails._id}/people`); // No need for manual token header
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
@@ -275,17 +218,8 @@ const CourseDetailPage = ({ params }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        return;
-      }
-
       const res = await fetch(`/api/classwork/${classworkId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       if (!res.ok) {

@@ -3,22 +3,18 @@ import connectMongoDB from '@/config/mongoConfig';
 import Notification from '@/models/Notification';
 import User from '@/models/User';
 import Course from '@/models/Course';
-import { verifyToken } from '@/utils/auth'; // Assuming you have a utility for token verification
+import { verifyToken } from '@/utils/auth';
 
 export async function GET(req) {
   await connectMongoDB();
   try {
-    const token = req.headers.get('authorization')?.split(' ')[1];
-    if (!token) {
+    const payload = await verifyToken();
+    if (!payload) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+    const { userId } = payload;
 
-    const decoded = verifyToken(token);
-    if (!decoded || !decoded.userId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const notifications = await Notification.find({ recipient: decoded.userId })
+    const notifications = await Notification.find({ recipient: userId })
       .populate('sender', 'name surname photoURL')
       .populate('course', 'subject section')
       .sort({ createdAt: -1 });
@@ -33,20 +29,16 @@ export async function GET(req) {
 export async function PUT(req) {
   await connectMongoDB();
   try {
-    const token = req.headers.get('authorization')?.split(' ')[1];
-    if (!token) {
+    const payload = await verifyToken();
+    if (!payload) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    const decoded = verifyToken(token);
-    if (!decoded || !decoded.userId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
+    const { userId } = payload;
 
     const { notificationIds } = await req.json();
 
     await Notification.updateMany(
-      { _id: { $in: notificationIds }, recipient: decoded.userId },
+      { _id: { $in: notificationIds }, recipient: userId },
       { $set: { read: true } }
     );
 

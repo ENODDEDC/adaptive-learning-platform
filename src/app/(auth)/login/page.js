@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/config/firebaseConfig';
@@ -12,6 +12,21 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/profile');
+        if (res.ok) {
+          // User is authenticated, redirect to home
+          router.push('/home');
+        }
+      } catch (error) {
+        console.error('Failed to check authentication status:', error);
+      }
+    };
+    checkAuth();
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,8 +45,9 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        // Token is now set as an HTTP-only cookie by the backend
+        // localStorage.setItem('token', data.token); // No longer needed
+        // localStorage.setItem('user', JSON.stringify(data.user)); // User data can be fetched or passed via context if needed
         router.push('/home');
       } else {
         setError(data.message);
@@ -73,11 +89,11 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // Store our app's JWT token (not Firebase token)
-        localStorage.setItem('token', data.token);
+        // Token is now set as an HTTP-only cookie by the backend
+        // localStorage.setItem('token', data.token); // No longer needed
         
-        // Store user info for display purposes
-        localStorage.setItem('user', JSON.stringify(data.user));
+        // User info can be fetched or passed via context if needed
+        // localStorage.setItem('user', JSON.stringify(data.user)); // No longer needed
         
         console.log('Google user synced to MongoDB and logged in');
         router.push('/home');
@@ -96,29 +112,29 @@ export default function LoginPage() {
     <div className="flex min-h-screen">
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:justify-center lg:px-8 bg-gradient-to-br from-blue-600 to-indigo-700">
-        <div className="mx-auto max-w-md text-center">
+        <div className="max-w-md mx-auto text-center">
           <div className="mb-8">
-            <div className="mx-auto h-16 w-16 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-white shadow-lg rounded-2xl">
               <span className="text-2xl font-bold text-blue-600">AL</span>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-4">
+          <h1 className="mb-4 text-3xl font-bold text-white">
             Welcome to Assistive Learning
           </h1>
-          <p className="text-lg text-blue-100 mb-8">
+          <p className="mb-8 text-lg text-blue-100">
             Empowering education through personalized learning experiences and adaptive technology.
           </p>
           <div className="space-y-4 text-blue-100">
             <div className="flex items-center justify-center">
-              <CheckIcon className="h-5 w-5 mr-3" />
+              <CheckIcon className="w-5 h-5 mr-3" />
               <span>Personalized learning paths</span>
             </div>
             <div className="flex items-center justify-center">
-              <CheckIcon className="h-5 w-5 mr-3" />
+              <CheckIcon className="w-5 h-5 mr-3" />
               <span>Interactive exercises</span>
             </div>
             <div className="flex items-center justify-center">
-              <CheckIcon className="h-5 w-5 mr-3" />
+              <CheckIcon className="w-5 h-5 mr-3" />
               <span>Progress tracking</span>
             </div>
           </div>
@@ -126,11 +142,11 @@ export default function LoginPage() {
       </div>
 
       {/* Right side - Login form */}
-      <div className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="lg:hidden mb-6">
-              <div className="mx-auto h-12 w-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+      <div className="flex flex-col justify-center flex-1 px-4 py-12 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md mx-auto">
+          <div className="mb-8 text-center">
+            <div className="mb-6 lg:hidden">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl">
                 <span className="text-lg font-bold text-white">AL</span>
               </div>
             </div>
@@ -143,7 +159,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <div className="card p-8">
+          <div className="p-8 card">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
                 <div>
@@ -191,11 +207,11 @@ export default function LoginPage() {
                     <input
                       id="remember-me"
                       type="checkbox"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <label
                       htmlFor="remember-me"
-                      className="ml-2 block text-sm text-gray-700"
+                      className="block ml-2 text-sm text-gray-700"
                     >
                       Remember me
                     </label>
@@ -213,7 +229,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="p-3 border border-red-200 rounded-lg bg-red-50">
                   <p className="text-sm text-red-600">{error}</p>
                 </div>
               )}
@@ -222,11 +238,11 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="btn-primary w-full flex justify-center items-center"
+                  className="flex items-center justify-center w-full btn-primary"
                 >
                 {isLoading ? (
                   <>
-                    <LoadingSpinner className="h-4 w-4 mr-2" />
+                    <LoadingSpinner className="w-4 h-4 mr-2" />
                     Signing in...
                   </>
                 ) : (
@@ -242,7 +258,7 @@ export default function LoginPage() {
                   <div className="w-full border-t border-gray-300" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                  <span className="px-2 text-gray-500 bg-white">Or continue with</span>
                 </div>
               </div>
 
@@ -251,13 +267,13 @@ export default function LoginPage() {
                 disabled={isLoading}
                 className="mt-4 w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
               >
-                <GoogleIcon className="h-5 w-5 mr-2" />
+                <GoogleIcon className="w-5 h-5 mr-2" />
                 Sign in with Google
               </button>
             </div>
           </div>
 
-          <p className="mt-8 text-center text-xs text-gray-500">
+          <p className="mt-8 text-xs text-center text-gray-500">
             By signing in, you agree to our{' '}
             <Link href="/terms" className="font-medium text-blue-600 hover:text-blue-500">
               Terms of Service

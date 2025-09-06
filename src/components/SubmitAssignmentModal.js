@@ -20,18 +20,10 @@ const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSucc
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        setLoading(false);
-        return;
-      }
-
       const res = await fetch(`/api/courses/${assignmentId}/submissions`, { // Note: assignmentId is used as courseId in the API route
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           assignmentId,

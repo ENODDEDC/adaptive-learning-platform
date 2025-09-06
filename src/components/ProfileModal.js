@@ -25,11 +25,11 @@ export default function ProfileModal({ open, setOpen, user }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" />
           </Transition.Child>
 
           <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
-            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div className="flex items-end justify-center min-h-full p-4 text-center sm:items-center sm:p-0">
               <Transition.Child
                 as={Fragment}
                 enter="ease-out duration-300"
@@ -39,51 +39,51 @@ export default function ProfileModal({ open, setOpen, user }) {
                 leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                 leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
               >
-                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                  <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
+                <Dialog.Panel className="relative px-4 pt-5 pb-4 overflow-hidden text-left transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                  <div className="absolute top-0 right-0 hidden pt-4 pr-4 sm:block">
                     <button
                       type="button"
-                      className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                      className="text-gray-400 bg-white rounded-md hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                       onClick={() => setOpen(false)}
                     >
                       <span className="sr-only">Close</span>
-                      <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                      <XMarkIcon className="w-6 h-6" aria-hidden="true" />
                     </button>
                   </div>
                   <div className="sm:flex sm:items-start">
-                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                      <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-gray-900 text-center">
+                    <div className="w-full mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                      <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-center text-gray-900">
                         Profile
                       </Dialog.Title>
-                      <div className="mt-2 flex flex-col items-center">
+                      <div className="flex flex-col items-center mt-2">
                         <Image
-                          className="h-24 w-24 rounded-full bg-gray-50"
+                          className="w-24 h-24 rounded-full bg-gray-50"
                           src={user?.profilePicture || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"}
                           alt="Profile Picture"
                           width={96}
                           height={96}
                         />
-                        <p className="mt-3 text-lg font-semibold text-gray-900">{user?.fullName || "User Name"}</p>
+                        <p className="mt-3 text-lg font-semibold text-gray-900">{user?.name && user?.surname ? `${user.name} ${user.surname}` : user?.name || user?.surname || "User Name"}</p>
 
-                        <div className="mt-6 w-full space-y-3">
-                          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                            <EnvelopeIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                        <div className="w-full mt-6 space-y-3">
+                          <div className="flex items-center p-3 space-x-3 rounded-lg bg-gray-50">
+                            <EnvelopeIcon className="w-5 h-5 text-gray-500" aria-hidden="true" />
                             <p className="text-sm text-gray-900">{user?.email || "user@example.com"}</p>
                           </div>
-                          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                            <MapPinIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                          <div className="flex items-center p-3 space-x-3 rounded-lg bg-gray-50">
+                            <MapPinIcon className="w-5 h-5 text-gray-500" aria-hidden="true" />
                             <p className="text-sm text-gray-900">{user?.location || "San Francisco, CA"}</p>
                           </div>
-                          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                            <CalendarIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                          <div className="flex items-center p-3 space-x-3 rounded-lg bg-gray-50">
+                            <CalendarIcon className="w-5 h-5 text-gray-500" aria-hidden="true" />
                             <p className="text-sm text-gray-900">Joined {user?.joinedDate || "March 2021"}</p>
                           </div>
                         </div>
 
-                        <div className="mt-6 w-full">
+                        <div className="w-full mt-6">
                           <button
                             type="button"
-                            className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                            className="inline-flex justify-center w-full px-3 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-md shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                             onClick={handleManageProfileClick}
                           >
                             <Cog6ToothIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />

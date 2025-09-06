@@ -27,17 +27,7 @@ export default function AdminCourseManagementPage() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
-
-      const res = await fetch('/api/admin/courses', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch('/api/admin/courses'); // Cookie will be sent automatically
 
       if (!res.ok) {
         if (res.status === 401) {
@@ -60,17 +50,10 @@ export default function AdminCourseManagementPage() {
     fetchCourses();
     const fetchAdminName = async () => {
       try {
-        const token = localStorage.getItem('adminToken');
-        if (token) {
-          const res = await fetch('/api/admin/profile', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setAdminName(data.name);
-          }
+        const res = await fetch('/api/admin/profile'); // Cookie will be sent automatically
+        if (res.ok) {
+          const data = await res.json();
+          setAdminName(data.name);
         }
       } catch (error) {
         console.error('Failed to fetch admin name:', error);
@@ -97,17 +80,10 @@ export default function AdminCourseManagementPage() {
   const handleSaveEdit = async (courseId) => {
     setError('');
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
-
       const res = await fetch('/api/admin/courses', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ id: courseId, ...editFormData }),
       });
@@ -134,17 +110,8 @@ export default function AdminCourseManagementPage() {
     }
     setError('');
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
-
       const res = await fetch(`/api/admin/courses?id=${courseId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       if (!res.ok) {
@@ -166,17 +133,7 @@ export default function AdminCourseManagementPage() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
-
-      const res = await fetch(`/api/admin/courses/${courseId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(`/api/admin/courses/${courseId}`);
 
       if (!res.ok) {
         if (res.status === 401) {
@@ -204,17 +161,10 @@ export default function AdminCourseManagementPage() {
   const handleCreateCourse = async (courseData) => {
     setError('');
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
-
       const res = await fetch('/api/admin/courses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(courseData),
       });

@@ -1,14 +1,15 @@
 import connectMongoDB from '@/config/mongoConfig';
 import Course from '@/models/Course';
 import { NextResponse } from 'next/server';
-import { getUserIdFromToken } from '@/services/authService';
+import { verifyToken } from '@/utils/auth';
 
 export async function POST(request) {
   try {
-    const userId = getUserIdFromToken(request);
-    if (!userId) {
+    const payload = await verifyToken();
+    if (!payload) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+    const userId = payload.userId;
 
     await connectMongoDB();
     const { subject, section, teacherName, coverColor } = await request.json();
@@ -33,10 +34,11 @@ export async function POST(request) {
 
 export async function GET(request) {
   try {
-    const userId = getUserIdFromToken(request);
-    if (!userId) {
+    const payload = await verifyToken();
+    if (!payload) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+    const userId = payload.userId;
 
     await connectMongoDB();
     const courses = await Course.find({

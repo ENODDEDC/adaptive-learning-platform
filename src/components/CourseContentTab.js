@@ -38,12 +38,7 @@ const CourseContentTab = ({ courseId, isInstructor = false }) => {
   const fetchCourseContent = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const headers = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      const response = await fetch(`/api/courses/${courseId}/content`, { headers });
+      const response = await fetch(`/api/courses/${courseId}/content`); // No need for manual token header, cookie is sent automatically
       if (response.ok) {
         const data = await response.json();
         setCourseContent(data.content || []);
@@ -63,15 +58,8 @@ const CourseContentTab = ({ courseId, isInstructor = false }) => {
     if (!confirm('Are you sure you want to delete this content?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const headers = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
       const response = await fetch(`/api/courses/${courseId}/content?contentId=${contentId}`, {
         method: 'DELETE',
-        headers
       });
 
       if (response.ok) {
@@ -148,13 +136,13 @@ const CourseContentTab = ({ courseId, isInstructor = false }) => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => router.push(`/courses/${courseId}/content`)}
-                  className="px-4 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-sm"
+                  className="px-4 py-2 text-sm text-blue-600 transition-colors border border-blue-200 rounded-lg bg-blue-50 hover:bg-blue-100"
                 >
                   Manage Content
                 </button>
                 <button
                   onClick={() => setIsUploadModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
                   <PlusIcon className="w-4 h-4" />
                   Upload
@@ -197,17 +185,17 @@ const CourseContentTab = ({ courseId, isInstructor = false }) => {
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="flex items-center gap-3">
-                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
                 <span className="text-gray-600">Loading content...</span>
               </div>
             </div>
           ) : filteredContent.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="py-8 text-center">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full">
                 <FolderIcon className="w-6 h-6 text-gray-400" />
               </div>
-              <h4 className="font-medium text-gray-900 mb-1">No content found</h4>
-              <p className="text-sm text-gray-600 mb-4">
+              <h4 className="mb-1 font-medium text-gray-900">No content found</h4>
+              <p className="mb-4 text-sm text-gray-600">
                 {activeFilter === 'all'
                   ? 'No content has been uploaded yet.'
                   : `No ${activeFilter} content found.`
@@ -216,7 +204,7 @@ const CourseContentTab = ({ courseId, isInstructor = false }) => {
               {isInstructor && (
                 <button
                   onClick={() => setIsUploadModalOpen(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  className="px-4 py-2 text-sm text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
                   Upload First Content
                 </button>
@@ -229,7 +217,7 @@ const CourseContentTab = ({ courseId, isInstructor = false }) => {
                 const colorClasses = getContentColor(content.contentType);
                 
                 return (
-                  <div key={content.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div key={content.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorClasses}`}>
                         <IconComponent className="w-5 h-5" />
@@ -247,21 +235,21 @@ const CourseContentTab = ({ courseId, isInstructor = false }) => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setSelectedContent(content)}
-                        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 text-gray-600 transition-colors rounded-lg hover:text-blue-600 hover:bg-blue-50"
                       >
                         <EyeIcon className="w-4 h-4" />
                       </button>
                       <a
                         href={content.filePath}
                         download
-                        className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        className="p-2 text-gray-600 transition-colors rounded-lg hover:text-green-600 hover:bg-green-50"
                       >
                         <ArrowDownTrayIcon className="w-4 h-4" />
                       </a>
                       {isInstructor && (
                         <button
                           onClick={() => handleDeleteContent(content.id)}
-                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-gray-600 transition-colors rounded-lg hover:text-red-600 hover:bg-red-50"
                         >
                           <TrashIcon className="w-4 h-4" />
                         </button>
@@ -272,10 +260,10 @@ const CourseContentTab = ({ courseId, isInstructor = false }) => {
               })}
               
               {filteredContent.length > 5 && (
-                <div className="text-center pt-4">
+                <div className="pt-4 text-center">
                   <button
                     onClick={() => router.push(`/courses/${courseId}/content`)}
-                    className="px-4 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-sm"
+                    className="px-4 py-2 text-sm text-blue-600 transition-colors border border-blue-200 rounded-lg bg-blue-50 hover:bg-blue-100"
                   >
                     View All {filteredContent.length} Items
                   </button>

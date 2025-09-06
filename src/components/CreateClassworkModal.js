@@ -40,12 +40,12 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
 
     let uploadedAttachmentUrls = [];
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        setLoading(false);
-        return;
-      }
+      // Token is now sent via HTTP-only cookie, no need to retrieve from localStorage
+      // if (!token) {
+      //   setError('User not authenticated.');
+      //   setLoading(false);
+      //   return;
+      // }
 
       if (attachments.length > 0) {
         const formData = new FormData();
@@ -74,7 +74,7 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
         method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          // Authorization: `Bearer ${token}`, // No longer needed, cookie is sent automatically
         },
         body: JSON.stringify({
           courseId,

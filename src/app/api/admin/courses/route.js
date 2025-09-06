@@ -1,32 +1,15 @@
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/config/mongoConfig';
 import Course from '@/models/Course';
-import jwt from 'jsonwebtoken';
-
-// Helper function to verify admin token
-const verifyAdminToken = (req) => {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role === 'admin' || decoded.role === 'super admin') {
-      return decoded.id;
-    }
-    return null;
-  } catch (error) {
-    return null;
-  }
-};
+import { verifyAdminToken } from '@/utils/auth';
 
 export async function GET(req) {
   await connectMongoDB();
-  const adminId = verifyAdminToken(req);
-  if (!adminId) {
+  const adminInfo = await verifyAdminToken();
+  if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+  const adminId = adminInfo.userId;
 
   try {
     const courses = await Course.find({})
@@ -48,10 +31,11 @@ export async function GET(req) {
 
 export async function POST(req) {
   await connectMongoDB();
-  const adminId = verifyAdminToken(req);
-  if (!adminId) {
+  const adminInfo = await verifyAdminToken();
+  if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+  const adminId = adminInfo.userId;
 
   const { subject, section, teacherName, coverColor, uniqueKey } = await req.json();
 
@@ -77,10 +61,11 @@ export async function POST(req) {
 
 export async function PUT(req) {
   await connectMongoDB();
-  const adminId = verifyAdminToken(req);
-  if (!adminId) {
+  const adminInfo = await verifyAdminToken();
+  if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+  const adminId = adminInfo.userId;
 
   const { id, subject, section, teacherName, coverColor, uniqueKey } = await req.json();
 
@@ -110,10 +95,11 @@ export async function PUT(req) {
 
 export async function DELETE(req) {
   await connectMongoDB();
-  const adminId = verifyAdminToken(req);
-  if (!adminId) {
+  const adminInfo = await verifyAdminToken();
+  if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+  const adminId = adminInfo.userId;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');

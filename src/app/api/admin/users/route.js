@@ -1,30 +1,12 @@
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/config/mongoConfig';
 import User from '@/models/User';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs'; // Import bcrypt for password hashing
-
-// Helper function to verify admin token
-const verifyAdminToken = (req) => {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role === 'admin' || decoded.role === 'super admin') {
-      return decoded; // Return the entire decoded token
-    }
-    return null;
-  } catch (error) {
-    return null;
-  }
-};
+import { verifyAdminToken } from '@/utils/auth';
 
 export async function GET(req) {
   await connectMongoDB();
-  const adminInfo = verifyAdminToken(req);
+  const adminInfo = await verifyAdminToken();
   if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
@@ -40,7 +22,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   await connectMongoDB();
-  const adminInfo = verifyAdminToken(req);
+  const adminInfo = await verifyAdminToken();
   if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
@@ -81,7 +63,7 @@ export async function POST(req) {
 
 export async function PUT(req) {
   await connectMongoDB();
-  const adminInfo = verifyAdminToken(req);
+  const adminInfo = await verifyAdminToken();
   if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
@@ -121,7 +103,7 @@ export async function PUT(req) {
 
 export async function DELETE(req) {
   await connectMongoDB();
-  const adminInfo = verifyAdminToken(req);
+  const adminInfo = await verifyAdminToken();
   if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }

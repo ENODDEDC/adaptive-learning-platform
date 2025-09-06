@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/config/mongoConfig';
 import User from '@/models/User';
-import jwt from 'jsonwebtoken';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '@/config/firebaseConfig'; // Ensure this is correctly imported
+import { verifyAdminToken } from '@/utils/auth';
 
 // Initialize Firebase if not already initialized
 let firebaseApp;
@@ -17,29 +17,14 @@ if (!initializeApp.length) { // Check if any app is already initialized
 const storage = getStorage(firebaseApp);
 
 // Helper function to verify admin token
-const verifyAdminToken = (req) => {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role === 'admin') {
-      return decoded.id;
-    }
-    return null;
-  } catch (error) {
-    return null;
-  }
-};
 
 export async function POST(req) {
   await connectMongoDB();
-  const adminId = verifyAdminToken(req);
-  if (!adminId) {
+  const adminInfo = await verifyAdminToken();
+  if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+  const adminId = adminInfo.userId;
 
   try {
     const formData = await req.formData();
