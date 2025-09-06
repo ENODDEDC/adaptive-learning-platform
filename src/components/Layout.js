@@ -22,45 +22,45 @@ const Layout = ({ children }) => {
     openCreateCourseModal, // Re-add extraction
     openJoinCourseModal,   // Re-add extraction
   } = useLayout();
-  const [userName, setUserName] = useState(''); // For both admin and regular users
-
-  // State to prevent hydration mismatch
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-    if (isMounted) { // Only run on client side
-      const fetchUserName = async () => {
-        try {
-          const currentToken = localStorage.getItem('adminToken') || localStorage.getItem('token');
-          if (currentToken) {
-            const isAdmin = localStorage.getItem('adminToken') ? true : false;
-            const profileApi = isAdmin ? '/api/admin/profile' : '/api/auth/profile';
-            
-            const res = await fetch(profileApi, {
-              headers: {
-                Authorization: `Bearer ${currentToken}`,
-              },
-            });
-            if (res.ok) {
-              const data = await res.json();
-              setUserName(data.name);
-            } else {
-              console.error('Failed to fetch user profile:', res.status, res.statusText);
-              localStorage.removeItem('token');
-              localStorage.removeItem('adminToken');
-              setUserName('');
-            }
-          } else {
-            setUserName('');
-          }
-        } catch (error) {
-          console.error('Failed to fetch user name:', error);
-          setUserName('');
-        }
-      };
-      fetchUserName();
-    }
-  }, [isMounted]); // Depend on isMounted to ensure client-side execution
+  const [user, setUser] = useState(null);
+ 
+   // State to prevent hydration mismatch
+   const [isMounted, setIsMounted] = useState(false);
+   useEffect(() => {
+     setIsMounted(true);
+     if (isMounted) { // Only run on client side
+       const fetchUserProfile = async () => {
+         try {
+           const currentToken = localStorage.getItem('adminToken') || localStorage.getItem('token');
+           if (currentToken) {
+             const isAdmin = localStorage.getItem('adminToken') ? true : false;
+             const profileApi = isAdmin ? '/api/admin/profile' : '/api/auth/profile';
+             
+             const res = await fetch(profileApi, {
+               headers: {
+                 Authorization: `Bearer ${currentToken}`,
+               },
+             });
+             if (res.ok) {
+               const data = await res.json();
+               setUser(data);
+             } else {
+               console.error('Failed to fetch user profile:', res.status, res.statusText);
+               localStorage.removeItem('token');
+               localStorage.removeItem('adminToken');
+               setUser(null);
+             }
+           } else {
+             setUser(null);
+           }
+         } catch (error) {
+           console.error('Failed to fetch user profile:', error);
+           setUser(null);
+         }
+       };
+       fetchUserProfile();
+     }
+   }, [isMounted]); // Depend on isMounted to ensure client-side execution
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -104,15 +104,13 @@ const Layout = ({ children }) => {
   const contentOverflow = needsScrolling ? 'overflow-y-auto' : 'overflow-hidden';
 
   return (
-    <div className="h-screen bg-base-light overflow-hidden">
+    <div className="h-screen overflow-hidden bg-base-light">
       <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
-      <Navbar onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
         onClose={closeCreateCourseModal}
         onCreateCourse={async (courseData) => {
           try {
-            console.log('Course data before sending to API:', courseData); // Added console.log
             const token = localStorage.getItem('token'); // Use 'token' for regular user authentication
             if (!token) {
               console.error('User not authenticated to create course.');
@@ -129,13 +127,12 @@ const Layout = ({ children }) => {
             if (!res.ok) {
               throw new Error(`Error: ${res.status} ${res.statusText}`);
             }
-            console.log('Course created successfully by user.');
             closeCreateCourseModal();
           } catch (error) {
             console.error('Failed to create course by user:', error);
           }
         }}
-        adminName={userName}
+        adminName={user?.name}
       />
       <JoinCourseModal
         isOpen={isJoinCourseModalOpen}
@@ -158,7 +155,6 @@ const Layout = ({ children }) => {
             if (!res.ok) {
               throw new Error(`Error: ${res.status} ${res.statusText}`);
             }
-            console.log('Successfully joined course.');
             closeJoinCourseModal();
             // Optionally, trigger a refresh of courses on the home page
             // This would require a way to communicate from Layout to Home, e.g., context or a global state management.
@@ -169,6 +165,7 @@ const Layout = ({ children }) => {
         }}
       />
       <div className={`transition-all duration-300 ease-in-out ${mainContentMargin} h-screen ${containerOverflow}`}>
+        <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
         <main className={`h-full ${contentOverflow}`}>{children}</main>
       </div>
     </div>
