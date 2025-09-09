@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import FileUpload from './FileUpload';
 
 const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSuccess, initialContent = '', initialAttachments = [] }) => {
   const [content, setContent] = useState(initialContent);
   const [attachments, setAttachments] = useState(initialAttachments);
+  const [files, setFiles] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -26,6 +28,30 @@ const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSucc
         setLoading(false);
         return;
       }
+      
+      let uploadedFiles = [];
+      if (files.length > 0) {
+        const formData = new FormData();
+        files.forEach(file => {
+          formData.append('files', file);
+        });
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error('File upload failed');
+        }
+
+        const uploadData = await uploadRes.json();
+        uploadedFiles = uploadData.files;
+      }
+
 
       const res = await fetch(`/api/courses/${assignmentId}/submissions`, { // Note: assignmentId is used as courseId in the API route
         method: 'POST',
@@ -36,7 +62,7 @@ const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSucc
         body: JSON.stringify({
           assignmentId,
           content,
-          attachments,
+          attachments: [...attachments, ...uploadedFiles],
         }),
       });
 
@@ -73,7 +99,10 @@ const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSucc
               onChange={(e) => setContent(e.target.value)}
             ></textarea>
           </div>
-          {/* Attachments input can be added here */}
+          <div className="mb-4">
+            <label className="block mb-2 text-sm font-medium text-gray-700">Attach Files</label>
+            <FileUpload files={files} setFiles={setFiles} />
+          </div>
           <div className="flex justify-end gap-4">
             <button
               type="button"

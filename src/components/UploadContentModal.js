@@ -111,6 +111,25 @@ const UploadContentModal = ({ isOpen, onClose, courseId, onUploadSuccess }) => {
       
       if (result.success) {
         onUploadSuccess?.(result.content);
+
+        // Generate thumbnail
+        try {
+          const thumbnailResponse = await fetch('/api/generate-thumbnail', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ contentId: result.content._id }),
+          });
+
+          if (!thumbnailResponse.ok) {
+            console.error('Failed to start thumbnail generation');
+          }
+        } catch (thumbnailError) {
+          console.error('Error calling thumbnail generation API:', thumbnailError);
+        }
+
         handleClose();
       } else {
         throw new Error(result.error || 'Upload failed');

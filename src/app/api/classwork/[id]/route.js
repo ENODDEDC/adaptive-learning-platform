@@ -31,9 +31,18 @@ export async function PUT(request, { params }) {
         return NextResponse.json({ message: 'Forbidden: Only course creator can update classwork' }, { status: 403 });
     }
 
+    // Ensure attachments are sent as an array of ObjectIds
+    const attachmentIds = attachments.map(att => att._id || att);
+
     const updatedClasswork = await Assignment.findByIdAndUpdate(
       id,
-      { title, description, dueDate, type, attachments },
+      {
+        title,
+        description,
+        dueDate,
+        type,
+        attachments: attachmentIds
+      },
       { new: true }
     );
 

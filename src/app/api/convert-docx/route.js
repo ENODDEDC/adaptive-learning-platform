@@ -1,75 +1,55 @@
 import { NextResponse } from 'next/server';
+import mammoth from 'mammoth';
 import path from 'path';
-import { promises as fs } from 'fs';
-import { spawn } from 'child_process';
-
-// This is the final, definitive, and correct implementation.
-async function runPandoc(args) {
-  return new Promise((resolve, reject) => {
-    const pandoc = spawn('pandoc', args);
-    let result = '';
-    let errorOutput = '';
-    pandoc.stdout.on('data', (data) => {
-      result += data.toString();
-    });
-    pandoc.stderr.on('data', (data) => {
-      errorOutput += data.toString();
-    });
-    pandoc.on('close', (code) => {
-      if (code !== 0) {
-        return reject(new Error(errorOutput));
-      }
-      resolve(result);
-    });
-    pandoc.on('error', (err) => {
-      reject(err);
-    });
-  });
-}
+import { exec } from 'child_process';
+import fs from 'fs/promises';
 
 export async function GET(request) {
-  const { searchParams } = request.nextUrl;
-  const filePathParam = searchParams.get('filePath');
+  const { searchParams } = new URL(request.url);
+  const filePath = searchParams.get('filePath');
 
-  if (!filePathParam) {
+  if (!filePath) {
     return NextResponse.json({ error: 'File path is required' }, { status: 400 });
   }
-  if (filePathParam.includes('..')) {
-    return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
-  }
 
-  const decodedPath = decodeURIComponent(filePathParam);
-  const normalizedPath = path.normalize(decodedPath);
-  const absolutePath = path.join(process.cwd(), 'public', normalizedPath);
+  // Prevent directory traversal attacks
+  const safeSuffix = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
+  const absolutePath = path.join(process.cwd(), 'public', safeSuffix);
 
   try {
+    // Check if file exists
     await fs.access(absolutePath);
 
-    let htmlResult;
-    try {
-      // First, try the best method: --embed-images
-      htmlResult = await runPandoc([absolutePath, '-f', 'docx', '-t', 'html', '--embed-images']);
-    } catch (error) {
-      console.warn('Pandoc with --embed-images failed. Falling back to --self-contained.', error);
-      try {
-        // Fallback to the more compatible but layout-breaking method
-        const fullHtml = await runPandoc([absolutePath, '-f', 'docx', '-t', 'html', '--self-contained']);
-        // Desperate hack: strip the full document structure to prevent layout breakage.
-        const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-        htmlResult = bodyMatch ? bodyMatch[1] : fullHtml;
-      } catch (fallbackError) {
-        console.error('Pandoc fallback with --self-contained also failed.', fallbackError);
-        throw fallbackError; // Both methods failed, rethrow the error.
-      }
+    const command = `pandoc "${absolutePath}" -f docx -t html`;
+
+    const { stdout, stderr } = await new Promise((resolve, reject) => {
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          return reject(error);
+        }
+        resolve({ stdout, stderr });
+      });
+    });
+
+    if (stderr) {
+      console.warn('Pandoc stderr:', stderr);
     }
 
-    return new NextResponse(htmlResult, {
+    return new NextResponse(stdout, {
       status: 200,
-      headers: { 'Content-Type': 'text/html' },
+      headers: {
+        'Content-Type': 'text/html',
+      },
     });
 
   } catch (error) {
-    console.error('--- CATASTROPHIC ERROR in convert-docx ---', error);
-    return NextResponse.json({ error: 'Failed to convert document', details: error.message }, { status: 500 });
+    console.error('Error converting DOCX to HTML with Pandoc:', error);
+    if (error.code === 'ENOENT') {
+        return NextResponse.json({ error: 'File not found' }, { status: 404 });
+    }
+    if (error.message.includes('command not found') || error.code === 127 || error.message.includes('is not recognized')) {
+        return NextResponse.json({ error: 'Pandoc is not installed or not in PATH' }, { status: 500 });
+    }
+    return NextResponse.json({ error: 'Failed to convert file' }, { status: 500 });
   }
 }

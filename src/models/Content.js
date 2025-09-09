@@ -48,8 +48,11 @@ const contentSchema = new Schema({
     type: Boolean,
     default: true,
   },
-}, { 
-  timestamps: true 
+  thumbnailUrl: {
+    type: String,
+  },
+}, {
+  timestamps: true
 });
 
 // Index for efficient querying

@@ -24,15 +24,17 @@ const assignmentSchema = new Schema(
     },
     type: {
       type: String,
-      enum: ['assignment', 'quiz', 'material'],
+      enum: ['assignment', 'quiz', 'material', 'topic'],
       required: true,
     },
-    attachments: [
-      {
-        fileName: String,
-        fileUrl: String,
-      },
-    ],
+    topic: {
+      type: Schema.Types.ObjectId,
+      ref: 'Assignment', // Topics are self-referential to the Assignment model but filtered by type
+    },
+    attachments: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Content'
+    }],
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

@@ -55,7 +55,8 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
 
       if (isWordDocument) {
         try {
-          const response = await fetch(`/api/convert-docx?filePath=${encodeURIComponent(content.filePath)}`);
+          const conversionApiUrl = `/api/convert-docx?filePath=${encodeURIComponent(content.filePath.replace(window.location.origin, ''))}`;
+          const response = await fetch(conversionApiUrl);
           if (!response.ok) {
             // Try to get error details from JSON, otherwise use status text
             let errorDetails = `Server error: ${response.statusText}`;

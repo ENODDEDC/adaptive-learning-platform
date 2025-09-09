@@ -16,6 +16,14 @@ const announcementSchema = new Schema(
       ref: 'User',
       required: true,
     },
+    attachments: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Content'
+    }],
+    pinned: {
+      type: Boolean,
+      default: false,
+    }
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

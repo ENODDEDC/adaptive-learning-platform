@@ -63,12 +63,51 @@ export async function GET(request, { params }) {
     }
 
     const announcements = await Announcement.find({ courseId })
-      .populate('postedBy', 'name') // Populate postedBy with user's name
-      .sort({ createdAt: -1 }); // Sort by most recent
+      .populate('postedBy', 'name')
+      .populate('attachments') // Populate the attachments with full Content data
+      .sort({ createdAt: -1 });
 
     return NextResponse.json({ announcements });
   } catch (error) {
     console.error('Get Announcements Error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(request, { params }) {
+  try {
+    await connectMongoDB();
+    const { id: courseId } = params;
+    const { announcementId, pinned } = await request.json();
+
+    const userId = getUserIdFromToken(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    }
+
+    if (course.createdBy.toString() !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const announcement = await Announcement.findById(announcementId);
+    if (!announcement) {
+      return NextResponse.json({ error: 'Announcement not found' }, { status: 404 });
+    }
+
+    announcement.pinned = pinned;
+    await announcement.save();
+
+    return NextResponse.json({
+      success: true,
+      announcement,
+    });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

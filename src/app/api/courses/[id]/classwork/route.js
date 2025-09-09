@@ -1,8 +1,11 @@
 import connectMongoDB from '@/config/mongoConfig';
 import Assignment from '@/models/Assignment';
 import Course from '@/models/Course';
+import Content from '@/models/Content';
 import { NextResponse } from 'next/server';
 import { getUserIdFromToken } from '@/services/authService';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export async function POST(request, { params }) {
   try {
@@ -12,38 +15,93 @@ export async function POST(request, { params }) {
     }
 
     await connectMongoDB();
-    const { id } = params;
-    const { title, description, dueDate, type, attachments } = await request.json();
+    const { id } = await params;
+    const formData = await request.formData();
+
+    const title = formData.get('title');
+    const description = formData.get('description');
+    const dueDate = formData.get('dueDate');
+    const type = formData.get('type');
+    const attachmentFiles = formData.getAll('attachments');
+    console.log('--- Classwork POST Request Data ---');
+    console.log('Course ID:', id);
+    console.log('Title:', title);
+    console.log('Description:', description);
+    console.log('Due Date:', dueDate);
+    console.log('Type:', type);
+    console.log('Number of attachment files:', attachmentFiles.length);
 
     if (!id || !title || !type) {
+      console.error('Missing required fields: Course ID, title, or type.');
       return NextResponse.json({ message: 'Course ID, title, and type are required' }, { status: 400 });
     }
 
-    // Verify that the user is the creator or a co-teacher of the course
     const course = await Course.findById(id);
     if (!course) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
     }
 
-    // TODO: Implement co-teacher check once coTeachers field is added to Course model
     if (course.createdBy.toString() !== userId) {
-        return NextResponse.json({ message: 'Forbidden: Only course creator can add classwork' }, { status: 403 });
+      return NextResponse.json({ message: 'Forbidden: Only course creator can add classwork' }, { status: 403 });
     }
 
+    const attachmentIds = [];
+    if (attachmentFiles && attachmentFiles.length > 0) {
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'courses', id);
+      console.log('Upload directory:', uploadDir);
+      await fs.mkdir(uploadDir, { recursive: true });
+      console.log('Upload directory ensured.');
+
+      for (const file of attachmentFiles) {
+        console.log('Processing file:', file.name, 'Type:', file.type, 'Size:', file.size);
+        const fileName = `${Date.now()}_${file.name}`;
+        const filePath = path.join(uploadDir, fileName);
+        const fileUrl = `/uploads/courses/${id}/${fileName}`;
+        console.log('File path for saving:', filePath);
+
+        const fileBuffer = Buffer.from(await file.arrayBuffer());
+        console.log('Writing file to disk...');
+        await fs.writeFile(filePath, fileBuffer);
+        console.log('File written to disk successfully.');
+
+        const newContent = new Content({
+          courseId: id,
+          title: fileName, // Use the unique filename as the title to avoid duplicate key errors
+          originalName: file.name, // Keep the original file name
+          filename: fileName,
+          filePath: fileUrl,
+          contentType: 'material', // This can be made dynamic later if needed
+          fileSize: file.size,
+          mimeType: file.type,
+          uploadedBy: userId,
+        });
+        console.log('New Content object created:', newContent);
+        await newContent.save();
+        console.log('Content saved, ID:', newContent._id);
+        attachmentIds.push(newContent._id);
+      }
+    }
+    console.log('Attachment IDs:', attachmentIds);
+
+    console.log('Creating new Assignment...');
     const newClasswork = await Assignment.create({
       courseId: id,
       title,
       description,
-      dueDate,
+      dueDate: dueDate || null,
       postedBy: userId,
       type,
-      attachments,
+      attachments: attachmentIds,
     });
+    console.log('Assignment created, ID:', newClasswork._id);
 
-    return NextResponse.json({ message: 'Classwork created', classwork: newClasswork }, { status: 201 });
+    const populatedClasswork = await Assignment.findById(newClasswork._id).populate('attachments');
+    console.log('Populated Classwork:', populatedClasswork);
+    return NextResponse.json(populatedClasswork, { status: 201 });
   } catch (error) {
     console.error('Create Classwork Error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    // Return a more specific error message in debug mode if needed, but for now, keep it generic for production
+    return NextResponse.json({ message: 'Internal server error', details: error.message }, { status: 500 });
   }
 }
 
@@ -55,7 +113,7 @@ export async function GET(request, { params }) {
     }
 
     await connectMongoDB();
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json({ message: 'Course ID is required' }, { status: 400 });
@@ -73,7 +131,9 @@ export async function GET(request, { params }) {
       return NextResponse.json({ message: 'Forbidden: User not authorized to view this course\'s classwork' }, { status: 403 });
     }
 
-    const classwork = await Assignment.find({ courseId: id }).sort({ dueDate: -1, createdAt: -1 });
+    const classwork = await Assignment.find({ courseId: id })
+      .populate('attachments') // Populate the attachments with full Content data
+      .sort({ dueDate: -1, createdAt: -1 });
 
     return NextResponse.json({ classwork }, { status: 200 });
   } catch (error) {
