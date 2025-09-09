@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -21,6 +21,21 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/profile');
+        if (res.ok) {
+          // User is authenticated, redirect to home
+          router.push('/home');
+        }
+      } catch (error) {
+        console.error('Failed to check authentication status:', error);
+      }
+    };
+    checkAuth();
+  }, [router]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -99,29 +114,29 @@ export default function RegisterPage() {
     <div className="flex min-h-screen">
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:justify-center lg:px-8 bg-gradient-to-br from-indigo-600 to-purple-700">
-        <div className="mx-auto max-w-md text-center">
+        <div className="max-w-md mx-auto text-center">
           <div className="mb-8">
-            <div className="mx-auto h-16 w-16 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-white shadow-lg rounded-2xl">
               <span className="text-2xl font-bold text-indigo-600">AL</span>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-4">
+          <h1 className="mb-4 text-3xl font-bold text-white">
             Join AssistEd
           </h1>
-          <p className="text-lg text-indigo-100 mb-8">
+          <p className="mb-8 text-lg text-indigo-100">
             Start your personalized learning journey today and unlock your potential with AssistEd.
           </p>
           <div className="space-y-4 text-indigo-100">
             <div className="flex items-center justify-center">
-              <CheckIcon className="h-5 w-5 mr-3" />
+              <CheckIcon className="w-5 h-5 mr-3" />
               <span>Free to get started</span>
             </div>
             <div className="flex items-center justify-center">
-              <CheckIcon className="h-5 w-5 mr-3" />
+              <CheckIcon className="w-5 h-5 mr-3" />
               <span>Adaptive learning technology</span>
             </div>
             <div className="flex items-center justify-center">
-              <CheckIcon className="h-5 w-5 mr-3" />
+              <CheckIcon className="w-5 h-5 mr-3" />
               <span>Comprehensive progress tracking</span>
             </div>
           </div>
@@ -129,13 +144,13 @@ export default function RegisterPage() {
       </div>
 
       {/* Right side - Registration form */}
-      <div className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-md">
+      <div className="flex flex-col justify-center flex-1 px-4 py-12 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md mx-auto">
           {step === 1 ? (
             <>
-              <div className="text-center mb-8">
-                <div className="lg:hidden mb-6">
-                  <div className="mx-auto h-12 w-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <div className="mb-8 text-center">
+                <div className="mb-6 lg:hidden">
+                  <div className="flex items-center justify-center w-12 h-12 mx-auto bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl">
                     <span className="text-lg font-bold text-white">AL</span>
                   </div>
                 </div>
@@ -148,7 +163,7 @@ export default function RegisterPage() {
                 </p>
               </div>
 
-              <div className="card p-8">
+              <div className="p-8 card">
                 <form onSubmit={handleRegister} className="space-y-6">
                   <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
                     <div>
@@ -302,7 +317,7 @@ export default function RegisterPage() {
                           id="terms"
                           type="checkbox"
                           required
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                       </div>
                       <div className="ml-3 text-sm">
@@ -326,7 +341,7 @@ export default function RegisterPage() {
                           id="privacy"
                           type="checkbox"
                           required
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                       </div>
                       <div className="ml-3 text-sm">
@@ -347,7 +362,7 @@ export default function RegisterPage() {
                   </div>
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="p-3 border border-red-200 rounded-lg bg-red-50">
                       <p className="text-sm text-red-600">{error}</p>
                     </div>
                   )}
@@ -356,11 +371,11 @@ export default function RegisterPage() {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="btn-primary w-full flex justify-center items-center"
+                      className="flex items-center justify-center w-full btn-primary"
                     >
                       {isLoading ? (
                         <>
-                          <LoadingSpinner className="h-4 w-4 mr-2" />
+                          <LoadingSpinner className="w-4 h-4 mr-2" />
                           Creating account...
                         </>
                       ) : (
@@ -373,9 +388,9 @@ export default function RegisterPage() {
             </>
           ) : (
             <>
-              <div className="text-center mb-8">
-                <div className="mx-auto h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <MailIcon className="h-6 w-6 text-green-600" />
+              <div className="mb-8 text-center">
+                <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-green-100 rounded-full">
+                  <MailIcon className="w-6 h-6 text-green-600" />
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900">Check your email</h2>
                 <p className="mt-2 text-sm text-gray-600">
@@ -383,16 +398,16 @@ export default function RegisterPage() {
                 </p>
               </div>
 
-              <div className="card p-8">
+              <div className="p-8 card">
                 {message && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                  <div className="p-3 mb-6 border border-blue-200 rounded-lg bg-blue-50">
                     <p className="text-sm text-blue-600">{message}</p>
                   </div>
                 )}
 
                 <form onSubmit={handleVerifyOtp} className="space-y-6">
                   <div>
-                    <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="otp" className="block mb-2 text-sm font-medium text-gray-700">
                       Verification Code
                     </label>
                     <input
@@ -401,14 +416,14 @@ export default function RegisterPage() {
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
                       required
-                      className="input-field text-center text-lg tracking-widest"
+                      className="text-lg tracking-widest text-center input-field"
                       placeholder="Enter 6-digit code"
                       maxLength="6"
                     />
                   </div>
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="p-3 border border-red-200 rounded-lg bg-red-50">
                       <p className="text-sm text-red-600">{error}</p>
                     </div>
                   )}
@@ -416,11 +431,11 @@ export default function RegisterPage() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="btn-primary w-full flex justify-center items-center"
+                    className="flex items-center justify-center w-full btn-primary"
                   >
                     {isLoading ? (
                       <>
-                        <LoadingSpinner className="h-4 w-4 mr-2" />
+                        <LoadingSpinner className="w-4 h-4 mr-2" />
                         Verifying...
                       </>
                     ) : (
@@ -444,7 +459,7 @@ export default function RegisterPage() {
             </>
           )}
 
-          <p className="mt-8 text-center text-xs text-gray-500">
+          <p className="mt-8 text-xs text-center text-gray-500">
             By creating an account, you agree to our{' '}
             <Link href="/terms" className="font-medium text-blue-600 hover:text-blue-500">
               Terms of Service

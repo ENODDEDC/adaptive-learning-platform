@@ -5,7 +5,7 @@ import connectDB from '@/config/mongoConfig';
 import Content from '@/models/Content';
 import Course from '@/models/Course';
 import Notification from '@/models/Notification';
-import { getUserIdFromToken } from '@/services/authService';
+import { verifyToken } from '@/utils/auth';
 
 export async function POST(request, { params }) {
   console.log('Upload API called');
@@ -15,10 +15,11 @@ export async function POST(request, { params }) {
     console.log('Course ID:', courseId);
     
     // Get user ID from token for authentication
-    const userId = getUserIdFromToken(request);
-    if (!userId) {
+    const payload = await verifyToken();
+    if (!payload) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    const userId = payload.userId;
     
     // Connect to database
     await connectDB();
@@ -186,10 +187,11 @@ export async function GET(request, { params }) {
     const contentType = searchParams.get('type'); // filter by type
 
     // Get user ID from token for authentication
-    const userId = getUserIdFromToken(request);
-    if (!userId) {
+    const payload = await verifyToken();
+    if (!payload) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    const userId = payload.userId;
 
     // Connect to database
     await connectDB();
@@ -261,10 +263,11 @@ export async function DELETE(request, { params }) {
     }
 
     // Get user ID from token for authentication
-    const userId = getUserIdFromToken(request);
-    if (!userId) {
+    const payload = await verifyToken();
+    if (!payload) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    const userId = payload.userId;
 
     // Connect to database
     await connectDB();

@@ -3,17 +3,17 @@ import connectMongoDB from '@/config/mongoConfig';
 import Comment from '@/models/Comment';
 import Announcement from '@/models/Announcement';
 import User from '@/models/User';
-import { getUserIdFromToken } from '@/services/authService';
+import { verifyToken } from '@/utils/auth';
 
 export async function GET(request, { params }) {
   await connectMongoDB();
   try {
     const { id: courseId, announcementId } = params;
-    const userId = getUserIdFromToken(request);
-
-    if (!userId) {
+    const payload = await verifyToken();
+    if (!payload) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+    const userId = payload.userId;
 
     const comments = await Comment.find({ onItem: announcementId, onModel: 'Announcement' })
       .populate('postedBy', 'name profilePicture')
@@ -31,11 +31,11 @@ export async function POST(request, { params }) {
   try {
     const { id: courseId, announcementId } = params;
     const { content } = await request.json();
-    const userId = getUserIdFromToken(request);
-
-    if (!userId) {
+    const payload = await verifyToken();
+    if (!payload) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+    const userId = payload.userId;
 
     const user = await User.findById(userId);
     if (!user) {

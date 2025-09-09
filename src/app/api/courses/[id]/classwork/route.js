@@ -3,16 +3,15 @@ import Assignment from '@/models/Assignment';
 import Course from '@/models/Course';
 import Content from '@/models/Content';
 import { NextResponse } from 'next/server';
-import { getUserIdFromToken } from '@/services/authService';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { verifyToken } from '@/utils/auth';
 
 export async function POST(request, { params }) {
   try {
-    const userId = getUserIdFromToken(request);
-    if (!userId) {
+    const payload = await verifyToken();
+    if (!payload) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+    const userId = payload.userId;
 
     await connectMongoDB();
     const { id } = await params;
@@ -107,10 +106,11 @@ export async function POST(request, { params }) {
 
 export async function GET(request, { params }) {
   try {
-    const userId = getUserIdFromToken(request);
-    if (!userId) {
+    const payload = await verifyToken();
+    if (!payload) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+    const userId = payload.userId;
 
     await connectMongoDB();
     const { id } = await params;

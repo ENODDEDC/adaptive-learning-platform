@@ -25,21 +25,25 @@ export default function AdminUserManagementPage() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
-      const decodedToken = jwt.decode(token);
-      if (decodedToken && decodedToken.role) {
-        setAdminRole(decodedToken.role);
-      }
+      // No need to get token from localStorage, cookie will be sent automatically
+      // const token = localStorage.getItem('adminToken');
+      // if (!token) {
+      //   router.push('/admin/login');
+      //   return;
+      // }
+      // const decodedToken = jwt.decode(token); // jwt.decode is client-side safe
+      // if (decodedToken && decodedToken.role) {
+      //   setAdminRole(decodedToken.role);
+      // }
 
-      const res = await fetch('/api/admin/users', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Fetch admin role from a secure endpoint if needed, or rely on middleware for auth
+      // For now, we'll assume the user is authenticated if they reach here,
+      // and the role can be fetched from /api/admin/profile if needed for client-side logic.
+      // For setting adminRole, we can make a separate call to /api/admin/profile
+      // or pass it from a server component if this page was a server component.
+      // For now, we'll remove the client-side token decoding.
+
+      const res = await fetch('/api/admin/users'); // Cookie will be sent automatically
 
       if (!res.ok) {
         if (res.status === 401) {
@@ -79,17 +83,10 @@ export default function AdminUserManagementPage() {
   const handleSaveEdit = async (userId) => {
     setError('');
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
-
       const res = await fetch('/api/admin/users', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ id: userId, ...editFormData }),
       });
@@ -116,17 +113,8 @@ export default function AdminUserManagementPage() {
     }
     setError('');
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
-
       const res = await fetch(`/api/admin/users?id=${userId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       if (!res.ok) {
@@ -147,17 +135,10 @@ export default function AdminUserManagementPage() {
   const handleCreateUser = async (userData) => {
   setError('');
   try {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      router.push('/admin/login');
-      return;
-    }
-
     const res = await fetch('/api/admin/users', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(userData),
     });

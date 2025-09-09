@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import connectMongoDB from '@/config/mongoConfig';
 import User from '@/models/User';
 import jwt from 'jsonwebtoken';
@@ -58,9 +59,8 @@ export async function POST(req) {
       { expiresIn: '7d' }
     );
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       message: 'Google sign-in successful',
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -69,6 +69,16 @@ export async function POST(req) {
         provider: 'google'
       }
     }, { status: 200 });
+
+    cookies().set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: '/',
+      sameSite: 'Lax',
+    });
+
+    return response;
 
   } catch (error) {
     console.error('Google Sign-In Error:', error.message);

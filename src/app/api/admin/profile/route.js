@@ -1,32 +1,15 @@
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/config/mongoConfig';
 import User from '@/models/User';
-import jwt from 'jsonwebtoken';
-
-// Helper function to verify admin token
-const verifyAdminToken = (req) => {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role === 'admin') {
-      return decoded.id;
-    }
-    return null;
-  } catch (error) {
-    return null;
-  }
-};
+import { verifyAdminToken } from '@/utils/auth';
 
 export async function GET(req) {
   await connectMongoDB();
-  const adminId = verifyAdminToken(req);
-  if (!adminId) {
+  const adminInfo = await verifyAdminToken();
+  if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+  const adminId = adminInfo.userId;
 
   try {
     const admin = await User.findById(adminId, '-password'); // Exclude password
@@ -42,10 +25,11 @@ export async function GET(req) {
 
 export async function PUT(req) {
   await connectMongoDB();
-  const adminId = verifyAdminToken(req);
-  if (!adminId) {
+  const adminInfo = await verifyAdminToken();
+  if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+  const adminId = adminInfo.userId;
 
   const { name, surname, email, photoURL } = await req.json();
 

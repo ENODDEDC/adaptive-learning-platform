@@ -37,18 +37,7 @@ const CourseContent = () => {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch('/api/courses', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch('/api/courses'); // No need for manual token header, cookie is sent automatically
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
@@ -78,18 +67,18 @@ const CourseContent = () => {
     // Display course detail page
     return (
       <div className="p-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold">Course: {formatSlugToTitle(slug)}</h1>
-          <button className="bg-gray-200 px-4 py-2 rounded-md">View Streak</button>
+          <button className="px-4 py-2 bg-gray-200 rounded-md">View Streak</button>
         </div>
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center justify-between mb-8">
           <div className="flex gap-8 border-b">
             <button className="py-2 border-b-2 border-black">All</button>
             <button className="py-2 text-gray-500">Document</button>
             <button className="py-2 text-gray-500">Video</button>
             <button className="py-2 text-gray-500">Audio</button>
           </div>
-          <button className="bg-gray-200 px-4 py-2 rounded-md">Upload</button>
+          <button className="px-4 py-2 bg-gray-200 rounded-md">Upload</button>
         </div>
         <div className="space-y-4">
           {/* Course content will be dynamically loaded here */}
@@ -118,12 +107,12 @@ const CourseContent = () => {
 
   // Default fallback - no slug provided, show all courses
   return (
-    <div className="flex-1 p-8 bg-gray-50 min-h-screen">
+    <div className="flex-1 min-h-screen p-8 bg-gray-50">
       {/* Enhanced Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="p-6 mb-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="flex items-center justify-center w-12 h-12 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
@@ -137,18 +126,18 @@ const CourseContent = () => {
           <div className="relative">
             <button
               onClick={() => setIsCourseMenuOpen(!isCourseMenuOpen)}
-              className="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+              className="flex items-center justify-center w-10 h-10 text-white transition-colors bg-blue-600 shadow-sm rounded-xl hover:bg-blue-700"
             >
               <PlusIcon className="w-5 h-5" />
             </button>
             {isCourseMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-10 overflow-hidden">
+              <div className="absolute right-0 z-10 w-48 mt-2 overflow-hidden bg-white border border-gray-200 shadow-lg rounded-xl">
                 <button
                   onClick={() => {
                     openCreateCourseModal();
                     setIsCourseMenuOpen(false);
                   }}
-                  className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="block w-full px-4 py-3 text-sm text-left text-gray-700 transition-colors hover:bg-gray-50"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -160,7 +149,7 @@ const CourseContent = () => {
                     openJoinCourseModal();
                     setIsCourseMenuOpen(false);
                   }}
-                  className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="block w-full px-4 py-3 text-sm text-left text-gray-700 transition-colors hover:bg-gray-50"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -174,25 +163,25 @@ const CourseContent = () => {
       </div>
 
       {/* Enhanced Navigation Tabs */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="p-6 mb-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
         <div className="flex items-center gap-1">
-          <button className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg border border-blue-200 transition-all duration-200">
+          <button className="px-4 py-2 text-sm font-medium text-blue-700 transition-all duration-200 bg-blue-100 border border-blue-200 rounded-lg">
             All
           </button>
-          <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-all duration-200">
+          <button className="px-4 py-2 text-sm font-medium text-gray-600 transition-all duration-200 rounded-lg hover:bg-gray-100 hover:text-gray-900">
             Document
           </button>
-          <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-all duration-200">
+          <button className="px-4 py-2 text-sm font-medium text-gray-600 transition-all duration-200 rounded-lg hover:bg-gray-100 hover:text-gray-900">
             Video
           </button>
-          <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-all duration-200">
+          <button className="px-4 py-2 text-sm font-medium text-gray-600 transition-all duration-200 rounded-lg hover:bg-gray-100 hover:text-gray-900">
             Audio
           </button>
         </div>
       </div>
 
       {/* Enhanced Course Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {courses.length === 0 ? (
           <div className="col-span-full">
             <EmptyState type="courses" />
@@ -200,17 +189,17 @@ const CourseContent = () => {
         ) : (
           courses.map((course) => (
             <Link key={course.id} href={`/courses/${course.id}`} className="block group">
-              <div className="flex flex-col overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-gray-300 transition-all duration-300 cursor-pointer transform hover:-translate-y-1">
+              <div className="flex flex-col overflow-hidden transition-all duration-300 transform bg-white border border-gray-200 shadow-sm cursor-pointer rounded-2xl hover:shadow-lg hover:border-gray-300 hover:-translate-y-1">
                 <div className={`h-32 relative p-5 flex flex-col justify-between ${course.color} bg-gradient-to-br from-current to-opacity-90`}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                      <div className="flex items-center justify-center w-8 h-8 bg-white rounded-lg bg-opacity-20">
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
                       </div>
                     </div>
-                    <button className="text-white opacity-70 hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-white hover:bg-opacity-20">
+                    <button className="p-1 text-white transition-opacity rounded-lg opacity-70 hover:opacity-100 hover:bg-white hover:bg-opacity-20">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                       </svg>
@@ -218,10 +207,10 @@ const CourseContent = () => {
                   </div>
                   <div className="flex items-end justify-between">
                     <div className="text-white">
-                      <div className="w-3 h-3 bg-white bg-opacity-30 rounded-full mb-1"></div>
+                      <div className="w-3 h-3 mb-1 bg-white rounded-full bg-opacity-30"></div>
                       <div className="text-xs font-medium opacity-90">Active</div>
                     </div>
-                    <div className="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                    <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
@@ -231,7 +220,7 @@ const CourseContent = () => {
 
                 <div className="flex flex-col flex-grow p-5">
                   <div className="mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{course.title}</h3>
+                    <h3 className="mb-2 text-lg font-bold text-gray-900 transition-colors group-hover:text-blue-600">{course.title}</h3>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span className="flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,9 +237,9 @@ const CourseContent = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-between pt-4 mt-auto border-t border-gray-100">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <div className="flex items-center justify-center w-8 h-8 bg-orange-100 rounded-lg">
                         <svg className="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
                         </svg>

@@ -19,6 +19,8 @@ const Layout = ({ children }) => {
     closeCreateCourseModal,
     isJoinCourseModalOpen,
     closeJoinCourseModal,
+    openCreateCourseModal, // Re-add extraction
+    openJoinCourseModal,   // Re-add extraction
   } = useLayout();
   const [user, setUser] = useState(null);
  
@@ -29,26 +31,15 @@ const Layout = ({ children }) => {
      if (isMounted) { // Only run on client side
        const fetchUserProfile = async () => {
          try {
-           const currentToken = localStorage.getItem('adminToken') || localStorage.getItem('token');
-           if (currentToken) {
-             const isAdmin = localStorage.getItem('adminToken') ? true : false;
-             const profileApi = isAdmin ? '/api/admin/profile' : '/api/auth/profile';
-             
-             const res = await fetch(profileApi, {
-               headers: {
-                 Authorization: `Bearer ${currentToken}`,
-               },
-             });
-             if (res.ok) {
-               const data = await res.json();
-               setUser(data);
-             } else {
-               console.error('Failed to fetch user profile:', res.status, res.statusText);
-               localStorage.removeItem('token');
-               localStorage.removeItem('adminToken');
-               setUser(null);
-             }
+           // Token is now sent via HTTP-only cookie, no need to retrieve from localStorage
+           // The middleware will handle authentication and redirection.
+           const res = await fetch('/api/auth/profile'); // Assuming a single profile endpoint for simplicity, or separate based on context
+           if (res.ok) {
+             const data = await res.json();
+             setUser(data);
            } else {
+             console.error('Failed to fetch user profile:', res.status, res.statusText);
+             // No need to remove from localStorage, as it's cookie-based now
              setUser(null);
            }
          } catch (error) {
@@ -109,16 +100,10 @@ const Layout = ({ children }) => {
         onClose={closeCreateCourseModal}
         onCreateCourse={async (courseData) => {
           try {
-            const token = localStorage.getItem('token'); // Use 'token' for regular user authentication
-            if (!token) {
-              console.error('User not authenticated to create course.');
-              return;
-            }
             const res = await fetch('/api/courses', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
               },
               body: JSON.stringify(courseData),
             });
@@ -137,16 +122,10 @@ const Layout = ({ children }) => {
         onClose={closeJoinCourseModal}
         onJoinCourse={async (courseKey) => {
           try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-              console.error('User not authenticated to join course.');
-              return;
-            }
             const res = await fetch('/api/courses/join', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
               },
               body: JSON.stringify({ courseKey }),
             });
@@ -163,7 +142,7 @@ const Layout = ({ children }) => {
         }}
       />
       <div className={`transition-all duration-300 ease-in-out ${mainContentMargin} h-screen ${containerOverflow}`}>
-        <Navbar user={user} />
+        <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
         <main className={`h-full ${contentOverflow}`}>{children}</main>
       </div>
     </div>

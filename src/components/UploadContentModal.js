@@ -91,15 +91,8 @@ const UploadContentModal = ({ isOpen, onClose, courseId, onUploadSuccess }) => {
       uploadFormData.append('description', formData.description);
       uploadFormData.append('contentType', formData.contentType);
 
-      const token = localStorage.getItem('token');
-      const headers = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
       const response = await fetch(`/api/courses/${courseId}/content`, {
         method: 'POST',
-        headers,
         body: uploadFormData
       });
 
@@ -167,14 +160,14 @@ const UploadContentModal = ({ isOpen, onClose, courseId, onUploadSuccess }) => {
   const selectedType = contentTypes.find(type => type.value === formData.contentType);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">Upload Content</h2>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 transition-colors rounded-lg hover:bg-gray-100"
           >
             <XMarkIcon className="w-6 h-6 text-gray-500" />
           </button>
@@ -183,8 +176,8 @@ const UploadContentModal = ({ isOpen, onClose, courseId, onUploadSuccess }) => {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Content Type Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">Content Type</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <label className="block mb-3 text-sm font-medium text-gray-700">Content Type</label>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {contentTypes.map((type) => {
                 const IconComponent = type.icon;
                 return (
@@ -208,7 +201,7 @@ const UploadContentModal = ({ isOpen, onClose, courseId, onUploadSuccess }) => {
 
           {/* File Upload Area */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">File</label>
+            <label className="block mb-3 text-sm font-medium text-gray-700">File</label>
             <div
               className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
                 dragActive
@@ -231,7 +224,7 @@ const UploadContentModal = ({ isOpen, onClose, courseId, onUploadSuccess }) => {
               
               {formData.file ? (
                 <div className="space-y-3">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                  <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full">
                     <DocumentIcon className="w-8 h-8 text-green-600" />
                   </div>
                   <div>
@@ -248,7 +241,7 @@ const UploadContentModal = ({ isOpen, onClose, courseId, onUploadSuccess }) => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                  <div className="flex items-center justify-center w-16 h-16 mx-auto bg-gray-100 rounded-full">
                     {selectedType && <selectedType.icon className="w-8 h-8 text-gray-400" />}
                   </div>
                   <div>
@@ -267,7 +260,7 @@ const UploadContentModal = ({ isOpen, onClose, courseId, onUploadSuccess }) => {
 
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+            <label className="block mb-2 text-sm font-medium text-gray-700">Title</label>
             <input
               type="text"
               value={formData.title}
@@ -280,12 +273,12 @@ const UploadContentModal = ({ isOpen, onClose, courseId, onUploadSuccess }) => {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+            <label className="block mb-2 text-sm font-medium text-gray-700">Description (Optional)</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter content description..."
             />
           </div>
@@ -295,18 +288,18 @@ const UploadContentModal = ({ isOpen, onClose, courseId, onUploadSuccess }) => {
             <button
               type="button"
               onClick={handleClose}
-              className="px-6 py-3 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-6 py-3 text-gray-600 transition-colors bg-gray-100 rounded-lg hover:bg-gray-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!formData.file || isUploading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+              className="px-6 py-3 font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isUploading ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
                   Uploading...
                 </div>
               ) : (

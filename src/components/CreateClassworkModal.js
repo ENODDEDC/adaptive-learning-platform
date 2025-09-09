@@ -42,12 +42,12 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
     }
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        setLoading(false);
-        return;
-      }
+      // Token is now sent via HTTP-only cookie, no need to retrieve from localStorage
+      // if (!token) {
+      //   setError('User not authenticated.');
+      //   setLoading(false);
+      //   return;
+      // }
 
       const formData = new FormData();
       formData.append('title', title);
@@ -64,7 +64,8 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
       const res = await fetch(url, {
         method,
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          // Authorization: `Bearer ${token}`, // No longer needed, cookie is sent automatically
         },
         body: formData,
       });

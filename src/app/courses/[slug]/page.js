@@ -26,18 +26,7 @@ const CourseDetailPage = ({ params }) => {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch(`/api/courses/${slug}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(`/api/courses/${slug}`); // No need for manual token header, cookie is sent automatically
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
@@ -57,21 +46,145 @@ const CourseDetailPage = ({ params }) => {
     fetchCourseDetails();
   }, [fetchCourseDetails]);
 
+  const fetchStreamItems = useCallback(async () => {
+    if (!courseDetails) return;
+
+    try {
+      const [announcementsRes, classworkRes] = await Promise.all([
+        fetch(`/api/courses/${courseDetails._id}/announcements`), // No need for manual token header
+        fetch(`/api/courses/${courseDetails._id}/classwork`), // No need for manual token header
+      ]);
+
+      if (!announcementsRes.ok) {
+        throw new Error(`Error fetching announcements: ${announcementsRes.status} ${announcementsRes.statusText}`);
+      }
+      if (!classworkRes.ok) {
+        throw new Error(`Error fetching classwork: ${classworkRes.status} ${classworkRes.statusText}`);
+      }
+
+      const announcementsData = await announcementsRes.json();
+      const classworkData = await classworkRes.json();
+
+      const combinedItems = [
+        ...announcementsData.announcements.map(item => ({ ...item, type: 'announcement' })),
+        ...classworkData.classwork.map(item => ({ ...item, type: item.type || 'assignment' })),
+      ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by creation date, newest first
+
+      // Fetch comments for each item
+      const commentsPromises = combinedItems.map(async (item) => {
+        // Assuming comments API is structured as /api/courses/:courseId/:itemType/:itemId/comments
+        const commentsRes = await fetch(`/api/courses/${courseDetails._id}/${item.type === 'announcement' ? 'announcements' : 'classwork'}/${item._id}/comments`);
+        if (!commentsRes.ok) {
+          console.error(`Failed to fetch comments for item ${item._id}:`, commentsRes.statusText);
+          return { itemId: item._id, comments: [] };
+        }
+        const commentsData = await commentsRes.json();
+        return { itemId: item._id, comments: commentsData.comments };
+      });
+
+      const fetchedComments = await Promise.all(commentsPromises);
+      const commentsMap = fetchedComments.reduce((acc, { itemId, comments }) => {
+        acc[itemId] = comments;
+        return acc;
+      }, {});
+
+      setStreamItems(combinedItems.map(item => ({ ...item, comments: commentsMap[item._id] || [] })));
+      setItemComments(commentsMap);
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to fetch stream items:', err);
+    }
+  }, [courseDetails]);
+
+  useEffect(() => {
+    if (courseDetails) {
+      fetchStreamItems();
+    }
+  }, [courseDetails, fetchStreamItems]);
+
+  const handlePostAnnouncement = useCallback(async () => {
+    if (!newAnnouncementContent.trim() || !courseDetails?._id) {
+      setError('Announcement content cannot be empty.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/courses/${courseDetails._id}/announcements`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: newAnnouncementContent }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+
+      setNewAnnouncementContent('');
+      fetchStreamItems(); // Refresh stream items
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to post announcement:', err);
+    }
+  }, [newAnnouncementContent, courseDetails, fetchStreamItems]);
+
+  const handlePostComment = useCallback(async (itemId, itemType) => {
+    const content = newCommentContent[itemId]?.trim();
+    if (!content || !courseDetails?._id) {
+      setError('Comment content cannot be empty.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/courses/${courseDetails._id}/${itemType}/${itemId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+
+      setNewCommentContent(prev => ({ ...prev, [itemId]: '' }));
+      fetchStreamItems(); // Refresh stream items to show new comment
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to post comment:', err);
+    }
+  }, [newCommentContent, courseDetails, fetchStreamItems]);
+
+  useEffect(() => {
+    // Reset expanded activities when tab changes
+    setExpandedActivities({});
+  }, [activeTab]);
+
+  const fetchAssignments = useCallback(async () => {
+    if (!courseDetails) return;
+
+    try {
+      const res = await fetch(`/api/courses/${courseDetails._id}/classwork`); // No need for manual token header
+
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      setAssignments(data.classwork);
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to fetch assignments:', err);
+    }
+  }, [courseDetails]);
+
   const fetchPeople = useCallback(async () => {
     if (!courseDetails) return;
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        return;
-      }
-
-      const res = await fetch(`/api/courses/${courseDetails._id}/people`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(`/api/courses/${courseDetails._id}/people`); // No need for manual token header
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
@@ -85,6 +198,37 @@ const CourseDetailPage = ({ params }) => {
       console.error('Failed to fetch people:', err);
     }
   }, [courseDetails]);
+
+  const handleDeleteClasswork = useCallback(async (classworkId) => {
+    if (!window.confirm('Are you sure you want to delete this classwork?')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/classwork/${classworkId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
+      }
+
+      fetchAssignments(); // Refresh classwork list
+      fetchStreamItems(); // Also refresh stream to reflect changes
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to delete classwork:', err);
+    }
+  }, [fetchAssignments, fetchStreamItems]);
+
+  // Toggle activity expansion
+  const toggleActivityExpansion = (activityId) => {
+    setExpandedActivities(prev => ({
+      ...prev,
+      [activityId]: !prev[activityId]
+    }));
+  };
 
   if (loading) {
     return <div className="flex-1 min-h-screen p-8 text-center bg-gray-100">Loading course details...</div>;
