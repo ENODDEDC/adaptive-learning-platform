@@ -4,6 +4,7 @@ import path from 'path';
 import connectDB from '@/config/mongoConfig';
 import Content from '@/models/Content';
 import Course from '@/models/Course';
+import Notification from '@/models/Notification';
 import { getUserIdFromToken } from '@/services/authService';
 
 export async function POST(request, { params }) {
@@ -152,8 +153,21 @@ export async function POST(request, { params }) {
       message: 'File uploaded successfully'
     });
 
-  } catch (error) {
-    console.error('Upload error details:', error);
+    // Create notifications for all enrolled users
+    const notificationPromises = course.enrolledUsers.map(async (userId) => {
+      return Notification.create({
+        recipient: userId,
+        sender: savedContent.uploadedBy,
+        course: courseId,
+        type: 'upload',
+        message: `New file uploaded in ${course.subject}: "${savedContent.title}"`,
+        link: `/courses/${courseId}/content`, // Link to the content page
+      });
+    });
+    await Promise.all(notificationPromises);
+ 
+   } catch (error) {
+     console.error('Upload error details:', error);
     return NextResponse.json(
       { 
         error: 'Failed to upload file',
