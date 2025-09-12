@@ -17,7 +17,7 @@ export async function POST(request) {
     const body = await request.json();
     console.log('Received request body:', body);
 
-    const { name, section, coverColor, courseIds } = body;
+    const { name, section, coverColor, courseIds, description, isPublic, allowJoin } = body;
 
     // Validate required fields
     if (!name || name.trim() === '') {
@@ -58,6 +58,9 @@ export async function POST(request) {
       coverColor: coverColor || '#60a5fa',
       courses: validatedCourseIds,
       createdBy: userId,
+      description: description || null,
+      isPublic: isPublic || false,
+      allowJoin: allowJoin !== undefined ? allowJoin : true,
     });
 
     console.log('Created cluster:', newCluster);
@@ -85,7 +88,8 @@ export async function GET(request) {
       $or: [
         { createdBy: userId },
         { enrolledUsers: userId }
-      ]
+      ],
+      archived: { $ne: true } // Exclude archived clusters by default
     }).populate('courses', 'subject section coverColor').populate('createdBy', 'name');
 
     return NextResponse.json({ clusters });

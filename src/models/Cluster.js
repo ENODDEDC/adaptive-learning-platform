@@ -30,6 +30,24 @@ const clusterSchema = new Schema({
     type: String,
     default: '#60a5fa',
   },
+  description: {
+    type: String,
+  },
+  isPublic: {
+    type: Boolean,
+    default: false,
+  },
+  allowJoin: {
+    type: Boolean,
+    default: true,
+  },
+  archived: {
+    type: Boolean,
+    default: false,
+  },
+  archivedAt: {
+    type: Date,
+  },
 }, { timestamps: true });
 
 const Cluster = mongoose.models.Cluster || mongoose.model('Cluster', clusterSchema);
