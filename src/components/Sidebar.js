@@ -409,6 +409,7 @@ const getIconForLink = (label) => {
     case 'To-Do':
       return CheckCircleIcon;
     case 'Schedule':
+      return CalendarIcon;
     case 'Cluster':
       return Squares2X2Icon;
     case 'Settings':
