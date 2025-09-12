@@ -14,12 +14,26 @@ const CourseDetailPage = ({
   sidebarCollapsed: propSidebarCollapsed,
   setSidebarCollapsed: propSetSidebarCollapsed
 }) => {
+  console.log('🔍 DEBUG: CourseDetailPage component is loading...');
+  console.log('🔍 DEBUG: Current timestamp:', new Date().toISOString());
+  console.log('🔍 DEBUG: Is server-side rendering:', typeof window === 'undefined');
+  console.log('🔍 DEBUG: Window object available:', typeof window !== 'undefined');
+  console.log('🔍 DEBUG: Navigator available:', typeof navigator !== 'undefined');
+  console.log('🔍 DEBUG: localStorage available:', typeof localStorage !== 'undefined');
+
   const { slug } = React.use(params); // slug is now courseId
+  console.log('🔍 DEBUG: Extracted slug from params:', slug);
+
   const [activeTab, setActiveTab] = useState('stream'); // Default to 'Stream' tab
   const [isInstructor, setIsInstructor] = useState(true); // For demonstration, set to true for instructor view
   const [courseDetails, setCourseDetails] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setErrorState] = useState('');
+
+  const setError = (message) => {
+    console.log('🔍 DEBUG: setError called with:', message);
+    setErrorState(message);
+  };
   const [teachers, setTeachers] = useState([]);
   const [students, setStudents] = useState([]);
   const [newAnnouncementContent, setNewAnnouncementContent] = useState('');
@@ -37,37 +51,68 @@ const CourseDetailPage = ({
   const setUpcomingTasksExpanded = propSetUpcomingTasksExpanded || (() => {});
 
   const fetchCourseDetails = useCallback(async () => {
+    console.log('🔍 DEBUG: fetchCourseDetails function called');
+    console.log('🔍 DEBUG: Fetching course details for slug:', slug);
     setLoading(true);
     setError('');
     try {
       const res = await fetch(`/api/courses/${slug}`); // No need for manual token header, cookie is sent automatically
+      console.log('🔍 DEBUG: fetchCourseDetails API response status:', res.status);
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
       }
 
       const data = await res.json();
+      console.log('🔍 DEBUG: fetchCourseDetails received data:', data);
       setCourseDetails(data.course);
+      console.log('🔍 DEBUG: fetchCourseDetails completed successfully');
     } catch (err) {
+      console.error('🔍 DEBUG: Failed to fetch course details:', err);
       setError(err.message);
-      console.error('Failed to fetch course details:', err);
     } finally {
+      console.log('🔍 DEBUG: fetchCourseDetails finally block - setting loading to false');
       setLoading(false);
     }
   }, [slug]);
 
   useEffect(() => {
+    console.log('🔍 DEBUG: useEffect for fetchCourseDetails triggered');
     fetchCourseDetails();
   }, [fetchCourseDetails]);
 
+  // Hydration tracking
+  useEffect(() => {
+    console.log('🔍 HYDRATION: Component mounted on client');
+    console.log('🔍 HYDRATION: Client timestamp:', new Date().toISOString());
+    console.log('🔍 HYDRATION: Window available:', typeof window !== 'undefined');
+    console.log('🔍 HYDRATION: Navigator available:', typeof navigator !== 'undefined');
+    console.log('🔍 HYDRATION: localStorage available:', typeof localStorage !== 'undefined');
+
+    // Test navigator.clipboard access
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      console.log('🔍 HYDRATION: Clipboard API available');
+    } else {
+      console.log('🔍 HYDRATION: Clipboard API NOT available');
+    }
+  }, []);
+
   const fetchStreamItems = useCallback(async () => {
-    if (!courseDetails) return;
+    console.log('🔍 DEBUG: fetchStreamItems called');
+    if (!courseDetails) {
+      console.log('🔍 DEBUG: No courseDetails, returning early');
+      return;
+    }
 
     try {
+      console.log('🔍 DEBUG: Fetching announcements and classwork for course:', courseDetails._id);
       const [announcementsRes, classworkRes] = await Promise.all([
         fetch(`/api/courses/${courseDetails._id}/announcements`), // No need for manual token header
         fetch(`/api/courses/${courseDetails._id}/classwork`), // No need for manual token header
       ]);
+
+      console.log('🔍 DEBUG: Announcements response status:', announcementsRes.status);
+      console.log('🔍 DEBUG: Classwork response status:', classworkRes.status);
 
       if (!announcementsRes.ok) {
         throw new Error(`Error fetching announcements: ${announcementsRes.status} ${announcementsRes.statusText}`);
@@ -79,49 +124,76 @@ const CourseDetailPage = ({
       const announcementsData = await announcementsRes.json();
       const classworkData = await classworkRes.json();
 
+      console.log('🔍 DEBUG: Announcements data received:', {
+        count: announcementsData.announcements?.length || 0,
+        announcements: announcementsData.announcements?.map(a => ({
+          id: a._id,
+          content: a.content?.substring(0, 50) + '...',
+          postedBy: a.postedBy?.name || 'Unknown',
+          createdAt: a.createdAt
+        })) || []
+      });
+      console.log('🔍 DEBUG: Classwork data received:', {
+        count: classworkData.classwork?.length || 0,
+        classwork: classworkData.classwork?.map(c => ({
+          id: c._id,
+          title: c.title,
+          type: c.type,
+          createdAt: c.createdAt
+        })) || []
+      });
+
       const combinedItems = [
         ...announcementsData.announcements.map(item => ({ ...item, type: 'announcement' })),
         ...classworkData.classwork.map(item => ({ ...item, type: item.type || 'assignment' })),
       ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by creation date, newest first
 
-      // Fetch comments for each item
-      const commentsPromises = combinedItems.map(async (item) => {
-        // Assuming comments API is structured as /api/courses/:courseId/:itemType/:itemId/comments
-        const commentsRes = await fetch(`/api/courses/${courseDetails._id}/${item.type === 'announcement' ? 'announcements' : 'classwork'}/${item._id}/comments`);
-        if (!commentsRes.ok) {
-          console.error(`Failed to fetch comments for item ${item._id}:`, commentsRes.statusText);
-          return { itemId: item._id, comments: [] };
-        }
-        const commentsData = await commentsRes.json();
-        return { itemId: item._id, comments: commentsData.comments };
-      });
+      console.log('🔍 DEBUG: Combined items count:', combinedItems.length);
+      console.log('🔍 DEBUG: Combined items details:', combinedItems.map(item => ({
+        id: item._id,
+        type: item.type,
+        title: item.title || 'No title',
+        content: item.content?.substring(0, 30) + '...' || item.description?.substring(0, 30) + '...' || 'No content',
+        createdAt: item.createdAt
+      })));
 
-      const fetchedComments = await Promise.all(commentsPromises);
-      const commentsMap = fetchedComments.reduce((acc, { itemId, comments }) => {
-        acc[itemId] = comments;
-        return acc;
-      }, {});
-
-      setStreamItems(combinedItems.map(item => ({ ...item, comments: commentsMap[item._id] || [] })));
-      setItemComments(commentsMap);
+      // Don't fetch comments upfront to improve performance - lazy load them when needed
+      setStreamItems(combinedItems.map(item => ({ ...item, comments: [] })));
+      setItemComments({}); // Clear comments cache
+      console.log('🔍 DEBUG: fetchStreamItems completed successfully - streamItems updated');
     } catch (err) {
+      console.error('🔍 DEBUG: Failed to fetch stream items:', err);
       setError(err.message);
-      console.error('Failed to fetch stream items:', err);
     }
   }, [courseDetails]);
 
   useEffect(() => {
+    console.log('🔍 DEBUG: useEffect for fetchStreamItems triggered');
+    console.log('🔍 DEBUG: courseDetails available:', !!courseDetails);
     if (courseDetails) {
       fetchStreamItems();
     }
   }, [courseDetails, fetchStreamItems]);
 
   const handlePostAnnouncement = useCallback(async () => {
-    if (!newAnnouncementContent.trim() || !courseDetails?._id) {
+    console.log('🔍 DEBUG: handlePostAnnouncement called');
+    console.log('🔍 DEBUG: newAnnouncementContent:', newAnnouncementContent);
+    console.log('🔍 DEBUG: newAnnouncementContent type:', typeof newAnnouncementContent);
+    console.log('🔍 DEBUG: newAnnouncementContent length:', newAnnouncementContent?.length);
+    console.log('🔍 DEBUG: newAnnouncementContent.trim():', newAnnouncementContent?.trim());
+    console.log('🔍 DEBUG: newAnnouncementContent.trim() length:', newAnnouncementContent?.trim()?.length);
+    console.log('🔍 DEBUG: courseDetails._id:', courseDetails?._id);
+    console.log('🔍 DEBUG: courseDetails exists:', !!courseDetails);
+
+    if (!newAnnouncementContent?.trim() || !courseDetails?._id) {
+      console.log('🔍 DEBUG: Validation failed - content empty or no course');
+      console.log('🔍 DEBUG: !newAnnouncementContent?.trim():', !newAnnouncementContent?.trim());
+      console.log('🔍 DEBUG: !courseDetails?._id:', !courseDetails?._id);
       setError('Announcement content cannot be empty.');
       return;
     }
 
+    console.log('🔍 DEBUG: Starting announcement post...');
     try {
       const res = await fetch(`/api/courses/${courseDetails._id}/announcements`, {
         method: 'POST',
@@ -131,25 +203,49 @@ const CourseDetailPage = ({
         body: JSON.stringify({ content: newAnnouncementContent }),
       });
 
+      console.log('🔍 DEBUG: API response status:', res.status);
+      console.log('🔍 DEBUG: API response ok:', res.ok);
+
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
       }
 
+      const responseData = await res.json();
+      console.log('🔍 DEBUG: API response data:', responseData);
+
+      console.log('🔍 DEBUG: Clearing announcement content...');
       setNewAnnouncementContent('');
+
+      console.log('🔍 DEBUG: Refreshing stream items...');
       fetchStreamItems(); // Refresh stream items
+
+      console.log('🔍 DEBUG: Announcement posted successfully!');
     } catch (err) {
+      console.error('🔍 DEBUG: Failed to post announcement:', err);
       setError(err.message);
-      console.error('Failed to post announcement:', err);
     }
   }, [newAnnouncementContent, courseDetails, fetchStreamItems]);
 
   const handlePostComment = useCallback(async (itemId, itemType) => {
+    console.log('🔍 DEBUG: handlePostComment called');
+    console.log('🔍 DEBUG: itemId:', itemId);
+    console.log('🔍 DEBUG: itemType:', itemType);
+    console.log('🔍 DEBUG: newCommentContent state:', newCommentContent);
+    console.log('🔍 DEBUG: newCommentContent[itemId]:', newCommentContent[itemId]);
+
     const content = newCommentContent[itemId]?.trim();
+    console.log('🔍 DEBUG: content after trim:', content);
+    console.log('🔍 DEBUG: content length:', content?.length);
+
     if (!content || !courseDetails?._id) {
+      console.log('🔍 DEBUG: Validation failed - content empty or no courseDetails');
+      console.log('🔍 DEBUG: !content:', !content);
+      console.log('🔍 DEBUG: !courseDetails?._id:', !courseDetails?._id);
       setError('Comment content cannot be empty.');
       return;
     }
 
+    console.log('🔍 DEBUG: Starting API call...');
     try {
       const res = await fetch(`/api/courses/${courseDetails._id}/${itemType}/${itemId}/comments`, {
         method: 'POST',
@@ -159,17 +255,65 @@ const CourseDetailPage = ({
         body: JSON.stringify({ content }),
       });
 
+      console.log('🔍 DEBUG: API response status:', res.status);
+      console.log('🔍 DEBUG: API response ok:', res.ok);
+
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
       }
 
-      setNewCommentContent(prev => ({ ...prev, [itemId]: '' }));
+      const responseData = await res.json();
+      console.log('🔍 DEBUG: API response data:', responseData);
+
+      console.log('🔍 DEBUG: Clearing comment content...');
+      setNewCommentContent(prev => {
+        console.log('🔍 DEBUG: setNewCommentContent callback - prev state:', prev);
+        const newState = { ...prev, [itemId]: '' };
+        console.log('🔍 DEBUG: setNewCommentContent callback - new state:', newState);
+        return newState;
+      });
+
+      console.log('🔍 DEBUG: Refreshing stream items...');
       fetchStreamItems(); // Refresh stream items to show new comment
+
+      console.log('🔍 DEBUG: Comment posted successfully!');
     } catch (err) {
+      console.error('🔍 DEBUG: Failed to post comment:', err);
       setError(err.message);
-      console.error('Failed to post comment:', err);
     }
   }, [newCommentContent, courseDetails, fetchStreamItems]);
+
+  const handleDeleteAnnouncement = useCallback(async (announcementId) => {
+    console.log('Starting announcement deletion for ID:', announcementId);
+    if (!courseDetails?._id) {
+      setError('Course details not available.');
+      return;
+    }
+
+    try {
+      console.log('Sending DELETE request to:', `/api/courses/${courseDetails._id}/announcements`);
+      const res = await fetch(`/api/courses/${courseDetails._id}/announcements`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ announcementId }),
+      });
+
+      console.log('DELETE response status:', res.status, res.statusText);
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+
+      const responseData = await res.json();
+      console.log('DELETE response data:', responseData);
+      console.log('Calling fetchStreamItems after successful deletion');
+      fetchStreamItems(); // Refresh stream items to remove deleted announcement
+    } catch (err) {
+      console.error('Failed to delete announcement:', err);
+      setError(err.message);
+    }
+  }, [courseDetails, fetchStreamItems]);
 
   useEffect(() => {
     // Reset expanded activities when tab changes
@@ -375,12 +519,21 @@ const CourseDetailPage = ({
                   </div>
                   <button
                     onClick={() => {
+                      console.log('🔍 CLIPBOARD: Attempting to copy code to clipboard');
+                      console.log('🔍 CLIPBOARD: Navigator available:', typeof navigator !== 'undefined');
+                      console.log('🔍 CLIPBOARD: Clipboard API available:', navigator?.clipboard?.writeText ? 'yes' : 'no');
+                      console.log('🔍 CLIPBOARD: Window available:', typeof window !== 'undefined');
+                      if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.clipboard) {
+                        console.log('🔍 CLIPBOARD: Cannot access clipboard - not on client or API not available');
+                        return;
+                      }
                       try {
                         const code = courseDetails.uniqueKey;
-                        if (navigator?.clipboard?.writeText) {
-                          navigator.clipboard.writeText(code);
-                        }
-                      } catch {}
+                        navigator.clipboard.writeText(code);
+                        console.log('🔍 CLIPBOARD: Successfully copied to clipboard');
+                      } catch (error) {
+                        console.log('🔍 CLIPBOARD: Error copying to clipboard:', error);
+                      }
                     }}
                     className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 hover:shadow-sm"
                   >
@@ -499,18 +652,27 @@ const CourseDetailPage = ({
               <StreamTab
                 courseDetails={courseDetails}
                 isInstructor={isInstructor}
+                streamItems={streamItems}
                 newAnnouncementContent={newAnnouncementContent}
                 setNewAnnouncementContent={setNewAnnouncementContent}
                 handlePostAnnouncement={handlePostAnnouncement}
+                handleDeleteAnnouncement={handleDeleteAnnouncement}
                 newCommentContent={newCommentContent}
                 setNewCommentContent={setNewCommentContent}
                 handlePostComment={handlePostComment}
                 onOpenContent={(content) => {
                   try {
+                    console.log('🔍 WINDOW: Dispatching collapseSidebar event');
+                    console.log('🔍 WINDOW: Window available:', typeof window !== 'undefined');
                     if (typeof window !== 'undefined') {
                       window.dispatchEvent(new Event('collapseSidebar'));
+                      console.log('🔍 WINDOW: Event dispatched successfully');
+                    } else {
+                      console.log('🔍 WINDOW: Cannot dispatch event - not on client');
                     }
-                  } catch {}
+                  } catch (error) {
+                    console.log('🔍 WINDOW: Error dispatching event:', error);
+                  }
                   setSelectedContent(content);
                 }}
               />
@@ -522,10 +684,17 @@ const CourseDetailPage = ({
                 isInstructor={isInstructor}
                 onOpenContent={(content) => {
                   try {
+                    console.log('🔍 WINDOW: Dispatching collapseSidebar event for classwork');
+                    console.log('🔍 WINDOW: Window available:', typeof window !== 'undefined');
                     if (typeof window !== 'undefined') {
                       window.dispatchEvent(new Event('collapseSidebar'));
+                      console.log('🔍 WINDOW: Event dispatched successfully');
+                    } else {
+                      console.log('🔍 WINDOW: Cannot dispatch event - not on client');
                     }
-                  } catch {}
+                  } catch (error) {
+                    console.log('🔍 WINDOW: Error dispatching event:', error);
+                  }
                   // Slight delay to let the sidebar collapse animate smoothly
                   setTimeout(() => setSelectedContent(content), 180);
                 }}
@@ -761,8 +930,13 @@ const CourseDetailPage = ({
                         
                         <div className="space-y-6">
                       {upcoming.map((item, index) => {
-                        const daysLeft = Math.ceil((item._due - now) / (1000 * 60 * 60 * 24));
-                            const urgency = daysLeft <= 0 ? 'overdue' : daysLeft <= 2 ? 'soon' : daysLeft <= 7 ? 'upcoming' : 'normal';
+                             console.log('🔍 DATE: Processing upcoming task:', item.title);
+                             console.log('🔍 DATE: Item due date:', item._due);
+                             console.log('🔍 DATE: Current time (now):', now);
+                             console.log('🔍 DATE: Time difference:', item._due - now);
+                             const daysLeft = Math.ceil((item._due - now) / (1000 * 60 * 60 * 24));
+                             console.log('🔍 DATE: Days left calculation:', daysLeft);
+                                 const urgency = daysLeft <= 0 ? 'overdue' : daysLeft <= 2 ? 'soon' : daysLeft <= 7 ? 'upcoming' : 'normal';
                             
                             // Timeline priority colors
                             const timelineConfig = {
@@ -822,10 +996,10 @@ const CourseDetailPage = ({
                             
                             const taskType = getTaskType(item.title, item.type);
                             
-                            // Progress calculation
-                            const progress = Math.random() * 100;
-                            const isCompleted = progress >= 100;
-                            const isStarted = progress > 0;
+                            // Progress calculation (simplified to avoid random calls on every render)
+                            const progress = 0; // Default to 0, can be updated with real data later
+                            const isCompleted = false; // Default to false
+                            const isStarted = false; // Default to false
                             
                             // Smart notifications
                             const getNotificationMessage = () => {
@@ -852,7 +1026,11 @@ const CourseDetailPage = ({
                                     </div>
                                     <div className="text-right whitespace-nowrap">
                                       <div className="text-sm font-semibold text-gray-900">
-                                        {format(new Date(item._due), 'MMM dd')}
+                                        {(() => {
+                                          const formattedDate = format(new Date(item._due), 'MMM dd');
+                                          console.log('🔍 DATE_FORMAT: Formatting date for timeline:', item.title, '->', formattedDate);
+                                          return formattedDate;
+                                        })()}
                                       </div>
                                     </div>
                                   </div>
@@ -979,10 +1157,10 @@ const CourseDetailPage = ({
                         
                         const taskType = getTaskType(item.title, item.type);
                         
-                        // Progress calculation (mock data - in real app, this would come from submission status)
-                        const progress = Math.random() * 100; // Random progress for demo
-                        const isCompleted = progress >= 100;
-                        const isStarted = progress > 0;
+                        // Progress calculation (simplified to avoid performance issues)
+                        const progress = 0; // Default to 0, can be updated with real data later
+                        const isCompleted = false; // Default to false
+                        const isStarted = false; // Default to false
                         
                         // Quick action buttons
                         const getActionButton = () => {

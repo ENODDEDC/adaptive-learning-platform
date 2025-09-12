@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
@@ -15,7 +15,6 @@ import { HeadingNode, $createHeadingNode } from '@lexical/rich-text';
 import { ListNode, ListItemNode, INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { LinkNode } from '@lexical/link';
-import { useEffect, useCallback } from 'react';
 
 // Editor theme configuration
 const theme = {
@@ -43,13 +42,29 @@ function InitialContentPlugin({ initialValue }) {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
+    console.log('🔍 EDITOR: InitialContentPlugin useEffect triggered - initialValue length:', initialValue?.length, 'initialValue:', initialValue?.substring(0, 50));
     if (initialValue) {
+      console.log('🔍 EDITOR: initialValue is truthy, processing...');
+      editor.read(() => {
+        const currentHtml = $generateHtmlFromNodes(editor);
+        console.log('🔍 EDITOR: Current HTML length:', currentHtml.length, 'Current HTML:', currentHtml.substring(0, 50));
+        if (currentHtml !== initialValue) {
+          console.log('🔍 EDITOR: HTML differs, updating editor');
+          editor.update(() => {
+            const parser = new DOMParser();
+            const dom = parser.parseFromString(initialValue, 'text/html');
+            const nodes = $generateNodesFromDOM(editor, dom);
+            $getRoot().select();
+            $insertNodes(nodes);
+          });
+        } else {
+          console.log('🔍 EDITOR: HTML matches, skipping update');
+        }
+      });
+    } else {
+      console.log('🔍 EDITOR: initialValue is falsy (empty), clearing editor...');
       editor.update(() => {
-        const parser = new DOMParser();
-        const dom = parser.parseFromString(initialValue, 'text/html');
-        const nodes = $generateNodesFromDOM(editor, dom);
-        $getRoot().select();
-        $insertNodes(nodes);
+        $getRoot().clear();
       });
     }
   }, [editor, initialValue]);
@@ -57,13 +72,58 @@ function InitialContentPlugin({ initialValue }) {
   return null;
 }
 
+// Plugin to handle content changes
+function OnChangePluginWrapper({ onChange }) {
+  const [editor] = useLexicalComposerContext();
+  const changeCount = useRef(0);
+  const debounceTimeout = useRef(null);
+
+  const debouncedOnChange = useCallback((htmlString) => {
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+    debounceTimeout.current = setTimeout(() => {
+      console.log('debouncedOnChange calling onChange - HTML length:', htmlString.length, 'HTML preview:', htmlString.substring(0, 100));
+      if (onChange) {
+        onChange(htmlString);
+      }
+    }, 300); // 300ms debounce
+  }, [onChange]);
+
+  const handleChange = useCallback((editorState) => {
+    changeCount.current += 1;
+    const startTime = performance.now();
+    editorState.read(() => {
+      const htmlString = $generateHtmlFromNodes(editor);
+      const endTime = performance.now();
+      console.log(`RichTextEditor onChange #${changeCount.current} - HTML generation took: ${(endTime - startTime).toFixed(2)}ms, HTML length: ${htmlString.length}`);
+      debouncedOnChange(htmlString);
+    });
+  }, [editor, debouncedOnChange]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, []);
+
+  return <OnChangePlugin onChange={handleChange} />;
+}
+
 // Rich text editor component
-const RichTextEditor = ({ 
-  value = '', 
-  onChange, 
-  placeholder = 'Enter text...', 
-  className = '' 
+const RichTextEditor = ({
+  value = '',
+  onChange,
+  placeholder = 'Enter text...',
+  className = ''
 }) => {
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  console.log(`RichTextEditor render #${renderCount.current} - value length:`, value?.length, 'value:', value?.substring(0, 50));
+
   const initialConfig = {
     namespace: 'RichTextEditor',
     theme,
@@ -73,26 +133,17 @@ const RichTextEditor = ({
     },
   };
 
-  const handleChange = (editorState) => {
-    editorState.read(() => {
-      const htmlString = $generateHtmlFromNodes(editor);
-      if (onChange) {
-        onChange(htmlString);
-      }
-    });
-  };
-
   return (
     <div className={`border border-gray-300 rounded-lg ${className}`}>
       <LexicalComposer initialConfig={initialConfig}>
         <div className="relative">
           {/* Toolbar */}
           <ToolbarPlugin />
-          
+
           {/* Editor */}
           <RichTextPlugin
             contentEditable={
-              <ContentEditable 
+              <ContentEditable
                 className="min-h-[150px] p-3 outline-none prose prose-sm max-w-none"
                 style={{
                   resize: 'none',
@@ -106,9 +157,9 @@ const RichTextEditor = ({
             }
             ErrorBoundary={LexicalErrorBoundary}
           />
-          
+
           {/* Plugins */}
-          <OnChangePlugin onChange={handleChange} />
+          <OnChangePluginWrapper onChange={onChange} />
           <HistoryPlugin />
           <ListPlugin />
           <InitialContentPlugin initialValue={value} />

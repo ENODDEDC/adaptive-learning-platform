@@ -4,9 +4,13 @@ import User from '@/models/User';
 import { verifyToken } from '@/utils/auth';
 
 export async function GET(req) {
+  console.log('=== GET PROFILE REQUEST ===');
   await connectMongoDB();
+  console.log('Verifying token...');
   const payload = await verifyToken();
+  console.log('Token payload:', payload);
   if (!payload) {
+    console.log('No payload, returning 401');
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
   const { userId } = payload;
