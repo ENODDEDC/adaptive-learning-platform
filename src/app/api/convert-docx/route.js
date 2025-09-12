@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import mammoth from 'mammoth';
 import path from 'path';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import fs from 'fs/promises';
 
 export async function GET(request) {
@@ -20,11 +19,14 @@ export async function GET(request) {
     // Check if file exists
     await fs.access(absolutePath);
 
-    const command = `pandoc "${absolutePath}" -f docx -t html`;
+    // Use --self-contained so images/resources are embedded as base64 data URIs
+    // Use html5 output; execFile to avoid shell parsing issues and raise buffer limit
+    const args = [absolutePath, '-f', 'docx', '-t', 'html5', '--self-contained', '--standalone'];
 
     const { stdout, stderr } = await new Promise((resolve, reject) => {
-      exec(command, (error, stdout, stderr) => {
+      execFile('pandoc', args, { maxBuffer: 50 * 1024 * 1024 }, (error, stdout, stderr) => {
         if (error) {
+          error.stderr = stderr;
           return reject(error);
         }
         resolve({ stdout, stderr });
@@ -47,9 +49,10 @@ export async function GET(request) {
     if (error.code === 'ENOENT') {
         return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
-    if (error.message.includes('command not found') || error.code === 127 || error.message.includes('is not recognized')) {
+    if ((error.message && (error.message.includes('command not found') || error.message.includes('is not recognized'))) || error.code === 127) {
         return NextResponse.json({ error: 'Pandoc is not installed or not in PATH' }, { status: 500 });
     }
-    return NextResponse.json({ error: 'Failed to convert file' }, { status: 500 });
+    const details = error.stderr || error.message || 'Unknown error';
+    return NextResponse.json({ error: 'Failed to convert file', details }, { status: 500 });
   }
 }

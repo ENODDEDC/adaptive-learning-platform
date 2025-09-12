@@ -14,6 +14,7 @@ import { useLayout } from '../context/LayoutContext';
 const Layout = ({ children }) => {
   const pathname = usePathname();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [upcomingTasksExpanded, setUpcomingTasksExpanded] = useState(true);
   const {
     isCreateCourseModalOpen,
     closeCreateCourseModal,
@@ -53,7 +54,24 @@ const Layout = ({ children }) => {
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
+    // When on course pages, also control upcoming tasks
+    if (pathname?.startsWith('/courses/') && pathname !== '/courses') {
+      setUpcomingTasksExpanded(isSidebarCollapsed); // If collapsing sidebar, expand tasks; if expanding sidebar, collapse tasks
+    }
   };
+
+  // Collapse sidebar when other components request it
+  useEffect(() => {
+    const handleCollapseRequest = () => setIsSidebarCollapsed(true);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('collapseSidebar', handleCollapseRequest);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('collapseSidebar', handleCollapseRequest);
+      }
+    };
+  }, []);
 
 
   const isAuthPage = ['/', '/login', '/register', '/forgot-password', '/reset-password'].some(
@@ -73,7 +91,7 @@ const Layout = ({ children }) => {
     return (
       <div className="min-h-screen bg-gray-100">
         <AdminSidebar isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
-        <div className={`transition-all duration-300 ${mainContentMargin}`}>
+        <div className={`transition-all duration-500 ease-in-out ${mainContentMargin}`}>
           <AdminNavbar toggleSidebar={toggleSidebar} />
           <main className="p-8">{children}</main>
         </div>
@@ -141,9 +159,16 @@ const Layout = ({ children }) => {
           }
         }}
       />
-      <div className={`transition-all duration-300 ease-in-out ${mainContentMargin} h-screen ${containerOverflow}`}>
+      <div className={`transition-all duration-500 ease-in-out ${mainContentMargin} h-screen ${containerOverflow}`}>
         <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
-        <main className={`h-full ${contentOverflow}`}>{children}</main>
+        <main className={`h-full ${contentOverflow}`}>
+          {React.cloneElement(children, {
+            upcomingTasksExpanded,
+            setUpcomingTasksExpanded,
+            sidebarCollapsed: sidebarState,
+            setSidebarCollapsed: setIsSidebarCollapsed
+          })}
+        </main>
       </div>
     </div>
   );

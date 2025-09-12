@@ -4,6 +4,8 @@ import Course from '@/models/Course';
 import Content from '@/models/Content';
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/utils/auth';
+import path from 'path';
+import fs from 'fs/promises';
 
 export async function POST(request, { params }) {
   try {
@@ -63,13 +65,23 @@ export async function POST(request, { params }) {
         await fs.writeFile(filePath, fileBuffer);
         console.log('File written to disk successfully.');
 
+        // Determine content type based on MIME type
+        let contentType = 'material'; // default
+        if (file.type.startsWith('video/')) {
+          contentType = 'video';
+        } else if (file.type.startsWith('audio/')) {
+          contentType = 'audio';
+        } else if (file.type.startsWith('application/') || file.type.startsWith('text/')) {
+          contentType = 'document';
+        }
+
         const newContent = new Content({
           courseId: id,
           title: fileName, // Use the unique filename as the title to avoid duplicate key errors
           originalName: file.name, // Keep the original file name
           filename: fileName,
           filePath: fileUrl,
-          contentType: 'material', // This can be made dynamic later if needed
+          contentType: contentType,
           fileSize: file.size,
           mimeType: file.type,
           uploadedBy: userId,

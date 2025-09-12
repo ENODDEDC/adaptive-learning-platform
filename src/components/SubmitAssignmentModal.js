@@ -30,7 +30,7 @@ const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSucc
         body: JSON.stringify({
           assignmentId,
           content,
-          attachments: [...attachments, ...uploadedFiles],
+          attachments: [...attachments, ...files],
         }),
       });
 
@@ -52,30 +52,30 @@ const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSucc
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-xl">
-        <h2 className="mb-6 text-2xl font-bold text-gray-900">Submit Assignment</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
+      <div className="w-full max-w-lg p-6 sm:p-8 bg-white rounded-2xl shadow-xl">
+        <h2 className="mb-4 text-xl sm:text-2xl font-bold text-gray-900">Submit Assignment</h2>
         {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
             <label htmlFor="content" className="block mb-2 text-sm font-medium text-gray-700">Your Work (Optional)</label>
             <textarea
               id="content"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows="5"
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="4"
               value={content}
               onChange={(e) => setContent(e.target.value)}
             ></textarea>
           </div>
-          <div className="mb-4">
+          <div>
             <label className="block mb-2 text-sm font-medium text-gray-700">Attach Files</label>
-            <FileUpload files={files} setFiles={setFiles} />
+            <FileUpload onFilesReady={setFiles} />
           </div>
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-4 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 text-sm font-medium text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
+              className="px-5 py-2 text-sm font-medium text-gray-800 transition-colors bg-white border border-gray-300 rounded-lg hover:bg-gray-100"
               disabled={loading}
             >
               Cancel

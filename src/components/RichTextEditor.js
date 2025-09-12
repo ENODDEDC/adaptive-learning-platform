@@ -75,7 +75,7 @@ const RichTextEditor = ({
 
   const handleChange = (editorState) => {
     editorState.read(() => {
-      const htmlString = $generateHtmlFromNodes(editorState._nodeMap.get('root')._lexicalEditor);
+      const htmlString = $generateHtmlFromNodes(editor);
       if (onChange) {
         onChange(htmlString);
       }

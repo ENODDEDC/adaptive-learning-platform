@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { DocumentIcon, VideoCameraIcon, SpeakerWaveIcon, EyeIcon, PhotographIcon } from '@heroicons/react/24/outline';
 import ContentViewer from './ContentViewer.client';
 
-const AttachmentPreview = ({ attachment }) => {
+const AttachmentPreview = ({ attachment, onPreview }) => {
   const [showViewer, setShowViewer] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
 
@@ -12,10 +12,32 @@ const AttachmentPreview = ({ attachment }) => {
     setThumbnailUrl(attachment.thumbnailUrl);
   }, [attachment.thumbnailUrl]);
 
-  const isVideo = attachment.contentType === 'video';
-  const isAudio = attachment.contentType === 'audio';
-  const isDocument = attachment.contentType === 'document';
+  const isVideo = attachment?.contentType === 'video' || attachment?.mimeType?.startsWith('video/');
+  const isAudio = attachment?.contentType === 'audio' || attachment?.mimeType?.startsWith('audio/');
+  const isDocument = attachment?.contentType === 'document' || attachment?.mimeType?.startsWith('application/');
   const isDocx = attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const isImage = attachment?.mimeType?.startsWith('image/');
+  const isPdf = attachment?.mimeType === 'application/pdf';
+  
+  const getFileTypeIcon = () => {
+    if (isVideo) return '🎥';
+    if (isAudio) return '🎵';
+    if (isImage) return '🖼️';
+    if (isPdf) return '📄';
+    if (isDocx) return '📝';
+    if (isDocument) return '📄';
+    return '📄';
+  };
+  
+  const getFileTypeLabel = () => {
+    if (isVideo) return 'Video';
+    if (isAudio) return 'Audio';
+    if (isImage) return 'Image';
+    if (isPdf) return 'PDF';
+    if (isDocx) return 'Word Document';
+    if (isDocument) return 'Document';
+    return 'File';
+  };
 
 
 
@@ -59,11 +81,22 @@ const AttachmentPreview = ({ attachment }) => {
           )}
           <div className="min-w-0">
             <p className="font-semibold text-slate-800 truncate">{attachment.title}</p>
-            <p className="text-sm text-slate-500">{formatFileSize(attachment.fileSize)}</p>
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <span>{getFileTypeIcon()}</span>
+              <span>{getFileTypeLabel()}</span>
+              <span>•</span>
+              <span>{formatFileSize(attachment.fileSize)}</span>
+            </div>
           </div>
         </div>
         <button
-          onClick={() => setShowViewer(true)}
+          onClick={() => {
+            if (typeof onPreview === 'function') {
+              onPreview(attachment);
+            } else {
+              setShowViewer(true);
+            }
+          }}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white border rounded-lg hover:bg-slate-50 flex-shrink-0"
         >
           <EyeIcon className="w-5 h-5" />
@@ -78,7 +111,7 @@ const AttachmentPreview = ({ attachment }) => {
       <div className="mt-4">
         {renderAttachment()}
       </div>
-      {showViewer && isDocument && (
+      {showViewer && (
         <ContentViewer
           content={attachment}
           onClose={() => setShowViewer(false)}

@@ -22,7 +22,7 @@ export default function AdminSidebar({ isCollapsed, toggleSidebar }) {
 
   return (
     <div
-      className={`fixed inset-y-0 left-0 z-50 bg-gray-800 text-white transition-all duration-300 ${
+      className={`fixed inset-y-0 left-0 z-50 bg-gray-800 text-white transition-all duration-500 ease-in-out ${
         isCollapsed ? 'w-20' : 'w-56'
       } flex flex-col`}
     >

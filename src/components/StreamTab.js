@@ -5,11 +5,9 @@ import { format } from 'date-fns';
 import AttachmentPreview from '@/components/AttachmentPreview';
 import RichTextEditor from '@/components/RichTextEditor';
 
-const StreamTab = ({ courseDetails, isInstructor }) => {
+const StreamTab = ({ courseDetails, isInstructor, newAnnouncementContent, setNewAnnouncementContent, handlePostAnnouncement, newCommentContent, setNewCommentContent, handlePostComment, onOpenContent }) => {
   const [streamItems, setStreamItems] = useState([]);
   const [pinnedItems, setPinnedItems] = useState([]);
-  const [newAnnouncementContent, setNewAnnouncementContent] = useState('');
-  const [newCommentContent, setNewCommentContent] = useState({});
   const [itemComments, setItemComments] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -98,74 +96,7 @@ const StreamTab = ({ courseDetails, isInstructor }) => {
     }
   }, [courseDetails, fetchStreamItems, sortBy]);
 
-  const handlePostAnnouncement = useCallback(async () => {
-    if (!newAnnouncementContent.trim() || !courseDetails?._id) {
-      setError('Announcement content cannot be empty.');
-      return;
-    }
 
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        return;
-      }
-
-      const res = await fetch(`/api/courses/${courseDetails._id}/announcements`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content: newAnnouncementContent }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Error: ${res.status} ${res.statusText}`);
-      }
-
-      setNewAnnouncementContent('');
-      fetchStreamItems();
-    } catch (err) {
-      setError(err.message);
-      console.error('Failed to post announcement:', err);
-    }
-  }, [newAnnouncementContent, courseDetails, fetchStreamItems]);
-
-  const handlePostComment = useCallback(async (itemId, itemType) => {
-    const content = newCommentContent[itemId]?.trim();
-    if (!content || !courseDetails?._id) {
-      setError('Comment content cannot be empty.');
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        return;
-      }
-
-      const res = await fetch(`/api/courses/${courseDetails._id}/${itemType}/${itemId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Error: ${res.status} ${res.statusText}`);
-      }
-
-      setNewCommentContent(prev => ({ ...prev, [itemId]: '' }));
-      await fetchComments(itemId, itemType);
-    } catch (err) {
-      setError(err.message);
-      console.error('Failed to post comment:', err);
-    }
-  }, [newCommentContent, courseDetails, fetchComments]);
 
   const handlePinAnnouncement = async (announcementId, pinned) => {
     try {
@@ -208,29 +139,34 @@ const StreamTab = ({ courseDetails, isInstructor }) => {
   return (
     <div className="space-y-6">
       {isInstructor && (
-        <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
-          <h2 className="mb-4 text-2xl font-bold text-gray-900">Post Announcement</h2>
+        <div className="p-6 sm:p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Post Announcement</h2>
+          </div>
           <RichTextEditor
             value={newAnnouncementContent}
             onChange={setNewAnnouncementContent}
             placeholder="Write your announcement..."
             className="mb-4"
           />
-          <button
-            onClick={handlePostAnnouncement}
-            className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700 mt-4"
-          >
-            Post Announcement
-          </button>
+          <div className="flex justify-end">
+            <button
+              onClick={handlePostAnnouncement}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700 shadow"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
+              Post
+            </button>
+          </div>
         </div>
       )}
 
       {pinnedItems.length > 0 && (
-        <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
+        <div className="p-6 sm:p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
           <h2 className="mb-4 text-2xl font-bold text-gray-900">Pinned</h2>
           <div className="space-y-6">
             {pinnedItems.map((item) => (
-              <div key={item._id} className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+              <div key={item._id} className="p-5 bg-white border border-gray-200 rounded-xl">
                 <div className="flex items-start gap-4 mb-3">
                   <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-full shadow-lg bg-gradient-to-br from-blue-500 to-blue-600">
                     <span className="text-sm font-semibold text-white">
@@ -244,7 +180,7 @@ const StreamTab = ({ courseDetails, isInstructor }) => {
                         {isInstructor && (
                           <span className="px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">Instructor</span>
                         )}
-                        <span className="px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-full">
+                        <span className="px-2 py-1 text-xs font-medium text-purple-700 bg-purple-50 rounded-full border border-purple-200">
                           {item.type === 'announcement' ? 'Announcement' : item.type.charAt(0).toUpperCase() + item.type.slice(1)}
                         </span>
                       </div>
@@ -266,7 +202,20 @@ const StreamTab = ({ courseDetails, isInstructor }) => {
                 {item.attachments && item.attachments.length > 0 && (
                   <div className="mt-4 space-y-3">
                     {item.attachments.map((attachment, index) => (
-                      <AttachmentPreview key={index} attachment={attachment} />
+                      <AttachmentPreview
+                        key={index}
+                        attachment={attachment}
+                        onPreview={(att) => {
+                          try {
+                            if (typeof window !== 'undefined') {
+                              window.dispatchEvent(new Event('collapseSidebar'));
+                            }
+                          } catch {}
+                          if (typeof onOpenContent === 'function') {
+                            onOpenContent(att);
+                          }
+                        }}
+                      />
                     ))}
                   </div>
                 )}
@@ -324,29 +273,55 @@ const StreamTab = ({ courseDetails, isInstructor }) => {
         </div>
       )}
 
-      <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Stream</h2>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <button onClick={() => setFilter('all')} className={`px-3 py-1 text-sm rounded-full ${filter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>All</button>
-              <button onClick={() => setFilter('announcement')} className={`px-3 py-1 text-sm rounded-full ${filter === 'announcement' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Announcements</button>
-              <button onClick={() => setFilter('assignment')} className={`px-3 py-1 text-sm rounded-full ${filter === 'assignment' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Assignments</button>
-            </div>
-            <select onChange={(e) => setSortBy(e.target.value)} className="px-3 py-1 text-sm bg-gray-200 border-none rounded-full">
+      <div className="p-6 sm:p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
+        <div className="flex flex-col gap-4 mb-4 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-2xl font-bold text-gray-900">Feed</h2>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {['all','announcement','assignment'].map((key) => (
+              <button key={key} onClick={() => setFilter(key)} className={`px-3 py-1 text-sm rounded-full border transition-colors ${filter === key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}>
+                {key === 'all' ? 'All' : key.charAt(0).toUpperCase() + key.slice(1) + (key==='assignment'?'s':'')}
+              </button>
+            ))}
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-3 py-1 text-sm border border-gray-200 rounded-full bg-white">
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
             </select>
           </div>
         </div>
         {loading ? (
-          <p>Loading...</p>
+          <div className="space-y-3">
+            {[...Array(3)].map((_,i) => (
+              <div key={i} className="p-4 border border-gray-200 rounded-xl animate-pulse bg-gray-50">
+                <div className="h-4 mb-2 bg-gray-200 rounded w-1/3"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+              </div>
+            ))}
+          </div>
         ) : streamItems.length === 0 ? (
-          <p className="text-gray-600">No recent activity.</p>
+          <div className="py-12 text-center">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-gray-100 to-gray-200">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <h4 className="mb-2 font-semibold text-gray-900">No recent activity</h4>
+            <p className="text-sm leading-relaxed text-gray-500">Announcements and classwork will appear here once posted.</p>
+          </div>
         ) : (
           <div className="space-y-6">
-            {streamItems.filter(item => filter === 'all' || item.type === filter).map((item) => (
-              <div key={item._id} className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+            {(() => {
+              const filteredItems = streamItems.filter(item => filter === 'all' || item.type === filter);
+              if (filteredItems.length === 0) {
+                return (
+                  <div className="py-12 text-center">
+                    <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-gray-100 to-gray-200">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <h4 className="mb-2 font-semibold text-gray-900">No items match this filter</h4>
+                    <p className="text-sm leading-relaxed text-gray-500">Try selecting a different filter to see more items.</p>
+                  </div>
+                );
+              }
+              return filteredItems.map((item) => (
+              <div key={item._id} className="p-5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
                 <div className="flex items-start gap-4 mb-3">
                   <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-full shadow-lg bg-gradient-to-br from-blue-500 to-blue-600">
                     <span className="text-sm font-semibold text-white">
@@ -360,7 +335,7 @@ const StreamTab = ({ courseDetails, isInstructor }) => {
                         {isInstructor && (
                           <span className="px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">Instructor</span>
                         )}
-                        <span className="px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-full">
+                        <span className="px-2 py-1 text-xs font-medium text-purple-700 bg-purple-50 rounded-full border border-purple-200">
                           {item.type === 'announcement' ? 'Announcement' : item.type.charAt(0).toUpperCase() + item.type.slice(1)}
                         </span>
                       </div>
@@ -435,7 +410,8 @@ const StreamTab = ({ courseDetails, isInstructor }) => {
                   )}
                 </div>
               </div>
-            ))}
+              ));
+            })()}
           </div>
         )}
       </div>

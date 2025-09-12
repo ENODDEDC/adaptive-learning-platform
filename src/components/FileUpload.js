@@ -1,10 +1,13 @@
-'use client';
+import React, { useState, useCallback, useEffect } from 'react';
 
-import React, { useState, useCallback } from 'react';
-
-const FileUpload = ({ onFilesReady }) => {
+const FileUpload = ({ onFilesReady, initialFiles = [] }) => {
   const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    // Initialize files state with initialFiles when component mounts or initialFiles changes
+    setFiles(initialFiles);
+  }, [initialFiles]);
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
@@ -79,10 +82,10 @@ const FileUpload = ({ onFilesReady }) => {
           <ul className="mt-2 space-y-2">
             {files.map((file, index) => (
               <li
-                key={index}
+                key={file._id || index}
                 className="flex items-center justify-between p-2 bg-gray-100 rounded-md"
               >
-                <span className="truncate">{file.name}</span>
+                <span className="truncate">{file.originalName || file.name}</span>
                 <button
                   onClick={() => handleRemoveFile(file.name)}
                   className="ml-4 text-red-500 hover:text-red-700"
