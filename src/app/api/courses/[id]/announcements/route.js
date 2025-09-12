@@ -4,6 +4,7 @@ import Course from '@/models/Course';
 import Notification from '@/models/Notification';
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/utils/auth';
+import { getUserIdFromToken } from '@/services/authService';
 
 export async function POST(request, { params }) {
   try {
@@ -96,7 +97,7 @@ export async function PUT(request, { params }) {
     const { id: courseId } = params;
     const { announcementId, pinned } = await request.json();
 
-    const userId = getUserIdFromToken(request);
+    const userId = await getUserIdFromToken(request);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

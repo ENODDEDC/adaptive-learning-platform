@@ -7,7 +7,7 @@ import { getUserIdFromToken } from '@/services/authService';
 export async function GET(request) {
   try {
     // Option 1: Get userId from JWT token in Authorization header (current implementation)
-    let userId = getUserIdFromToken(request);
+    let userId = await getUserIdFromToken(request);
 
     // Option 2: Get userId from query parameters (if applicable)
     if (!userId) {
@@ -33,7 +33,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    let userId = getUserIdFromToken(request);
+    let userId = await getUserIdFromToken(request);
     if (!userId) {
       // For POST, userId is typically expected in the request body or from a session.
       // If not in token, check if it's in the request body (less secure for auth, but possible).
@@ -80,7 +80,7 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
-    let userId = getUserIdFromToken(request);
+    let userId = await getUserIdFromToken(request);
     if (!userId) {
       // For DELETE, userId is typically expected in the request body or from a session.
       const body = await request.json(); // Read body once
