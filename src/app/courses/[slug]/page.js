@@ -369,14 +369,14 @@ const CourseDetailPage = ({
                   <div className="flex items-center justify-center w-full">
                     <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg px-6 py-4 min-w-[120px] text-center">
                       <span className="text-lg font-bold tracking-widest text-gray-800 block">
-                        C-45567
+                        {courseDetails.uniqueKey}
                       </span>
                     </div>
                   </div>
                   <button
                     onClick={() => {
                       try {
-                        const code = 'C-45567';
+                        const code = courseDetails.uniqueKey;
                         if (navigator?.clipboard?.writeText) {
                           navigator.clipboard.writeText(code);
                         }
