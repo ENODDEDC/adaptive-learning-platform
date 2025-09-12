@@ -9,6 +9,8 @@ export const useLayout = () => useContext(LayoutContext);
 export const LayoutProvider = ({ children }) => {
   const [isCreateCourseModalOpen, setIsCreateCourseModalOpen] = useState(false);
   const [isJoinCourseModalOpen, setIsJoinCourseModalOpen] = useState(false);
+  const [isCreateClusterModalOpen, setIsCreateClusterModalOpen] = useState(false);
+  const [isJoinClusterModalOpen, setIsJoinClusterModalOpen] = useState(false);
   const [shouldRefreshCourses, setShouldRefreshCourses] = useState(false);
 
   const openCreateCourseModal = () => setIsCreateCourseModalOpen(true);
@@ -16,6 +18,12 @@ export const LayoutProvider = ({ children }) => {
 
   const openJoinCourseModal = () => setIsJoinCourseModalOpen(true);
   const closeJoinCourseModal = () => setIsJoinCourseModalOpen(false);
+
+  const openCreateClusterModal = () => setIsCreateClusterModalOpen(true);
+  const closeCreateClusterModal = () => setIsCreateClusterModalOpen(false);
+
+  const openJoinClusterModal = () => setIsJoinClusterModalOpen(true);
+  const closeJoinClusterModal = () => setIsJoinClusterModalOpen(false);
 
   const refreshCourses = () => setShouldRefreshCourses(prev => !prev);
 
@@ -28,6 +36,12 @@ export const LayoutProvider = ({ children }) => {
         isJoinCourseModalOpen,
         openJoinCourseModal,
         closeJoinCourseModal,
+        isCreateClusterModalOpen,
+        openCreateClusterModal,
+        closeCreateClusterModal,
+        isJoinClusterModalOpen,
+        openJoinClusterModal,
+        closeJoinClusterModal,
         shouldRefreshCourses,
         refreshCourses,
       }}

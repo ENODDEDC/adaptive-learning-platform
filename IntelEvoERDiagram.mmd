@@ -1,0 +1,132 @@
+erDiagram
+    User ||--o{ Course : createdBy
+    User ||--o{ Course : enrolledUsers
+    User ||--o{ Course : coTeachers
+    User ||--o{ Announcement : postedBy
+    User ||--o{ Assignment : postedBy
+    User ||--o{ Content : uploadedBy
+    User ||--o{ Comment : postedBy
+    User ||--o{ Submission : studentId
+    User ||--o{ Submission : gradedBy
+    User ||--o{ Notification : recipient
+    User ||--o{ Notification : sender
+
+    Course ||--o{ Announcement : courseId
+    Course ||--o{ Assignment : courseId
+    Course ||--o{ Content : courseId
+    Course ||--o{ Notification : course
+
+    Announcement ||--o{ Comment : onItem
+    Assignment ||--o{ Comment : onItem
+    Assignment ||--o{ Submission : assignmentId
+
+    Comment {
+        ObjectId _id
+        String content
+        ObjectId postedBy FK
+        ObjectId onItem FK
+        String onModel
+        Date createdAt
+    }
+
+    User {
+        ObjectId _id
+        String name
+        String middleName
+        String surname
+        String suffix
+        String email
+        String password
+        String otp
+        Date otpExpires
+        Boolean isVerified
+        String resetPasswordToken
+        Date resetPasswordExpires
+        String googleId
+        String photoURL
+        String authProvider
+        String role
+        Date createdAt
+        Date updatedAt
+    }
+
+    Course {
+        ObjectId _id
+        String subject
+        String section
+        String teacherName
+        String coverColor
+        String uniqueKey
+        ObjectId createdBy FK
+        ObjectId[] enrolledUsers FK
+        ObjectId[] coTeachers FK
+        Date createdAt
+        Date updatedAt
+    }
+
+    Announcement {
+        ObjectId _id
+        ObjectId courseId FK
+        String content
+        ObjectId postedBy FK
+        Date createdAt
+        Date updatedAt
+    }
+
+    Assignment {
+        ObjectId _id
+        ObjectId courseId FK
+        String title
+        String description
+        Date dueDate
+        ObjectId postedBy FK
+        String type
+        Array attachments
+        Date createdAt
+        Date updatedAt
+    }
+
+    Content {
+        ObjectId _id
+        ObjectId courseId FK
+        String title
+        String description
+        String filename
+        String originalName
+        String filePath
+        String contentType
+        Number fileSize
+        String mimeType
+        ObjectId uploadedBy FK
+        Boolean isActive
+        Date createdAt
+        Date updatedAt
+    }
+
+    Submission {
+        ObjectId _id
+        ObjectId assignmentId FK
+        ObjectId studentId FK
+        String content
+        Array attachments
+        Date submittedAt
+        Number grade
+        ObjectId gradedBy FK
+        Date gradedAt
+        String feedback
+        Date createdAt
+        Date updatedAt
+    }
+
+    Notification {
+        ObjectId _id
+        ObjectId recipient FK
+        ObjectId sender FK
+        ObjectId course FK
+        String type
+        String message
+        String link
+        Boolean read
+        Date createdAt
+        Date updatedAt
+    }

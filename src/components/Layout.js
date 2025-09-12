@@ -9,6 +9,8 @@ import AdminSidebar from './AdminSidebar';
 import AdminNavbar from './AdminNavbar';
 import CreateCourseModal from '@/components/CreateCourseModal';
 import JoinCourseModal from '@/components/JoinCourseModal';
+import CreateClusterModal from '@/components/CreateClusterModal';
+import JoinClusterModal from '@/components/JoinClusterModal';
 import { useLayout } from '../context/LayoutContext';
 
 const Layout = ({ children }) => {
@@ -22,6 +24,10 @@ const Layout = ({ children }) => {
     closeJoinCourseModal,
     openCreateCourseModal, // Re-add extraction
     openJoinCourseModal,   // Re-add extraction
+    isCreateClusterModalOpen,
+    closeCreateClusterModal,
+    isJoinClusterModalOpen,
+    closeJoinClusterModal,
   } = useLayout();
   const [user, setUser] = useState(null);
  
@@ -156,6 +162,55 @@ const Layout = ({ children }) => {
             // For now, we'll assume the user will see the updated list on next page load or manual refresh.
           } catch (error) {
             console.error('Failed to join course:', error);
+          }
+        }}
+      />
+      <CreateClusterModal
+        isOpen={isCreateClusterModalOpen}
+        onClose={closeCreateClusterModal}
+        onCreateCluster={async (clusterData) => {
+          try {
+            console.log('Sending cluster creation request:', clusterData);
+            const res = await fetch('/api/clusters', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(clusterData),
+            });
+
+            const responseData = await res.json();
+            console.log('Cluster creation response:', res.status, responseData);
+
+            if (!res.ok) {
+              throw new Error(responseData.message || `Error: ${res.status} ${res.statusText}`);
+            }
+            closeCreateClusterModal();
+          } catch (error) {
+            console.error('Failed to create cluster:', error);
+            alert(`Failed to create cluster: ${error.message}`);
+          }
+        }}
+        userName={user?.name}
+      />
+      <JoinClusterModal
+        isOpen={isJoinClusterModalOpen}
+        onClose={closeJoinClusterModal}
+        onJoinCluster={async (classCode) => {
+          try {
+            const res = await fetch('/api/clusters/join', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ classCode }),
+            });
+            if (!res.ok) {
+              throw new Error(`Error: ${res.status} ${res.statusText}`);
+            }
+            closeJoinClusterModal();
+          } catch (error) {
+            console.error('Failed to join cluster:', error);
           }
         }}
       />

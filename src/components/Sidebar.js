@@ -132,7 +132,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     { href: "/learning-styles", label: "Learning Styles" },
     { href: "/todo", label: "To-Do" },
     { href: "/schedule", label: "Schedule" },
-    { href: "/cluster", label: "Cluster" },
+    { href: "/clusters", label: "Cluster" },
     { href: "/settings", label: "Settings" },
   ];
 
