@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import StreamTab from '@/components/StreamTab';
 import ClassworkTab from '@/components/ClassworkTab';
 import ContentViewer from '@/components/ContentViewer.client';
+import InviteModal from '@/components/InviteModal';
 
 const CourseDetailPage = ({
   params,
@@ -49,6 +50,10 @@ const CourseDetailPage = ({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const upcomingTasksExpanded = propUpcomingTasksExpanded !== undefined ? propUpcomingTasksExpanded : true;
   const setUpcomingTasksExpanded = propSetUpcomingTasksExpanded || (() => {});
+
+  // Invite modal states
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [inviteRole, setInviteRole] = useState(''); // 'student' or 'coTeacher'
 
   const fetchCourseDetails = useCallback(async () => {
     console.log('🔍 DEBUG: fetchCourseDetails function called');
@@ -342,6 +347,7 @@ const CourseDetailPage = ({
   useEffect(() => {
     if (courseDetails) {
       fetchAssignments();
+      fetchPeople();
     }
   }, [courseDetails, fetchAssignments]);
 
@@ -363,6 +369,64 @@ const CourseDetailPage = ({
       console.error('Failed to fetch people:', err);
     }
   }, [courseDetails]);
+
+  const handleInviteUser = useCallback(async (email, role) => {
+    if (!courseDetails?._id) {
+      throw new Error('Course details not available');
+    }
+
+    const res = await fetch(`/api/courses/${courseDetails._id}/invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, role }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || 'Failed to invite user');
+    }
+
+    const data = await res.json();
+
+    // Refresh the people list
+    fetchPeople();
+
+    return data;
+  }, [courseDetails, fetchPeople]);
+
+  const handleRemoveUser = useCallback(async (userId, role) => {
+    if (!courseDetails?._id) {
+      setError('Course details not available');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to remove this ${role === 'student' ? 'student' : 'co-teacher'} from the course?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/courses/${courseDetails._id}/people`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, role }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to remove user');
+      }
+
+      // Refresh the people list
+      fetchPeople();
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to remove user:', err);
+    }
+  }, [courseDetails, fetchPeople]);
 
   const handleDeleteClasswork = useCallback(async (classworkId) => {
     if (!window.confirm('Are you sure you want to delete this classwork?')) {
@@ -445,7 +509,7 @@ const CourseDetailPage = ({
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Course</p>
+                    <p className="text-sm font-medium tracking-wide text-gray-500 uppercase">Course</p>
                     <h1 className="text-3xl font-bold text-gray-900">{courseDetails.subject}</h1>
                   </div>
                 </div>
@@ -462,7 +526,7 @@ const CourseDetailPage = ({
                 </div>
               </div>
 
-              <div className="hidden sm:flex items-center gap-4 ml-6">
+              <div className="items-center hidden gap-4 ml-6 sm:flex">
                 <div className="flex items-center -space-x-2">
                   {teachers.slice(0, 3).map((teacher, index) => (
                     <div key={teacher._id} className="flex items-center justify-center w-10 h-10 bg-blue-600 border-2 border-white rounded-full shadow-sm">
@@ -475,7 +539,7 @@ const CourseDetailPage = ({
                     </div>
                   )}
                 </div>
-                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
+                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 transition-colors duration-200 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -501,7 +565,7 @@ const CourseDetailPage = ({
                       setSidebarCollapsed(true);
                       setUpcomingTasksExpanded(true);
                     }}
-                    className="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors duration-200"
+                    className="p-1 text-gray-400 transition-colors duration-200 rounded hover:text-gray-600"
                     title="Collapse sidebar"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -512,7 +576,7 @@ const CourseDetailPage = ({
                 <div className="flex flex-col items-center justify-center space-y-4">
                   <div className="flex items-center justify-center w-full">
                     <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg px-6 py-4 min-w-[120px] text-center">
-                      <span className="text-lg font-bold tracking-widest text-gray-800 block">
+                      <span className="block text-lg font-bold tracking-widest text-gray-800">
                         {courseDetails.uniqueKey}
                       </span>
                     </div>
@@ -535,7 +599,7 @@ const CourseDetailPage = ({
                         console.log('🔍 CLIPBOARD: Error copying to clipboard:', error);
                       }
                     }}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 hover:shadow-sm"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 transition-all duration-200 border border-blue-200 rounded-lg bg-blue-50 hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 hover:shadow-sm"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -551,7 +615,7 @@ const CourseDetailPage = ({
                     setSidebarCollapsed(false);
                     setUpcomingTasksExpanded(false);
                   }}
-                  className="w-full flex items-center justify-center p-2 text-gray-400 hover:text-gray-600 rounded transition-colors duration-200"
+                  className="flex items-center justify-center w-full p-2 text-gray-400 transition-colors duration-200 rounded hover:text-gray-600"
                   title="Expand sidebar"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -559,7 +623,7 @@ const CourseDetailPage = ({
                   </svg>
                 </button>
                 <div className="mt-4 text-center">
-                  <div className="inline-flex items-center justify-center w-8 h-8 bg-gray-50 border border-gray-300 rounded-lg mb-2">
+                  <div className="inline-flex items-center justify-center w-8 h-8 mb-2 border border-gray-300 rounded-lg bg-gray-50">
                     <span className="text-xs font-bold text-gray-800">C</span>
                   </div>
                 </div>
@@ -572,7 +636,7 @@ const CourseDetailPage = ({
             {/* Hidden button to open content viewer from custom events */}
             <button id="__openContentViewerBtn" type="button" className="hidden" />
             {/* Enhanced Navigation Tabs */}
-            <div className="flex justify-between mb-8 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="flex justify-between mb-8 overflow-hidden bg-white border border-gray-200 shadow-sm rounded-xl">
               <button
                 className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${
                   activeTab === 'stream'
@@ -701,15 +765,31 @@ const CourseDetailPage = ({
               />
             )}
             {activeTab === 'people' && (
-              <div className="p-6 sm:p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
+              <div className="p-6 bg-white border border-gray-200 shadow-sm sm:p-8 rounded-2xl">
                 <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-2xl font-bold text-gray-900">Members</h2>
                   <div className="flex flex-wrap items-center gap-2">
-                    <input type="text" placeholder="Search people..." className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white w-56" />
+                    <input type="text" placeholder="Search people..." className="w-56 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg" />
                     {isInstructor && (
                       <>
-                        <button className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700">Invite Student</button>
-                        <button className="px-4 py-2 text-sm font-medium text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700">Invite Co-teacher</button>
+                        <button
+                          onClick={() => {
+                            setInviteRole('student');
+                            setInviteModalOpen(true);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
+                        >
+                          Invite Student
+                        </button>
+                        <button
+                          onClick={() => {
+                            setInviteRole('coTeacher');
+                            setInviteModalOpen(true);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700"
+                        >
+                          Invite Co-teacher
+                        </button>
                       </>
                     )}
                   </div>
@@ -726,7 +806,7 @@ const CourseDetailPage = ({
                       ) : (
                         teachers.map((teacher) => (
                           <div key={teacher._id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
-                            <div className="flex items-center gap-4 min-w-0">
+                            <div className="flex items-center min-w-0 gap-4">
                               <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full">
                                 <span className="text-sm font-semibold text-white">{teacher.name ? teacher.name.charAt(0).toUpperCase() : 'U'}</span>
                               </div>
@@ -735,8 +815,12 @@ const CourseDetailPage = ({
                                 <p className="text-xs text-gray-500 truncate">Teacher</p>
                               </div>
                             </div>
-                            {isInstructor && (
-                              <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100" aria-label="Remove teacher">
+                            {isInstructor && teacher._id !== courseDetails.createdBy._id && (
+                              <button
+                                onClick={() => handleRemoveUser(teacher._id, 'coTeacher')}
+                                className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100"
+                                aria-label="Remove teacher"
+                              >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                               </button>
                             )}
@@ -756,7 +840,7 @@ const CourseDetailPage = ({
                       ) : (
                         students.map((student) => (
                           <div key={student._id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
-                            <div className="flex items-center gap-4 min-w-0">
+                            <div className="flex items-center min-w-0 gap-4">
                               <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-purple-500 rounded-full">
                                 <span className="text-sm font-semibold text-white">{student.name ? student.name.charAt(0).toUpperCase() : 'U'}</span>
                               </div>
@@ -766,7 +850,11 @@ const CourseDetailPage = ({
                               </div>
                             </div>
                             {isInstructor && (
-                              <button className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100" aria-label="Remove student">
+                              <button
+                                onClick={() => handleRemoveUser(student._id, 'student')}
+                                className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100"
+                                aria-label="Remove student"
+                              >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                               </button>
                             )}
@@ -780,16 +868,16 @@ const CourseDetailPage = ({
             )}
 
             {activeTab === 'marks' && (
-              <div className="p-6 sm:p-8 bg-white border border-gray-200 shadow-sm rounded-2xl">
+              <div className="p-6 bg-white border border-gray-200 shadow-sm sm:p-8 rounded-2xl">
                 <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-2xl font-bold text-gray-900">Scores</h2>
                   <div className="flex items-center gap-2">
-                    <select className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+                    <select className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg">
                       <option>All assignments</option>
                       <option>Quizzes</option>
                       <option>Materials</option>
                     </select>
-                    <select className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+                    <select className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg">
                       <option>Sort: Newest</option>
                       <option>Sort: Oldest</option>
                     </select>
@@ -809,13 +897,13 @@ const CourseDetailPage = ({
                   <table className="min-w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Student</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Assignment</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Score</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
+                        <th className="px-4 py-3 font-semibold text-left text-gray-700">Student</th>
+                        <th className="px-4 py-3 font-semibold text-left text-gray-700">Assignment</th>
+                        <th className="px-4 py-3 font-semibold text-left text-gray-700">Score</th>
+                        <th className="px-4 py-3 font-semibold text-left text-gray-700">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 bg-white">
+                    <tbody className="bg-white divide-y divide-gray-100">
                       {[1,2,3].map((i) => (
                         <tr key={i} className="hover:bg-gray-50">
                           <td className="px-4 py-3">User {i}</td>
@@ -846,9 +934,9 @@ const CourseDetailPage = ({
                       setSidebarCollapsed(true);
                     }
                   }}
-                  className="flex items-center gap-2 group cursor-pointer"
+                  className="flex items-center gap-2 cursor-pointer group"
                 >
-                  <div className="flex items-center justify-center w-6 h-6 bg-blue-100 rounded-md transition-colors duration-200 group-hover:bg-blue-200">
+                  <div className="flex items-center justify-center w-6 h-6 transition-colors duration-200 bg-blue-100 rounded-md group-hover:bg-blue-200">
                     <svg className={`w-3.5 h-3.5 text-blue-600 transition-transform duration-200 ${upcomingTasksExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -888,7 +976,7 @@ const CourseDetailPage = ({
                       </svg>
                     </button>
                   </div>
-                  <button className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors duration-200 hover:bg-blue-50 px-2 py-1 rounded">
+                  <button className="px-2 py-1 text-xs font-medium text-blue-600 transition-colors duration-200 rounded hover:text-blue-700 hover:bg-blue-50">
                     View All
                   </button>
                 </div>
@@ -898,7 +986,7 @@ const CourseDetailPage = ({
             <div className={`overflow-hidden ${
               upcomingTasksExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
             }`}>
-              <div className="p-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+              <div className="p-4 overflow-y-auto max-h-96 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
                 {(() => {
                   const now = new Date();
                   const upcoming = (assignments || [])
@@ -910,8 +998,8 @@ const CourseDetailPage = ({
 
                   if (upcoming.length === 0) {
                     return (
-                      <div className="text-center py-8">
-                        <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg mx-auto mb-3">
+                      <div className="py-8 text-center">
+                        <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-lg">
                           <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
@@ -1014,7 +1102,7 @@ const CourseDetailPage = ({
                               <div key={item._id} className="relative flex items-start gap-4">
                                 {/* Timeline dot */}
                                 <div className={`relative z-10 flex-shrink-0 w-12 h-12 ${config.dotColor} ${config.ringColor} ring-4 rounded-full flex items-center justify-center`}>
-                                  <span className="text-white text-lg">{taskType.icon}</span>
+                                  <span className="text-lg text-white">{taskType.icon}</span>
                                 </div>
                                 
                                 {/* Task content */}
@@ -1036,7 +1124,7 @@ const CourseDetailPage = ({
                                   </div>
                                   
                                 {/* Task title */}
-                                  <h4 className="text-sm font-semibold text-gray-900 mb-2 leading-tight">
+                                  <h4 className="mb-2 text-sm font-semibold leading-tight text-gray-900">
                                   {item.title}
                                 </h4>
 
@@ -1046,7 +1134,7 @@ const CourseDetailPage = ({
                                   </div>
                                   
                                   {/* Task details */}
-                                  <div className="flex items-center gap-4 text-xs text-gray-600 mb-3">
+                                  <div className="flex items-center gap-4 mb-3 text-xs text-gray-600">
                                     <div className="flex items-center gap-1">
                                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1198,12 +1286,12 @@ const CourseDetailPage = ({
                                 </div>
 
                                 {/* Task title */}
-                                <h4 className="text-sm font-semibold text-gray-900 mb-2 leading-tight" title={item.title}>
+                                <h4 className="mb-2 text-sm font-semibold leading-tight text-gray-900" title={item.title}>
                                   {item.title}
                                 </h4>
 
                                 {/* Task details */}
-                                <div className="flex items-center gap-4 text-xs text-gray-600 mb-3">
+                                <div className="flex items-center gap-4 mb-3 text-xs text-gray-600">
                                   <div className="flex items-center gap-1 whitespace-nowrap">
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1236,7 +1324,15 @@ const CourseDetailPage = ({
         </div>
       </div>
 
-      
+      {/* Invite Modal */}
+      <InviteModal
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        onInvite={handleInviteUser}
+        role={inviteRole}
+        courseName={courseDetails?.subject || 'this course'}
+      />
+
     </>
   );
 };
