@@ -40,7 +40,9 @@ const CourseContent = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/courses'); // No need for manual token header, cookie is sent automatically
+      const res = await fetch('/api/courses', {
+        credentials: 'include'
+      }); // Include credentials to send httpOnly cookie
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
@@ -68,7 +70,9 @@ const CourseContent = () => {
 
   const fetchUserClusters = async () => {
     try {
-      const res = await fetch('/api/clusters');
+      const res = await fetch('/api/clusters', {
+        credentials: 'include'
+      });
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
       }

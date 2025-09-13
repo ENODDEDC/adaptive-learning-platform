@@ -41,5 +41,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/', '/login', '/register', '/forgot-password', '/reset-password', '/home', '/courses/:path*', '/ask', '/text-to-docs', '/admin/:path*', '/api/schedule', '/api/courses'],
+  matcher: ['/', '/login', '/register', '/forgot-password', '/reset-password', '/home', '/courses/:path*', '/ask', '/text-to-docs', '/admin/:path*', '/api/schedule', '/api/courses', '/api/notifications'],
 };

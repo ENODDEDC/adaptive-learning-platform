@@ -34,8 +34,13 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
 
   useEffect(() => {
     const fetchNotifications = async () => {
+      // Only fetch notifications if user is authenticated
+      if (!user) return;
+
       try {
-        const response = await fetch('/api/notifications'); // No need for manual token header, cookie is sent automatically
+        const response = await fetch('/api/notifications', {
+          credentials: 'include'
+        }); // Include credentials to send httpOnly cookie
         if (!response.ok) {
           throw new Error('Failed to fetch notifications');
         }
@@ -61,6 +66,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ notificationIds }),
       });
       setNotifications(prev => prev.map(n =>
@@ -92,7 +98,9 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const response = await fetch('/api/auth/profile'); // No need for manual token header, cookie is sent automatically
+        const response = await fetch('/api/auth/profile', {
+          credentials: 'include'
+        }); // Include credentials to send httpOnly cookie
 
         if (!response.ok) {
           throw new Error('Failed to fetch user profile');
@@ -113,6 +121,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     try {
       const res = await fetch('/api/auth/logout', {
         method: 'POST',
+        credentials: 'include',
       });
 
       if (res.ok) {
