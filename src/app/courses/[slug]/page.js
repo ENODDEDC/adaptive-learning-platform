@@ -49,7 +49,7 @@ const CourseDetailPage = ({
   // Use local state for course page sidebar (independent of main layout sidebar)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const upcomingTasksExpanded = propUpcomingTasksExpanded !== undefined ? propUpcomingTasksExpanded : true;
-  const setUpcomingTasksExpanded = propSetUpcomingTasksExpanded || (() => {});
+  const setUpcomingTasksExpanded = propSetUpcomingTasksExpanded || (() => { });
 
   // Invite modal states
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
@@ -488,7 +488,8 @@ const CourseDetailPage = ({
     <>
       <div className="h-full p-8 overflow-y-auto bg-gray-50">
         {/* Global event listener to open viewer from child components (e.g., Stream attachments) */}
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script dangerouslySetInnerHTML={{
+          __html: `
           (function(){
             if(typeof window !== 'undefined'){
               window.__openContentViewerHandler = function(e){
@@ -553,9 +554,8 @@ const CourseDetailPage = ({
         {/* Main Content Layout */}
         <div className="flex flex-1 gap-6">
           {/* Left Sidebar - Course Modules */}
-          <div className={`bg-white border border-gray-200 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out ${
-            sidebarCollapsed ? 'w-16' : 'w-80'
-          }`}>
+          <div className={`bg-white border border-gray-200 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-16' : 'w-80'
+            }`}>
             {!sidebarCollapsed ? (
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -638,11 +638,10 @@ const CourseDetailPage = ({
             {/* Enhanced Navigation Tabs */}
             <div className="flex justify-between mb-8 overflow-hidden bg-white border border-gray-200 shadow-sm rounded-xl">
               <button
-                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${
-                  activeTab === 'stream'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
+                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${activeTab === 'stream'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
                 onClick={() => setActiveTab('stream')}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -656,11 +655,10 @@ const CourseDetailPage = ({
                 )}
               </button>
               <button
-                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${
-                  activeTab === 'classwork'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
+                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${activeTab === 'classwork'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
                 onClick={() => setActiveTab('classwork')}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -674,11 +672,10 @@ const CourseDetailPage = ({
                 )}
               </button>
               <button
-                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${
-                  activeTab === 'people'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
+                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${activeTab === 'people'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
                 onClick={() => setActiveTab('people')}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -692,11 +689,10 @@ const CourseDetailPage = ({
                 )}
               </button>
               <button
-                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${
-                  activeTab === 'marks'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
+                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${activeTab === 'marks'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
                 onClick={() => setActiveTab('marks')}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -904,7 +900,7 @@ const CourseDetailPage = ({
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
-                      {[1,2,3].map((i) => (
+                      {[1, 2, 3].map((i) => (
                         <tr key={i} className="hover:bg-gray-50">
                           <td className="px-4 py-3">User {i}</td>
                           <td className="px-4 py-3">Sample Assignment {i}</td>
@@ -920,9 +916,8 @@ const CourseDetailPage = ({
           </div>
 
           {/* Right Sidebar - Upcoming Tasks */}
-          <div className={`bg-white border border-gray-200 rounded-xl shadow-sm min-w-[280px] max-w-[320px] w-full h-fit sticky top-6 overflow-hidden ${
-            upcomingTasksExpanded ? 'opacity-100 max-h-screen' : 'opacity-60 max-h-16 hover:opacity-100'
-          }`}>
+          <div className={`bg-white border border-gray-200 rounded-xl shadow-sm min-w-[280px] max-w-[320px] w-full h-fit sticky top-6 overflow-hidden ${upcomingTasksExpanded ? 'opacity-100 max-h-screen' : 'opacity-60 max-h-16 hover:opacity-100'
+            }`}>
             <div className="px-4 py-4 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <button
@@ -951,11 +946,10 @@ const CourseDetailPage = ({
                   <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                     <button
                       onClick={() => setTimelineView(false)}
-                      className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${
-                        !timelineView 
-                          ? 'bg-white text-gray-900 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
+                      className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${!timelineView
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                        }`}
                       title="Card View"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -964,11 +958,10 @@ const CourseDetailPage = ({
                     </button>
                     <button
                       onClick={() => setTimelineView(true)}
-                      className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${
-                        timelineView 
-                          ? 'bg-white text-gray-900 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
+                      className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${timelineView
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                        }`}
                       title="Timeline View"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -983,9 +976,8 @@ const CourseDetailPage = ({
               </div>
             </div>
 
-            <div className={`overflow-hidden ${
-              upcomingTasksExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
-            }`}>
+            <div className={`overflow-hidden ${upcomingTasksExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+              }`}>
               <div className="p-4 overflow-y-auto max-h-96 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
                 {(() => {
                   const now = new Date();
@@ -1011,49 +1003,49 @@ const CourseDetailPage = ({
 
                   // Timeline View
                   if (timelineView) {
-                  return (
+                    return (
                       <div className="relative">
                         {/* Timeline line */}
                         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-blue-200"></div>
-                        
+
                         <div className="space-y-6">
-                      {upcoming.map((item, index) => {
-                             console.log('🔍 DATE: Processing upcoming task:', item.title);
-                             console.log('🔍 DATE: Item due date:', item._due);
-                             console.log('🔍 DATE: Current time (now):', now);
-                             console.log('🔍 DATE: Time difference:', item._due - now);
-                             const daysLeft = Math.ceil((item._due - now) / (1000 * 60 * 60 * 24));
-                             console.log('🔍 DATE: Days left calculation:', daysLeft);
-                                 const urgency = daysLeft <= 0 ? 'overdue' : daysLeft <= 2 ? 'soon' : daysLeft <= 7 ? 'upcoming' : 'normal';
-                            
+                          {upcoming.map((item, index) => {
+                            console.log('🔍 DATE: Processing upcoming task:', item.title);
+                            console.log('🔍 DATE: Item due date:', item._due);
+                            console.log('🔍 DATE: Current time (now):', now);
+                            console.log('🔍 DATE: Time difference:', item._due - now);
+                            const daysLeft = Math.ceil((item._due - now) / (1000 * 60 * 60 * 24));
+                            console.log('🔍 DATE: Days left calculation:', daysLeft);
+                            const urgency = daysLeft <= 0 ? 'overdue' : daysLeft <= 2 ? 'soon' : daysLeft <= 7 ? 'upcoming' : 'normal';
+
                             // Timeline priority colors
                             const timelineConfig = {
-                              overdue: { 
-                                dotColor: 'bg-red-500', 
+                              overdue: {
+                                dotColor: 'bg-red-500',
                                 ringColor: 'ring-red-200',
                                 bgColor: 'bg-red-50',
                                 borderColor: 'border-red-200',
                                 textColor: 'text-red-700',
                                 priorityText: 'Urgent'
                               },
-                              soon: { 
-                                dotColor: 'bg-amber-500', 
+                              soon: {
+                                dotColor: 'bg-amber-500',
                                 ringColor: 'ring-amber-200',
                                 bgColor: 'bg-amber-50',
                                 borderColor: 'border-amber-200',
                                 textColor: 'text-amber-700',
                                 priorityText: 'Due Soon'
                               },
-                              upcoming: { 
-                                dotColor: 'bg-blue-500', 
+                              upcoming: {
+                                dotColor: 'bg-blue-500',
                                 ringColor: 'ring-blue-200',
                                 bgColor: 'bg-blue-50',
                                 borderColor: 'border-blue-200',
                                 textColor: 'text-blue-700',
                                 priorityText: 'Upcoming'
                               },
-                              normal: { 
-                                dotColor: 'bg-green-500', 
+                              normal: {
+                                dotColor: 'bg-green-500',
                                 ringColor: 'ring-green-200',
                                 bgColor: 'bg-green-50',
                                 borderColor: 'border-green-200',
@@ -1061,9 +1053,9 @@ const CourseDetailPage = ({
                                 priorityText: 'Normal'
                               }
                             };
-                            
+
                             const config = timelineConfig[urgency];
-                            
+
                             // Task type detection
                             const getTaskType = (title, type) => {
                               const titleLower = title.toLowerCase();
@@ -1081,14 +1073,14 @@ const CourseDetailPage = ({
                                 return { icon: '📄', label: 'Task', estimatedTime: '30-60 min' };
                               }
                             };
-                            
+
                             const taskType = getTaskType(item.title, item.type);
-                            
+
                             // Progress calculation (simplified to avoid random calls on every render)
                             const progress = 0; // Default to 0, can be updated with real data later
                             const isCompleted = false; // Default to false
                             const isStarted = false; // Default to false
-                            
+
                             // Smart notifications
                             const getNotificationMessage = () => {
                               if (daysLeft <= 0) return "⚠️ This task is overdue!";
@@ -1098,13 +1090,13 @@ const CourseDetailPage = ({
                               return "✅ You have plenty of time";
                             };
 
-                        return (
+                            return (
                               <div key={item._id} className="relative flex items-start gap-4">
                                 {/* Timeline dot */}
                                 <div className={`relative z-10 flex-shrink-0 w-12 h-12 ${config.dotColor} ${config.ringColor} ring-4 rounded-full flex items-center justify-center`}>
                                   <span className="text-lg text-white">{taskType.icon}</span>
                                 </div>
-                                
+
                                 {/* Task content */}
                                 <div className={`flex-1 p-4 ${config.bgColor} ${config.borderColor} border rounded-xl hover:shadow-md transition-all duration-200 cursor-pointer`}>
                                   {/* Task header */}
@@ -1122,17 +1114,17 @@ const CourseDetailPage = ({
                                       </div>
                                     </div>
                                   </div>
-                                  
-                                {/* Task title */}
+
+                                  {/* Task title */}
                                   <h4 className="mb-2 text-sm font-semibold leading-tight text-gray-900">
-                                  {item.title}
-                                </h4>
+                                    {item.title}
+                                  </h4>
 
                                   {/* Smart notification */}
                                   <div className={`text-xs ${config.textColor} mb-3 p-2 rounded-md ${config.bgColor} border ${config.borderColor}`}>
                                     {getNotificationMessage()}
                                   </div>
-                                  
+
                                   {/* Task details */}
                                   <div className="flex items-center gap-4 mb-3 text-xs text-gray-600">
                                     <div className="flex items-center gap-1">
@@ -1142,9 +1134,9 @@ const CourseDetailPage = ({
                                       <span>{taskType.estimatedTime}</span>
                                     </div>
                                   </div>
-                                  
+
                                   {/* Action buttons */}
-                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center justify-between">
                                     <div className="flex gap-2">
                                       {isCompleted ? (
                                         <button className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 border border-green-200 rounded-md hover:bg-green-200 transition-colors">
@@ -1163,7 +1155,7 @@ const CourseDetailPage = ({
                                         View
                                       </button>
                                     </div>
-                                    
+
                                     {/* Drag handle for prioritization */}
                                     <div className="flex items-center gap-1 text-gray-400 cursor-move" title="Drag to prioritize">
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1179,52 +1171,52 @@ const CourseDetailPage = ({
                       </div>
                     );
                   }
-                  
+
                   // Card View (existing implementation)
                   return (
                     <div className="space-y-4">
                       {upcoming.map((item, index) => {
                         const daysLeft = Math.ceil((item._due - now) / (1000 * 60 * 60 * 24));
                         const urgency = daysLeft <= 0 ? 'overdue' : daysLeft <= 2 ? 'soon' : daysLeft <= 7 ? 'upcoming' : 'normal';
-                        
+
                         // Priority colors and styles
                         const priorityConfig = {
-                          overdue: { 
-                            color: 'red', 
-                            bgClass: 'bg-red-50', 
-                            borderClass: 'border-red-200', 
+                          overdue: {
+                            color: 'red',
+                            bgClass: 'bg-red-50',
+                            borderClass: 'border-red-200',
                             textClass: 'text-red-700',
                             ringColor: 'stroke-red-500',
                             priorityText: 'Urgent'
                           },
-                          soon: { 
-                            color: 'amber', 
-                            bgClass: 'bg-amber-50', 
-                            borderClass: 'border-amber-200', 
+                          soon: {
+                            color: 'amber',
+                            bgClass: 'bg-amber-50',
+                            borderClass: 'border-amber-200',
                             textClass: 'text-amber-700',
                             ringColor: 'stroke-amber-500',
                             priorityText: 'Due Soon'
                           },
-                          upcoming: { 
-                            color: 'blue', 
-                            bgClass: 'bg-blue-50', 
-                            borderClass: 'border-blue-200', 
+                          upcoming: {
+                            color: 'blue',
+                            bgClass: 'bg-blue-50',
+                            borderClass: 'border-blue-200',
                             textClass: 'text-blue-700',
                             ringColor: 'stroke-blue-500',
                             priorityText: 'Upcoming'
                           },
-                          normal: { 
-                            color: 'green', 
-                            bgClass: 'bg-green-50', 
-                            borderClass: 'border-green-200', 
+                          normal: {
+                            color: 'green',
+                            bgClass: 'bg-green-50',
+                            borderClass: 'border-green-200',
                             textClass: 'text-green-700',
                             ringColor: 'stroke-green-500',
                             priorityText: 'Normal'
                           }
                         };
-                        
+
                         const config = priorityConfig[urgency];
-                        
+
                         // Task type detection and icon
                         const getTaskType = (title, type) => {
                           const titleLower = title.toLowerCase();
@@ -1242,14 +1234,14 @@ const CourseDetailPage = ({
                             return { icon: '📄', label: 'Task', estimatedTime: '30-60 min' };
                           }
                         };
-                        
+
                         const taskType = getTaskType(item.title, item.type);
-                        
+
                         // Progress calculation (simplified to avoid performance issues)
                         const progress = 0; // Default to 0, can be updated with real data later
                         const isCompleted = false; // Default to false
                         const isStarted = false; // Default to false
-                        
+
                         // Quick action buttons
                         const getActionButton = () => {
                           if (isCompleted) {
@@ -1304,7 +1296,7 @@ const CourseDetailPage = ({
                                     </svg>
                                     <span>{taskType.estimatedTime}</span>
                                   </div>
-                                  </div>
+                                </div>
 
                                 {/* Action button */}
                                 <div className="flex justify-end">

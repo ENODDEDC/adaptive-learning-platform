@@ -1,0 +1,1465 @@
+/* ==========================================
+   AUTHENTIC POWERPOINT LAYOUT ENGINE
+   Professional Typography & Visual Hierarchy
+   ========================================== */
+
+:root {
+  /* PowerPoint Color Palette */
+  --ppt-primary: #1f4e79;
+  --ppt-secondary: #4472c4;
+  --ppt-accent: #70ad47;
+  --ppt-text-dark: #1f2328;
+  --ppt-text-medium: #656d76;
+  --ppt-text-light: #8b949e;
+  --ppt-bg-primary: #ffffff;
+  --ppt-bg-secondary: #f8f9fb;
+  --ppt-bg-accent: #e7f3ff;
+  --ppt-border: #d0d7de;
+  
+  /* PowerPoint Spacing System */
+  --ppt-space-xs: 0.5rem;    /* 8px */
+  --ppt-space-sm: 1rem;      /* 16px */
+  --ppt-space-md: 1.5rem;    /* 24px */
+  --ppt-space-lg: 2rem;      /* 32px */
+  --ppt-space-xl: 3rem;      /* 48px */
+  --ppt-space-2xl: 4rem;     /* 64px */
+  
+  /* PowerPoint Typography Scale - Optimized for slide constraints */
+  --ppt-text-xs: clamp(0.75rem, 1vw, 0.875rem);
+  --ppt-text-sm: clamp(0.875rem, 1.2vw, 1rem);
+  --ppt-text-base: clamp(1rem, 1.5vw, 1.125rem);
+  --ppt-text-lg: clamp(1.125rem, 1.8vw, 1.25rem);
+  --ppt-text-xl: clamp(1.25rem, 2.2vw, 1.5rem);
+  --ppt-text-2xl: clamp(1.5rem, 2.8vw, 1.875rem);
+  --ppt-text-3xl: clamp(1.875rem, 3.5vw, 2.25rem);
+  --ppt-text-4xl: clamp(2rem, 4vw, 2.75rem);
+  
+  /* PowerPoint Shadows & Effects */
+  --ppt-shadow-sm: 0 1px 3px rgba(31, 35, 40, 0.12), 0 1px 2px rgba(31, 35, 40, 0.24);
+  --ppt-shadow-md: 0 4px 6px rgba(31, 35, 40, 0.15), 0 2px 4px rgba(31, 35, 40, 0.12);
+  --ppt-shadow-lg: 0 10px 15px rgba(31, 35, 40, 0.1), 0 4px 6px rgba(31, 35, 40, 0.05);
+}
+
+/* ==========================================
+   AUTHENTIC POWERPOINT LAYOUTS
+   ========================================== */
+
+.ppt-presentation-container {
+  width: 100%;
+  max-width: 1920px;
+  margin: 0 auto;
+  background: var(--ppt-bg-secondary);
+  font-family: 'Segoe UI', 'Calibri', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  position: relative;
+  overflow: hidden;
+}
+
+.ppt-slide {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: var(--ppt-bg-primary);
+  box-shadow: var(--ppt-shadow-lg);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  padding: var(--ppt-space-xl);
+  box-sizing: border-box;
+  height: auto;
+  max-height: 100vh;
+  min-height: 400px;
+}
+
+/* Smart Content Organization Container */
+.ppt-smart-container {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  gap: var(--ppt-space-md);
+  align-items: center;
+  justify-items: center;
+  overflow: hidden;
+  max-height: 100%;
+  place-items: center;
+}
+
+/* Layout Types */
+.ppt-layout-title {
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas: 
+    "title"
+    "subtitle"
+    "footer";
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  max-height: 100%;
+  place-items: center;
+}
+
+.ppt-layout-title-content {
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "header"
+    "content";
+  gap: var(--ppt-space-lg);
+  overflow: hidden;
+  max-height: 100%;
+  align-items: center;
+  justify-items: center;
+  place-items: center;
+}
+
+.ppt-layout-two-content {
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "header header"
+    "left right";
+  gap: var(--ppt-space-lg);
+  overflow: hidden;
+  max-height: 100%;
+  align-items: center;
+  justify-items: center;
+  place-items: center;
+}
+
+.ppt-layout-content-image {
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 2fr 1fr;
+  grid-template-areas:
+    "header header"
+    "content image";
+  gap: var(--ppt-space-lg);
+  overflow: hidden;
+  max-height: 100%;
+  align-items: center;
+  justify-items: center;
+  place-items: center;
+}
+
+.ppt-layout-blank {
+  grid-template-rows: 1fr;
+  grid-template-columns: 1fr;
+  grid-template-areas: "content";
+  overflow: hidden;
+  max-height: 100%;
+  place-items: center;
+}
+
+/* ==========================================
+   PROFESSIONAL TYPOGRAPHY SYSTEM
+   ========================================== */
+
+.ppt-title {
+  grid-area: title;
+  font-size: var(--ppt-text-4xl);
+  font-weight: 700;
+  color: var(--ppt-primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-align: center;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+.ppt-subtitle {
+  grid-area: subtitle;
+  font-size: var(--ppt-text-xl);
+  font-weight: 400;
+  color: var(--ppt-text-medium);
+  line-height: 1.3;
+  margin: var(--ppt-space-md) 0 0 0;
+  text-align: center;
+  opacity: 0.9;
+}
+
+.ppt-header {
+  grid-area: header;
+  font-size: var(--ppt-text-3xl);
+  font-weight: 600;
+  color: var(--ppt-primary);
+  line-height: 1.2;
+  margin: 0;
+  border-bottom: 3px solid var(--ppt-secondary);
+  padding-bottom: var(--ppt-space-sm);
+  text-align: center;
+  width: 100%;
+  max-width: 100%;
+  justify-self: center;
+  align-self: start;
+}
+
+.ppt-content {
+  grid-area: content;
+  font-size: var(--ppt-text-base);
+  line-height: 1.6;
+  color: var(--ppt-text-dark);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ppt-space-md);
+  overflow: hidden;
+  max-height: 100%;
+  height: fit-content;
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  place-self: center;
+  justify-self: center;
+  align-self: center;
+}
+
+.ppt-content-compact {
+  grid-area: content;
+  font-size: var(--ppt-text-sm);
+  line-height: 1.4;
+  color: var(--ppt-text-dark);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ppt-space-sm);
+  overflow: hidden;
+  max-height: 100%;
+  height: fit-content;
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  place-self: center;
+  justify-self: center;
+  align-self: center;
+}
+
+.ppt-content-left {
+  grid-area: left;
+  overflow: hidden;
+  max-height: 100%;
+  height: fit-content;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  place-self: center;
+  justify-self: center;
+  align-self: center;
+}
+
+.ppt-content-right {
+  grid-area: right;
+  overflow: hidden;
+  max-height: 100%;
+  height: fit-content;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  place-self: center;
+  justify-self: center;
+  align-self: center;
+}
+
+/* ==========================================
+   INTELLIGENT CONTENT PLACEMENT SYSTEM
+   ========================================== */
+
+/* Intelligent Layout Container */
+.ppt-intelligent-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  max-height: 100vh;
+  display: grid;
+  gap: var(--ppt-space-md);
+  padding: var(--ppt-space-lg);
+  align-items: center;
+  justify-items: center;
+  place-items: center;
+}
+
+/* Intelligent Zones */
+.intelligent-zone {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ppt-space-sm);
+  position: relative;
+  overflow: hidden;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Zone-specific styling */
+.primary-zone {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--ppt-space-md);
+}
+
+.secondary-zone {
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  padding: var(--ppt-space-sm);
+}
+
+.header-zone {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--ppt-space-sm) var(--ppt-space-md);
+  border-bottom: 2px solid var(--ppt-secondary);
+}
+
+.content-zone {
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  padding: var(--ppt-space-md);
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.image-zone {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--ppt-space-sm);
+}
+
+/* Intelligent Text Elements */
+.ppt-intelligent-text {
+  width: 100%;
+  max-width: 100%;
+  line-height: 1.5;
+  color: var(--ppt-text-dark);
+  margin-bottom: var(--ppt-space-sm);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Intelligent Image Elements */
+.ppt-intelligent-image-wrapper {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ppt-space-xs);
+}
+
+.ppt-intelligent-image {
+  max-width: 100%;
+  max-height: 400px;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 8px;
+  box-shadow: var(--ppt-shadow-sm);
+}
+
+/* Slide with intelligent layout */
+.ppt-slide.intelligent-layout {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  max-height: 100vh;
+  background: var(--ppt-bg-primary);
+  border-radius: 12px;
+  box-shadow: var(--ppt-shadow-lg);
+  padding: 0;
+}
+
+/* Responsive adjustments for intelligent layouts */
+@media (max-width: 768px) {
+  .ppt-intelligent-container {
+    padding: var(--ppt-space-md);
+    gap: var(--ppt-space-sm);
+  }
+  
+  .intelligent-zone {
+    gap: var(--ppt-space-xs);
+  }
+  
+  .primary-zone,
+  .secondary-zone,
+  .content-zone {
+    padding: var(--ppt-space-sm);
+  }
+  
+  .header-zone {
+    padding: var(--ppt-space-xs) var(--ppt-space-sm);
+  }
+  
+  .ppt-intelligent-text {
+    font-size: 0.9em;
+    line-height: 1.4;
+  }
+  
+  .ppt-intelligent-image {
+    max-height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ppt-intelligent-container {
+    padding: var(--ppt-space-sm);
+  }
+  
+  .ppt-intelligent-text {
+    font-size: 0.85em;
+    line-height: 1.3;
+  }
+  
+  .ppt-intelligent-image {
+    max-height: 200px;
+  }
+}
+
+/* ==========================================
+   ENHANCED SMART CONTENT ORGANIZATION
+   ========================================== */
+
+/* Primary Hierarchy - Titles */
+.ppt-heading-1 {
+  font-size: var(--ppt-text-3xl);
+  font-weight: 700;
+  color: var(--ppt-primary);
+  margin: 0 0 var(--ppt-space-lg) 0;
+  line-height: 1.1;
+  border-left: 4px solid var(--ppt-secondary);
+  padding-left: var(--ppt-space-md);
+  position: relative;
+  background: linear-gradient(90deg, rgba(68, 114, 196, 0.05) 0%, transparent 100%);
+  border-radius: 0 8px 8px 0;
+}
+
+.ppt-heading-1::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--ppt-secondary) 0%, var(--ppt-accent) 100%);
+  border-radius: 2px;
+}
+
+/* Secondary Hierarchy - Subheadings */
+.ppt-heading-2 {
+  font-size: var(--ppt-text-2xl);
+  font-weight: 600;
+  color: var(--ppt-secondary);
+  margin: var(--ppt-space-lg) 0 var(--ppt-space-md) 0;
+  line-height: 1.2;
+  position: relative;
+  padding-left: var(--ppt-space-sm);
+}
+
+.ppt-heading-2::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  color: var(--ppt-secondary);
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+/* Tertiary Hierarchy - Sub-subheadings */
+.ppt-heading-3 {
+  font-size: var(--ppt-text-xl);
+  font-weight: 500;
+  color: var(--ppt-text-dark);
+  margin: var(--ppt-space-md) 0 var(--ppt-space-sm) 0;
+  line-height: 1.3;
+  border-bottom: 2px solid var(--ppt-bg-accent);
+  padding-bottom: var(--ppt-space-xs);
+  display: inline-block;
+}
+
+/* Content Hierarchy - Body Text */
+.ppt-paragraph {
+  font-size: var(--ppt-text-base);
+  line-height: 1.6;
+  color: var(--ppt-text-dark);
+  margin: 0 0 var(--ppt-space-md) 0;
+  text-align: justify;
+  hyphens: auto;
+  position: relative;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-height: fit-content;
+}
+
+.ppt-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+/* Emphasis and Highlighting */
+.ppt-emphasis {
+  background: linear-gradient(120deg, #e7f3ff 0%, #f0f8ff 100%);
+  padding: var(--ppt-space-xs) var(--ppt-space-sm);
+  border-radius: 6px;
+  border-left: 3px solid var(--ppt-secondary);
+  font-weight: 500;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(68, 114, 196, 0.1);
+  margin: var(--ppt-space-sm) 0;
+}
+
+.ppt-emphasis::before {
+  content: '💡';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  box-shadow: var(--ppt-shadow-sm);
+}
+
+.ppt-highlight {
+  background: linear-gradient(120deg, #fff3cd 0%, #fef7e0 100%);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-weight: 500;
+  border-bottom: 2px solid #f59e0b;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+/* Visual Importance Indicators */
+.ppt-important {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 2px solid #dc2626;
+  border-radius: 8px;
+  padding: var(--ppt-space-md);
+  margin: var(--ppt-space-md) 0;
+  position: relative;
+}
+
+.ppt-important::before {
+  content: '⚠️ IMPORTANT';
+  position: absolute;
+  top: -12px;
+  left: var(--ppt-space-md);
+  background: #dc2626;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: var(--ppt-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.ppt-note {
+  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
+  border: 2px solid var(--ppt-accent);
+  border-radius: 8px;
+  padding: var(--ppt-space-md);
+  margin: var(--ppt-space-md) 0;
+  position: relative;
+}
+
+.ppt-note::before {
+  content: '📝 NOTE';
+  position: absolute;
+  top: -12px;
+  left: var(--ppt-space-md);
+  background: var(--ppt-accent);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: var(--ppt-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Content Depth Indicators */
+.ppt-content-primary {
+  background: var(--ppt-bg-primary);
+  border-radius: 8px;
+  padding: var(--ppt-space-lg);
+  box-shadow: var(--ppt-shadow-md);
+  border: 2px solid var(--ppt-primary);
+  position: relative;
+  z-index: 3;
+}
+
+.ppt-content-secondary {
+  background: var(--ppt-bg-secondary);
+  border-radius: 6px;
+  padding: var(--ppt-space-md);
+  box-shadow: var(--ppt-shadow-sm);
+  border: 1px solid var(--ppt-border);
+  position: relative;
+  z-index: 2;
+}
+
+.ppt-content-tertiary {
+  background: rgba(248, 249, 251, 0.5);
+  border-radius: 4px;
+  padding: var(--ppt-space-sm);
+  border-left: 3px solid var(--ppt-text-light);
+  position: relative;
+  z-index: 1;
+}
+
+/* Visual Separation Elements */
+.ppt-divider {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--ppt-secondary) 20%, var(--ppt-secondary) 80%, transparent 100%);
+  margin: var(--ppt-space-lg) 0;
+  border-radius: 1px;
+}
+
+.ppt-section-break {
+  width: 60%;
+  height: 1px;
+  background: var(--ppt-border);
+  margin: var(--ppt-space-xl) auto;
+  position: relative;
+}
+
+.ppt-section-break::before {
+  content: '◆';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--ppt-bg-primary);
+  color: var(--ppt-secondary);
+  padding: 0 var(--ppt-space-sm);
+  font-size: var(--ppt-text-sm);
+}
+
+/* Enhanced Bullet Points with Visual Hierarchy */
+.ppt-bullet-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ppt-space-sm);
+  position: relative;
+  overflow: hidden;
+  max-height: 100%;
+}
+
+.ppt-bullet-list::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--ppt-secondary) 0%, transparent 100%);
+  opacity: 0.3;
+  border-radius: 1px;
+}
+
+.ppt-bullet-item {
+  position: relative;
+  padding-left: var(--ppt-space-lg);
+  font-size: var(--ppt-text-base);
+  line-height: 1.5;
+  color: var(--ppt-text-dark);
+  transition: all 0.2s ease;
+}
+
+.ppt-bullet-item:hover {
+  transform: translateX(4px);
+  color: var(--ppt-primary);
+}
+
+.ppt-bullet-item::before {
+  content: '▶';
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  color: var(--ppt-secondary);
+  font-size: 0.8em;
+  font-weight: bold;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(68, 114, 196, 0.1);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.ppt-bullet-item:hover::before {
+  background: var(--ppt-secondary);
+  color: white;
+  transform: scale(1.1);
+}
+
+.ppt-bullet-item.level-2 {
+  padding-left: var(--ppt-space-2xl);
+  font-size: var(--ppt-text-sm);
+  opacity: 0.9;
+}
+
+.ppt-bullet-item.level-2::before {
+  content: '▸';
+  color: var(--ppt-accent);
+  background: rgba(112, 173, 71, 0.1);
+}
+
+.ppt-bullet-item.level-2:hover::before {
+  background: var(--ppt-accent);
+  color: white;
+}
+
+.ppt-bullet-item.level-3 {
+  padding-left: calc(var(--ppt-space-2xl) + var(--ppt-space-md));
+  font-size: var(--ppt-text-sm);
+  opacity: 0.8;
+}
+
+.ppt-bullet-item.level-3::before {
+  content: '•';
+  color: var(--ppt-text-medium);
+  background: rgba(139, 148, 158, 0.1);
+}
+
+/* Enhanced Numbered Lists with Visual Hierarchy */
+.ppt-numbered-list {
+  counter-reset: ppt-counter;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ppt-space-sm);
+  overflow: hidden;
+  max-height: 100%;
+}
+
+.ppt-numbered-item {
+  counter-increment: ppt-counter;
+  position: relative;
+  padding-left: var(--ppt-space-lg);
+  font-size: var(--ppt-text-base);
+  line-height: 1.5;
+  color: var(--ppt-text-dark);
+  transition: all 0.2s ease;
+}
+
+.ppt-numbered-item:hover {
+  transform: translateX(4px);
+  color: var(--ppt-primary);
+}
+
+.ppt-numbered-item::before {
+  content: counter(ppt-counter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: white;
+  background: var(--ppt-secondary);
+  font-weight: bold;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: var(--ppt-text-sm);
+  box-shadow: var(--ppt-shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.ppt-numbered-item:hover::before {
+  background: var(--ppt-primary);
+  transform: scale(1.1);
+  box-shadow: var(--ppt-shadow-md);
+}
+
+/* ==========================================
+   IMAGE & MEDIA HANDLING
+   ========================================== */
+
+.ppt-image-container {
+  grid-area: image;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ppt-space-md);
+  align-items: center;
+  justify-content: center;
+  padding: var(--ppt-space-md);
+  background: var(--ppt-bg-accent);
+  border-radius: 8px;
+  border: 2px dashed var(--ppt-border);
+  overflow: hidden;
+  max-height: 100%;
+  height: fit-content;
+}
+
+.ppt-image {
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+  width: auto;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: var(--ppt-shadow-md);
+  background: white;
+  padding: var(--ppt-space-xs);
+}
+
+.ppt-image-caption {
+  font-size: var(--ppt-text-sm);
+  color: var(--ppt-text-medium);
+  text-align: center;
+  font-style: italic;
+  margin-top: var(--ppt-space-xs);
+}
+
+/* ==========================================
+   CONTENT BLOCKS & CALLOUTS
+   ========================================== */
+
+.ppt-content-block {
+  background: var(--ppt-bg-secondary);
+  border-radius: 8px;
+  padding: var(--ppt-space-lg);
+  margin: var(--ppt-space-md) 0;
+  border-left: 4px solid var(--ppt-secondary);
+  box-shadow: var(--ppt-shadow-sm);
+}
+
+.ppt-content-block.info {
+  border-left-color: var(--ppt-secondary);
+  background: #e7f3ff;
+}
+
+.ppt-content-block.success {
+  border-left-color: var(--ppt-accent);
+  background: #f0f9f0;
+}
+
+.ppt-content-block.warning {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.ppt-content-block.danger {
+  border-left-color: #dc2626;
+  background: #fef2f2;
+}
+
+/* ==========================================
+   ENHANCED RESPONSIVE DESIGN SYSTEM
+   ========================================== */
+
+/* Container Queries for Modern Responsive Design */
+@container (max-width: 600px) {
+  .ppt-slide {
+    aspect-ratio: 4/3;
+    padding: var(--ppt-space-md);
+  }
+}
+
+/* Ultra-wide Displays (2560px+) */
+@media (min-width: 2560px) {
+  .ppt-presentation-container {
+    max-width: 2400px;
+  }
+  
+  .ppt-slide {
+    padding: calc(var(--ppt-space-2xl) * 1.5);
+  }
+  
+  .ppt-title {
+    font-size: clamp(4rem, 3vw, 5rem);
+  }
+  
+  .ppt-content {
+    font-size: clamp(1.375rem, 1.2vw, 1.625rem);
+  }
+}
+
+/* Large Desktops (1920px - 2559px) */
+@media (max-width: 2559px) and (min-width: 1920px) {
+  .ppt-slide {
+    padding: calc(var(--ppt-space-2xl) * 1.2);
+  }
+  
+  .ppt-smart-container {
+    gap: calc(var(--ppt-space-lg) * 1.2);
+  }
+}
+
+/* Standard Desktops (1400px - 1919px) */
+@media (max-width: 1919px) and (min-width: 1400px) {
+  .ppt-slide {
+    padding: var(--ppt-space-2xl);
+  }
+  
+  .ppt-title {
+    font-size: clamp(3rem, 4vw, 4rem);
+  }
+  
+  .ppt-content {
+    font-size: clamp(1.125rem, 1.5vw, 1.375rem);
+  }
+}
+
+/* Medium Desktops (1024px - 1399px) */
+@media (max-width: 1399px) and (min-width: 1024px) {
+  .ppt-slide {
+    padding: var(--ppt-space-xl);
+    min-height: 300px;
+    max-height: 600px;
+  }
+  
+  .ppt-layout-two-content .ppt-smart-container,
+  .ppt-layout-content-image .ppt-smart-container {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "content"
+      "images";
+    gap: var(--ppt-space-sm);
+  }
+  
+  .ppt-image-container {
+    grid-area: images;
+    flex-direction: row;
+    gap: var(--ppt-space-sm);
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: 150px;
+  }
+}
+
+/* Tablets Landscape (768px - 1023px) */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .ppt-slide {
+    padding: var(--ppt-space-lg);
+    aspect-ratio: 4/3;
+    min-height: 400px;
+    max-height: 500px;
+  }
+  
+  .ppt-layout-two-content,
+  .ppt-layout-content-image {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .ppt-layout-two-content .ppt-smart-container {
+    grid-template-areas:
+      "header"
+      "left"
+      "right" !important;
+    gap: var(--ppt-space-sm);
+  }
+  
+  .ppt-layout-content-image .ppt-smart-container {
+    grid-template-areas:
+      "header"
+      "content"
+      "images" !important;
+    gap: var(--ppt-space-sm);
+  }
+  
+  .ppt-title {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+  }
+  
+  .ppt-content, .ppt-content-compact {
+    gap: var(--ppt-space-xs);
+  }
+  
+  .ppt-bullet-item,
+  .ppt-numbered-item {
+    padding-left: var(--ppt-space-md);
+    font-size: var(--ppt-text-sm);
+  }
+  
+  .ppt-image-container {
+    max-height: 200px;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  
+  .ppt-image {
+    flex-shrink: 0;
+    max-width: 150px;
+    max-height: 120px;
+  }
+}
+
+/* Tablets Portrait and Large Phones (481px - 767px) */
+@media (max-width: 767px) and (min-width: 481px) {
+  .ppt-slide {
+    padding: var(--ppt-space-md);
+    aspect-ratio: 3/4;
+  }
+  
+  .ppt-layout-title-content,
+  .ppt-layout-two-content,
+  .ppt-layout-content-image {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .ppt-smart-container {
+    grid-template-areas:
+      "header"
+      "content" !important;
+    gap: var(--ppt-space-sm);
+  }
+  
+  .ppt-title {
+    font-size: var(--ppt-text-2xl);
+    line-height: 1.2;
+    margin-bottom: var(--ppt-space-sm);
+  }
+  
+  .ppt-subtitle {
+    font-size: var(--ppt-text-lg);
+  }
+  
+  .ppt-header {
+    font-size: var(--ppt-text-xl);
+    border-bottom-width: 2px;
+  }
+  
+  .ppt-bullet-item,
+  .ppt-numbered-item {
+    padding-left: var(--ppt-space-sm);
+    font-size: var(--ppt-text-sm);
+    line-height: 1.4;
+  }
+  
+  .ppt-content-block {
+    padding: var(--ppt-space-sm);
+    margin: var(--ppt-space-xs) 0;
+  }
+  
+  .ppt-image-container {
+    margin-top: var(--ppt-space-md);
+    padding: var(--ppt-space-sm);
+  }
+  
+  .ppt-image {
+    max-width: 100%;
+    max-height: 200px;
+  }
+}
+
+/* Mobile Devices (max-width: 480px) */
+@media (max-width: 480px) {
+  .ppt-presentation-container {
+    margin: 0;
+    padding: var(--ppt-space-xs);
+  }
+  
+  .ppt-slide {
+    padding: var(--ppt-space-sm);
+    border-radius: 8px;
+    aspect-ratio: 3/4;
+  }
+  
+  .ppt-smart-container {
+    gap: var(--ppt-space-xs);
+  }
+  
+  .ppt-title {
+    font-size: var(--ppt-text-xl);
+    line-height: 1.2;
+    margin-bottom: var(--ppt-space-xs);
+  }
+  
+  .ppt-subtitle {
+    font-size: var(--ppt-text-base);
+    margin-top: var(--ppt-space-xs);
+  }
+  
+  .ppt-header {
+    font-size: var(--ppt-text-lg);
+    padding-bottom: var(--ppt-space-xs);
+  }
+  
+  .ppt-content {
+    font-size: var(--ppt-text-sm);
+    gap: var(--ppt-space-xs);
+  }
+  
+  .ppt-bullet-item,
+  .ppt-numbered-item {
+    padding-left: var(--ppt-space-sm);
+    font-size: var(--ppt-text-xs);
+    line-height: 1.3;
+  }
+  
+  .ppt-bullet-item::before,
+  .ppt-numbered-item::before {
+    width: 12px;
+    height: 12px;
+    font-size: 10px;
+  }
+  
+  .ppt-content-block {
+    padding: var(--ppt-space-xs);
+    margin: var(--ppt-space-xs) 0;
+    border-radius: 4px;
+  }
+  
+  .ppt-image-container {
+    padding: var(--ppt-space-xs);
+    margin-top: var(--ppt-space-sm);
+  }
+  
+  .ppt-image {
+    max-width: 100%;
+    max-height: 150px;
+    border-radius: 4px;
+  }
+  
+  /* Adjust typography scale for mobile */
+  .ppt-heading-1 {
+    font-size: var(--ppt-text-lg);
+    padding-left: var(--ppt-space-xs);
+  }
+  
+  .ppt-heading-2 {
+    font-size: var(--ppt-text-base);
+  }
+  
+  .ppt-heading-3 {
+    font-size: var(--ppt-text-sm);
+  }
+  
+  .ppt-emphasis,
+  .ppt-important,
+  .ppt-note {
+    padding: var(--ppt-space-xs);
+    margin: var(--ppt-space-xs) 0;
+    font-size: var(--ppt-text-xs);
+  }
+}
+
+/* Ultra-small devices (max-width: 320px) */
+@media (max-width: 320px) {
+  .ppt-slide {
+    padding: 8px;
+    border-radius: 4px;
+  }
+  
+  .ppt-title {
+    font-size: 18px;
+    line-height: 1.1;
+  }
+  
+  .ppt-header {
+    font-size: 16px;
+  }
+  
+  .ppt-content {
+    font-size: 12px;
+  }
+  
+  .ppt-bullet-item,
+  .ppt-numbered-item {
+    font-size: 11px;
+    padding-left: 16px;
+  }
+  
+  .ppt-image {
+    max-height: 120px;
+  }
+}
+
+/* Orientation-based adjustments */
+@media (orientation: landscape) and (max-height: 600px) {
+  .ppt-slide {
+    aspect-ratio: 16/9;
+    padding: var(--ppt-space-sm);
+  }
+  
+  .ppt-title {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    margin-bottom: var(--ppt-space-xs);
+  }
+  
+  .ppt-content {
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+  }
+}
+
+/* Print-friendly styles */
+@media print {
+  .ppt-presentation-container {
+    background: white;
+    box-shadow: none;
+  }
+  
+  .ppt-slide {
+    border: 1px solid #000;
+    box-shadow: none;
+    page-break-inside: avoid;
+    aspect-ratio: 4/3;
+  }
+  
+  .ppt-title,
+  .ppt-header {
+    color: #000 !important;
+  }
+  
+  .ppt-emphasis,
+  .ppt-important,
+  .ppt-note {
+    background: transparent !important;
+    border: 1px solid #000 !important;
+  }
+  
+  .ppt-image {
+    max-width: 100%;
+    max-height: 300px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .ppt-slide {
+    border: 2px solid;
+  }
+  
+  .ppt-emphasis,
+  .ppt-important,
+  .ppt-note {
+    border-width: 2px;
+  }
+  
+  .ppt-bullet-item::before,
+  .ppt-numbered-item::before {
+    border: 1px solid;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ppt-visual-important {
+    animation: none;
+  }
+  
+  .ppt-bullet-item,
+  .ppt-numbered-item {
+    transition: none;
+  }
+  
+  .ppt-bullet-item:hover,
+  .ppt-numbered-item:hover {
+    transform: none;
+  }
+}
+
+/* ==========================================
+   PRIORITY AND VISUAL TREATMENT CLASSES
+   ========================================== */
+
+/* Priority Indicators */
+.ppt-priority-high {
+  background: rgba(220, 38, 38, 0.1) !important;
+  border-left: 4px solid #dc2626 !important;
+  font-weight: 600 !important;
+}
+
+.ppt-priority-medium {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-left: 3px solid #f59e0b !important;
+  font-weight: 500 !important;
+}
+
+/* Visual Treatment Classes */
+.ppt-visual-important {
+  animation: subtle-pulse 2s infinite;
+}
+
+.ppt-visual-note {
+  border-radius: 8px;
+  box-shadow: var(--ppt-shadow-sm);
+}
+
+.ppt-visual-emphasis {
+  transform: scale(1.02);
+  box-shadow: var(--ppt-shadow-md);
+}
+
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.95; }
+}
+
+/* Enhanced Code and Inline Elements */
+.ppt-code {
+  background: #f6f8fa;
+  color: #24292f;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+  border: 1px solid #d0d7de;
+}
+
+.ppt-italic {
+  font-style: italic;
+  color: var(--ppt-text-medium);
+}
+
+/* Section Transitions and Breaks */
+.ppt-section-transition {
+  margin: var(--ppt-space-xl) 0;
+  text-align: center;
+  position: relative;
+}
+
+.ppt-section-transition::before,
+.ppt-section-transition::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 30%;
+  height: 1px;
+  background: var(--ppt-border);
+}
+
+.ppt-section-transition::before {
+  left: 0;
+}
+
+.ppt-section-transition::after {
+  right: 0;
+}
+
+.ppt-section-transition span {
+  background: var(--ppt-bg-primary);
+  padding: 0 var(--ppt-space-md);
+  color: var(--ppt-text-medium);
+  font-size: var(--ppt-text-sm);
+  font-weight: 500;
+}
+
+/* ==========================================
+   CLEAN SPACING UTILITY SYSTEM
+   ========================================== */
+
+/* Margin Utilities */
+.ppt-m-0 { margin: 0 !important; }
+.ppt-m-xs { margin: var(--ppt-space-xs) !important; }
+.ppt-m-sm { margin: var(--ppt-space-sm) !important; }
+.ppt-m-md { margin: var(--ppt-space-md) !important; }
+.ppt-m-lg { margin: var(--ppt-space-lg) !important; }
+.ppt-m-xl { margin: var(--ppt-space-xl) !important; }
+.ppt-m-2xl { margin: var(--ppt-space-2xl) !important; }
+
+/* Margin Top */
+.ppt-mt-0 { margin-top: 0 !important; }
+.ppt-mt-xs { margin-top: var(--ppt-space-xs) !important; }
+.ppt-mt-sm { margin-top: var(--ppt-space-sm) !important; }
+.ppt-mt-md { margin-top: var(--ppt-space-md) !important; }
+.ppt-mt-lg { margin-top: var(--ppt-space-lg) !important; }
+.ppt-mt-xl { margin-top: var(--ppt-space-xl) !important; }
+.ppt-mt-2xl { margin-top: var(--ppt-space-2xl) !important; }
+
+/* Margin Bottom */
+.ppt-mb-0 { margin-bottom: 0 !important; }
+.ppt-mb-xs { margin-bottom: var(--ppt-space-xs) !important; }
+.ppt-mb-sm { margin-bottom: var(--ppt-space-sm) !important; }
+.ppt-mb-md { margin-bottom: var(--ppt-space-md) !important; }
+.ppt-mb-lg { margin-bottom: var(--ppt-space-lg) !important; }
+.ppt-mb-xl { margin-bottom: var(--ppt-space-xl) !important; }
+.ppt-mb-2xl { margin-bottom: var(--ppt-space-2xl) !important; }
+
+/* Padding Utilities */
+.ppt-p-0 { padding: 0 !important; }
+.ppt-p-xs { padding: var(--ppt-space-xs) !important; }
+.ppt-p-sm { padding: var(--ppt-space-sm) !important; }
+.ppt-p-md { padding: var(--ppt-space-md) !important; }
+.ppt-p-lg { padding: var(--ppt-space-lg) !important; }
+.ppt-p-xl { padding: var(--ppt-space-xl) !important; }
+.ppt-p-2xl { padding: var(--ppt-space-2xl) !important; }
+
+/* Gap Utilities for Flexbox and Grid */
+.ppt-gap-0 { gap: 0 !important; }
+.ppt-gap-xs { gap: var(--ppt-space-xs) !important; }
+.ppt-gap-sm { gap: var(--ppt-space-sm) !important; }
+.ppt-gap-md { gap: var(--ppt-space-md) !important; }
+.ppt-gap-lg { gap: var(--ppt-space-lg) !important; }
+.ppt-gap-xl { gap: var(--ppt-space-xl) !important; }
+.ppt-gap-2xl { gap: var(--ppt-space-2xl) !important; }
+
+/* Content Spacing Classes */
+.ppt-content-spacing-tight {
+  --ppt-content-gap: var(--ppt-space-xs);
+}
+
+.ppt-content-spacing-normal {
+  --ppt-content-gap: var(--ppt-space-md);
+}
+
+.ppt-content-spacing-loose {
+  --ppt-content-gap: var(--ppt-space-lg);
+}
+
+.ppt-content-spacing-generous {
+  --ppt-content-gap: var(--ppt-space-xl);
+}
+
+/* Apply content spacing */
+.ppt-content-spacing-tight .ppt-content,
+.ppt-content-spacing-normal .ppt-content,
+.ppt-content-spacing-loose .ppt-content,
+.ppt-content-spacing-generous .ppt-content {
+  gap: var(--ppt-content-gap);
+}
+
+/* Breathing Room Classes */
+.ppt-breathing-minimal {
+  padding: var(--ppt-space-sm);
+  gap: var(--ppt-space-xs);
+}
+
+.ppt-breathing-comfortable {
+  padding: var(--ppt-space-lg);
+  gap: var(--ppt-space-md);
+}
+
+.ppt-breathing-generous {
+  padding: var(--ppt-space-xl);
+  gap: var(--ppt-space-lg);
+}
+
+.ppt-breathing-luxurious {
+  padding: var(--ppt-space-2xl);
+  gap: var(--ppt-space-xl);
+}

@@ -9,6 +9,11 @@ import {
   XMarkIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
+import PresentationViewer from './PresentationViewer';
+import PptxViewer from './PptxViewer';
+import EnhancedPptxViewer from './EnhancedPptxViewer';
+import SimplePptxViewer from './SimplePptxViewer';
+import CanvasPptxViewer from './CanvasPptxViewer';
 
 // --- Helper Functions ---
 const formatFileSize = (bytes) => {
@@ -227,7 +232,7 @@ const AttachmentPreviewContent = ({ attachment }) => {
                 </style>
               </head>
               <body>
-                <pre>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                <pre>${text.replace(/</g, '<').replace(/>/g, '>')}</pre>
               </body>
             </html>
           `;
@@ -360,6 +365,9 @@ const AttachmentPreviewContent = ({ attachment }) => {
         </div>
       );
 
+    case 'pptx':
+      return <CanvasPptxViewer fileUrl={attachment.filePath} title={attachment.title || attachment.originalName} />;
+
     case 'text':
       return (
         <iframe
@@ -406,9 +414,12 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [headings, setHeadings] = useState([]);
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [isConvertingToPdf, setIsConvertingToPdf] = useState(false);
   const contentRef = useRef(null);
 
   const iframeSrcDoc = useMemo(() => (htmlContent ? injectOverrideStyles(htmlContent) : ''), [htmlContent]);
+
 
   useEffect(() => {
     if (!content) return;
@@ -420,6 +431,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
       setHeadings([]);
 
       const isWordDocument = content.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      const isPowerPointDocument = content.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
       const fileInfo = getFileTypeInfo(content.mimeType, content.title || content.originalName);
 
@@ -467,6 +479,9 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
         } finally {
           setIsLoading(false);
         }
+      } else if (isPowerPointDocument) {
+        // No conversion needed, will be handled by renderPreview
+        setIsLoading(false);
       } else if (fileInfo.type === 'text' || fileInfo.type === 'code') {
         // Handle text and code files
         try {
@@ -815,6 +830,8 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
         );
 
       case 'pptx':
+        return <CanvasPptxViewer fileUrl={content.filePath} title={content.title} />;
+
       case 'xlsx':
       case 'archive':
       default:

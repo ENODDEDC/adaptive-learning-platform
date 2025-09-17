@@ -14,6 +14,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="stylesheet" href="/styles/powerpoint-layout.css" />
+      </head>
       <body className={`${lora.variable} ${inter.variable} font-sans`}>
         <LayoutProvider>
           <Layout>{children}</Layout>
