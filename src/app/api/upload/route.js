@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { writeFile, mkdir } from 'fs/promises';
+import { uploadToS3, generateS3Key } from '../../../utils/s3Utils';
 
 export async function POST(request) {
   try {
@@ -15,13 +16,33 @@ export async function POST(request) {
 
     for (const file of files) {
       const buffer = Buffer.from(await file.arrayBuffer());
-      const filename = Date.now() + '-' + file.name.replace(/\s/g, '_');
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-      await mkdir(uploadDir, { recursive: true }); // Ensure directory exists
-      const filePath = path.join(uploadDir, filename);
+      const originalName = file.name.replace(/\s/g, '_');
+      const fileExtension = path.extname(originalName);
 
-      await writeFile(filePath, buffer);
-      uploadedFileUrls.push(`/uploads/${filename}`);
+      // Upload to S3
+      const s3Key = generateS3Key('uploads', fileExtension);
+      const uploadResult = await uploadToS3(buffer, s3Key, {
+        contentType: file.type || 'application/octet-stream',
+        optimize: false // Don't optimize non-image files
+      });
+
+      // Also save locally for backward compatibility (can be removed later)
+      try {
+        const filename = Date.now() + '-' + originalName;
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+        await mkdir(uploadDir, { recursive: true });
+        const filePath = path.join(uploadDir, filename);
+        await writeFile(filePath, buffer);
+      } catch (localError) {
+        console.warn('Failed to save locally:', localError.message);
+      }
+
+      uploadedFileUrls.push({
+        url: uploadResult.url,
+        localUrl: `/uploads/${Date.now()}-${originalName}`,
+        s3Key: uploadResult.key,
+        size: uploadResult.size
+      });
     }
 
     return NextResponse.json({ urls: uploadedFileUrls }, { status: 200 });

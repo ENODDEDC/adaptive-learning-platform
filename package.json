@@ -10,6 +10,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.891.0",
+    "@aws-sdk/lib-storage": "^3.891.0",
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
@@ -19,6 +21,7 @@
     "@lexical/react": "^0.35.0",
     "@lexical/rich-text": "^0.35.0",
     "@lexical/utils": "^0.35.0",
+    "aws-sdk": "^2.1692.0",
     "bcryptjs": "^3.0.2",
     "cookie": "^1.0.2",
     "date-fns": "^4.1.0",
@@ -29,10 +32,12 @@
     "firebase": "^12.1.0",
     "jose": "^6.1.0",
     "jsonwebtoken": "^9.0.2",
+    "jszip": "^3.10.1",
     "lexical": "^0.35.0",
     "libreoffice-convert": "^1.6.1",
     "mongodb": "^6.18.0",
     "mongoose": "^8.17.1",
+    "multer": "^2.0.2",
     "next": "15.4.6",
     "nodemailer": "^7.0.5",
     "pdf-poppler": "^0.2.1",
@@ -40,7 +45,8 @@
     "react-doc-viewer": "^0.1.14",
     "react-dom": "19.1.0",
     "react-hot-toast": "^2.6.0",
-    "react-office-viewer": "^1.0.4"
+    "react-office-viewer": "^1.0.4",
+    "sharp": "^0.34.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

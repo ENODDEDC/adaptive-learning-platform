@@ -528,7 +528,7 @@ const CourseDetailPage = ({
 
               <div className="items-center hidden gap-4 ml-6 sm:flex">
                 <div className="flex items-center -space-x-2">
-                  {teachers.slice(0, 3).map((teacher, index) => (
+                  {teachers.slice(0, 3).map((teacher) => (
                     <div key={teacher._id} className="flex items-center justify-center w-10 h-10 bg-blue-600 border-2 border-white rounded-full shadow-sm">
                       <span className="text-sm font-semibold text-white">{teacher.name ? teacher.name.charAt(0).toUpperCase() : 'T'}</span>
                     </div>
@@ -905,7 +905,7 @@ const CourseDetailPage = ({
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
                       {[1,2,3].map((i) => (
-                        <tr key={i} className="hover:bg-gray-50">
+                        <tr key={`sample-row-${i}`} className="hover:bg-gray-50">
                           <td className="px-4 py-3">User {i}</td>
                           <td className="px-4 py-3">Sample Assignment {i}</td>
                           <td className="px-4 py-3 font-medium">—</td>
@@ -1017,7 +1017,7 @@ const CourseDetailPage = ({
                         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-blue-200"></div>
                         
                         <div className="space-y-6">
-                      {upcoming.map((item, index) => {
+                      {upcoming.map((item) => {
                              console.log('🔍 DATE: Processing upcoming task:', item.title);
                              console.log('🔍 DATE: Item due date:', item._due);
                              console.log('🔍 DATE: Current time (now):', now);
@@ -1183,7 +1183,7 @@ const CourseDetailPage = ({
                   // Card View (existing implementation)
                   return (
                     <div className="space-y-4">
-                      {upcoming.map((item, index) => {
+                      {upcoming.map((item) => {
                         const daysLeft = Math.ceil((item._due - now) / (1000 * 60 * 60 * 24));
                         const urgency = daysLeft <= 0 ? 'overdue' : daysLeft <= 2 ? 'soon' : daysLeft <= 7 ? 'upcoming' : 'normal';
                         

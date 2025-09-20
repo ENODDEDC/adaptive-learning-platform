@@ -51,6 +51,33 @@ const contentSchema = new Schema({
   thumbnailUrl: {
     type: String,
   },
+  // PowerPoint specific fields
+  slidesData: {
+    type: [{
+      slideNumber: { type: Number, required: true },
+      imageUrl: { type: String, required: true },
+      s3Key: { type: String, required: true },
+      width: { type: Number },
+      height: { type: Number },
+      size: { type: Number },
+    }],
+    default: [],
+  },
+  totalSlides: {
+    type: Number,
+    default: 0,
+  },
+  conversionStatus: {
+    type: String,
+    enum: ['pending', 'processing', 'completed', 'failed'],
+    default: 'pending',
+  },
+  conversionError: {
+    type: String,
+  },
+  cacheKey: {
+    type: String,
+  },
 }, {
   timestamps: true
 });

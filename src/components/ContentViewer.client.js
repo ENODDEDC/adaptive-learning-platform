@@ -9,6 +9,7 @@ import {
   XMarkIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
+import PowerPointViewer from './PowerPointViewer';
 
 // --- Helper Functions ---
 const formatFileSize = (bytes) => {
@@ -369,6 +370,17 @@ const AttachmentPreviewContent = ({ attachment }) => {
         />
       );
 
+    case 'pptx':
+    case 'ppt':
+      return (
+        <PowerPointViewer
+          filePath={attachment.filePath ? attachment.filePath.replace(window.location.origin, '') : ''}
+          fileName={attachment.title || attachment.originalName}
+          onClose={() => {}}
+          isModal={false}
+        />
+      );
+
     default:
       return (
         <div className="flex flex-col items-center justify-center h-full text-center p-8">
@@ -620,54 +632,59 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
 
   const getFileTypeInfo = (mimeType, fileName) => {
     const fileExtension = fileName?.split('.').pop()?.toLowerCase();
-    
+
+
     // Image types
     if (mimeType?.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(fileExtension)) {
       return { type: 'image', icon: '🖼️', category: 'Image' };
     }
-    
+
     // Video types
     if (mimeType?.startsWith('video/') || ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(fileExtension)) {
       return { type: 'video', icon: '🎥', category: 'Video' };
     }
-    
+
     // Audio types
     if (mimeType?.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a'].includes(fileExtension)) {
       return { type: 'audio', icon: '🎵', category: 'Audio' };
     }
-    
+
     // Document types
     if (mimeType === 'application/pdf' || fileExtension === 'pdf') {
       return { type: 'pdf', icon: '📄', category: 'PDF Document' };
     }
-    
+
     if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileExtension === 'docx') {
       return { type: 'docx', icon: '📝', category: 'Word Document' };
     }
-    
-    if (mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || fileExtension === 'pptx') {
+
+    // PowerPoint files - check both MIME types and extensions
+    if (mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+        mimeType === 'application/vnd.ms-powerpoint' ||
+        fileExtension === 'pptx' ||
+        fileExtension === 'ppt') {
       return { type: 'pptx', icon: '📊', category: 'PowerPoint Presentation' };
     }
-    
+
     if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || fileExtension === 'xlsx') {
       return { type: 'xlsx', icon: '📈', category: 'Excel Spreadsheet' };
     }
-    
+
     // Text files
     if (mimeType?.startsWith('text/') || ['txt', 'md', 'json', 'xml', 'html', 'css', 'js', 'py', 'java', 'cpp', 'c', 'php', 'rb', 'go', 'rs'].includes(fileExtension)) {
       return { type: 'text', icon: '📝', category: 'Text File' };
     }
-    
+
     // Code files
     if (['js', 'jsx', 'ts', 'tsx', 'vue', 'svelte', 'py', 'java', 'cpp', 'c', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'scala', 'r', 'm', 'pl', 'sh', 'bash', 'ps1', 'bat', 'yml', 'yaml', 'toml', 'ini', 'cfg', 'conf'].includes(fileExtension)) {
       return { type: 'code', icon: '💻', category: 'Code File' };
     }
-    
+
     // Archive files
     if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'].includes(fileExtension)) {
       return { type: 'archive', icon: '📦', category: 'Archive' };
     }
-    
+
     // Default
     return { type: 'unknown', icon: '📄', category: 'File' };
   };
@@ -687,6 +704,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
     const isWordDocument = content.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     const fileInfo = getFileTypeInfo(content.mimeType, content.title || content.originalName);
     const fileSize = content.fileSize ? formatFileSize(content.fileSize) : 'Unknown size';
+
 
     switch (fileInfo.type) {
       case 'image':
@@ -815,6 +833,17 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
         );
 
       case 'pptx':
+      case 'ppt':
+        return (
+          <PowerPointViewer
+            filePath={content.filePath ? content.filePath.replace(window.location.origin, '') : ''}
+            fileName={content.title || content.originalName}
+            contentId={content._id}
+            onClose={onClose}
+            isModal={isModal}
+          />
+        );
+
       case 'xlsx':
       case 'archive':
       default:
