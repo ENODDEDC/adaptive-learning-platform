@@ -1,9 +1,21 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import OfficeOnlineViewer from './OfficeOnlineViewer';
-import PowerPointViewer from './PowerPointViewer';
 import MobilePowerPointViewer from './MobilePowerPointViewer';
+
+// Dynamically import the enhanced PowerPoint viewer
+const EnhancedPowerPointViewer = dynamic(() => import('./EnhancedPowerPointViewer'), {
+  loading: () => (
+    <div className="flex items-center justify-center h-full min-h-[400px]">
+      <div className="text-center">
+        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading enhanced viewer...</p>
+      </div>
+    </div>
+  )
+});
 
 const PowerPointViewerWrapper = ({
   filePath,
@@ -35,17 +47,11 @@ const PowerPointViewerWrapper = ({
   // Determine initial viewer based on preference and device capabilities
   useEffect(() => {
     if (preferredViewer === 'auto') {
-      // Check device capabilities
-      const hasInternet = navigator.onLine;
-
       if (isMobile) {
         // Mobile devices use mobile-optimized viewer
         setCurrentViewer('mobile');
-      } else if (hasInternet) {
-        // Desktop with internet uses Office Online
-        setCurrentViewer('office-online');
       } else {
-        // Offline desktop uses image-based viewer
+        // Use enhanced image-based viewer by default for better text extraction
         setCurrentViewer('image-based');
       }
     } else {
@@ -135,14 +141,14 @@ const PowerPointViewerWrapper = ({
           contentId={contentId}
           onClose={onClose}
           isModal={isModal}
-          fallbackComponent={PowerPointViewer}
+          fallbackComponent={EnhancedPowerPointViewer}
           onFallback={handleOfficeOnlineFallback}
         />
       )}
 
-      {/* Image-based Viewer */}
+      {/* Enhanced Image-based Viewer */}
       {currentViewer === 'image-based' && (
-        <PowerPointViewer
+        <EnhancedPowerPointViewer
           filePath={filePath}
           fileName={fileName}
           contentId={contentId}

@@ -147,9 +147,9 @@ function generateHtmlViewer(slidesHtml, totalSlides, thumbnailUrl) {
     <div class="thumbnail-sidebar" id="thumbnail-sidebar">
         <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #374151;">Slides</h4>
         ${Array.from({ length: totalSlides }, (_, index) => {
-          const slideUrl = thumbnailUrl; // Use thumbnail for all thumbnails for simplicity
-          return `<img src="${slideUrl}" class="thumbnail ${index === 0 ? 'active' : ''}" data-slide="${index + 1}" alt="Slide ${index + 1}" />`;
-        }).join('')}
+    const slideUrl = thumbnailUrl; // Use thumbnail for all thumbnails for simplicity
+    return `<img src="${slideUrl}" class="thumbnail ${index === 0 ? 'active' : ''}" data-slide="${index + 1}" alt="Slide ${index + 1}" />`;
+  }).join('')}
     </div>
 
     <script>
@@ -269,7 +269,8 @@ export async function GET(request) {
     }
 
     // Choose conversion method based on file type for optimal performance
-    const preferredMethod = ext === '.pptx' ? 'extract' : 'libreoffice';
+    // Use LibreOffice for better quality, extract as fallback
+    const preferredMethod = ext === '.pptx' ? 'libreoffice' : 'libreoffice';
 
     // Get file stats for cache key generation
     const stats = await fs.stat(absolutePath);
@@ -293,6 +294,9 @@ export async function GET(request) {
               width: slide.width,
               height: slide.height,
               size: slide.size,
+              text: slide.text || '',
+              notes: slide.notes || '',
+              hasImages: slide.hasImages || false,
             })),
             cached: true,
             cacheKey: content.cacheKey,
@@ -334,13 +338,13 @@ export async function GET(request) {
     console.log(`🔄 Starting PPT conversion for file: ${filePath}`);
     console.log(`📊 File size: ${pptBuffer.length} bytes`);
 
-    // Convert PPT to images with optimized settings for speed
+    // Convert PPT to images with text extraction enabled
     const conversionResult = await convertAndUploadToS3(pptBuffer, cacheKey, {
-      preferredMethod: preferredMethod,
-      quality: 85, // Balanced quality for faster processing
+      preferredMethod: 'extract', // Force text extraction method
+      quality: 85,
       thumbnailQuality: 80,
-      resolution: 200, // Reduced DPI for faster conversion while maintaining readability
-      format: 'jpeg', // JPEG for smaller file sizes and faster loading
+      resolution: 200,
+      format: 'png', // PNG for better text quality
       optimizeForWeb: true
     });
 
@@ -357,6 +361,9 @@ export async function GET(request) {
       width: 1920, // Default dimensions (could be extracted from Sharp)
       height: 1080,
       size: slide.size,
+      text: slide.text || '', // Extracted text content
+      notes: slide.notes || '', // Speaker notes
+      hasImages: slide.hasImages || false, // Whether slide contains images
     }));
 
     // Update content in database
@@ -383,6 +390,9 @@ export async function GET(request) {
           width: slide.width,
           height: slide.height,
           size: slide.size,
+          text: slide.text || '',
+          notes: slide.notes || '',
+          hasImages: slide.hasImages || false,
         })),
         cached: false,
         cacheKey: cacheKey,

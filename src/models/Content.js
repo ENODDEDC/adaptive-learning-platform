@@ -56,10 +56,13 @@ const contentSchema = new Schema({
     type: [{
       slideNumber: { type: Number, required: true },
       imageUrl: { type: String, required: true },
-      s3Key: { type: String, required: true },
+      s3Key: { type: String },
       width: { type: Number },
       height: { type: Number },
       size: { type: Number },
+      text: { type: String, default: '' }, // Extracted text content
+      notes: { type: String, default: '' }, // Speaker notes
+      hasImages: { type: Boolean, default: false }, // Whether slide contains images
     }],
     default: [],
   },
@@ -76,6 +79,9 @@ const contentSchema = new Schema({
     type: String,
   },
   cacheKey: {
+    type: String,
+  },
+  pdfPath: {
     type: String,
   },
 }, {

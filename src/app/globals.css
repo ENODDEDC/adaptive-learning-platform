@@ -19,4 +19,28 @@ body {
   .card {
     @apply bg-white shadow-md rounded-lg;
   }
+
+  /* PowerPoint Viewer - Complete scrollbar elimination */
+  .no-scrollbar {
+    /* Hide scrollbar for WebKit browsers */
+    -webkit-scrollbar: none !important;
+    -webkit-scrollbar-track: none !important;
+    -webkit-scrollbar-thumb: none !important;
+    
+    /* Hide scrollbar for Firefox */
+    scrollbar-width: none !important;
+    
+    /* Hide scrollbar for IE/Edge */
+    -ms-overflow-style: none !important;
+    
+    /* Ensure no overflow */
+    overflow: hidden !important;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
 }

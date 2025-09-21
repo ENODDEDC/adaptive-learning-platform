@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import {
   DocumentIcon,
   VideoCameraIcon,
@@ -372,8 +373,11 @@ const AttachmentPreviewContent = ({ attachment }) => {
 
     case 'pptx':
     case 'ppt':
+      const EnhancedPowerPointViewer = dynamic(() => import('./EnhancedPowerPointViewer'), {
+        loading: () => <div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+      });
       return (
-        <PowerPointViewer
+        <EnhancedPowerPointViewer
           filePath={attachment.filePath ? attachment.filePath.replace(window.location.origin, '') : ''}
           fileName={attachment.title || attachment.originalName}
           onClose={() => {}}
@@ -834,8 +838,23 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
 
       case 'pptx':
       case 'ppt':
+        console.log('🎯 ContentViewer: Loading PowerPoint file with Canvas-Based Viewer (Zero Scrolling)');
+        console.log('🎯 ContentViewer: File path:', content.filePath);
+        console.log('🎯 ContentViewer: Content ID:', content._id);
+        
+        const CanvasBasedPowerPointViewer = dynamic(() => import('./CanvasBasedPowerPointViewer'), {
+          loading: () => (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading Canvas PowerPoint Viewer...</p>
+              </div>
+            </div>
+          )
+        });
+        
         return (
-          <PowerPointViewer
+          <CanvasBasedPowerPointViewer
             filePath={content.filePath ? content.filePath.replace(window.location.origin, '') : ''}
             fileName={content.title || content.originalName}
             contentId={content._id}
