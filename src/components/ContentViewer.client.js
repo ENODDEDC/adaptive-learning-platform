@@ -11,6 +11,7 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 import PowerPointViewer from './PowerPointViewer';
+import EnhancedFloatingNotes from './EnhancedFloatingNotes';
 
 // --- Helper Functions ---
 const formatFileSize = (bytes) => {
@@ -111,6 +112,19 @@ const AttachmentPreviewContent = ({ attachment }) => {
   const [htmlContent, setHtmlContent] = useState('');
   const [error, setError] = useState(null);
   const [headings, setHeadings] = useState([]);
+  const [notes, setNotes] = useState([]);
+
+  const headingsWithNotes = useMemo(() => {
+    const headingIds = new Set();
+    if (notes && notes.length > 0) {
+      notes.forEach(note => {
+        if (note.contextualId) {
+          headingIds.add(note.contextualId);
+        }
+      });
+    }
+    return headingIds;
+  }, [notes]);
 
   const formatFileSize = (bytes) => {
     if (!bytes) return '0 Bytes';
@@ -148,6 +162,20 @@ const AttachmentPreviewContent = ({ attachment }) => {
     if (!attachment) return;
 
     const processContent = async () => {
+      if (attachment && attachment.contentType === 'docx' && attachment._id) {
+        const fetchNotesForContent = async () => {
+          try {
+            const response = await fetch(`/api/notes?contentId=${attachment._id}`);
+            if (response.ok) {
+              const fetchedNotes = await response.json();
+              setNotes(fetchedNotes.notes || []);
+            }
+          } catch (error) {
+            console.error('Failed to fetch notes for attachment:', error);
+          }
+        };
+        fetchNotesForContent();
+      }
       setIsLoading(true);
       setError(null);
       setHtmlContent('');
@@ -334,6 +362,9 @@ const AttachmentPreviewContent = ({ attachment }) => {
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
                       <span className="truncate max-w-[11rem]" title={heading.text}>{heading.text}</span>
+                      {headingsWithNotes.has(heading.id) && (
+                        <span className="w-2 h-2 bg-blue-500 rounded-full" title="This section has notes"></span>
+                      )}
                     </a>
                   </li>
                 ))}
@@ -421,10 +452,43 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
   const [error, setError] = useState(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [headings, setHeadings] = useState([]);
+  const [notes, setNotes] = useState([]);
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
   const contentRef = useRef(null);
+  const [selection, setSelection] = useState(null);
+  const floatingNotesRef = useRef(null);
+  const iframeRef = useRef(null);
 
   const iframeSrcDoc = useMemo(() => (htmlContent ? injectOverrideStyles(htmlContent) : ''), [htmlContent]);
+
+  useEffect(() => {
+    if (content && content.contentType === 'docx' && content._id) {
+      const fetchNotesForContent = async () => {
+        try {
+          const response = await fetch(`/api/notes?contentId=${content._id}`);
+          if (response.ok) {
+            const fetchedNotes = await response.json();
+            setNotes(fetchedNotes.notes || []);
+          }
+        } catch (error) {
+          console.error('Failed to fetch notes for content:', error);
+        }
+      };
+      fetchNotesForContent();
+    }
+  }, [content]);
+
+  const headingsWithNotes = useMemo(() => {
+    const headingIds = new Set();
+    if (notes && notes.length > 0) {
+      notes.forEach(note => {
+        if (note.contextualId) {
+          headingIds.add(note.contextualId);
+        }
+      });
+    }
+    return headingIds;
+  }, [notes]);
 
   useEffect(() => {
     if (!content) return;
@@ -607,6 +671,65 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
     contentEl.addEventListener('scroll', handleScroll);
     return () => contentEl.removeEventListener('scroll', handleScroll);
   }, [htmlContent]); // Rerun when HTML content is available
+
+  // Effect for handling text selection and highlighting
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const highlightNotes = (notes) => {
+      const iframeDoc = iframe.contentDocument;
+      if (!iframeDoc) return;
+
+      notes.forEach(note => {
+        if (note.contextualId) {
+          const element = iframeDoc.getElementById(note.contextualId);
+          if (element) {
+            element.style.backgroundColor = 'rgba(168, 85, 247, 0.2)'; // purple-400 with opacity
+          }
+        }
+      });
+    };
+
+    if (floatingNotesRef.current) {
+      const notes = floatingNotesRef.current.getNotes();
+      highlightNotes(notes);
+    }
+
+    const handleSelection = () => {
+      const iframeDoc = iframe.contentDocument;
+      if (!iframeDoc) return;
+
+      const selection = iframeDoc.getSelection();
+      if (selection && !selection.isCollapsed) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setSelection({
+          text: selection.toString(),
+          rect: {
+            top: rect.top + iframe.offsetTop,
+            left: rect.left + iframe.offsetLeft,
+            width: rect.width,
+            height: rect.height,
+          },
+          range,
+        });
+      } else {
+        setSelection(null);
+      }
+    };
+
+    const iframeDoc = iframe.contentDocument;
+    if (iframeDoc) {
+      iframeDoc.addEventListener('mouseup', handleSelection);
+    }
+
+    return () => {
+      if (iframeDoc) {
+        iframeDoc.removeEventListener('mouseup', handleSelection);
+      }
+    };
+  }, [htmlContent, floatingNotesRef.current?.getNotes()]);
 
   if (!content) return null;
 
@@ -806,6 +929,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
               title={content.title}
               srcDoc={iframeSrcDoc}
               style={{ width: '100%', minWidth: '100%', height: 'calc(100vh - 200px)', minHeight: '600px', border: 'none' }}
+              ref={iframeRef} // Add ref to iframe
             />
           );
 
@@ -991,15 +1115,58 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
     }
   };
 
-  const ViewerLayout = ({ children }) => (
-    isModal ? (
+  const ViewerLayout = ({ children }) => {
+    const [user, setUser] = useState(null);
+    
+    useEffect(() => {
+      const fetchUserProfile = async () => {
+        try {
+          const res = await fetch('/api/auth/profile');
+          if (res.ok) {
+            const userData = await res.json();
+            setUser(userData);
+          } else {
+            // For testing purposes, set a mock user
+            setUser({ id: 'test-user-123', name: 'Test User' });
+          }
+        } catch (error) {
+          console.error('Failed to fetch user profile:', error);
+          // For testing purposes, set a mock user
+          setUser({ id: 'test-user-123', name: 'Test User' });
+        }
+      };
+      
+      fetchUserProfile();
+    }, []);
+    
+    return isModal ? (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0">
-        <div className="bg-white rounded-2xl shadow-2xl w-full h-full max-w-none max-h-none flex flex-col m-0 overflow-hidden">{children}</div>
+        <div className="bg-white rounded-2xl shadow-2xl w-full h-full max-w-none max-h-none flex flex-col m-0 overflow-hidden relative">
+          {children}
+          {/* Enhanced FloatingNotes component */}
+          <EnhancedFloatingNotes
+            ref={floatingNotesRef}
+            contentId={content?._id || content?.id || 'test-content'}
+            courseId={content?.courseId || 'test-course'}
+            userId={user?.id || 'test-user-123'}
+            isVisible={true}
+          />
+        </div>
       </div>
     ) : (
-      <div className="bg-white rounded-2xl shadow-xl w-full h-full flex flex-col">{children}</div>
+      <div className="bg-white rounded-2xl shadow-xl w-full h-full flex flex-col relative">
+        {children}
+        {/* Enhanced FloatingNotes component */}
+        <EnhancedFloatingNotes
+          ref={floatingNotesRef}
+          contentId={content?._id || content?.id || 'test-content'}
+          courseId={content?.courseId || 'test-course'}
+          userId={user?.id || 'test-user-123'}
+          isVisible={true}
+        />
+      </div>
     )
-  );
+  };
 
   return (
     <ViewerLayout>
@@ -1039,15 +1206,50 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
                 <li key={heading.id} className={`text-sm ${heading.level === 2 ? 'pl-3' : ''} ${heading.level === 3 ? 'pl-6' : ''}`}>
                   <a href={`#${heading.id}`} onClick={(e) => {
                     e.preventDefault();
-                    contentRef.current?.querySelector(`#${heading.id}`)?.scrollIntoView({ behavior: 'smooth' });
-                  }} className="text-slate-600 hover:text-sky-600 transition-colors block truncate">{heading.text}</a>
+                    const iframe = iframeRef.current;
+                    const headingElement = iframe?.contentDocument?.getElementById(heading.id);
+                    headingElement?.scrollIntoView({ behavior: 'smooth' });
+                  }} className="text-slate-600 hover:text-sky-600 transition-colors block truncate flex items-center gap-2">
+                    {heading.text}
+                    {headingsWithNotes.has(heading.id) && (
+                      <span className="w-2 h-2 bg-blue-500 rounded-full" title="This section has notes"></span>
+                    )}
+                  </a>
                 </li>
               ))}
             </ul>
           </aside>
         )}
-        <main className="flex-grow overflow-hidden min-h-0 h-full" ref={contentRef}>
+        <main className="flex-grow overflow-hidden min-h-0 h-full relative" ref={contentRef}>
           {renderPreview()}
+          {selection && (
+            <button
+              onClick={() => {
+                if (floatingNotesRef.current) {
+                  const { text, range } = selection;
+                  let parent = range.commonAncestorContainer;
+                  if (parent.nodeType !== Node.ELEMENT_NODE) {
+                    parent = parent.parentNode;
+                  }
+                  let contextualId = parent.id;
+                  if (!contextualId) {
+                    contextualId = `selection-${Date.now()}`;
+                    parent.id = contextualId;
+                  }
+                  floatingNotesRef.current.createContextualNote(text, contextualId);
+                  setSelection(null);
+                }
+              }}
+              className="absolute bg-blue-500 text-white px-3 py-1 rounded-md text-sm shadow-lg hover:bg-blue-600"
+              style={{
+                top: `${selection.rect.top - 40}px`,
+                left: `${selection.rect.left + selection.rect.width / 2}px`,
+                transform: 'translateX(-50%)',
+              }}
+            >
+              Add Note
+            </button>
+          )}
         </main>
       </div>
 

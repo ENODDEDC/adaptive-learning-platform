@@ -54,7 +54,9 @@ function InitialContentPlugin({ initialValue }) {
             const parser = new DOMParser();
             const dom = parser.parseFromString(initialValue, 'text/html');
             const nodes = $generateNodesFromDOM(editor, dom);
-            $getRoot().select();
+            const root = $getRoot();
+            root.clear();
+            root.select();
             $insertNodes(nodes);
           });
         } else {
@@ -144,14 +146,14 @@ const RichTextEditor = ({
           <RichTextPlugin
             contentEditable={
               <ContentEditable
-                className="min-h-[150px] p-3 outline-none prose prose-sm max-w-none"
+                className="min-h-[80px] p-3 outline-none prose prose-sm max-w-none"
                 style={{
                   resize: 'none',
                 }}
               />
             }
             placeholder={
-              <div className="absolute top-[52px] left-3 text-gray-400 pointer-events-none">
+              <div className="absolute top-[48px] left-3 text-gray-400 pointer-events-none">
                 {placeholder}
               </div>
             }

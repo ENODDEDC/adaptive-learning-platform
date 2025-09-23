@@ -4,8 +4,7 @@ import path from 'path';
 import connectDB from '@/config/mongoConfig';
 import Content from '@/models/Content';
 import Course from '@/models/Course';
-import Notification from '@/models/Notification';
-import { verifyToken } from '@/utils/auth';
+import { getUserIdFromToken } from '@/services/authService';
 
 export async function POST(request, { params }) {
   console.log('Upload API called');
@@ -15,11 +14,10 @@ export async function POST(request, { params }) {
     console.log('Course ID:', courseId);
     
     // Get user ID from token for authentication
-    const payload = await verifyToken();
-    if (!payload) {
+    const userId = await getUserIdFromToken(request);
+    if (!userId) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-    const userId = payload.userId;
     
     // Connect to database
     await connectDB();
@@ -93,82 +91,60 @@ export async function POST(request, { params }) {
     // Check for duplicate titles and add counter if needed
     let finalTitle = title || originalName;
     let counter = 1;
-    let savedContent = null;
-    let saveError = null;
-
-    while (counter < 10) { // Add a limit to prevent infinite loops
+    
+    while (true) {
       try {
+        // Try to create content record
         const contentRecord = new Content({
           courseId,
           title: finalTitle,
           description: description || '',
           filename,
           originalName,
-          filePath: `/uploads/courses/${courseId}/${filename}`, // Relative path for server-side access
+          filePath: `/uploads/courses/${courseId}/${filename}`,
           contentType,
           fileSize: file.size,
           mimeType: file.type,
           uploadedBy: userId
         });
 
-        savedContent = await contentRecord.save();
+        await contentRecord.save();
         console.log('Content record saved to database');
-        break; // Exit loop on success
         
-      } catch (error) {
-        if (error.code === 11000) { // Duplicate key error
+        return NextResponse.json({
+          success: true,
+          content: {
+            id: contentRecord._id,
+            courseId: contentRecord.courseId,
+            title: contentRecord.title,
+            description: contentRecord.description,
+            filename: contentRecord.filename,
+            originalName: contentRecord.originalName,
+            filePath: contentRecord.filePath,
+            contentType: contentRecord.contentType,
+            fileSize: contentRecord.fileSize,
+            mimeType: contentRecord.mimeType,
+            uploadedAt: contentRecord.createdAt,
+            uploadedBy: contentRecord.uploadedBy
+          },
+          message: 'File uploaded successfully'
+        });
+        
+      } catch (saveError) {
+        if (saveError.code === 11000) {
+          // Duplicate title error, try with counter
           counter++;
           finalTitle = `${title || originalName} (${counter})`;
           console.log(`Duplicate title found, trying with: ${finalTitle}`);
+          continue;
         } else {
-          saveError = error;
-          break;
+          throw saveError;
         }
       }
     }
 
-    if (saveError) {
-      throw saveError; // Throw error if saving failed for other reasons
-    }
-
-    if (!savedContent) {
-      throw new Error('Failed to save content due to duplicate title conflict.');
-    }
-
-    return NextResponse.json({
-      success: true,
-      content: {
-        id: savedContent._id,
-        courseId: savedContent.courseId,
-        title: savedContent.title,
-        description: savedContent.description,
-        filename: savedContent.filename,
-        originalName: savedContent.originalName,
-        filePath: `${request.nextUrl.origin}${savedContent.filePath}`,
-        contentType: savedContent.contentType,
-        fileSize: savedContent.fileSize,
-        mimeType: savedContent.mimeType,
-        uploadedAt: savedContent.createdAt,
-        uploadedBy: savedContent.uploadedBy
-      },
-      message: 'File uploaded successfully'
-    });
-
-    // Create notifications for all enrolled users
-    const notificationPromises = course.enrolledUsers.map(async (userId) => {
-      return Notification.create({
-        recipient: userId,
-        sender: savedContent.uploadedBy,
-        course: courseId,
-        type: 'upload',
-        message: `New file uploaded in ${course.subject}: "${savedContent.title}"`,
-        link: `/courses/${courseId}/content`, // Link to the content page
-      });
-    });
-    await Promise.all(notificationPromises);
- 
-   } catch (error) {
-     console.error('Upload error details:', error);
+  } catch (error) {
+    console.error('Upload error details:', error);
     return NextResponse.json(
       { 
         error: 'Failed to upload file',
@@ -187,11 +163,10 @@ export async function GET(request, { params }) {
     const contentType = searchParams.get('type'); // filter by type
 
     // Get user ID from token for authentication
-    const payload = await verifyToken();
-    if (!payload) {
+    const userId = getUserIdFromToken(request);
+    if (!userId) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-    const userId = payload.userId;
 
     // Connect to database
     await connectDB();
@@ -229,7 +204,7 @@ export async function GET(request, { params }) {
       description: item.description,
       filename: item.filename,
       originalName: item.originalName,
-      filePath: `${request.nextUrl.origin}${item.filePath}`,
+      filePath: item.filePath,
       contentType: item.contentType,
       fileSize: item.fileSize,
       mimeType: item.mimeType,
@@ -263,11 +238,10 @@ export async function DELETE(request, { params }) {
     }
 
     // Get user ID from token for authentication
-    const payload = await verifyToken();
-    if (!payload) {
+    const userId = getUserIdFromToken(request);
+    if (!userId) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-    const userId = payload.userId;
 
     // Connect to database
     await connectDB();

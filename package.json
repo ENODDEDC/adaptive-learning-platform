@@ -21,6 +21,7 @@
     "@lexical/react": "^0.35.0",
     "@lexical/rich-text": "^0.35.0",
     "@lexical/utils": "^0.35.0",
+    "@types/turndown": "^5.0.5",
     "aws-sdk": "^2.1692.0",
     "bcryptjs": "^3.0.2",
     "cookie": "^1.0.2",
@@ -40,6 +41,7 @@
     "multer": "^2.0.2",
     "next": "15.4.6",
     "nodemailer": "^7.0.5",
+    "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
     "pdf-poppler": "^0.2.1",
     "pdf2pic": "^2.1.4",
@@ -49,7 +51,8 @@
     "react-dom": "19.1.0",
     "react-hot-toast": "^2.6.0",
     "react-office-viewer": "^1.0.4",
-    "sharp": "^0.34.4"
+    "sharp": "^0.34.4",
+    "turndown": "^7.2.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
