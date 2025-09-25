@@ -12,6 +12,7 @@ import JoinCourseModal from '@/components/JoinCourseModal';
 import CreateClusterModal from '@/components/CreateClusterModal';
 import JoinClusterModal from '@/components/JoinClusterModal';
 import { useLayout } from '../context/LayoutContext';
+import EnhancedFloatingNotes from './EnhancedFloatingNotes'; // Import EnhancedFloatingNotes
 
 const Layout = ({ children }) => {
   const pathname = usePathname();
@@ -224,6 +225,13 @@ const Layout = ({ children }) => {
             setSidebarCollapsed: setIsSidebarCollapsed
           })}
         </main>
+        {/* Render EnhancedFloatingNotes globally */}
+        <EnhancedFloatingNotes
+          contentId={null} // No specific content ID on global layout
+          courseId={null} // No specific course ID on global layout
+          userId={user?.id || null} // Pass user ID if available
+          isVisible={true}
+        />
       </div>
     </div>
   );

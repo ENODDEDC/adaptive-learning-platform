@@ -11,7 +11,7 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 import PowerPointViewer from './PowerPointViewer';
-import EnhancedFloatingNotes from './EnhancedFloatingNotes';
+import EnhancedFloatingNotes from './EnhancedFloatingNotes'; // Import EnhancedFloatingNotes
 
 // --- Helper Functions ---
 const formatFileSize = (bytes) => {
@@ -279,13 +279,13 @@ const AttachmentPreviewContent = ({ attachment }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="w-8 h-8 border-4 border-sky-200 border-t-sky-600 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 rounded-full border-sky-200 border-t-sky-600 animate-spin"></div>
       </div>
     );
   }
 
   if (error) {
-    return <div className="text-red-600 p-6 bg-red-50 rounded-lg"><strong>Error:</strong> {error}</div>;
+    return <div className="p-6 text-red-600 rounded-lg bg-red-50"><strong>Error:</strong> {error}</div>;
   }
 
   const fileInfo = getFileTypeInfo(attachment.mimeType, attachment.title || attachment.originalName);
@@ -298,7 +298,7 @@ const AttachmentPreviewContent = ({ attachment }) => {
           <img 
             src={attachment.filePath} 
             alt={attachment.title || 'Image'} 
-            className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+            className="object-contain max-w-full max-h-full rounded-lg shadow-lg"
           />
         </div>
       );
@@ -308,7 +308,7 @@ const AttachmentPreviewContent = ({ attachment }) => {
         <div className="flex items-center justify-center h-full">
           <video 
             controls 
-            className="w-full max-h-full rounded-lg bg-black"
+            className="w-full max-h-full bg-black rounded-lg"
             src={attachment.filePath}
           >
             Your browser does not support the video tag.
@@ -320,10 +320,10 @@ const AttachmentPreviewContent = ({ attachment }) => {
       return (
         <div className="flex items-center justify-center h-full p-8">
           <div className="w-full max-w-md">
-            <div className="text-center mb-6">
-              <div className="text-6xl mb-4">{fileInfo.icon}</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{attachment.title || 'Audio'}</h3>
-              <p className="text-gray-600 mb-4">{fileInfo.category} • {fileSize}</p>
+            <div className="mb-6 text-center">
+              <div className="mb-4 text-6xl">{fileInfo.icon}</div>
+              <h3 className="mb-2 text-xl font-semibold text-gray-900">{attachment.title || 'Audio'}</h3>
+              <p className="mb-4 text-gray-600">{fileInfo.category} • {fileSize}</p>
             </div>
             <audio 
               controls 
@@ -337,15 +337,15 @@ const AttachmentPreviewContent = ({ attachment }) => {
       );
 
     case 'pdf':
-      return <iframe src={attachment.filePath} className="w-full h-full rounded-lg border" title={attachment.title} />;
+      return <iframe src={attachment.filePath} className="w-full h-full border rounded-lg" title={attachment.title} />;
 
     case 'docx':
       return (
-        <div className="w-full h-full flex">
+        <div className="flex w-full h-full">
           {/* Sidebar with headings */}
           {headings.length > 0 && (
-            <aside className="w-64 flex-shrink-0 h-full overflow-y-auto p-8 border-r bg-slate-50/50 hidden lg:block">
-              <h3 className="text-sm font-semibold text-slate-800 mb-4">On this page</h3>
+            <aside className="flex-shrink-0 hidden w-64 h-full p-8 overflow-y-auto border-r bg-slate-50/50 lg:block">
+              <h3 className="mb-4 text-sm font-semibold text-slate-800">On this page</h3>
               <ul className="space-y-2">
                 {headings.map((heading) => (
                   <li key={heading.id} className={`text-sm ${heading.level === 2 ? 'pl-3' : ''} ${heading.level === 3 ? 'pl-6' : ''}`}>
@@ -358,7 +358,7 @@ const AttachmentPreviewContent = ({ attachment }) => {
                           element.scrollIntoView({ behavior: 'smooth' });
                         }
                       }}
-                      className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors py-1"
+                      className="inline-flex items-center gap-2 py-1 transition-colors text-slate-600 hover:text-slate-900"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
                       <span className="truncate max-w-[11rem]" title={heading.text}>{heading.text}</span>
@@ -376,7 +376,7 @@ const AttachmentPreviewContent = ({ attachment }) => {
           <div className="flex-1">
             {htmlContent ? (
               <iframe
-                className="w-full h-full rounded-lg bg-white"
+                className="w-full h-full bg-white rounded-lg"
                 title={attachment.title}
                 srcDoc={injectOverrideStyles(htmlContent)}
                 style={{ border: 'none' }}
@@ -384,7 +384,7 @@ const AttachmentPreviewContent = ({ attachment }) => {
             ) : (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <div className="w-8 h-8 border-4 border-sky-200 border-t-sky-600 rounded-full animate-spin mx-auto mb-4"></div>
+                  <div className="w-8 h-8 mx-auto mb-4 border-4 rounded-full border-sky-200 border-t-sky-600 animate-spin"></div>
                   <p className="text-gray-600">Loading document...</p>
                 </div>
               </div>
@@ -405,7 +405,7 @@ const AttachmentPreviewContent = ({ attachment }) => {
     case 'pptx':
     case 'ppt':
       const EnhancedPowerPointViewer = dynamic(() => import('./EnhancedPowerPointViewer'), {
-        loading: () => <div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+        loading: () => <div className="flex items-center justify-center h-full"><div className="w-8 h-8 border-b-2 border-blue-600 rounded-full animate-spin"></div></div>
       });
       return (
         <EnhancedPowerPointViewer
@@ -418,22 +418,22 @@ const AttachmentPreviewContent = ({ attachment }) => {
 
     default:
       return (
-        <div className="flex flex-col items-center justify-center h-full text-center p-8">
-          <div className="text-6xl mb-6">{fileInfo.icon}</div>
-          <h3 className="text-2xl font-semibold text-gray-900 mb-2">{attachment.title || 'File'}</h3>
-          <p className="text-gray-600 mb-6">{fileInfo.category} • {fileSize}</p>
+        <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+          <div className="mb-6 text-6xl">{fileInfo.icon}</div>
+          <h3 className="mb-2 text-2xl font-semibold text-gray-900">{attachment.title || 'File'}</h3>
+          <p className="mb-6 text-gray-600">{fileInfo.category} • {fileSize}</p>
           
-          <div className="space-y-4 max-w-md">
+          <div className="max-w-md space-y-4">
             <p className="text-gray-500">
               This file type cannot be previewed directly in the browser.
             </p>
             
-            <div className="flex gap-3 justify-center">
+            <div className="flex justify-center gap-3">
               {attachment.filePath && (
                 <a 
                   href={attachment.filePath} 
                   download 
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="px-6 py-3 font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
                   Download File
                 </a>
@@ -820,12 +820,12 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
     if (isLoading) {
       return (
         <div className="flex items-center justify-center py-24">
-          <div className="w-8 h-8 border-4 border-sky-200 border-t-sky-600 rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 rounded-full border-sky-200 border-t-sky-600 animate-spin"></div>
         </div>
       );
     }
     if (error) {
-      return <div className="text-red-600 p-6 bg-red-50 rounded-lg"><strong>Error:</strong> {error}</div>;
+      return <div className="p-6 text-red-600 rounded-lg bg-red-50"><strong>Error:</strong> {error}</div>;
     }
 
     const isWordDocument = content.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -846,14 +846,14 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
                 e.target.nextSibling.style.display = 'flex';
               }}
             />
-            <div className="hidden flex-col items-center justify-center text-center p-8">
-              <div className="text-6xl mb-4">{fileInfo.icon}</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{content.title || 'Image'}</h3>
-              <p className="text-gray-600 mb-4">{fileInfo.category} • {fileSize}</p>
+            <div className="flex-col items-center justify-center hidden p-8 text-center">
+              <div className="mb-4 text-6xl">{fileInfo.icon}</div>
+              <h3 className="mb-2 text-xl font-semibold text-gray-900">{content.title || 'Image'}</h3>
+              <p className="mb-4 text-gray-600">{fileInfo.category} • {fileSize}</p>
               <a 
                 href={content.filePath} 
                 download 
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
               >
                 Download Image
               </a>
@@ -875,14 +875,14 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
             >
               Your browser does not support the video tag.
             </video>
-            <div className="hidden flex-col items-center justify-center text-center p-8">
-              <div className="text-6xl mb-4">{fileInfo.icon}</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{content.title || 'Video'}</h3>
-              <p className="text-gray-600 mb-4">{fileInfo.category} • {fileSize}</p>
+            <div className="flex-col items-center justify-center hidden p-8 text-center">
+              <div className="mb-4 text-6xl">{fileInfo.icon}</div>
+              <h3 className="mb-2 text-xl font-semibold text-gray-900">{content.title || 'Video'}</h3>
+              <p className="mb-4 text-gray-600">{fileInfo.category} • {fileSize}</p>
               <a 
                 href={content.filePath} 
                 download 
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
               >
                 Download Video
               </a>
@@ -894,10 +894,10 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
         return (
           <div className="flex items-center justify-center h-full p-8">
             <div className="w-full max-w-md">
-              <div className="text-center mb-6">
-                <div className="text-6xl mb-4">{fileInfo.icon}</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{content.title || 'Audio'}</h3>
-                <p className="text-gray-600 mb-4">{fileInfo.category} • {fileSize}</p>
+              <div className="mb-6 text-center">
+                <div className="mb-4 text-6xl">{fileInfo.icon}</div>
+                <h3 className="mb-2 text-xl font-semibold text-gray-900">{content.title || 'Audio'}</h3>
+                <p className="mb-4 text-gray-600">{fileInfo.category} • {fileSize}</p>
               </div>
               <audio 
                 controls 
@@ -910,7 +910,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
                 <a 
                   href={content.filePath} 
                   download 
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
                 >
                   Download Audio
                 </a>
@@ -925,7 +925,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
       case 'docx':
           return (
             <iframe
-              className="w-full rounded-lg bg-white"
+              className="w-full bg-white rounded-lg"
               title={content.title}
               srcDoc={iframeSrcDoc}
               style={{ width: '100%', minWidth: '100%', height: 'calc(100vh - 200px)', minHeight: '600px', border: 'none' }}
@@ -936,7 +936,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
       case 'text':
       case 'code':
         return (
-          <div className="h-full flex flex-col">
+          <div className="flex flex-col h-full">
             <div className="flex items-center gap-3 p-4 border-b bg-gray-50">
               <div className="text-2xl">{fileInfo.icon}</div>
               <div>
@@ -970,7 +970,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
           loading: () => (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <div className="w-8 h-8 mx-auto mb-4 border-b-2 border-blue-600 rounded-full animate-spin"></div>
                 <p className="text-gray-600">Loading Canvas PowerPoint Viewer...</p>
               </div>
             </div>
@@ -996,9 +996,9 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
           const totalAttachments = content.attachments.length;
           
           return (
-            <div className="h-screen flex flex-col">
+            <div className="flex flex-col h-screen">
               {/* Multi-attachment header */}
-              <div className="flex items-center justify-between p-4 border-b bg-gray-50 flex-shrink-0">
+              <div className="flex items-center justify-between flex-shrink-0 p-4 border-b bg-gray-50">
                 <div className="flex items-center gap-3">
                   <div className="text-2xl">📎</div>
                   <div>
@@ -1051,20 +1051,20 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
         // Handle assignment content type
         if (content.contentType === 'assignment') {
           return (
-            <div className="flex flex-col items-center justify-center h-full text-center p-8">
-              <div className="text-6xl mb-6">📋</div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-2">{content.title || 'Assignment'}</h3>
-              <p className="text-gray-600 mb-6">Assignment • No file attached</p>
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+              <div className="mb-6 text-6xl">📋</div>
+              <h3 className="mb-2 text-2xl font-semibold text-gray-900">{content.title || 'Assignment'}</h3>
+              <p className="mb-6 text-gray-600">Assignment • No file attached</p>
               
-              <div className="space-y-4 max-w-md">
+              <div className="max-w-md space-y-4">
                 <p className="text-gray-500">
                   This assignment doesn't have any file attachments. The assignment details and instructions are shown in the assignment card.
                 </p>
                 
-                <div className="flex gap-3 justify-center">
+                <div className="flex justify-center gap-3">
                   <button
                     onClick={onClose}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="px-6 py-3 font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
                   >
                     Close
                   </button>
@@ -1075,12 +1075,12 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
         }
         
         return (
-          <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <div className="text-6xl mb-6">{fileInfo.icon}</div>
-            <h3 className="text-2xl font-semibold text-gray-900 mb-2">{content.title || 'File'}</h3>
-            <p className="text-gray-600 mb-6">{fileInfo.category} • {fileSize}</p>
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+            <div className="mb-6 text-6xl">{fileInfo.icon}</div>
+            <h3 className="mb-2 text-2xl font-semibold text-gray-900">{content.title || 'File'}</h3>
+            <p className="mb-6 text-gray-600">{fileInfo.category} • {fileSize}</p>
             
-            <div className="space-y-4 max-w-md">
+            <div className="max-w-md space-y-4">
               <p className="text-gray-500">
                 {fileInfo.type === 'pptx' && "PowerPoint presentations can be viewed by downloading and opening in Microsoft PowerPoint or Google Slides."}
                 {fileInfo.type === 'xlsx' && "Excel spreadsheets can be viewed by downloading and opening in Microsoft Excel or Google Sheets."}
@@ -1088,12 +1088,12 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
                 {fileInfo.type === 'unknown' && "This file type cannot be previewed directly in the browser."}
               </p>
               
-              <div className="flex gap-3 justify-center">
+              <div className="flex justify-center gap-3">
                 {content.filePath && (
                   <a 
                     href={content.filePath} 
                     download 
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="px-6 py-3 font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
                   >
                     Download File
                   </a>
@@ -1103,7 +1103,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
                     href={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + content.filePath)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    className="px-6 py-3 font-medium text-white transition-colors bg-green-600 rounded-lg hover:bg-green-700"
                   >
                     View Online
                   </a>
@@ -1140,21 +1140,21 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
     }, []);
     
     return isModal ? (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0">
-        <div className="bg-white rounded-2xl shadow-2xl w-full h-full max-w-none max-h-none flex flex-col m-0 overflow-hidden relative">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-0 bg-black bg-opacity-50">
+        <div className="relative flex flex-col w-full h-full m-0 overflow-hidden bg-white shadow-2xl rounded-2xl max-w-none max-h-none">
           {children}
           {/* Enhanced FloatingNotes component */}
           <EnhancedFloatingNotes
             ref={floatingNotesRef}
-            contentId={content?._id || content?.id || 'test-content'}
-            courseId={content?.courseId || 'test-course'}
+            contentId={content?._id || content?.id || null}
+            courseId={content?.courseId || null}
             userId={user?.id || 'test-user-123'}
             isVisible={true}
           />
         </div>
       </div>
     ) : (
-      <div className="bg-white rounded-2xl shadow-xl w-full h-full flex flex-col relative">
+      <div className="relative flex flex-col w-full h-full bg-white shadow-xl rounded-2xl">
         {children}
         {/* Enhanced FloatingNotes component */}
         <EnhancedFloatingNotes
@@ -1171,14 +1171,14 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
   return (
     <ViewerLayout>
       {content?.contentType !== 'multi-attachment' && (
-      <div className="flex-shrink-0 flex items-center justify-between p-5 border-b">
-        <div className="flex items-center gap-4 min-w-0">
+      <div className="flex items-center justify-between flex-shrink-0 p-5 border-b">
+        <div className="flex items-center min-w-0 gap-4">
           <div className={`w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClasses}`}>
             <IconComponent className="w-6 h-6" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-slate-800 truncate">{content.title}</h2>
-            <div className="text-sm text-slate-500 flex items-center gap-3 flex-wrap">
+            <h2 className="text-lg font-bold truncate text-slate-800">{content.title}</h2>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
               <span>{formatFileSize(content.fileSize)}</span>
               {readTime > 0 && (
                 <>
@@ -1189,18 +1189,18 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
             </div>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full flex-shrink-0 ml-4"><XMarkIcon className="w-6 h-6" /></button>
+        <button onClick={onClose} className="flex-shrink-0 p-2 ml-4 rounded-full text-slate-500 hover:bg-slate-100"><XMarkIcon className="w-6 h-6" /></button>
       </div>
       )}
 
-      <div className="w-full bg-slate-200 h-1 flex-shrink-0">
-        <div className="bg-sky-600 h-1" style={{ width: `${scrollProgress}%`, transition: 'width 0.1s linear' }}></div>
+      <div className="flex-shrink-0 w-full h-1 bg-slate-200">
+        <div className="h-1 bg-sky-600" style={{ width: `${scrollProgress}%`, transition: 'width 0.1s linear' }}></div>
       </div>
 
-      <div className="flex-grow flex-1 flex overflow-hidden min-h-0 h-full">
+      <div className="flex flex-1 flex-grow h-full min-h-0 overflow-hidden">
         {headings.length > 2 && (
-          <aside className="w-64 flex-shrink-0 h-full overflow-y-auto p-8 border-r bg-slate-50/50 hidden lg:block">
-            <h3 className="text-sm font-semibold text-slate-800 mb-4">On this page</h3>
+          <aside className="flex-shrink-0 hidden w-64 h-full p-8 overflow-y-auto border-r bg-slate-50/50 lg:block">
+            <h3 className="mb-4 text-sm font-semibold text-slate-800">On this page</h3>
             <ul className="space-y-2">
               {headings.map(heading => (
                 <li key={heading.id} className={`text-sm ${heading.level === 2 ? 'pl-3' : ''} ${heading.level === 3 ? 'pl-6' : ''}`}>
@@ -1209,7 +1209,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
                     const iframe = iframeRef.current;
                     const headingElement = iframe?.contentDocument?.getElementById(heading.id);
                     headingElement?.scrollIntoView({ behavior: 'smooth' });
-                  }} className="text-slate-600 hover:text-sky-600 transition-colors block truncate flex items-center gap-2">
+                  }} className="flex items-center block gap-2 truncate transition-colors text-slate-600 hover:text-sky-600">
                     {heading.text}
                     {headingsWithNotes.has(heading.id) && (
                       <span className="w-2 h-2 bg-blue-500 rounded-full" title="This section has notes"></span>
@@ -1220,7 +1220,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
             </ul>
           </aside>
         )}
-        <main className="flex-grow overflow-hidden min-h-0 h-full relative" ref={contentRef}>
+        <main className="relative flex-grow h-full min-h-0 overflow-hidden" ref={contentRef}>
           {renderPreview()}
           {selection && (
             <button
@@ -1240,7 +1240,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
                   setSelection(null);
                 }
               }}
-              className="absolute bg-blue-500 text-white px-3 py-1 rounded-md text-sm shadow-lg hover:bg-blue-600"
+              className="absolute px-3 py-1 text-sm text-white bg-blue-500 rounded-md shadow-lg hover:bg-blue-600"
               style={{
                 top: `${selection.rect.top - 40}px`,
                 left: `${selection.rect.left + selection.rect.width / 2}px`,

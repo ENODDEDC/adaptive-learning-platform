@@ -4,7 +4,7 @@ const noteSchema = new mongoose.Schema({
   // Reference to the content/document this note belongs to
   contentId: {
     type: String,
-    required: true,
+    required: false, // Allow null for global notes
     index: true
   },
   
@@ -12,7 +12,7 @@ const noteSchema = new mongoose.Schema({
   courseId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Course',
-    required: true,
+    required: false, // Allow null for global notes
     index: true
   },
   
@@ -32,10 +32,19 @@ const noteSchema = new mongoose.Schema({
     required: true
   },
   
+  // Note title
+  title: {
+    type: String,
+    required: true,
+    default: 'Untitled Note',
+    maxlength: 100
+  },
+  
   // Note content
   content: {
     type: String,
-    required: true,
+    required: false,
+    default: '',
     maxlength: 2000 // Limit note size
   },
 

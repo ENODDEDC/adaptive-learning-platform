@@ -19,27 +19,29 @@ export async function GET(request) {
     const includeShared = searchParams.get('includeShared') === 'true';
     const excludeContentId = searchParams.get('excludeContentId');
 
-    if (!courseId) {
-      return NextResponse.json({ error: 'courseId is required' }, { status: 400 });
-    }
 
     let response = { success: true };
 
-    // Fetch user's own notes for specific content
-    if (contentId) {
-      let query = {
-        contentId,
-        userId: payload.userId,
-        isArchived: false
-      };
+    // Build query for user's own notes
+    let userNotesQuery = {
+      userId: payload.userId,
+      isArchived: false
+    };
 
-      if (courseId) {
-        query.courseId = courseId;
-      }
-
-      const notes = await Note.find(query).sort({ createdAt: -1 });
-      response.notes = notes;
+    if (contentId && contentId !== 'null') { // Check for 'null' string as well
+      userNotesQuery.contentId = contentId;
+    } else {
+      userNotesQuery.contentId = null; // Explicitly query for notes without contentId
     }
+
+    if (courseId && courseId !== 'null') { // Check for 'null' string as well
+      userNotesQuery.courseId = courseId;
+    } else {
+      userNotesQuery.courseId = null; // Explicitly query for notes without courseId
+    }
+
+    const notes = await Note.find(userNotesQuery).sort({ createdAt: -1 });
+    response.notes = notes;
 
     // Fetch shared notes from other files in the course
     if (includeShared && courseId) {
@@ -85,12 +87,12 @@ export async function POST(request) {
     await connectMongoDB();
 
     const body = await request.json();
-    const { contentId, courseId, content, position, type = 'floating', style, category, tags, priority, contextualText, contextualId, size } = body;
+    const { contentId, courseId, title, content, position, type = 'floating', style, category, tags, priority, contextualText, contextualId, size } = body;
 
-    // Validate required fields
-    if (!contentId || !content || !position) {
+    // Validate required fields (position is still essential)
+    if (!position) {
       return NextResponse.json({
-        error: 'contentId, content, and position are required'
+        error: 'position is required'
       }, { status: 400 });
     }
 
@@ -102,9 +104,8 @@ export async function POST(request) {
     }
 
     const noteData = {
-      contentId,
-      courseId,
       userId: payload.userId,
+      title,
       content,
       position,
       size,
@@ -116,6 +117,14 @@ export async function POST(request) {
       ...(tags && { tags }),
       ...(priority && { priority })
     };
+
+    // Conditionally add contentId and courseId if they are not null/undefined
+    if (contentId && contentId !== 'null') {
+      noteData.contentId = contentId;
+    }
+    if (courseId && courseId !== 'null') {
+      noteData.courseId = courseId;
+    }
 
     const note = new Note(noteData);
     await note.save();

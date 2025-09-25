@@ -20,7 +20,7 @@ export async function PUT(request, { params }) {
     }
 
     const body = await request.json();
-    const { content, position, style, category, tags, priority, isShared, visibility, size } = body;
+    const { title, content, position, style, category, tags, priority, isShared, visibility, size } = body;
 
     // Find the note and verify access (allow editing of shared notes)
     const note = await Note.findOne({
@@ -36,6 +36,7 @@ export async function PUT(request, { params }) {
 
     // Update fields if provided
     const updateData = {};
+    if (title !== undefined) updateData.title = title;
     if (content !== undefined) updateData.content = content;
     if (position !== undefined) {
       // Validate position
