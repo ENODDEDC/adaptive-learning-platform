@@ -433,9 +433,9 @@ const FloatingNotes = forwardRef(({ contentId, courseId, userId, isVisible = tru
   }));
 
   return (
-    <div ref={containerRef} className="fixed inset-0 pointer-events-none z-[9999]">
+    <div ref={containerRef} className="fixed inset-0 z-[9999]">
       {/* Floating Notes Icon - Right Center */}
-      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-auto">
+      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-auto z-[10000]">
         <button
           onClick={() => setIsNotesOpen(!isNotesOpen)}
           className={`w-12 h-12 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center ${
@@ -447,6 +447,14 @@ const FloatingNotes = forwardRef(({ contentId, courseId, userId, isVisible = tru
         >
           <PencilSquareIcon className="w-6 h-6" />
         </button>
+        {/* Standalone Add Note Button */}
+        <button
+          onClick={createNote}
+          className="w-12 h-12 mt-2 rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-all duration-300 flex items-center justify-center"
+          title="Add New Note"
+        >
+          <PlusIcon className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Notes Panel */}
@@ -456,13 +464,6 @@ const FloatingNotes = forwardRef(({ contentId, courseId, userId, isVisible = tru
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-900">Quick Notes</h3>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={createNote}
-                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                  title="Add Note"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                </button>
                 <div className="relative">
                   <button
                     onClick={() => setIsExporting(!isExporting)}

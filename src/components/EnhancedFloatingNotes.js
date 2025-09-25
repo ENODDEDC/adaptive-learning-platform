@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   PencilSquareIcon,
   XMarkIcon,
@@ -273,7 +274,7 @@ const FloatingNote = ({ note, isActive, onClick, onUpdate, onDelete, onResizeSta
     <div
       ref={noteRef}
       id={`note-${note.id}`}
-      className={`absolute rounded-xl shadow-lg border transition-all duration-200 ${
+      className={`absolute rounded-xl shadow-lg border transition-all duration-200 pointer-events-auto ${
         isActive
           ? 'border-indigo-400 shadow-xl z-50'
           : 'border-gray-200 hover:border-indigo-300 hover:shadow-md'
@@ -610,28 +611,29 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
 
   // Enhanced note creation with templates and smart positioning
   const createNote = useCallback((template = null) => {
-    const containerRect = containerRef.current?.getBoundingClientRect() || { width: 1200, height: 800 };
-    // const viewportPosition = findOptimalPosition(floatingNotes, containerRect);
-    const margin = 20;
+    const noteWidth = 280;
+    const noteHeight = 200;
+    
+    // Calculate position based on the window's inner dimensions
+    const position = {
+      x: (window.innerWidth - noteWidth) / 2,
+      y: (window.innerHeight - noteHeight) / 2,
+    };
     
     const newNote = {
       id: `temp-${Date.now()}`,
       title: 'Untitled Note',
       content: template ? template.content : '',
-      position: {
-        x: margin,
-        y: margin,
-      },
+      position,
       timestamp: new Date().toISOString(),
       isNew: true,
       type: template ? template.type : 'floating',
-      size: { width: 280, height: 200 }
+      size: { width: noteWidth, height: noteHeight }
     };
     
     setFloatingNotes(prev => [...prev, newNote]);
-    setIsCreatingNote(false);
-    setShowTemplates(false);
-  }, [floatingNotes, notesContainerRef]); // Add notesContainerRef to dependencies
+    setShowTemplates(false); // Close templates panel after creating a note
+  }, []);
 
   // Export functions
   const exportNotes = useCallback(async (format) => {
@@ -1156,8 +1158,14 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
 
   if (!isVisible) return null;
 
-  return (
-    <div className="fixed z-[9999]" ref={notesContainerRef}>
+  const portalRoot = typeof document !== 'undefined' ? document.body : null;
+
+  if (!portalRoot) {
+    return null;
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] pointer-events-none" ref={notesContainerRef}>
       {/* Floating Notes */}
       {floatingNotes.map(note => (
         <FloatingNote
@@ -1203,21 +1211,21 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
                 Smart Notes
               </h3>
               <div className="flex space-x-2">
-                <button 
+                <button
                   onClick={() => setShowTemplates(!showTemplates)}
                   className="p-1.5 rounded-lg bg-white bg-opacity-20 hover:bg-opacity-30 transition-all"
                   title="Create template note"
                 >
                   <SparklesIcon className="w-5 h-5 text-white" />
                 </button>
-                <button 
+                <button
                   onClick={() => createNote()}
                   className="p-1.5 rounded-lg bg-white bg-opacity-20 hover:bg-opacity-30 transition-all"
                   title="Add new note"
                 >
                   <PlusIcon className="w-5 h-5 text-white" />
                 </button>
-                <button 
+                <button
                   onClick={() => setIsNotesOpen(false)}
                   className="p-1.5 rounded-lg bg-white bg-opacity-20 hover:bg-opacity-30 transition-all"
                   title="Close panel"
@@ -1287,8 +1295,8 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
                         key={key}
                         onClick={() => createNote({ ...template, type: key })}
                         className={`flex flex-col items-center justify-center p-2 rounded-lg border text-xs ${
-                          filterType === key 
-                            ? 'border-indigo-300 bg-indigo-50 text-indigo-700' 
+                          filterType === key
+                            ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                             : 'border-gray-200 hover:bg-gray-50'
                         }`}
                       >
@@ -1308,7 +1316,7 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
               <div className="py-8 text-center text-gray-500">
                 <DocumentTextIcon className="w-12 h-12 mx-auto text-gray-300" />
                 <p className="mt-2">No notes yet</p>
-                <button 
+                <button
                   onClick={() => createNote()}
                   className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-800"
                 >
@@ -1317,11 +1325,11 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
               </div>
             ) : (
               filteredNotes.map(note => (
-                <div 
+                <div
                   key={note.id}
                   className={`mb-3 rounded-xl border transition-all duration-200 ${
-                    note.isShared 
-                      ? 'border-indigo-200 bg-indigo-50' 
+                    note.isShared
+                      ? 'border-indigo-200 bg-indigo-50'
                       : 'border-gray-200 hover:border-indigo-200 hover:bg-gray-50'
                   }`}
                 >
@@ -1432,7 +1440,8 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
           )}
         </div>
       )}
-    </div>
+    </div>,
+    portalRoot
   );
 });
 
