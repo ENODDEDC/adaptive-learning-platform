@@ -2,22 +2,15 @@ import connectMongoDB from '@/config/mongoConfig';
 import ScheduledCourse from '@/models/ScheduledCourse';
 import Course from '@/models/Course'; // To populate course details
 import { NextResponse } from 'next/server';
-import { getUserIdFromToken } from '@/services/authService';
+import { verifyToken } from '@/utils/auth';
 
 export async function GET(request) {
   try {
-    // Option 1: Get userId from JWT token in Authorization header (current implementation)
-    let userId = await getUserIdFromToken(request);
-
-    // Option 2: Get userId from query parameters (if applicable)
-    if (!userId) {
-      const { searchParams } = new URL(request.url);
-      userId = searchParams.get('userId');
+    const payload = await verifyToken();
+    if (!payload) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    if (!userId) {
-      return NextResponse.json({ message: 'Unauthorized: userId is missing' }, { status: 401 });
-    }
+    const userId = payload.userId;
     console.log(`Fetching scheduled courses for userId: ${userId}`);
 
     await connectMongoDB();
@@ -33,18 +26,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    let userId = await getUserIdFromToken(request);
-    if (!userId) {
-      // For POST, userId is typically expected in the request body or from a session.
-      // If not in token, check if it's in the request body (less secure for auth, but possible).
-      const body = await request.json(); // Read body once
-      userId = body.userId; // Assuming userId might be in the body for POST
-      request.json = () => body; // Re-assign for subsequent reads if needed
+    const payload = await verifyToken();
+    if (!payload) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    if (!userId) {
-      return NextResponse.json({ message: 'Unauthorized: userId is missing' }, { status: 401 });
-    }
+    const userId = payload.userId;
 
     await connectMongoDB();
     const { day, timeSlot, courseId } = await request.json();
@@ -80,17 +66,11 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
-    let userId = await getUserIdFromToken(request);
-    if (!userId) {
-      // For DELETE, userId is typically expected in the request body or from a session.
-      const body = await request.json(); // Read body once
-      userId = body.userId; // Assuming userId might be in the body for DELETE
-      request.json = () => body; // Re-assign for subsequent reads if needed
+    const payload = await verifyToken();
+    if (!payload) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    if (!userId) {
-      return NextResponse.json({ message: 'Unauthorized: userId is missing' }, { status: 401 });
-    }
+    const userId = payload.userId;
 
     await connectMongoDB();
     const { day, timeSlot } = await request.json();

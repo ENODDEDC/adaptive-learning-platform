@@ -24,11 +24,27 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
   // Enhanced filtering and view states
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // grid, list, timeline, kanban
+  const [prevViewMode, setPrevViewMode] = useState('grid');
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [dateRange, setDateRange] = useState('all'); // all, thisWeek, thisMonth, overdue
   const [statusFilter, setStatusFilter] = useState('all'); // all, notStarted, inProgress, completed
   const [groupBy, setGroupBy] = useState('none'); // none, dueDate, type, status
+
+  // Handle smooth view mode transitions
+  const handleViewModeChange = (newMode) => {
+    if (newMode === viewMode || isTransitioning) return;
+
+    setIsTransitioning(true);
+    setPrevViewMode(viewMode);
+
+    // Apply transition animation
+    setTimeout(() => {
+      setViewMode(newMode);
+      setIsTransitioning(false);
+    }, 150);
+  };
 
   // Enhanced filtering and sorting logic
   const getFilteredAndSortedAssignments = useCallback(() => {
@@ -891,13 +907,14 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
                   ].map(({ key, icon, label }) => (
                     <button
                       key={key}
-                      onClick={() => setViewMode(key)}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                        viewMode === key 
-                          ? 'bg-white text-gray-900 shadow-sm' 
+                      onClick={() => handleViewModeChange(key)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all view-mode-transition ${
+                        viewMode === key
+                          ? 'bg-white text-gray-900 shadow-sm'
                           : 'text-gray-600 hover:text-gray-900'
-                      }`}
+                      } ${isTransitioning ? 'pointer-events-none opacity-50' : ''}`}
                       title={label}
+                      disabled={isTransitioning}
                     >
                       {icon === 'grid' && (
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1081,7 +1098,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
             )}
           </div>
         </div>
-        <div className="p-8">
+        <div className={`p-8 smooth-layout-change ${isTransitioning ? 'layout-transition-active' : ''}`}>
           {loading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_,i) => (
@@ -1134,7 +1151,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
             switch (viewMode) {
               case 'grid':
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}>
                     {filtered.map((assignment) => (
                       <EnhancedActivityCard 
                         key={assignment._id} 
@@ -1153,7 +1170,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
               
               case 'list':
                 return (
-                  <div className="space-y-4">
+                  <div className={`space-y-4 layout-transition-list-to-grid ${isTransitioning ? 'layout-transition-active' : ''}`}>
                     {filtered.map((assignment) => (
                       <EnhancedActivityCard 
                         key={assignment._id} 
@@ -1172,7 +1189,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
               
               case 'timeline':
                 return (
-                  <div className="relative">
+                  <div className={`relative layout-transition-to-timeline ${isTransitioning ? 'layout-transition-active' : ''}`}>
                     <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-blue-200"></div>
                     <div className="space-y-8">
                       {filtered.map((assignment) => (
@@ -1194,7 +1211,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
               
               case 'kanban':
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 layout-transition-to-kanban ${isTransitioning ? 'layout-transition-active' : ''}`}>
                     {['notStarted', 'inProgress', 'completed'].map((status) => {
                       const statusAssignments = filtered.filter(assignment => {
                         const submission = submissions.find(s => s.assignment === assignment._id);
@@ -1232,7 +1249,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
               
               default:
                 return (
-                  <div className="space-y-6">
+                  <div className={`space-y-6 layout-transition-default ${isTransitioning ? 'layout-transition-active' : ''}`}>
                     {filtered.map((assignment) => (
                       <EnhancedActivityCard 
                         key={assignment._id} 

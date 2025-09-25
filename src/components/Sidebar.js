@@ -13,7 +13,8 @@ import {
   Squares2X2Icon,
   Cog6ToothIcon,
   DocumentTextIcon,
-  AcademicCapIcon
+  AcademicCapIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { Dialog, Transition } from '@headlessui/react';
 import ProfileModal from './ProfileModal';
@@ -31,6 +32,12 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [isCoursesExpanded, setIsCoursesExpanded] = useState(true);
+  const [isCreatedCoursesExpanded, setIsCreatedCoursesExpanded] = useState(false);
+  const [isEnrolledCoursesExpanded, setIsEnrolledCoursesExpanded] = useState(false);
+  const [scheduledCount, setScheduledCount] = useState(0);
+  const [navigatingTo, setNavigatingTo] = useState(null);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -114,8 +121,78 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
       }
     };
 
+    const fetchCourses = async () => {
+      if (!user) return;
+
+      try {
+        const response = await fetch('/api/courses', {
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch courses');
+        }
+
+        const data = await response.json();
+        const created = [];
+        const enrolled = [];
+
+        data.courses.forEach(course => {
+          const formattedCourse = {
+            id: course._id,
+            title: course.subject,
+            code: course.section,
+            instructor: course.teacherName,
+            progress: 0,
+            color: course.coverColor,
+            createdBy: course.createdBy,
+            enrolledUsers: course.enrolledUsers,
+          };
+
+          if (course.createdBy === user._id) {
+            created.push(formattedCourse);
+          } else if (course.enrolledUsers.includes(user._id)) {
+            enrolled.push(formattedCourse);
+          }
+        });
+
+        setCourses({ created, enrolled });
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
+    };
+
+    const fetchScheduledCount = async () => {
+      if (!user) return;
+
+      try {
+        const response = await fetch('/api/schedule', {
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch scheduled courses');
+        }
+
+        const data = await response.json();
+        setScheduledCount(data.scheduledCourses.length);
+      } catch (error) {
+        console.error('Error fetching scheduled count:', error);
+        setScheduledCount(0);
+      }
+    };
+
     fetchUserProfile();
-  }, []); // Empty dependency array to run once on mount
+    if (user) {
+      fetchCourses();
+      fetchScheduledCount();
+    }
+  }, [user]); // Empty dependency array to run once on mount
+
+  // Clear navigation loading state when pathname changes
+  useEffect(() => {
+    setNavigatingTo(null);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     try {
@@ -135,6 +212,12 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     }
   };
 
+  const handleNavigation = (href, label) => {
+    setNavigatingTo(label);
+    router.push(href);
+    // Loading state will be cleared when pathname changes (navigation complete)
+  };
+
   const links = [
     { href: "/home", label: "Home" },
     { href: "/courses", label: "Course" },
@@ -148,7 +231,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   return (
     <React.Fragment>
       <aside
-        className={`bg-white border-r border-gray-200 fixed top-0 left-0 h-full z-30 flex flex-col shadow-sm transition-all duration-500 ease-in-out ${isCollapsed ? 'w-20 items-center' : 'w-64'}`}
+        className={`bg-white/95 backdrop-blur-md border-r border-white/30 fixed top-0 left-0 h-full z-30 flex flex-col shadow-2xl transition-all duration-500 ease-in-out ${isCollapsed ? 'w-20 items-center rounded-r-2xl' : 'w-64 rounded-r-3xl'}`}
       >
         {/* Header Section */}
         <div className={`${isCollapsed ? 'p-4' : 'p-6'} border-b border-gray-100`}>
@@ -156,18 +239,19 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
           <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} mb-4`}>
             <button
               onClick={toggleSidebar}
-              className="p-2 transition-colors duration-200 rounded-lg hover:bg-gray-100"
+              className="p-3 transition-all duration-300 rounded-xl hover:bg-blue-50 hover:scale-110 active:scale-95 group"
+              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              <Bars3Icon className="w-5 h-5 text-gray-600" />
+              <Bars3Icon className={`w-6 h-6 text-gray-600 transition-all duration-300 group-hover:text-blue-600 ${isCollapsed ? 'rotate-90' : 'rotate-0'}`} />
             </button>
           </div>
 
         {/* User profile section - only when expanded */}
         {!isCollapsed && (
-          <div className="relative">
+          <div className="relative animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             <button
               onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-              className="flex items-center justify-between w-full p-3 transition-all duration-200 border border-gray-200 bg-gray-50 rounded-xl hover:bg-gray-100"
+              className="flex items-center justify-between w-full p-3 transition-all duration-200 border border-gray-200 bg-gray-50 rounded-xl hover:bg-gray-100 hover:scale-102"
             >
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full shadow-sm bg-gradient-to-br from-blue-500 to-blue-600">
@@ -178,8 +262,8 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                   )}
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-semibold text-gray-900">{user?.name && user?.surname ? `${user.name} ${user.surname}` : user?.name || user?.surname || "User Name"}</div>
-                  <div className="text-xs text-gray-500">{user?.role || "Student"}</div>
+                  <div className="text-lg font-bold text-gray-900 capitalize">{user?.role || "Student"}</div>
+                  <div className="text-xs text-gray-500">Active Learning</div>
                 </div>
               </div>
               <ChevronDownIcon
@@ -188,7 +272,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
             </button>
 
             {isUserDropdownOpen && (
-              <div className="absolute left-0 right-0 z-50 mt-2 overflow-hidden bg-white border border-gray-200 shadow-lg top-full rounded-xl">
+              <div className="absolute left-full top-0 z-50 ml-2 w-64 overflow-hidden bg-white border border-gray-200 shadow-xl rounded-xl">
                 <div className="py-2">
                   <button
                     onClick={() => setOpenProfileModal(true)}
@@ -213,7 +297,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                       )}
                     </div>
                   </button>
-                  
+
                   <button
                     onClick={handleSignOut}
                     className="w-full px-4 py-3 text-sm text-left text-red-600 transition-colors hover:bg-red-50"
@@ -244,25 +328,223 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
       </div>
 
       {/* Navigation Section */}
-      <nav className={`flex-1 ${isCollapsed ? 'p-2' : 'p-6'} pt-6`}>
+      <nav className={`flex-1 ${isCollapsed ? 'p-2' : 'p-6'} pt-6`} role="navigation" aria-label="Main navigation">
         {!isCollapsed && (
-          <div className="mb-6">
+          <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
             <h3 className="px-3 mb-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">Navigation</h3>
           </div>
         )}
-        
+
         <ul className="space-y-1">
-          {links.map(link => {
+          {/* Home Link */}
+          <li className="animate-fade-in-up" style={{ animationDelay: '0.05s' }}>
+            <button
+              onClick={() => handleNavigation('/home', 'Home')}
+              disabled={navigatingTo === 'Home'}
+              aria-current={pathname === '/home' ? 'page' : undefined}
+              className={`group flex items-center rounded-xl font-medium transition-all duration-300 relative hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-75 disabled:cursor-not-allowed w-full text-left ${
+                pathname === '/home'
+                  ? 'bg-blue-50 text-blue-700 shadow-lg border border-blue-200 shadow-blue-500/20'
+                  : 'text-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 hover:border hover:border-blue-200 hover:shadow-blue-500/10'
+              } ${
+                isCollapsed ? 'justify-center p-3 mx-1' : 'gap-3 px-4 py-3 mx-1'
+              }`}
+            >
+              {pathname === '/home' && !isCollapsed && (
+                <div className="absolute left-0 w-1 h-6 transform -translate-y-1/2 bg-blue-600 rounded-r-full top-1/2"></div>
+              )}
+              {navigatingTo === 'Home' ? (
+                <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                <HomeIcon
+                  className={`flex-shrink-0 w-5 h-5 transition-all duration-300 ${
+                    pathname === '/home'
+                      ? 'text-blue-600 animate-pulse'
+                      : 'text-gray-500 group-hover:text-blue-600 group-hover:scale-110 group-hover:animate-bounce'
+                  }`}
+                />
+              )}
+              {!isCollapsed && (
+                <span className="text-sm font-medium">
+                  {navigatingTo === 'Home' ? 'Loading...' : 'Home'}
+                </span>
+              )}
+              {isCollapsed && (
+                <div className="absolute z-50 px-2 py-1 ml-2 text-xs text-white transition-opacity bg-gray-900 rounded opacity-0 pointer-events-none left-full group-hover:opacity-100 whitespace-nowrap">
+                  {navigatingTo === 'Home' ? 'Loading...' : 'Home'}
+                </div>
+              )}
+            </button>
+          </li>
+
+          {/* Courses Tree Structure */}
+          {!isCollapsed && (
+            <li className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <div className="space-y-1">
+                {/* Courses Header */}
+                <button
+                  onClick={() => setIsCoursesExpanded(!isCoursesExpanded)}
+                  className="group flex items-center justify-between w-full rounded-xl font-medium transition-all duration-300 text-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 hover:border hover:border-blue-200 hover:shadow-blue-500/10 gap-3 px-4 py-3 mx-1"
+                >
+                  <div className="flex items-center gap-3">
+                    <BookOpenIcon className="flex-shrink-0 w-5 h-5 transition-all duration-300 text-gray-500 group-hover:text-blue-600 group-hover:scale-110" />
+                    <span className="text-sm font-medium">Courses</span>
+                  </div>
+                  <ChevronDownIcon
+                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isCoursesExpanded ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {/* Courses Tree */}
+                {isCoursesExpanded && (
+                  <div className="ml-6 space-y-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                    {/* Created Courses Section */}
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setIsCreatedCoursesExpanded(!isCreatedCoursesExpanded)}
+                        className="group flex items-center justify-between w-full rounded-lg font-medium transition-all duration-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 gap-2 px-3 py-2 text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span>My Created Courses</span>
+                          {courses.created?.length > 0 && (
+                            <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+                              {courses.created.length}
+                            </span>
+                          )}
+                        </div>
+                        <ChevronDownIcon
+                          className={`w-3 h-3 transition-transform duration-200 ${isCreatedCoursesExpanded ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+
+                      {isCreatedCoursesExpanded && courses.created?.map((course, index) => (
+                        <button
+                          key={course.id}
+                          onClick={() => handleNavigation(`/courses/${course.id}`, `Course: ${course.title}`)}
+                          disabled={navigatingTo === `Course: ${course.title}`}
+                          className="group flex items-center gap-2 rounded-lg font-medium transition-all duration-200 text-gray-600 hover:text-blue-700 hover:bg-blue-50/50 px-3 py-2 ml-4 text-xs border-l-2 border-transparent hover:border-blue-300 w-full text-left disabled:opacity-75"
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                        >
+                          {navigatingTo === `Course: ${course.title}` ? (
+                            <div className="w-1.5 h-1.5 flex items-center justify-center">
+                              <div className="w-3 h-3 border border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          ) : (
+                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full group-hover:bg-blue-600 transition-colors"></div>
+                          )}
+                          <span className="truncate">
+                            {navigatingTo === `Course: ${course.title}` ? 'Loading...' : course.title}
+                          </span>
+                          <div className="ml-auto flex items-center gap-1">
+                            <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500"
+                                style={{ width: `${course.progress}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs text-gray-400">{course.progress}%</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Enrolled Courses Section */}
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setIsEnrolledCoursesExpanded(!isEnrolledCoursesExpanded)}
+                        className="group flex items-center justify-between w-full rounded-lg font-medium transition-all duration-200 text-gray-500 hover:text-purple-600 hover:bg-purple-50/50 gap-2 px-3 py-2 text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          <span>My Enrolled Courses</span>
+                          {courses.enrolled?.length > 0 && (
+                            <span className="px-1.5 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full">
+                              {courses.enrolled.length}
+                            </span>
+                          )}
+                        </div>
+                        <ChevronDownIcon
+                          className={`w-3 h-3 transition-transform duration-200 ${isEnrolledCoursesExpanded ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+
+                      {isEnrolledCoursesExpanded && courses.enrolled?.map((course, index) => (
+                        <button
+                          key={course.id}
+                          onClick={() => handleNavigation(`/courses/${course.id}`, `Course: ${course.title}`)}
+                          disabled={navigatingTo === `Course: ${course.title}`}
+                          className="group flex items-center gap-2 rounded-lg font-medium transition-all duration-200 text-gray-600 hover:text-purple-700 hover:bg-purple-50/50 px-3 py-2 ml-4 text-xs border-l-2 border-transparent hover:border-purple-300 w-full text-left disabled:opacity-75"
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                        >
+                          {navigatingTo === `Course: ${course.title}` ? (
+                            <div className="w-1.5 h-1.5 flex items-center justify-center">
+                              <div className="w-3 h-3 border border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          ) : (
+                            <div className="w-1.5 h-1.5 bg-purple-400 rounded-full group-hover:bg-purple-600 transition-colors"></div>
+                          )}
+                          <span className="truncate">
+                            {navigatingTo === `Course: ${course.title}` ? 'Loading...' : course.title}
+                          </span>
+                          <div className="ml-auto flex items-center gap-1">
+                            <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-purple-400 to-purple-600 transition-all duration-500"
+                                style={{ width: `${course.progress}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs text-gray-400">{course.progress}%</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="space-y-1">
+                        <button
+                          onClick={() => handleNavigation('/courses', 'View All Courses')}
+                          disabled={navigatingTo === 'View All Courses'}
+                          className="group flex items-center gap-2 w-full rounded-lg font-medium transition-all duration-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 px-3 py-2 text-xs disabled:opacity-75 disabled:cursor-not-allowed"
+                        >
+                          {navigatingTo === 'View All Courses' ? (
+                            <div className="w-3 h-3 flex items-center justify-center">
+                              <div className="w-2 h-2 border border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          ) : (
+                            <Squares2X2Icon className="w-3 h-3" />
+                          )}
+                          <span>
+                            {navigatingTo === 'View All Courses' ? 'Loading...' : 'View All Courses'}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </li>
+          )}
+
+          {/* Other Navigation Links */}
+          {links.filter(link => link.label !== 'Home' && link.label !== 'Course').map((link, index) => {
             const IconComponent = getIconForLink(link.label);
             const isActive = pathname === link.href;
+            const isScheduleLink = link.label === 'Schedule';
+            const isNavigating = navigatingTo === link.label;
             return (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className={`group flex items-center rounded-xl font-medium transition-all duration-200 relative ${
+              <li key={link.href} className="animate-fade-in-up" style={{ animationDelay: `${(index + 2) * 0.05}s` }}>
+                <button
+                  onClick={() => handleNavigation(link.href, link.label)}
+                  disabled={isNavigating}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`group flex items-center rounded-xl font-medium transition-all duration-300 relative hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-75 disabled:cursor-not-allowed w-full text-left ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-200'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-blue-50 text-blue-700 shadow-lg border border-blue-200 shadow-blue-500/20'
+                      : 'text-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 hover:border hover:border-blue-200 hover:shadow-blue-500/10'
                   } ${
                     isCollapsed ? 'justify-center p-3 mx-1' : 'gap-3 px-4 py-3 mx-1'
                   }`}
@@ -270,22 +552,44 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                   {isActive && !isCollapsed && (
                     <div className="absolute left-0 w-1 h-6 transform -translate-y-1/2 bg-blue-600 rounded-r-full top-1/2"></div>
                   )}
-                  {IconComponent && (
-                    <IconComponent 
-                      className={`flex-shrink-0 w-5 h-5 transition-colors ${
-                        isActive ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-700'
-                      }`} 
-                    />
+                  {isNavigating ? (
+                    <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : (
+                    IconComponent && (
+                      <IconComponent
+                        className={`flex-shrink-0 w-5 h-5 transition-all duration-300 ${
+                          isActive
+                            ? 'text-blue-600 animate-pulse'
+                            : 'text-gray-500 group-hover:text-blue-600 group-hover:scale-110 group-hover:animate-bounce'
+                        }`}
+                      />
+                    )
                   )}
                   {!isCollapsed && (
-                    <span className="text-sm font-medium">{link.label}</span>
+                    <div className="flex items-center justify-between flex-1">
+                      <span className="text-sm font-medium">
+                        {isNavigating ? 'Loading...' : link.label}
+                      </span>
+                      {isScheduleLink && scheduledCount > 0 && (
+                        <span className="inline-flex items-center justify-center px-2 py-1 ml-2 text-xs font-bold leading-none text-white bg-blue-600 rounded-full animate-pulse">
+                          {scheduledCount}
+                        </span>
+                      )}
+                    </div>
                   )}
                   {isCollapsed && (
                     <div className="absolute z-50 px-2 py-1 ml-2 text-xs text-white transition-opacity bg-gray-900 rounded opacity-0 pointer-events-none left-full group-hover:opacity-100 whitespace-nowrap">
-                      {link.label}
+                      {isNavigating ? 'Loading...' : link.label}
+                      {isScheduleLink && scheduledCount > 0 && (
+                        <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
+                          {scheduledCount}
+                        </span>
+                      )}
                     </div>
                   )}
-                </Link>
+                </button>
               </li>
             );
           })}
@@ -293,10 +597,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
         
         {/* Footer section */}
         {!isCollapsed && (
-          <div className="pt-6 mt-8 border-t border-gray-100">
-            <div className="px-3 py-2 border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
+          <div className="pt-6 mt-8 border-t border-gray-100 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+            <div className="px-3 py-2 border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:shadow-md transition-shadow duration-300">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg animate-pulse">
                   <span className="text-xs font-bold text-blue-600">AI</span>
                 </div>
                 <div>

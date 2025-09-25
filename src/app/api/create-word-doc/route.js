@@ -72,7 +72,7 @@ function cleanMarkdownText(text) {
 
 function parseContentToSections(content, title) {
   const sections = [];
-  
+
   // Add title
   if (title) {
     sections.push(
@@ -100,7 +100,7 @@ function parseContentToSections(content, title) {
 
   for (const line of lines) {
     const trimmedLine = line.trim();
-    
+
     if (trimmedLine === '') {
       // Empty line - end current paragraph or list if it has content
       if (currentParagraph.length > 0) {
@@ -122,7 +122,7 @@ function parseContentToSections(content, title) {
         sections.push(createParagraph(currentParagraph.join(' ')));
         currentParagraph = [];
       }
-      
+
       const cleanText = cleanMarkdownText(trimmedLine);
       currentList.push(cleanText);
       isInList = true;
@@ -191,7 +191,7 @@ function isHeading(line) {
 function createHeading(text) {
   // Remove markdown heading symbols and clean text
   const cleanText = cleanMarkdownText(text);
-  
+
   return new Paragraph({
     children: [
       new TextRun({
@@ -210,7 +210,7 @@ function createHeading(text) {
 
 function createParagraph(text) {
   const cleanText = cleanMarkdownText(text);
-  
+
   return new Paragraph({
     children: [
       new TextRun({
@@ -226,7 +226,7 @@ function createParagraph(text) {
 
 function createList(listItems) {
   // Create multiple paragraphs for list items with bullet points
-  return listItems.map((item, index) => 
+  return listItems.map((item, index) =>
     new Paragraph({
       children: [
         new TextRun({

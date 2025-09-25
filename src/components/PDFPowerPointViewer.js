@@ -18,7 +18,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
   const [refreshKey, setRefreshKey] = useState(Date.now());
   const [showThumbnails, setShowThumbnails] = useState(true);
   const [loadedThumbnails, setLoadedThumbnails] = useState(new Set([1]));
-  
+
   const viewerRef = useRef(null);
   const iframeRef = useRef(null);
   const containerRef = useRef(null);
@@ -115,7 +115,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
       setRefreshKey(Date.now());
     }
   };
-  
+
   const goToPrevSlide = () => {
     if (currentPage > 1) {
       const prevPage = currentPage - 1;
@@ -153,65 +153,65 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
         e.preventDefault();
         e.stopPropagation();
       }
-      
+
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
         goToNextSlide();
       } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'Backspace') {
         goToPrevSlide();
       }
     };
-    
+
     const handleWheel = (e) => {
       // Prevent wheel scrolling entirely
       e.preventDefault();
       e.stopPropagation();
     };
-    
+
     const handleTouchMove = (e) => {
       // Prevent touch scrolling
       e.preventDefault();
       e.stopPropagation();
     };
-    
+
     const handleScroll = (e) => {
       // Prevent any scroll events
       e.preventDefault();
       e.stopPropagation();
     };
-    
+
     const container = containerRef.current;
     const iframe = iframeRef.current;
-    
+
     // Add event listeners to multiple elements for comprehensive protection
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('wheel', handleWheel, { passive: false });
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('scroll', handleScroll, { passive: false });
-    
+
     if (container) {
       container.addEventListener('wheel', handleWheel, { passive: false });
       container.addEventListener('touchmove', handleTouchMove, { passive: false });
       container.addEventListener('scroll', handleScroll, { passive: false });
     }
-    
+
     if (iframe) {
       iframe.addEventListener('wheel', handleWheel, { passive: false });
       iframe.addEventListener('touchmove', handleTouchMove, { passive: false });
       iframe.addEventListener('scroll', handleScroll, { passive: false });
     }
-    
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('scroll', handleScroll);
-      
+
       if (container) {
         container.removeEventListener('wheel', handleWheel);
         container.removeEventListener('touchmove', handleTouchMove);
         container.removeEventListener('scroll', handleScroll);
       }
-      
+
       if (iframe) {
         iframe.removeEventListener('wheel', handleWheel);
         iframe.removeEventListener('touchmove', handleTouchMove);
@@ -271,9 +271,8 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
   return (
     <div
       ref={viewerRef}
-      className={`bg-black text-white h-full w-full overflow-hidden relative flex ${
-        isModal ? 'rounded-2xl' : ''
-      }`}
+      className={`bg-black text-white h-full w-full overflow-hidden relative flex ${isModal ? 'rounded-2xl' : ''
+        }`}
     >
       {/* Thumbnail Sidebar */}
       {showThumbnails && (
@@ -282,7 +281,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
           <div className="flex items-center justify-between p-3 border-b border-gray-700">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/>
+                <path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z" />
               </svg>
               <span className="text-sm font-medium text-gray-300">Slides</span>
             </div>
@@ -296,23 +295,22 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
               </svg>
             </button>
           </div>
-          
+
           {/* Thumbnail Grid */}
           <div className="flex-1 overflow-y-auto p-2 space-y-2">
             {Array.from({ length: totalPages }, (_, index) => {
               const pageNum = index + 1;
               const isActive = pageNum === currentPage;
-              
+
               return (
                 <div
                   key={pageNum}
                   onClick={() => goToPage(pageNum)}
                   onMouseEnter={() => loadThumbnail(pageNum)}
-                  className={`group cursor-pointer border-2 rounded-lg overflow-hidden transition-all duration-200 ${
-                    isActive 
-                      ? 'border-blue-500 bg-blue-500/20' 
-                      : 'border-gray-600 hover:border-gray-500 hover:bg-gray-800/50'
-                  }`}
+                  className={`group cursor-pointer border-2 rounded-lg overflow-hidden transition-all duration-200 ${isActive
+                    ? 'border-blue-500 bg-blue-500/20'
+                    : 'border-gray-600 hover:border-gray-500 hover:bg-gray-800/50'
+                    }`}
                 >
                   {/* Thumbnail Image Container */}
                   <div className="aspect-[16/9] bg-gray-800 relative overflow-hidden">
@@ -322,8 +320,8 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
                           src={`${window.location.origin}${pdfUrl}#page=${pageNum}&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH&zoom=50`}
                           className="w-full h-full pointer-events-none border-0"
                           title={`Slide ${pageNum} thumbnail`}
-                          style={{ 
-                            transform: 'scale(0.25)', 
+                          style={{
+                            transform: 'scale(0.25)',
                             transformOrigin: 'top left',
                             width: '400%',
                             height: '400%'
@@ -334,13 +332,13 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
                       <div className="w-full h-full flex items-center justify-center">
                         <div className="text-center">
                           <svg className="w-8 h-8 text-gray-500 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5z"/>
+                            <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5z" />
                           </svg>
                           <div className="text-xs text-gray-500">Slide {pageNum}</div>
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Active indicator */}
                     {isActive && (
                       <div className="absolute inset-0 border-2 border-blue-500 rounded pointer-events-none">
@@ -348,11 +346,10 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Slide Number */}
-                  <div className={`p-2 text-center text-xs font-medium ${
-                    isActive ? 'text-blue-300 bg-blue-600/30' : 'text-gray-400 bg-gray-800'
-                  }`}>
+                  <div className={`p-2 text-center text-xs font-medium ${isActive ? 'text-blue-300 bg-blue-600/30' : 'text-gray-400 bg-gray-800'
+                    }`}>
                     {pageNum}
                   </div>
                 </div>
@@ -361,7 +358,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
           </div>
         </div>
       )}
-      
+
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
@@ -375,15 +372,15 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
                 title="Show thumbnails"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/>
+                  <path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z" />
                 </svg>
               </button>
             )}
-            
+
             <div className="text-orange-500">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5zM8.5 7v10.5h11V7H8.5z"/>
-                <path d="M4.5 3h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 15.5v-11A1.5 1.5 0 014.5 3zM4.5 5v10.5h11V5H4.5z"/>
+                <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5zM8.5 7v10.5h11V7H8.5z" />
+                <path d="M4.5 3h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 15.5v-11A1.5 1.5 0 014.5 3zM4.5 5v10.5h11V5H4.5z" />
               </svg>
             </div>
             <div>
@@ -395,7 +392,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* Page Navigation */}
             <div className="flex items-center gap-2 text-sm">
@@ -407,11 +404,11 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
               >
                 <ChevronLeftIcon className="w-4 h-4" />
               </button>
-              
+
               <span className="px-3 py-1 bg-gray-800 rounded text-white min-w-20 text-center">
                 {currentPage} / {totalPages}
               </span>
-              
+
               <button
                 onClick={goToNextSlide}
                 disabled={currentPage >= totalPages}
@@ -421,7 +418,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
                 <ChevronRightIcon className="w-4 h-4" />
               </button>
             </div>
-            
+
             {/* Fullscreen */}
             <button
               onClick={toggleFullscreen}
@@ -430,7 +427,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
             >
               <ArrowsPointingOutIcon className="w-4 h-4" />
             </button>
-            
+
             {/* Close */}
             {isModal && onClose && (
               <button
@@ -446,10 +443,10 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
 
         {/* Main slide viewer */}
         <div className="flex-1 relative bg-gray-900">
-          <div 
+          <div
             ref={containerRef}
             className="w-full h-full absolute inset-0 overflow-hidden no-scrollbar"
-            style={{ 
+            style={{
               backgroundColor: '#1a1a1a',
               position: 'absolute',
               top: 0,
@@ -483,7 +480,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
                 allowFullScreen
               />
               {/* Visual overlay mask to cover any potential scrollbar areas */}
-              <div 
+              <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
                   background: 'linear-gradient(90deg, transparent 0%, transparent 97%, #1a1a1a 100%)',
@@ -492,7 +489,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
               />
             </div>
           </div>
-          
+
           {/* Custom overlay controls */}
           <div className="absolute inset-0 pointer-events-none">
             {/* Left/Right Navigation buttons */}
@@ -507,7 +504,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
             >
               <ChevronLeftIcon className="w-6 h-6" />
             </button>
-            
+
             <button
               onClick={(e) => {
                 e.stopPropagation();

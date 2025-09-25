@@ -110,7 +110,7 @@ const Layout = ({ children }) => {
   // Prevent hydration mismatch by using consistent initial state
   const sidebarState = isSidebarCollapsed;
   const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-64';
-  
+
   // Determine if current page needs scrolling
   const needsScrolling = pathname === '/text-to-docs';
   const containerOverflow = needsScrolling ? 'overflow-hidden' : 'overflow-hidden';
