@@ -329,17 +329,21 @@ const CourseDetailPage = ({
     if (!courseDetails) return;
 
     try {
-      const res = await fetch(`/api/courses/${courseDetails._id}/classwork`); // No need for manual token header
+      console.log('🔍 ASSIGNMENTS: Fetching assignments for course:', courseDetails._id);
+      const res = await fetch(`/api/courses/${courseDetails._id}/classwork`);
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
       }
 
       const data = await res.json();
-      setAssignments(data.classwork);
+      const classwork = data.classwork || [];
+      console.log('🔍 ASSIGNMENTS: Fetched assignments:', classwork.length, 'items');
+      setAssignments(classwork);
     } catch (err) {
+      console.error('🔍 ASSIGNMENTS: Failed to fetch assignments:', err);
       setError(err.message);
-      console.error('Failed to fetch assignments:', err);
+      setAssignments([]);
     }
   }, [courseDetails]);
 
@@ -443,12 +447,23 @@ const CourseDetailPage = ({
         throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
       }
 
+      console.log('🔍 CLASSWORK: Classwork deleted successfully, refreshing data');
       fetchAssignments(); // Refresh classwork list
       fetchStreamItems(); // Also refresh stream to reflect changes
     } catch (err) {
+      console.error('🔍 CLASSWORK: Failed to delete classwork:', err);
       setError(err.message);
-      console.error('Failed to delete classwork:', err);
     }
+  }, [fetchAssignments, fetchStreamItems]);
+
+  // Callback function to refresh both assignments and stream items when new classwork is created
+  const handleClassworkCreated = useCallback(async () => {
+    console.log('🔍 CLASSWORK: handleClassworkCreated called - refreshing both assignments and stream items');
+    await Promise.all([
+      fetchAssignments(),
+      fetchStreamItems()
+    ]);
+    console.log('🔍 CLASSWORK: Both assignments and stream items refreshed successfully');
   }, [fetchAssignments, fetchStreamItems]);
 
   // Toggle activity expansion
@@ -539,7 +554,7 @@ const CourseDetailPage = ({
                     </div>
                   )}
                 </div>
-                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 transition-colors duration-200 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:border-gray-300 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -550,22 +565,29 @@ const CourseDetailPage = ({
           </div>
         </div>
 
-        {/* Main Content Layout */}
-        <div className="flex flex-1 gap-6">
-          {/* Left Sidebar - Course Modules */}
-          <div className={`bg-white border border-gray-200 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out ${
+        {/* Main Content Layout - Optimized Proportions */}
+        <div className="flex flex-1 gap-8">
+          {/* Left Sidebar - Course Code */}
+          <div className={`bg-white border border-gray-200/60 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-md ${
             sidebarCollapsed ? 'w-16' : 'w-80'
           }`}>
             {!sidebarCollapsed ? (
               <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Class Code</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center w-6 h-6 bg-blue-100 rounded-md">
+                      <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">Course Access</h2>
+                  </div>
                   <button
                     onClick={() => {
                       setSidebarCollapsed(true);
                       setUpcomingTasksExpanded(true);
                     }}
-                    className="p-1 text-gray-400 transition-colors duration-200 rounded hover:text-gray-600"
+                    className="p-2 text-gray-400 transition-all duration-200 rounded-lg hover:text-gray-600 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 hover:shadow-sm hover:scale-105 active:scale-95"
                     title="Collapse sidebar"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -573,39 +595,65 @@ const CourseDetailPage = ({
                     </svg>
                   </button>
                 </div>
-                <div className="flex flex-col items-center justify-center space-y-4">
-                  <div className="flex items-center justify-center w-full">
-                    <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg px-6 py-4 min-w-[120px] text-center">
-                      <span className="block text-lg font-bold tracking-widest text-gray-800">
-                        {courseDetails.uniqueKey}
-                      </span>
+
+                <div className="space-y-4">
+                  {/* Course Code Section */}
+                  <div className="text-center">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200/50 rounded-xl px-6 py-5 mb-4">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                        <span className="text-sm font-medium text-blue-700">Class Code</span>
+                      </div>
+                      <div className="bg-white border border-blue-200 rounded-lg px-4 py-3">
+                        <span className="block text-xl font-bold tracking-wider text-gray-800">
+                          {courseDetails.uniqueKey}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        console.log('🔍 CLIPBOARD: Attempting to copy code to clipboard');
+                        console.log('🔍 CLIPBOARD: Navigator available:', typeof navigator !== 'undefined');
+                        console.log('🔍 CLIPBOARD: Clipboard API available:', navigator?.clipboard?.writeText ? 'yes' : 'no');
+                        console.log('🔍 CLIPBOARD: Window available:', typeof window !== 'undefined');
+                        if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.clipboard) {
+                          console.log('🔍 CLIPBOARD: Cannot access clipboard - not on client or API not available');
+                          return;
+                        }
+                        try {
+                          const code = courseDetails.uniqueKey;
+                          navigator.clipboard.writeText(code);
+                          console.log('🔍 CLIPBOARD: Successfully copied to clipboard');
+                          // Could add toast notification here
+                        } catch (error) {
+                          console.log('🔍 CLIPBOARD: Error copying to clipboard:', error);
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 border border-blue-600 rounded-lg bg-blue-600 hover:bg-blue-700 hover:border-blue-700 hover:shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Copy Code
+                    </button>
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="grid grid-cols-2 gap-3 text-center">
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="text-lg font-bold text-gray-900">{teachers.length}</div>
+                        <div className="text-xs text-gray-600">Teachers</div>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="text-lg font-bold text-gray-900">{students.length}</div>
+                        <div className="text-xs text-gray-600">Students</div>
+                      </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      console.log('🔍 CLIPBOARD: Attempting to copy code to clipboard');
-                      console.log('🔍 CLIPBOARD: Navigator available:', typeof navigator !== 'undefined');
-                      console.log('🔍 CLIPBOARD: Clipboard API available:', navigator?.clipboard?.writeText ? 'yes' : 'no');
-                      console.log('🔍 CLIPBOARD: Window available:', typeof window !== 'undefined');
-                      if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.clipboard) {
-                        console.log('🔍 CLIPBOARD: Cannot access clipboard - not on client or API not available');
-                        return;
-                      }
-                      try {
-                        const code = courseDetails.uniqueKey;
-                        navigator.clipboard.writeText(code);
-                        console.log('🔍 CLIPBOARD: Successfully copied to clipboard');
-                      } catch (error) {
-                        console.log('🔍 CLIPBOARD: Error copying to clipboard:', error);
-                      }
-                    }}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 transition-all duration-200 border border-blue-200 rounded-lg bg-blue-50 hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 hover:shadow-sm"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    Copy Code
-                  </button>
                 </div>
               </div>
             ) : (
@@ -615,33 +663,41 @@ const CourseDetailPage = ({
                     setSidebarCollapsed(false);
                     setUpcomingTasksExpanded(false);
                   }}
-                  className="flex items-center justify-center w-full p-2 text-gray-400 transition-colors duration-200 rounded hover:text-gray-600"
+                  className="flex items-center justify-center w-full p-2 text-gray-400 transition-all duration-200 rounded-lg hover:text-gray-600 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 hover:shadow-sm hover:scale-105 active:scale-95"
                   title="Expand sidebar"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
-                <div className="mt-4 text-center">
-                  <div className="inline-flex items-center justify-center w-8 h-8 mb-2 border border-gray-300 rounded-lg bg-gray-50">
-                    <span className="text-xs font-bold text-gray-800">C</span>
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-center">
+                    <div className="bg-blue-100 border border-blue-200 rounded-lg px-3 py-2">
+                      <span className="text-xs font-bold text-blue-700 tracking-wider">
+                        {courseDetails.uniqueKey}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-gray-600 mb-1">Course</div>
+                    <div className="text-xs text-gray-500">Access</div>
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Main Content Area */}
-          <div className="flex-1 space-y-6">
+          {/* Main Content Area - Enhanced Layout */}
+          <div className="flex-1 space-y-8">
             {/* Hidden button to open content viewer from custom events */}
             <button id="__openContentViewerBtn" type="button" className="hidden" />
-            {/* Enhanced Navigation Tabs */}
-            <div className="flex justify-between mb-8 overflow-hidden bg-white border border-gray-200 shadow-sm rounded-xl">
+            {/* Enhanced Navigation Tabs - Improved Spacing */}
+            <div className="flex justify-between mb-10 overflow-hidden bg-white border border-gray-200/60 shadow-sm rounded-xl hover:shadow-md transition-shadow duration-200">
               <button
-                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${
+                className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${
                   activeTab === 'stream'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
+                    : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
                 }`}
                 onClick={() => setActiveTab('stream')}
               >
@@ -656,10 +712,10 @@ const CourseDetailPage = ({
                 )}
               </button>
               <button
-                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${
+                className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${
                   activeTab === 'classwork'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
+                    : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
                 }`}
                 onClick={() => setActiveTab('classwork')}
               >
@@ -674,10 +730,10 @@ const CourseDetailPage = ({
                 )}
               </button>
               <button
-                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${
+                className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${
                   activeTab === 'people'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
+                    : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
                 }`}
                 onClick={() => setActiveTab('people')}
               >
@@ -692,10 +748,10 @@ const CourseDetailPage = ({
                 )}
               </button>
               <button
-                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${
+                className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${
                   activeTab === 'marks'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
+                    : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
                 }`}
                 onClick={() => setActiveTab('marks')}
               >
@@ -762,14 +818,15 @@ const CourseDetailPage = ({
                   // Slight delay to let the sidebar collapse animate smoothly
                   setTimeout(() => setSelectedContent(content), 180);
                 }}
+                onClassworkCreated={handleClassworkCreated}
               />
             )}
             {activeTab === 'people' && (
-              <div className="p-6 bg-white border border-gray-200 shadow-sm sm:p-8 rounded-2xl">
+              <div className="p-8 bg-white border border-gray-200/60 shadow-sm sm:p-10 rounded-2xl hover:shadow-lg transition-all duration-200">
                 <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-2xl font-bold text-gray-900">Members</h2>
                   <div className="flex flex-wrap items-center gap-2">
-                    <input type="text" placeholder="Search people..." className="w-56 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg" />
+                    <input type="text" placeholder="Search people..." className="w-56 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:shadow-sm" />
                     {isInstructor && (
                       <>
                         <button
@@ -777,7 +834,7 @@ const CourseDetailPage = ({
                             setInviteRole('student');
                             setInviteModalOpen(true);
                           }}
-                          className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
+                          className="px-4 py-2 text-sm font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2"
                         >
                           Invite Student
                         </button>
@@ -786,7 +843,7 @@ const CourseDetailPage = ({
                             setInviteRole('coTeacher');
                             setInviteModalOpen(true);
                           }}
-                          className="px-4 py-2 text-sm font-medium text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700"
+                          className="px-4 py-2 text-sm font-medium text-white transition-all duration-200 bg-purple-600 rounded-lg hover:bg-purple-700 hover:shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:ring-offset-2"
                         >
                           Invite Co-teacher
                         </button>
@@ -818,7 +875,7 @@ const CourseDetailPage = ({
                             {isInstructor && teacher._id !== courseDetails.createdBy._id && (
                               <button
                                 onClick={() => handleRemoveUser(teacher._id, 'coTeacher')}
-                                className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100"
+                                className="p-2 text-red-600 transition-all duration-200 rounded-lg hover:bg-red-100 hover:shadow-sm hover:scale-110 active:scale-95"
                                 aria-label="Remove teacher"
                               >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -852,7 +909,7 @@ const CourseDetailPage = ({
                             {isInstructor && (
                               <button
                                 onClick={() => handleRemoveUser(student._id, 'student')}
-                                className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-100"
+                                className="p-2 text-red-600 transition-all duration-200 rounded-lg hover:bg-red-100 hover:shadow-sm hover:scale-110 active:scale-95"
                                 aria-label="Remove student"
                               >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -868,16 +925,16 @@ const CourseDetailPage = ({
             )}
 
             {activeTab === 'marks' && (
-              <div className="p-6 bg-white border border-gray-200 shadow-sm sm:p-8 rounded-2xl">
+              <div className="p-8 bg-white border border-gray-200/60 shadow-sm sm:p-10 rounded-2xl hover:shadow-lg transition-all duration-200">
                 <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-2xl font-bold text-gray-900">Scores</h2>
                   <div className="flex items-center gap-2">
-                    <select className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg">
+                    <select className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:shadow-sm">
                       <option>All assignments</option>
                       <option>Quizzes</option>
                       <option>Materials</option>
                     </select>
-                    <select className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg">
+                    <select className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:shadow-sm">
                       <option>Sort: Newest</option>
                       <option>Sort: Oldest</option>
                     </select>
@@ -920,10 +977,10 @@ const CourseDetailPage = ({
           </div>
 
           {/* Right Sidebar - Upcoming Tasks */}
-          <div className={`bg-white border border-gray-200 rounded-xl shadow-sm min-w-[280px] max-w-[320px] w-full h-fit sticky top-6 overflow-hidden ${
+          <div className={`bg-white border border-gray-200/60 rounded-xl shadow-sm min-w-[280px] max-w-[320px] w-full h-fit sticky top-6 overflow-hidden transition-all duration-300 hover:shadow-md ${
             upcomingTasksExpanded ? 'opacity-100 max-h-screen' : 'opacity-60 max-h-16 hover:opacity-100'
           }`}>
-            <div className="px-4 py-4 border-b border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-200/60 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => {
@@ -934,49 +991,52 @@ const CourseDetailPage = ({
                       setSidebarCollapsed(true);
                     }
                   }}
-                  className="flex items-center gap-2 cursor-pointer group"
+                  className="flex items-center gap-3 cursor-pointer group flex-1"
                 >
-                  <div className="flex items-center justify-center w-6 h-6 transition-colors duration-200 bg-blue-100 rounded-md group-hover:bg-blue-200">
-                    <svg className={`w-3.5 h-3.5 text-blue-600 transition-transform duration-200 ${upcomingTasksExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center justify-center w-8 h-8 transition-colors duration-200 bg-blue-100 rounded-lg group-hover:bg-blue-200">
+                    <svg className={`w-4 h-4 text-blue-600 transition-transform duration-200 ${upcomingTasksExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <h3 className="text-base font-semibold text-gray-900">Upcoming Tasks</h3>
-                  <svg className={`w-4 h-4 text-gray-400 ml-1 transition-transform duration-200 ${upcomingTasksExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex-1">
+                    <h3 className="text-base font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">Upcoming Tasks</h3>
+                    <p className="text-xs text-gray-600">Due dates & assignments</p>
+                  </div>
+                  <svg className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${upcomingTasksExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-3">
                   {/* View Toggle */}
                   <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                     <button
                       onClick={() => setTimelineView(false)}
-                      className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${
-                        !timelineView 
-                          ? 'bg-white text-gray-900 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900'
+                      className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all duration-200 hover:shadow-md hover:scale-105 active:scale-95 ${
+                        !timelineView
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                       }`}
                       title="Card View"
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                       </svg>
                     </button>
                     <button
                       onClick={() => setTimelineView(true)}
-                      className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${
-                        timelineView 
-                          ? 'bg-white text-gray-900 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900'
+                      className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all duration-200 hover:shadow-md hover:scale-105 active:scale-95 ${
+                        timelineView
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                       }`}
                       title="Timeline View"
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                       </svg>
                     </button>
                   </div>
-                  <button className="px-2 py-1 text-xs font-medium text-blue-600 transition-colors duration-200 rounded hover:text-blue-700 hover:bg-blue-50">
+                  <button className="px-3 py-1.5 text-xs font-medium text-blue-600 transition-all duration-200 rounded-lg hover:text-blue-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 hover:border-blue-300 hover:shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2">
                     View All
                   </button>
                 </div>
@@ -998,13 +1058,14 @@ const CourseDetailPage = ({
 
                   if (upcoming.length === 0) {
                     return (
-                      <div className="py-8 text-center">
-                        <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-lg">
-                          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <div className="py-12 text-center">
+                        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl">
+                          <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
-                        <p className="text-sm text-gray-500">No upcoming tasks</p>
+                        <h4 className="mb-2 text-base font-semibold text-gray-900">All caught up!</h4>
+                        <p className="text-sm text-gray-600 leading-relaxed">No upcoming tasks. Great job staying on top of your assignments!</p>
                       </div>
                     );
                   }
@@ -1106,7 +1167,7 @@ const CourseDetailPage = ({
                                 </div>
                                 
                                 {/* Task content */}
-                                <div className={`flex-1 p-4 ${config.bgColor} ${config.borderColor} border rounded-xl hover:shadow-md transition-all duration-200 cursor-pointer`}>
+                                <div className={`flex-1 p-4 ${config.bgColor} ${config.borderColor} border rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer`}>
                                   {/* Task header */}
                                   <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2">
@@ -1147,25 +1208,25 @@ const CourseDetailPage = ({
                                 <div className="flex items-center justify-between">
                                     <div className="flex gap-2">
                                       {isCompleted ? (
-                                        <button className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 border border-green-200 rounded-md hover:bg-green-200 transition-colors">
+                                        <button className="px-3 py-1.5 text-xs font-medium text-green-700 bg-gradient-to-r from-green-100 to-green-200 border border-green-200 rounded-md hover:from-green-200 hover:to-green-300 hover:border-green-300 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:ring-offset-2">
                                           ✓ Completed
                                         </button>
                                       ) : isStarted ? (
-                                        <button className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded-md hover:bg-blue-200 transition-colors">
+                                        <button className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-gradient-to-r from-blue-100 to-blue-200 border border-blue-200 rounded-md hover:from-blue-200 hover:to-blue-300 hover:border-blue-300 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2">
                                           Continue
                                         </button>
                                       ) : (
-                                        <button className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700 transition-colors">
+                                        <button className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-600 rounded-md hover:from-blue-700 hover:to-blue-800 hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2">
                                           Start
                                         </button>
                                       )}
-                                      <button className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200 transition-colors">
+                                      <button className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-md hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-100 hover:border-gray-300 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500/20 focus:ring-offset-2">
                                         View
                                       </button>
                                     </div>
                                     
                                     {/* Drag handle for prioritization */}
-                                    <div className="flex items-center gap-1 text-gray-400 cursor-move" title="Drag to prioritize">
+                                    <div className="flex items-center gap-1 text-gray-400 cursor-move hover:text-gray-600 hover:bg-gray-100 p-1 rounded transition-all duration-200" title="Drag to prioritize">
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                                       </svg>
@@ -1254,19 +1315,19 @@ const CourseDetailPage = ({
                         const getActionButton = () => {
                           if (isCompleted) {
                             return (
-                              <button className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 border border-green-200 rounded-md hover:bg-green-200 transition-colors">
+                              <button className="px-3 py-1.5 text-xs font-medium text-green-700 bg-gradient-to-r from-green-100 to-green-200 border border-green-200 rounded-md hover:from-green-200 hover:to-green-300 hover:border-green-300 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:ring-offset-2">
                                 ✓ Completed
                               </button>
                             );
                           } else if (isStarted) {
                             return (
-                              <button className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded-md hover:bg-blue-200 transition-colors">
+                              <button className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-gradient-to-r from-blue-100 to-blue-200 border border-blue-200 rounded-md hover:from-blue-200 hover:to-blue-300 hover:border-blue-300 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2">
                                 Continue
                               </button>
                             );
                           } else {
                             return (
-                              <button className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700 transition-colors">
+                              <button className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-600 rounded-md hover:from-blue-700 hover:to-blue-800 hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2">
                                 Start
                               </button>
                             );
@@ -1274,7 +1335,7 @@ const CourseDetailPage = ({
                         };
 
                         return (
-                          <div key={item._id} className={`group p-4 border ${config.borderClass} rounded-xl ${config.bgClass} hover:shadow-md transition-all duration-200 cursor-pointer`}>
+                          <div key={item._id} className={`group p-4 border ${config.borderClass} rounded-xl ${config.bgClass} hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer`}>
                             <div className="flex items-start gap-4">
                               <div className="flex-1 min-w-0">
                                 {/* Task header with type */}

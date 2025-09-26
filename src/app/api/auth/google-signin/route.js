@@ -67,11 +67,12 @@ export async function POST(req) {
         email: user.email,
         photoURL: user.photoURL,
         provider: 'google'
-      }
+      },
+      token: token // Include token in response for client-side storage
     }, { status: 200 });
 
     cookies().set('token', token, {
-      httpOnly: true,
+      httpOnly: false, // Make accessible for drag and drop functionality
       secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60 * 24 * 7, // 1 week
       path: '/',

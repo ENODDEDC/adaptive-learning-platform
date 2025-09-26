@@ -296,7 +296,10 @@ export const AdaptiveLayoutProvider = ({ children }) => {
             setLastAdaptation(new Date(data.preferences.lastAdaptation));
           }
 
-          syncService.lastSync = new Date();
+          // Only update sync service if it's available
+          if (syncService) {
+            syncService.lastSync = new Date();
+          }
         }
       } else {
         console.warn('Failed to load from database, falling back to localStorage');

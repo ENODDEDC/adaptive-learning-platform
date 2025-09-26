@@ -8,13 +8,17 @@ export async function middleware(request) {
   const protectedRoutes = ['/home', '/courses', '/ask', '/text-to-docs', '/admin'];
   const authRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
 
+  console.log(`🔍 Middleware: ${pathname} - Token present: ${!!token}`);
+
   // Redirect authenticated users from auth routes to /home
   if (token && authRoutes.includes(pathname)) {
+    console.log('✅ Authenticated user accessing auth route, redirecting to /home');
     return NextResponse.redirect(new URL('/home', request.url));
   }
 
   // Redirect unauthenticated users from protected routes to /login
   if (!token && protectedRoutes.some(route => pathname.startsWith(route))) {
+    console.log('❌ Unauthenticated user accessing protected route, redirecting to /login');
     return NextResponse.redirect(new URL('/login', request.url));
   }
 

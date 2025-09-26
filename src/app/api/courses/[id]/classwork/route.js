@@ -107,7 +107,13 @@ export async function POST(request, { params }) {
     console.log('Assignment created, ID:', newClasswork._id);
 
     const populatedClasswork = await Assignment.findById(newClasswork._id).populate('attachments');
-    console.log('Populated Classwork:', populatedClasswork);
+    console.log('🔍 API: Created classwork successfully:', {
+      id: populatedClasswork._id,
+      title: populatedClasswork.title,
+      type: populatedClasswork.type,
+      createdAt: populatedClasswork.createdAt,
+      attachmentsCount: populatedClasswork.attachments?.length || 0
+    });
     return NextResponse.json(populatedClasswork, { status: 201 });
   } catch (error) {
     console.error('Create Classwork Error:', error);
@@ -145,7 +151,17 @@ export async function GET(request, { params }) {
 
     const classwork = await Assignment.find({ courseId: id })
       .populate('attachments') // Populate the attachments with full Content data
-      .sort({ dueDate: -1, createdAt: -1 });
+      .sort({ createdAt: -1 }); // Sort by creation date, newest first
+
+    console.log('🔍 API: Found classwork items:', classwork.length);
+    console.log('🔍 API: Classwork details:', classwork.map(item => ({
+      id: item._id,
+      title: item.title,
+      type: item.type,
+      createdAt: item.createdAt,
+      dueDate: item.dueDate,
+      attachmentsCount: item.attachments?.length || 0
+    })));
 
     return NextResponse.json({ classwork }, { status: 200 });
   } catch (error) {

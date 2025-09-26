@@ -6,7 +6,7 @@ import CreateClassworkModal from '@/components/CreateClassworkModal';
 import SubmitAssignmentModal from '@/components/SubmitAssignmentModal';
 import ContentViewer from '@/components/ContentViewer.client';
 
-const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
+const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkCreated }) => {
   const [assignments, setAssignments] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [isCreateClassworkModalOpen, setIsCreateClassworkModalOpen] = useState(false);
@@ -20,7 +20,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
   const [sortBy, setSortBy] = useState('newest');
   const [selectedContent, setSelectedContent] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+  const [isDragLoading, setIsDragLoading] = useState(false);
+
   // Enhanced filtering and view states
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // grid, list, timeline, kanban
@@ -29,8 +30,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [dateRange, setDateRange] = useState('all'); // all, thisWeek, thisMonth, overdue
-  const [statusFilter, setStatusFilter] = useState('all'); // all, notStarted, inProgress, completed
+  const [statusFilter, setStatusFilter] = useState('all'); // all, notStarted, inProgress, submitted, completed
   const [groupBy, setGroupBy] = useState('none'); // none, dueDate, type, status
+  const [openDropdownId, setOpenDropdownId] = useState(null); // Track which dropdown is open
+  const [isDragOperationInProgress, setIsDragOperationInProgress] = useState(false); // Track drag operations
 
   // Handle smooth view mode transitions
   const handleViewModeChange = (newMode) => {
@@ -46,13 +49,30 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
     }, 150);
   };
 
+  // Handle dropdown menu toggle
+  const toggleDropdown = (assignmentId) => {
+    setOpenDropdownId(openDropdownId === assignmentId ? null : assignmentId);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dropdown-container')) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   // Enhanced filtering and sorting logic
   const getFilteredAndSortedAssignments = useCallback(() => {
     let filtered = assignments.filter(assignment => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const matchesSearch = 
+        const matchesSearch =
           assignment.title?.toLowerCase().includes(query) ||
           assignment.description?.toLowerCase().includes(query) ||
           assignment.type?.toLowerCase().includes(query);
@@ -67,7 +87,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
         const now = new Date();
         const dueDate = new Date(assignment.dueDate);
         const daysDiff = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
-        
+
         switch (dateRange) {
           case 'thisWeek':
             if (daysDiff < 0 || daysDiff > 7) return false;
@@ -81,12 +101,12 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
         }
       }
 
-      // Status filter
-      if (statusFilter !== 'all') {
-        const submission = submissions.find(s => s.assignment === assignment._id);
-        const isCompleted = submission && submission.status === 'submitted';
+      // Status filter - Skip in Kanban mode since Kanban handles its own filtering
+      if (statusFilter !== 'all' && viewMode !== 'kanban') {
+        const submission = submissions.find(s => String(s.assignment) === String(assignment._id));
+        const isCompleted = submission && submission.status === 'submitted' && submission.grade !== undefined && submission.grade !== null;
         const isInProgress = submission && submission.status === 'draft';
-        
+
         switch (statusFilter) {
           case 'notStarted':
             if (submission) return false;
@@ -129,62 +149,327 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
     return filtered;
   }, [assignments, submissions, searchQuery, filter, dateRange, statusFilter, sortBy]);
 
+  // Dropdown Menu Component
+  const DropdownMenu = ({ assignment, onEdit, onDelete, onOpenContent, onSubmit, isOpen, onToggle }) => {
+    const handleViewDetails = () => {
+      if (onOpenContent) {
+        if (assignment.attachments && assignment.attachments.length > 0) {
+          if (assignment.attachments.length === 1) {
+            onOpenContent(assignment.attachments[0]);
+          } else {
+            const multiAttachmentContent = {
+              title: assignment.title,
+              contentType: 'multi-attachment',
+              attachments: assignment.attachments,
+              currentIndex: 0
+            };
+            onOpenContent(multiAttachmentContent);
+          }
+        } else {
+          const mockContent = {
+            title: assignment.title,
+            filePath: null,
+            mimeType: 'text/plain',
+            fileSize: 0,
+            contentType: 'assignment'
+          };
+          onOpenContent(mockContent);
+        }
+      }
+      onToggle();
+    };
+
+    return (
+      <div className="relative dropdown-container">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle();
+          }}
+          className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:scale-110"
+          title="More options"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+          </svg>
+        </button>
+
+        {isOpen && (
+          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+            <div className="py-1">
+              <button
+                onClick={() => {
+                  onEdit();
+                  onToggle();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Edit
+              </button>
+
+              <button
+                onClick={() => {
+                  onDelete();
+                  onToggle();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-150"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Enhanced Activity Card Component
   const EnhancedActivityCard = ({ assignment, submission, isInstructor, onEdit, onDelete, onSubmit, onOpenContent, viewMode }) => {
     const typeConfig = {
       assignment: {
         icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
         color: 'blue',
-        bgColor: 'blue-50',
-        borderColor: 'blue-200',
+        bgColor: 'blue-50/80',
+        borderColor: 'blue-200/60',
         textColor: 'blue-700',
+        accentColor: 'blue-600',
         gradientFrom: 'from-blue-500',
-        gradientTo: 'to-blue-600'
+        gradientTo: 'to-blue-600',
+        gradientBg: 'from-blue-50/50 to-indigo-50/50',
+        shadowColor: 'shadow-blue-100/50',
+        hoverBg: 'hover:bg-blue-50/90',
+        ringColor: 'ring-blue-500/20',
+        lightBg: 'bg-blue-25',
+        darkBg: 'bg-blue-600',
+        lightText: 'text-blue-600',
+        darkText: 'text-white'
       },
       quiz: {
         icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>,
         color: 'purple',
-        bgColor: 'purple-50',
-        borderColor: 'purple-200',
+        bgColor: 'purple-50/80',
+        borderColor: 'purple-200/60',
         textColor: 'purple-700',
+        accentColor: 'purple-600',
         gradientFrom: 'from-purple-500',
-        gradientTo: 'to-purple-600'
+        gradientTo: 'to-purple-600',
+        gradientBg: 'from-purple-50/50 to-violet-50/50',
+        shadowColor: 'shadow-purple-100/50',
+        hoverBg: 'hover:bg-purple-50/90',
+        ringColor: 'ring-purple-500/20',
+        lightBg: 'bg-purple-25',
+        darkBg: 'bg-purple-600',
+        lightText: 'text-purple-600',
+        darkText: 'text-white'
       },
       material: {
         icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
-        color: 'amber',
-        bgColor: 'amber-50',
-        borderColor: 'amber-200',
-        textColor: 'amber-700',
-        gradientFrom: 'from-amber-500',
-        gradientTo: 'to-amber-600'
+        color: 'emerald',
+        bgColor: 'emerald-50/80',
+        borderColor: 'emerald-200/60',
+        textColor: 'emerald-700',
+        accentColor: 'emerald-600',
+        gradientFrom: 'from-emerald-500',
+        gradientTo: 'to-emerald-600',
+        gradientBg: 'from-emerald-50/50 to-teal-50/50',
+        shadowColor: 'shadow-emerald-100/50',
+        hoverBg: 'hover:bg-emerald-50/90',
+        ringColor: 'ring-emerald-500/20',
+        lightBg: 'bg-emerald-25',
+        darkBg: 'bg-emerald-600',
+        lightText: 'text-emerald-600',
+        darkText: 'text-white'
+      },
+      question: {
+        icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+        color: 'orange',
+        bgColor: 'orange-50/80',
+        borderColor: 'orange-200/60',
+        textColor: 'orange-700',
+        accentColor: 'orange-600',
+        gradientFrom: 'from-orange-500',
+        gradientTo: 'to-orange-600',
+        gradientBg: 'from-orange-50/50 to-amber-50/50',
+        shadowColor: 'shadow-orange-100/50',
+        hoverBg: 'hover:bg-orange-50/90',
+        ringColor: 'ring-orange-500/20',
+        lightBg: 'bg-orange-25',
+        darkBg: 'bg-orange-600',
+        lightText: 'text-orange-600',
+        darkText: 'text-white'
       }
     };
 
     const config = typeConfig[assignment.type] || typeConfig.assignment;
-    const isCompleted = submission && submission.status === 'submitted';
+    const isCompleted = submission && submission.status === 'submitted' && submission.grade !== undefined && submission.grade !== null;
     const isInProgress = submission && submission.status === 'draft';
     const isOverdue = assignment.dueDate && new Date(assignment.dueDate) < new Date() && !isCompleted;
     
-    // Progress calculation (mock for now)
-    const progress = isCompleted ? 100 : isInProgress ? Math.random() * 80 + 20 : 0;
-    
-    // Urgency calculation
+    // Enhanced Progress calculation with more realistic logic
+    const getProgress = () => {
+      if (isCompleted) return 100;
+      if (isInProgress) {
+        // Simulate progress based on time elapsed and urgency
+        const now = new Date();
+        const created = new Date(assignment.createdAt);
+        const due = new Date(assignment.dueDate);
+        const totalTime = due - created;
+        const elapsedTime = now - created;
+        const progressRatio = Math.min(elapsedTime / totalTime, 0.9); // Cap at 90% until completed
+        return Math.max(10, progressRatio * 100); // Minimum 10% progress
+      }
+      return 0;
+    };
+
+    const progress = getProgress();
+
+    // Enhanced Urgency calculation with more granular levels
+    const getUrgency = () => {
+      if (isOverdue) return 'overdue';
+
+      if (daysLeft <= 0) return 'overdue';
+      if (daysLeft <= 1) return 'critical';
+      if (daysLeft <= 2) return 'urgent';
+      if (daysLeft <= 4) return 'soon';
+      if (daysLeft <= 7) return 'upcoming';
+      return 'normal';
+    };
+
+    // Calculate daysLeft first for use in other parts of the component
     const now = new Date();
     const dueDate = new Date(assignment.dueDate);
     const daysLeft = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
-    const urgency = isOverdue ? 'overdue' : daysLeft <= 2 ? 'urgent' : daysLeft <= 7 ? 'soon' : 'normal';
+
+    const urgency = getUrgency();
 
     const getUrgencyConfig = () => {
       switch (urgency) {
         case 'overdue':
-          return { color: 'red', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' };
+          return {
+            color: 'red',
+            bg: 'bg-red-50/80',
+            border: 'border-red-200/60',
+            text: 'text-red-700',
+            accentColor: 'red-600',
+            gradientFrom: 'from-red-500',
+            gradientTo: 'to-red-600',
+            gradientBg: 'from-red-50/50 to-rose-50/50',
+            shadowColor: 'shadow-red-100/50',
+            hoverBg: 'hover:bg-red-50/90',
+            ringColor: 'ring-red-500/20',
+            lightBg: 'bg-red-25',
+            darkBg: 'bg-red-600',
+            lightText: 'text-red-600',
+            darkText: 'text-white',
+            label: 'Overdue',
+            icon: '⚠️'
+          };
+        case 'critical':
+          return {
+            color: 'red',
+            bg: 'bg-red-100/80',
+            border: 'border-red-300/60',
+            text: 'text-red-800',
+            accentColor: 'red-700',
+            gradientFrom: 'from-red-600',
+            gradientTo: 'to-red-700',
+            gradientBg: 'from-red-100/50 to-pink-100/50',
+            shadowColor: 'shadow-red-200/50',
+            hoverBg: 'hover:bg-red-100/90',
+            ringColor: 'ring-red-600/20',
+            lightBg: 'bg-red-50',
+            darkBg: 'bg-red-700',
+            lightText: 'text-red-700',
+            darkText: 'text-white',
+            label: 'Critical',
+            icon: '🚨'
+          };
         case 'urgent':
-          return { color: 'orange', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' };
+          return {
+            color: 'orange',
+            bg: 'bg-orange-50/80',
+            border: 'border-orange-200/60',
+            text: 'text-orange-700',
+            accentColor: 'orange-600',
+            gradientFrom: 'from-orange-500',
+            gradientTo: 'to-orange-600',
+            gradientBg: 'from-orange-50/50 to-amber-50/50',
+            shadowColor: 'shadow-orange-100/50',
+            hoverBg: 'hover:bg-orange-50/90',
+            ringColor: 'ring-orange-500/20',
+            lightBg: 'bg-orange-25',
+            darkBg: 'bg-orange-600',
+            lightText: 'text-orange-600',
+            darkText: 'text-white',
+            label: 'Urgent',
+            icon: '⏰'
+          };
         case 'soon':
-          return { color: 'yellow', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700' };
+          return {
+            color: 'amber',
+            bg: 'bg-amber-50/80',
+            border: 'border-amber-200/60',
+            text: 'text-amber-700',
+            accentColor: 'amber-600',
+            gradientFrom: 'from-amber-500',
+            gradientTo: 'to-amber-600',
+            gradientBg: 'from-amber-50/50 to-yellow-50/50',
+            shadowColor: 'shadow-amber-100/50',
+            hoverBg: 'hover:bg-amber-50/90',
+            ringColor: 'ring-amber-500/20',
+            lightBg: 'bg-amber-25',
+            darkBg: 'bg-amber-600',
+            lightText: 'text-amber-600',
+            darkText: 'text-white',
+            label: 'Due Soon',
+            icon: '📅'
+          };
+        case 'upcoming':
+          return {
+            color: 'blue',
+            bg: 'bg-blue-50/80',
+            border: 'border-blue-200/60',
+            text: 'text-blue-700',
+            accentColor: 'blue-600',
+            gradientFrom: 'from-blue-500',
+            gradientTo: 'to-blue-600',
+            gradientBg: 'from-blue-50/50 to-indigo-50/50',
+            shadowColor: 'shadow-blue-100/50',
+            hoverBg: 'hover:bg-blue-50/90',
+            ringColor: 'ring-blue-500/20',
+            lightBg: 'bg-blue-25',
+            darkBg: 'bg-blue-600',
+            lightText: 'text-blue-600',
+            darkText: 'text-white',
+            label: 'Upcoming',
+            icon: '📋'
+          };
         default:
-          return { color: 'green', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' };
+          return {
+            color: 'emerald',
+            bg: 'bg-emerald-50/80',
+            border: 'border-emerald-200/60',
+            text: 'text-emerald-700',
+            accentColor: 'emerald-600',
+            gradientFrom: 'from-emerald-500',
+            gradientTo: 'to-emerald-600',
+            gradientBg: 'from-emerald-50/50 to-green-50/50',
+            shadowColor: 'shadow-emerald-100/50',
+            hoverBg: 'hover:bg-emerald-50/90',
+            ringColor: 'ring-emerald-500/20',
+            lightBg: 'bg-emerald-25',
+            darkBg: 'bg-emerald-600',
+            lightText: 'text-emerald-600',
+            darkText: 'text-white',
+            label: 'Normal',
+            icon: '✅'
+          };
       }
     };
 
@@ -193,178 +478,148 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
     // Render different layouts based on view mode
     if (viewMode === 'grid') {
       return (
-        <div className={`group relative bg-white border ${config.borderColor} rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden`}>
-          {/* Gradient Header */}
-          <div className={`h-2 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo}`}></div>
-          
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 ${config.bgColor} ${config.borderColor} border rounded-xl flex items-center justify-center`}>
+        <div className={`group relative bg-white border ${config.borderColor} rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.02] hover:-translate-y-1 min-h-[400px]`}>
+          {/* Enhanced Gradient Header */}
+          <div className={`h-3 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} relative overflow-hidden`}>
+            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-white/10"></div>
+          </div>
+
+          <div className="p-8">
+            {/* Enhanced Header with Better Layout */}
+            <div className="flex items-start justify-between mb-6">
+              {/* Left Section - Icon and Type */}
+              <div className="flex items-center gap-4">
+                <div className={`w-14 h-14 ${config.bgColor} ${config.borderColor} border rounded-2xl flex items-center justify-center shadow-lg ${config.shadowColor} hover:scale-110 transition-all duration-300 hover:shadow-xl hover:rotate-3`}>
                   <div className={config.textColor}>
                     {config.icon}
                   </div>
                 </div>
-                <div>
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor}`}>
+                <div className="flex flex-col gap-2">
+                  <span className={`inline-flex px-3 py-1.5 text-sm font-bold rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor} shadow-sm ${config.shadowColor} hover:scale-105 transition-all duration-300 hover:shadow-md`}>
                     {(assignment.type || 'assignment').charAt(0).toUpperCase() + (assignment.type || 'assignment').slice(1)}
                   </span>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-500 font-semibold flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                     {assignment.createdAt ? format(new Date(assignment.createdAt), 'MMM dd, yyyy') : ''}
                   </div>
                 </div>
               </div>
               
-              {/* Status Badge */}
-              <div className="flex items-center gap-2">
-                {isOverdue && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-full">
-                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1"></div>
-                    Overdue
-                  </span>
-                )}
+              {/* Status Badges */}
+              <div className="flex flex-col items-end gap-2">
                 {isCompleted && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-full">
-                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></div>
+                  <span className="inline-flex items-center px-3 py-1.5 text-sm font-bold text-emerald-700 bg-emerald-50/90 border border-emerald-200/70 rounded-full shadow-sm hover:scale-105 transition-all duration-300">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></div>
                     Completed
                   </span>
                 )}
                 {isInProgress && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full">
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1"></div>
+                  <span className="inline-flex items-center px-3 py-1.5 text-sm font-bold text-blue-700 bg-blue-50/90 border border-blue-200/70 rounded-full shadow-sm hover:scale-105 transition-all duration-300">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
                     In Progress
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Title */}
-            <h3 className="text-lg font-semibold text-gray-900 mb-3 line-clamp-2">
-              {assignment.title}
-            </h3>
-
-            {/* Progress Bar */}
-            {assignment.type === 'assignment' && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                  <span>Progress</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} transition-all duration-500`}
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
-
-            {/* Due Date */}
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Due: {assignment.dueDate ? format(new Date(assignment.dueDate), 'MMM dd, yyyy') : 'No due date'}</span>
+            {/* Enhanced Title with Better Typography */}
+            <div className="mb-4">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 line-clamp-2 leading-tight hover:text-gray-800 transition-colors duration-300 group-hover:text-blue-700">
+                {assignment.title}
+              </h3>
+              {assignment.description && (
+                <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                  {assignment.description}
+                </p>
+              )}
             </div>
 
-            {/* Attachments */}
-            {Array.isArray(assignment.attachments) && assignment.attachments.length > 0 && (
-              <div className="mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                  </svg>
-                  <span>{assignment.attachments.length} attachment{assignment.attachments.length > 1 ? 's' : ''}</span>
+            {/* Enhanced Progress Bar with Better Visual Design */}
+            {assignment.type === 'assignment' && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between text-sm font-semibold text-gray-700 mb-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span>Progress</span>
+                  </div>
+                  <span className={`${config.textColor} font-bold text-base`}>{Math.round(progress)}%</span>
+                </div>
+                <div className="relative">
+                  <div className="w-full bg-gray-200/60 rounded-full h-3 shadow-inner border border-gray-300/30">
+                    <div
+                      className={`h-3 rounded-full bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} transition-all duration-700 shadow-md relative overflow-hidden`}
+                      style={{ width: `${progress}%` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent animate-pulse"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-white/20"></div>
+                    </div>
+                  </div>
+                  {/* Progress milestones */}
+                  <div className="flex justify-between mt-1">
+                    <span className="text-xs text-gray-500">0%</span>
+                    <span className="text-xs text-gray-500">50%</span>
+                    <span className="text-xs text-gray-500">100%</span>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                {isInstructor ? (
-                  <>
-                    <button
-                      onClick={onEdit}
-                      className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-                      title="Edit"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={onDelete}
-                      className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                      title="Delete"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    {isCompleted ? (
-                      <span className="px-3 py-2 text-sm font-medium text-green-700 bg-green-100 border border-green-200 rounded-lg">
-                        ✓ Completed
-                      </span>
-                    ) : isInProgress ? (
+
+            {/* Compact Attachments */}
+            {Array.isArray(assignment.attachments) && assignment.attachments.length > 0 && (
+              <div className="mb-4">
+                <div className="flex flex-wrap gap-2">
+                  {assignment.attachments.slice(0, 3).map((attachment, index) => {
+                    const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
+                    const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+                    return (
                       <button
-                        onClick={onSubmit}
-                        className="px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 transition-colors"
+                        key={attachment._id || index}
+                        onClick={() => onOpenContent ? onOpenContent(attachment) : null}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 group cursor-pointer"
+                        title={`Click to preview ${fileName}`}
                       >
-                        Continue
+                        <svg className="w-3 h-3 text-gray-500 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-xs font-medium text-gray-700 group-hover:text-blue-700">
+                          {extension}
+                        </span>
                       </button>
-                    ) : (
-                      <button
-                        onClick={onSubmit}
-                        className={`px-3 py-2 text-sm font-medium text-white bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} rounded-lg hover:opacity-90 transition-opacity`}
-                      >
-                        Start
-                      </button>
-                    )}
-                  </>
-                )}
+                    );
+                  })}
+                  {assignment.attachments.length > 3 && (
+                    <div className="inline-flex items-center gap-1 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
+                      <span className="text-xs font-medium text-blue-700">+{assignment.attachments.length - 3}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              
-              {/* View Button */}
-              <button
-                onClick={() => {
-                  if (onOpenContent) {
-                    // If assignment has attachments, create a multi-attachment content object
-                    if (assignment.attachments && assignment.attachments.length > 0) {
-                      if (assignment.attachments.length === 1) {
-                        // Single attachment - open directly
-                        onOpenContent(assignment.attachments[0]);
-                      } else {
-                        // Multiple attachments - create a container object
-                        const multiAttachmentContent = {
-                          title: assignment.title,
-                          contentType: 'multi-attachment',
-                          attachments: assignment.attachments,
-                          currentIndex: 0
-                        };
-                        onOpenContent(multiAttachmentContent);
-                      }
-                    } else {
-                      // If no attachments, create a mock content object for the assignment
-                      const mockContent = {
-                        title: assignment.title,
-                        filePath: null,
-                        mimeType: 'text/plain',
-                        fileSize: 0,
-                        contentType: 'assignment'
-                      };
-                      onOpenContent(mockContent);
-                    }
-                  }
-                }}
-                className="px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                View
-              </button>
+            )}
+
+            {/* Compact Actions */}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+              {/* Left side - Progress and files */}
+              <div className="text-xs text-gray-500 font-medium">
+                {assignment.type === 'assignment' && `Progress: ${Math.round(progress)}% • `}
+                {assignment.attachments && assignment.attachments.length > 0 && `${assignment.attachments.length} file${assignment.attachments.length > 1 ? 's' : ''}`}
+              </div>
+
+              {/* Right side - Action menu */}
+              <DropdownMenu
+                assignment={assignment}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onOpenContent={onOpenContent}
+                onSubmit={onSubmit}
+                isOpen={openDropdownId === assignment._id}
+                onToggle={() => toggleDropdown(assignment._id)}
+              />
             </div>
           </div>
         </div>
@@ -374,79 +629,159 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
     // List view (compact)
     if (viewMode === 'list') {
       return (
-        <div className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow duration-200">
-          <div className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 flex-1">
-                <div className={`w-10 h-10 ${config.bgColor} ${config.borderColor} border rounded-lg flex items-center justify-center`}>
-                  <div className={config.textColor}>
-                    {config.icon}
+        <div className="bg-white border border-gray-200/60 rounded-xl hover:shadow-lg transition-all duration-300 hover:border-gray-300/60 overflow-hidden">
+          <div className="p-6">
+            <div className="flex items-center justify-between gap-6">
+              {/* Left Section - Main Content */}
+              <div className="flex items-center gap-5 flex-1 min-w-0">
+                {/* Icon and Type */}
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  <div className={`w-12 h-12 ${config.bgColor} ${config.borderColor} border rounded-xl flex items-center justify-center shadow-md ${config.shadowColor} hover:scale-110 transition-all duration-300`}>
+                    <div className={config.textColor}>
+                      {config.icon}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className={`inline-flex px-3 py-1.5 text-xs font-bold rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor} shadow-sm ${config.shadowColor}`}>
+                      {(assignment.type || 'assignment').charAt(0).toUpperCase() + (assignment.type || 'assignment').slice(1)}
+                    </span>
+                    <div className="text-xs text-gray-500 font-medium">
+                      {assignment.createdAt ? format(new Date(assignment.createdAt), 'MMM dd, yyyy') : ''}
+                    </div>
                   </div>
                 </div>
+
+                {/* Content Area */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-gray-900 truncate">
-                    {assignment.title}
-                  </h3>
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
-                    <span>{(assignment.type || 'assignment').charAt(0).toUpperCase() + (assignment.type || 'assignment').slice(1)}</span>
-                    <span>•</span>
-                    <span>Due: {assignment.dueDate ? format(new Date(assignment.dueDate), 'MMM dd') : 'No due date'}</span>
-                    {assignment.attachments && assignment.attachments.length > 0 && (
-                      <>
-                        <span>•</span>
-                        <span>{assignment.attachments.length} attachment{assignment.attachments.length > 1 ? 's' : ''}</span>
-                      </>
+                  <div className="flex items-start gap-4">
+                    {/* Title and Description */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1 hover:text-blue-700 transition-colors duration-200">
+                        {assignment.title}
+                      </h3>
+                      {assignment.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed mb-3">
+                          {assignment.description}
+                        </p>
+                      )}
+
+                      {/* Compact Metadata Row */}
+                      <div className="flex items-center gap-3 text-sm text-gray-500">
+                        {assignment.attachments && assignment.attachments.length > 0 && (
+                          <div className="flex items-center gap-2">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <div className="flex items-center gap-1">
+                              {assignment.attachments.slice(0, 2).map((attachment, index) => {
+                                const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
+                                const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+                                return (
+                                  <button
+                                    key={attachment._id || index}
+                                    onClick={() => onOpenContent ? onOpenContent(attachment) : null}
+                                    className="inline-flex items-center gap-1 px-2 py-1 bg-gray-50 border border-gray-200 rounded text-xs hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 group"
+                                    title={`Click to preview ${fileName}`}
+                                  >
+                                    <svg className="w-2 h-2 text-gray-500 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                    <span className="text-xs font-medium text-gray-700 group-hover:text-blue-700">
+                                      {extension}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                              {assignment.attachments.length > 2 && (
+                                <span className="text-xs font-medium text-gray-500">+{assignment.attachments.length - 2}</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {assignment.type === 'assignment' && (
+                          <div className="flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            <span className="font-medium text-xs">{Math.round(progress)}%</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Progress Bar for Assignments */}
+                    {assignment.type === 'assignment' && (
+                      <div className="flex-shrink-0 w-24">
+                        <div className="flex items-center justify-between text-xs font-medium text-gray-700 mb-1">
+                          <span>Progress</span>
+                          <span className={`${config.textColor} font-bold`}>{Math.round(progress)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200/60 rounded-full h-2 shadow-inner">
+                          <div
+                            className={`h-2 rounded-full bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} transition-all duration-500 shadow-sm`}
+                            style={{ width: `${progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                {isCompleted && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded">
-                    ✓ Completed
-                  </span>
-                )}
-                {isInProgress && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded">
-                    In Progress
-                  </span>
-                )}
-                {isOverdue && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded">
-                    Overdue
-                  </span>
-                )}
-                <button
-                  onClick={() => {
-                    if (onOpenContent) {
-                      if (assignment.attachments && assignment.attachments.length > 0) {
-                        if (assignment.attachments.length === 1) {
-                          onOpenContent(assignment.attachments[0]);
-                        } else {
-                          const multiAttachmentContent = {
-                            title: assignment.title,
-                            contentType: 'multi-attachment',
-                            attachments: assignment.attachments,
-                            currentIndex: 0
-                          };
-                          onOpenContent(multiAttachmentContent);
-                        }
-                      } else {
-                        const mockContent = {
-                          title: assignment.title,
-                          filePath: null,
-                          mimeType: 'text/plain',
-                          fileSize: 0,
-                          contentType: 'assignment'
-                        };
-                        onOpenContent(mockContent);
-                      }
-                    }
-                  }}
-                  className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded hover:bg-gray-200 transition-colors"
-                >
-                  View
-                </button>
+
+              {/* Right Section - Status and Actions */}
+              <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                {/* Status Badges */}
+                <div className="flex items-center gap-2">
+                  {isCompleted && (
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-emerald-700 bg-emerald-50/90 border border-emerald-200/70 rounded-full shadow-sm hover:scale-105 transition-all duration-300">
+                      <span className="text-sm">✅</span>
+                      <span>Completed</span>
+                    </span>
+                  )}
+                  {isInProgress && (
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-blue-700 bg-blue-50/90 border border-blue-200/70 rounded-full shadow-sm hover:scale-105 transition-all duration-300">
+                      <span className="text-sm">🔄</span>
+                      <span>In Progress</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Compact Action Menu */}
+                <div className="flex items-center gap-2">
+                  {isInstructor ? (
+                    <DropdownMenu
+                      assignment={assignment}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onOpenContent={onOpenContent}
+                      onSubmit={onSubmit}
+                      isOpen={openDropdownId === assignment._id}
+                      onToggle={() => toggleDropdown(assignment._id)}
+                    />
+                  ) : (
+                    <>
+                      {isCompleted ? (
+                        <span className="px-2 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50/80 border border-emerald-200/60 rounded">
+                          ✓ Done
+                        </span>
+                      ) : isInProgress ? (
+                        <button
+                          onClick={onSubmit}
+                          className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-50/80 border border-blue-200/60 rounded hover:bg-blue-100/80 transition-all duration-200"
+                        >
+                          Continue
+                        </button>
+                      ) : (
+                        <button
+                          onClick={onSubmit}
+                          className={`px-2 py-1 text-xs font-semibold text-white bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} rounded hover:opacity-90 transition-all duration-200`}
+                        >
+                          Start
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -457,98 +792,196 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
     // Timeline view
     if (viewMode === 'timeline') {
       return (
-        <div className="relative flex items-start gap-6">
-          {/* Timeline dot */}
-          <div className={`relative z-10 flex-shrink-0 w-16 h-16 ${config.bgColor} ${config.borderColor} border-2 rounded-full flex items-center justify-center`}>
-            <div className={config.textColor}>
-              {config.icon}
+        <div className="relative flex items-start gap-8">
+          {/* Enhanced Timeline dot */}
+          <div className="relative z-10 flex-shrink-0">
+            <div className={`w-20 h-20 ${config.bgColor} ${config.borderColor} border-3 rounded-full flex items-center justify-center shadow-lg ${config.shadowColor} hover:scale-110 transition-all duration-300 hover:shadow-xl`}>
+              <div className={config.textColor}>
+                {config.icon}
+              </div>
             </div>
+            {/* Timeline line */}
+            <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-0.5 h-16 bg-gradient-to-b from-gray-300 to-gray-200"></div>
           </div>
-          
-          {/* Content */}
-          <div className={`flex-1 bg-white border ${config.borderColor} rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200`}>
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  {assignment.title}
-                </h3>
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor}`}>
+
+          {/* Enhanced Content */}
+          <div className={`flex-1 bg-white border ${config.borderColor} rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-gray-300/60`}>
+            {/* Header Section */}
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-3">
+                  <span className={`inline-flex px-4 py-2 text-sm font-bold rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor} shadow-md ${config.shadowColor}`}>
                     {(assignment.type || 'assignment').charAt(0).toUpperCase() + (assignment.type || 'assignment').slice(1)}
                   </span>
-                  <span>Due: {assignment.dueDate ? format(new Date(assignment.dueDate), 'MMM dd, yyyy') : 'No due date'}</span>
+                  <div className="text-sm text-gray-500 font-medium">
+                    Created {assignment.createdAt ? format(new Date(assignment.createdAt), 'MMM dd, yyyy') : 'Recently'}
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3 leading-tight hover:text-blue-700 transition-colors duration-200">
+                  {assignment.title}
+                </h3>
+                {assignment.description && (
+                  <p className="text-gray-600 leading-relaxed text-base">
+                    {assignment.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Status Badges */}
+              <div className="flex flex-col items-end gap-3">
+                <div className="flex items-center gap-2">
+                  {isCompleted && (
+                    <span className="inline-flex items-center px-3 py-1.5 text-sm font-bold text-emerald-700 bg-emerald-50/90 border border-emerald-200/70 rounded-full shadow-sm hover:scale-105 transition-all duration-300">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></div>
+                      Completed
+                    </span>
+                  )}
+                  {isInProgress && (
+                    <span className="inline-flex items-center px-3 py-1.5 text-sm font-bold text-blue-700 bg-blue-50/90 border border-blue-200/70 rounded-full shadow-sm hover:scale-105 transition-all duration-300">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
+                      In Progress
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {isCompleted && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-full">
-                    ✓ Completed
-                  </span>
-                )}
-                {isInProgress && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full">
-                    In Progress
-                  </span>
-                )}
-                {isOverdue && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-full">
-                    Overdue
-                  </span>
+            </div>
+
+            {/* Content Sections */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              {/* Left Column - Details */}
+              <div className="space-y-6">
+
+                {/* Enhanced Progress for Assignments */}
+                {assignment.type === 'assignment' && (
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                      <div className={`w-5 h-5 ${config.bgColor} ${config.borderColor} border rounded-lg flex items-center justify-center shadow-sm`}>
+                        <svg className={`w-3 h-3 ${config.textColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                      </div>
+                      Progress & Status
+                    </h4>
+                    <div className="space-y-4">
+                      {/* Progress Bar */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm font-semibold text-gray-700">
+                          <span>Completion Status</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`${config.textColor} font-bold`}>{Math.round(progress)}%</span>
+                            {progress > 0 && progress < 100 && (
+                              <span className="text-xs text-gray-500 font-medium">
+                                {isInProgress ? 'In Progress' : 'Not Started'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="relative">
+                          <div className="w-full bg-gray-200/60 rounded-full h-3 shadow-inner border border-gray-300/30">
+                            <div
+                              className={`h-3 rounded-full bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} transition-all duration-700 shadow-md relative overflow-hidden`}
+                              style={{ width: `${progress}%` }}
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent animate-pulse"></div>
+                            </div>
+                          </div>
+                          {/* Progress milestones */}
+                          <div className="flex justify-between mt-1 text-xs text-gray-400">
+                            <span>0%</span>
+                            <span>50%</span>
+                            <span>100%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status Indicators */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                          <div className={`w-3 h-3 rounded-full ${isCompleted ? 'bg-emerald-500' : isInProgress ? 'bg-blue-500 animate-pulse' : 'bg-gray-300'}`}></div>
+                          <span className="text-xs font-medium text-gray-700">
+                            {isCompleted ? 'Completed' : isInProgress ? 'In Progress' : 'Not Started'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-            
-            {Array.isArray(assignment.attachments) && assignment.attachments.length > 0 && (
-              <div className="mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+
+              {/* Right Column - Attachments */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                   </svg>
-                  <span>{assignment.attachments.length} attachment{assignment.attachments.length > 1 ? 's' : ''}</span>
-                </div>
+                  Attachments
+                </h4>
+                {Array.isArray(assignment.attachments) && assignment.attachments.length > 0 ? (
+                   <div className="flex flex-wrap gap-2">
+                     {assignment.attachments.slice(0, 3).map((attachment, index) => {
+                       const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
+                       const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+                       return (
+                         <button
+                           key={attachment._id || index}
+                           onClick={() => onOpenContent ? onOpenContent(attachment) : null}
+                           className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 group cursor-pointer"
+                           title={`Click to preview ${fileName}`}
+                         >
+                           <svg className="w-3 h-3 text-gray-500 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                           </svg>
+                           <span className="text-xs font-medium text-gray-700 group-hover:text-blue-700">
+                             {extension}
+                           </span>
+                         </button>
+                       );
+                     })}
+                     {assignment.attachments.length > 3 && (
+                       <div className="inline-flex items-center gap-1 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
+                         <span className="text-xs font-medium text-blue-700">+{assignment.attachments.length - 3}</span>
+                       </div>
+                     )}
+                   </div>
+                 ) : (
+                   <div className="text-sm text-gray-500 italic">
+                     No attachments
+                   </div>
+                 )}
               </div>
-            )}
-            
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => {
-                  if (onOpenContent) {
-                    if (assignment.attachments && assignment.attachments.length > 0) {
-                      if (assignment.attachments.length === 1) {
-                        onOpenContent(assignment.attachments[0]);
-                      } else {
-                        const multiAttachmentContent = {
-                          title: assignment.title,
-                          contentType: 'multi-attachment',
-                          attachments: assignment.attachments,
-                          currentIndex: 0
-                        };
-                        onOpenContent(multiAttachmentContent);
-                      }
-                    } else {
-                      const mockContent = {
-                        title: assignment.title,
-                        filePath: null,
-                        mimeType: 'text/plain',
-                        fileSize: 0,
-                        contentType: 'assignment'
-                      };
-                      onOpenContent(mockContent);
-                    }
-                  }
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                View Details
-              </button>
-              {!isInstructor && !isCompleted && (
-                <button
-                  onClick={onSubmit}
-                  className={`px-4 py-2 text-sm font-medium text-white bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} rounded-lg hover:opacity-90 transition-opacity`}
-                >
-                  {isInProgress ? 'Continue' : 'Start'}
-                </button>
-              )}
+            </div>
+
+            {/* Compact Actions */}
+            <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+              <div className="text-sm text-gray-500 font-medium">
+                {assignment.type === 'assignment' && `Progress: ${Math.round(progress)}% • `}
+                {assignment.attachments && assignment.attachments.length > 0 && `${assignment.attachments.length} file${assignment.attachments.length > 1 ? 's' : ''}`}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isInstructor ? (
+                  <DropdownMenu
+                    assignment={assignment}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onOpenContent={onOpenContent}
+                    onSubmit={onSubmit}
+                    isOpen={openDropdownId === assignment._id}
+                    onToggle={() => toggleDropdown(assignment._id)}
+                  />
+                ) : (
+                  <>
+                    {!isCompleted && (
+                      <button
+                        onClick={onSubmit}
+                        className={`px-3 py-1.5 text-sm font-semibold text-white bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} rounded-lg hover:opacity-90 transition-all duration-200`}
+                      >
+                        {isInProgress ? 'Continue' : 'Start'}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -558,67 +991,122 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
     // Kanban view (compact cards)
     if (viewMode === 'kanban') {
       return (
-        <div className={`bg-white border ${config.borderColor} rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200`}>
-          <div className="flex items-start gap-3 mb-3">
-            <div className={`w-8 h-8 ${config.bgColor} ${config.borderColor} border rounded-lg flex items-center justify-center flex-shrink-0`}>
+        <div className={`bg-white border ${config.borderColor} rounded-xl p-5 shadow-md hover:shadow-lg transition-all duration-300 hover:border-gray-300/60 overflow-hidden`}>
+          {/* Header Section */}
+          <div className="flex items-start gap-4 mb-4">
+            <div className={`w-12 h-12 ${config.bgColor} ${config.borderColor} border rounded-xl flex items-center justify-center shadow-md ${config.shadowColor} hover:scale-110 transition-all duration-300 flex-shrink-0`}>
               <div className={config.textColor}>
                 {config.icon}
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">
+              <h4 className="text-base font-bold text-gray-900 line-clamp-2 mb-2 leading-tight hover:text-blue-700 transition-colors duration-200">
                 {assignment.title}
               </h4>
-              <div className="text-xs text-gray-500">
-                Due: {assignment.dueDate ? format(new Date(assignment.dueDate), 'MMM dd') : 'No due date'}
+              <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor} shadow-sm`}>
+                  {(assignment.type || 'assignment').charAt(0).toUpperCase() + (assignment.type || 'assignment').slice(1)}
+                </span>
               </div>
             </div>
           </div>
-          
-          {Array.isArray(assignment.attachments) && assignment.attachments.length > 0 && (
-            <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-              </svg>
-              <span>{assignment.attachments.length}</span>
+
+          {/* Status Indicators */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              {isCompleted && (
+                <span className="inline-flex items-center px-2 py-1 text-xs font-bold text-emerald-700 bg-emerald-50/90 border border-emerald-200/70 rounded-full shadow-sm">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full mr-1"></div>
+                  Completed
+                </span>
+              )}
+              {isInProgress && (
+                <span className="inline-flex items-center px-2 py-1 text-xs font-bold text-yellow-700 bg-yellow-50/90 border border-yellow-200/70 rounded-full shadow-sm">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-1 animate-pulse"></div>
+                  In Progress
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Progress Bar for Assignments */}
+          {assignment.type === 'assignment' && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between text-xs font-medium text-gray-700 mb-2">
+                <span>Progress</span>
+                <span className={`${config.textColor} font-bold`}>{Math.round(progress)}%</span>
+              </div>
+              <div className="w-full bg-gray-200/60 rounded-full h-2 shadow-inner">
+                <div
+                  className={`h-2 rounded-full bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} transition-all duration-500 shadow-sm`}
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
             </div>
           )}
-          
-          <div className="flex items-center justify-between">
-            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor}`}>
-              {(assignment.type || 'assignment').charAt(0).toUpperCase() + (assignment.type || 'assignment').slice(1)}
-            </span>
-            <button
-              onClick={() => {
-                if (onOpenContent) {
-                  if (assignment.attachments && assignment.attachments.length > 0) {
-                    if (assignment.attachments.length === 1) {
-                      onOpenContent(assignment.attachments[0]);
-                    } else {
-                      const multiAttachmentContent = {
-                        title: assignment.title,
-                        contentType: 'multi-attachment',
-                        attachments: assignment.attachments,
-                        currentIndex: 0
-                      };
-                      onOpenContent(multiAttachmentContent);
-                    }
-                  } else {
-                    const mockContent = {
-                      title: assignment.title,
-                      filePath: null,
-                      mimeType: 'text/plain',
-                      fileSize: 0,
-                      contentType: 'assignment'
-                    };
-                    onOpenContent(mockContent);
-                  }
-                }
-              }}
-              className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded hover:bg-gray-200 transition-colors"
-            >
-              View
-            </button>
+
+          {/* Compact Attachments */}
+          {Array.isArray(assignment.attachments) && assignment.attachments.length > 0 && (
+            <div className="mb-4">
+              <div className="flex flex-wrap gap-1">
+                {assignment.attachments.slice(0, 2).map((attachment, index) => {
+                  const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
+                  const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+                  return (
+                    <button
+                      key={attachment._id || index}
+                      onClick={() => onOpenContent ? onOpenContent(attachment) : null}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-gray-50 border border-gray-200 rounded text-xs hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 group cursor-pointer"
+                      title={`Click to preview ${fileName}`}
+                    >
+                      <svg className="w-2 h-2 text-gray-500 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-xs font-medium text-gray-700 group-hover:text-blue-700">
+                        {extension}
+                      </span>
+                    </button>
+                  );
+                })}
+                {assignment.attachments.length > 2 && (
+                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                    <span>+{assignment.attachments.length - 2}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Compact Actions */}
+          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+            <div className="text-xs text-gray-500 font-medium">
+              {assignment.attachments && assignment.attachments.length > 0 && `${assignment.attachments.length} file${assignment.attachments.length > 1 ? 's' : ''}`}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isInstructor ? (
+                <DropdownMenu
+                  assignment={assignment}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onOpenContent={onOpenContent}
+                  onSubmit={onSubmit}
+                  isOpen={openDropdownId === assignment._id}
+                  onToggle={() => toggleDropdown(assignment._id)}
+                />
+              ) : (
+                <>
+                  {!isCompleted && (
+                    <button
+                      onClick={onSubmit}
+                      className={`px-2 py-1 text-xs font-semibold text-white bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} rounded hover:opacity-90 transition-all duration-200`}
+                    >
+                      {isInProgress ? 'Continue' : 'Start'}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -736,60 +1224,105 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
     );
   };
 
-  const fetchAssignments = useCallback(async () => {
-    if (!courseDetails) return;
+  const fetchAssignments = useCallback(async (isDragOperation = false) => {
+    console.log('🔍 CLASSWORK: fetchAssignments called with courseDetails:', courseDetails?._id);
+    if (!courseDetails) {
+      console.log('🔍 CLASSWORK: No courseDetails available, returning early');
+      return;
+    }
 
     try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        setLoading(false);
-        return;
+      if (isDragOperation) {
+        setIsDragLoading(true);
+      } else {
+        setLoading(true);
       }
+      setError('');
 
-      const res = await fetch(`/api/courses/${courseDetails._id}/classwork`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(`/api/courses/${courseDetails._id}/classwork`);
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
       }
 
       const data = await res.json();
-      let classwork = data.classwork;
+      let classwork = data.classwork || [];
 
+      // Apply sorting
       if (sortBy === 'newest') {
-        classwork.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      } else {
-        classwork.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        classwork.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      } else if (sortBy === 'oldest') {
+        classwork.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+      } else if (sortBy === 'dueDate') {
+        classwork.sort((a, b) => new Date(a.dueDate || '9999-12-31') - new Date(b.dueDate || '9999-12-31'));
+      } else if (sortBy === 'title') {
+        classwork.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      } else if (sortBy === 'mostUrgent') {
+        const now = new Date();
+        classwork.sort((a, b) => {
+          const aDue = new Date(a.dueDate || '9999-12-31');
+          const bDue = new Date(b.dueDate || '9999-12-31');
+          const aUrgency = Math.ceil((aDue - now) / (1000 * 60 * 60 * 24));
+          const bUrgency = Math.ceil((bDue - now) / (1000 * 60 * 60 * 24));
+          return aUrgency - bUrgency;
+        });
       }
 
+      console.log('🔍 CLASSWORK: Fetched assignments:', classwork.length, 'items');
+      console.log('🔍 CLASSWORK: First few items:', classwork.slice(0, 3).map(item => ({
+        id: item._id,
+        title: item.title,
+        type: item.type,
+        createdAt: item.createdAt
+      })));
+
+      console.log('🔍 CLASSWORK: Setting assignments state with', classwork.length, 'items');
       setAssignments(classwork);
 
-      const submissionsRes = await fetch(`/api/courses/${courseDetails._id}/submissions`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (submissionsRes.ok) {
-        const submissionsData = await submissionsRes.json();
-        setSubmissions(submissionsData.submissions);
+      // Fetch submissions for status tracking
+      try {
+        console.log('🔍 CLASSWORK: Fetching submissions for course:', courseDetails._id);
+        const submissionsRes = await fetch(`/api/courses/${courseDetails._id}/submissions`);
+        if (submissionsRes.ok) {
+          const submissionsData = await submissionsRes.json();
+          const fetchedSubmissions = submissionsData.submissions || [];
+          console.log('🔍 CLASSWORK: Fetched submissions:', fetchedSubmissions.length, 'items');
+          console.log('🔍 CLASSWORK: Submission details:', fetchedSubmissions.map(s => ({
+            id: s._id,
+            assignment: s.assignment,
+            status: s.status,
+            studentId: s.studentId
+          })));
+          setSubmissions(fetchedSubmissions);
+        } else {
+          console.error('🔍 CLASSWORK: Failed to fetch submissions, status:', submissionsRes.status);
+          const errorText = await submissionsRes.text();
+          console.error('🔍 CLASSWORK: Error response:', errorText);
+          setSubmissions([]);
+        }
+      } catch (subErr) {
+        console.warn('🔍 CLASSWORK: Failed to fetch submissions:', subErr);
+        setSubmissions([]);
       }
 
     } catch (err) {
+      console.error('🔍 CLASSWORK: Failed to fetch assignments:', err);
       setError(err.message);
-      console.error('Failed to fetch assignments:', err);
+      setAssignments([]);
+      setSubmissions([]);
     } finally {
-      setLoading(false);
+      if (isDragOperation) {
+        setIsDragLoading(false);
+      } else {
+        setLoading(false);
+      }
     }
   }, [courseDetails, sortBy]);
 
   useEffect(() => {
+    console.log('🔍 CLASSWORK: useEffect triggered - courseDetails:', !!courseDetails, 'sortBy:', sortBy);
     if (courseDetails) {
+      console.log('🔍 CLASSWORK: useEffect calling fetchAssignments');
       fetchAssignments();
     }
   }, [courseDetails, fetchAssignments, sortBy]);
@@ -825,57 +1358,286 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
     }
   }, [fetchAssignments]);
 
+  // Drag and Drop Handlers
+  const handleDragStart = useCallback((e, assignmentId) => {
+    e.dataTransfer.setData('text/plain', assignmentId);
+    e.dataTransfer.effectAllowed = 'move';
+
+    // Add visual feedback
+    const draggedElement = e.target.closest('.kanban-card');
+    if (draggedElement) {
+      draggedElement.classList.add('dragging');
+    }
+  }, []);
+
+  const handleDragEnd = useCallback((e) => {
+    // Reset visual feedback
+    const draggedElement = e.target.closest('.kanban-card');
+    if (draggedElement) {
+      draggedElement.classList.remove('dragging');
+    }
+
+    // Reset all drop zones
+    document.querySelectorAll('.kanban-column').forEach(column => {
+      column.classList.remove('drag-over');
+    });
+  }, []);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    // Add visual feedback to drop zone
+    const dropZone = e.target.closest('.kanban-column');
+    if (dropZone && !dropZone.classList.contains('drag-over')) {
+      // Reset all other drop zones first
+      document.querySelectorAll('.kanban-column').forEach(column => {
+        column.classList.remove('drag-over');
+      });
+      // Add drag-over class to current drop zone
+      dropZone.classList.add('drag-over');
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    // Only reset if we're actually leaving the drop zone
+    const dropZone = e.target.closest('.kanban-column');
+    if (dropZone) {
+      const rect = dropZone.getBoundingClientRect();
+      const x = e.clientX;
+      const y = e.clientY;
+
+      // Check if mouse is still within the drop zone bounds
+      if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+        dropZone.classList.remove('drag-over');
+      }
+    }
+  }, []);
+
+  const handleDrop = useCallback(async (e, targetStatus) => {
+    e.preventDefault();
+
+    // Reset visual feedback
+    const dropZone = e.target.closest('.kanban-column');
+    if (dropZone) {
+      dropZone.classList.remove('drag-over');
+    }
+
+    const assignmentId = e.dataTransfer.getData('text/plain');
+    if (!assignmentId) {
+      return;
+    }
+
+    console.log('🔄 Simple drag and drop - Assignment:', assignmentId, 'Target:', targetStatus);
+
+    // Set loading state immediately
+    setIsDragOperationInProgress(true);
+
+    try {
+      // Get authentication token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('❌ No authentication token');
+        setIsDragOperationInProgress(false);
+        return;
+      }
+
+      // Get user ID from token
+      let userId;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userId = payload.userId;
+      } catch (error) {
+        console.error('❌ Invalid token');
+        return;
+      }
+
+      // Find the assignment
+      const assignment = assignments.find(a => a._id === assignmentId);
+      if (!assignment) {
+        console.error('❌ Assignment not found');
+        return;
+      }
+
+      // Find existing submission
+      const currentSubmission = submissions.find(s => String(s.assignment) === String(assignmentId));
+
+      if (targetStatus === 'notStarted') {
+        // Delete submission if it exists
+        if (currentSubmission) {
+          console.log('🔄 Deleting submission for Not Started');
+          const deleteRes = await fetch(`/api/submissions/${currentSubmission._id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (deleteRes.ok) {
+            // Remove from local state
+            setSubmissions(prev => prev.filter(s => String(s.assignment) !== String(assignmentId)));
+            console.log('✅ Submission deleted - Local state updated optimistically');
+          } else {
+            console.error('❌ Failed to delete submission on server');
+            throw new Error('Failed to delete submission');
+          }
+        }
+      } else {
+        // Create or update submission for In Progress or Completed
+        const isCompleted = targetStatus === 'completed';
+        const submissionData = {
+          assignmentId,
+          studentId: userId,
+          status: isCompleted ? 'submitted' : 'draft',
+          progress: isCompleted ? 100 : 0,
+          content: currentSubmission?.content || '',
+          attachments: currentSubmission?.attachments || []
+        };
+
+        if (currentSubmission) {
+          // Update existing submission
+          console.log('🔄 Updating existing submission');
+          const updateRes = await fetch(`/api/submissions/${currentSubmission._id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(submissionData)
+          });
+
+          if (updateRes.ok) {
+            const updatedSubmission = await updateRes.json();
+            // Update local state
+            setSubmissions(prev => prev.map(s =>
+              String(s.assignment) === String(assignmentId)
+                ? { ...s, ...submissionData }
+                : s
+            ));
+            console.log('✅ Submission updated - Local state updated optimistically');
+          } else {
+            console.error('❌ Failed to update submission on server');
+            throw new Error('Failed to update submission');
+          }
+        } else {
+          // Create new submission
+          console.log('🔄 Creating new submission');
+          const createRes = await fetch(`/api/courses/${courseDetails._id}/submissions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(submissionData)
+          });
+
+          if (createRes.ok) {
+            const newSubmission = await createRes.json();
+            // Add to local state
+            setSubmissions(prev => [...prev, {
+              _id: newSubmission.submission._id,
+              assignment: assignmentId,
+              ...submissionData
+            }]);
+            console.log('✅ Submission created - Local state updated optimistically');
+          } else {
+            console.error('❌ Failed to create submission on server');
+            throw new Error('Failed to create submission');
+          }
+        }
+      }
+
+      // Optimistic UI update - only update local state
+      console.log('🔄 Drag operation completed, updating local state optimistically');
+
+    } catch (error) {
+      console.error('❌ Drag and drop error:', error);
+      // Rollback local state changes on error after a short delay
+      console.log('🔄 Rolling back local state changes due to error in 2 seconds...');
+      setTimeout(async () => {
+        console.log('🔄 Rolling back local state changes now');
+        await fetchAssignments(true);
+      }, 2000);
+    } finally {
+      // Clear loading state
+      setIsDragOperationInProgress(false);
+    }
+  }, [assignments, submissions, courseDetails._id]);
+
   return (
-    <div className="space-y-6">
-      {/* Professional classwork management section */}
+    <div className="space-y-8">
+      {/* Enhanced Professional classwork management section */}
       <>
       {isInstructor && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm relative">
-          <div className="px-6 py-5 border-b border-gray-100">
+        <div className="bg-white border border-gray-200/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 relative">
+          <div className="px-8 py-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Classwork</h2>
-                <p className="text-sm text-gray-600 mt-1">Create and manage assignments, quizzes, and materials</p>
+                <h2 className="text-xl font-bold text-gray-900 leading-tight">Classwork</h2>
+                <p className="text-sm font-medium text-gray-600 mt-1">Create and manage assignments, quizzes, and materials</p>
               </div>
               <div className="relative">
                 <button
                   type="button"
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+                  className="inline-flex items-center gap-3 px-6 py-3 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-600 rounded-xl hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg shadow-blue-500/25"
                   onClick={() => setIsClassworkMenuOpen(!isClassworkMenuOpen)}
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                   </svg>
                   Create
-                  <svg className="w-4 h-4 transition-transform duration-200" style={{transform: isClassworkMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)'}} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="w-5 h-5 transition-transform duration-300" style={{transform: isClassworkMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)'}} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clipRule="evenodd"/>
                   </svg>
                 </button>
-                <div id="classwork-menu" className={`absolute right-0 z-50 w-64 mt-2 origin-top-right bg-white border border-gray-200 rounded-lg shadow-xl focus:outline-none ${isClassworkMenuOpen ? '' : 'hidden'}`}>
-                  <div className="py-2">
-                    <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150" onClick={() => { setClassworkType('assignment'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Assignment
+                <div id="classwork-menu" className={`absolute right-0 z-50 w-72 mt-3 origin-top-right bg-white border border-gray-200/60 rounded-xl shadow-2xl backdrop-blur-sm focus:outline-none ${isClassworkMenuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'} transition-all duration-200`}>
+                  <div className="py-3">
+                    <div className="px-4 py-2 mb-2">
+                      <h3 className="text-sm font-bold text-gray-900">Create New</h3>
+                      <p className="text-xs text-gray-600">Choose the type of activity to create</p>
+                    </div>
+                    <div className="border-t border-gray-100"></div>
+                    <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100/50 hover:text-blue-900 transition-all duration-200 group" onClick={() => { setClassworkType('assignment'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-200">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="font-semibold">Assignment</div>
+                        <div className="text-xs text-gray-500">Create a new assignment with attachments</div>
+                      </div>
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150" onClick={() => { setClassworkType('quiz'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                      Quiz
+                    <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100/50 hover:text-purple-900 transition-all duration-200 group" onClick={() => { setClassworkType('quiz'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors duration-200">
+                        <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="font-semibold">Quiz</div>
+                        <div className="text-xs text-gray-500">Create an interactive quiz or test</div>
+                      </div>
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150" onClick={() => { setClassworkType('question'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Question
+                    <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100/50 hover:text-orange-900 transition-all duration-200 group" onClick={() => { setClassworkType('question'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
+                      <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors duration-200">
+                        <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="font-semibold">Question</div>
+                        <div className="text-xs text-gray-500">Post a question for discussion</div>
+                      </div>
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150" onClick={() => { setClassworkType('material'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                      Material
+                    <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100/50 hover:text-emerald-900 transition-all duration-200 group" onClick={() => { setClassworkType('material'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
+                      <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-200">
+                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="font-semibold">Material</div>
+                        <div className="text-xs text-gray-500">Share course materials and resources</div>
+                      </div>
                     </button>
                   </div>
                 </div>
@@ -885,33 +1647,34 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
         </div>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-gray-200/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
         {/* Enhanced Header */}
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-8 py-5 border-b border-gray-100">
           <div className="flex flex-col gap-4">
             {/* Title and View Controls */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Activities</h2>
-                <p className="text-sm text-gray-600 mt-1">All classwork and assignments</p>
+                <h2 className="text-lg font-bold text-gray-900 leading-tight">Activities</h2>
+                <p className="text-sm font-medium text-gray-600 mt-1">All classwork and assignments</p>
               </div>
               
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              {/* Enhanced View Mode Toggle */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-gray-700">View:</span>
+                <div className="flex items-center bg-gray-100/80 backdrop-blur-sm rounded-lg p-1 shadow-inner">
                   {[
-                    { key: 'grid', icon: 'grid', label: 'Grid' },
-                    { key: 'list', icon: 'list', label: 'List' },
-                    { key: 'timeline', icon: 'timeline', label: 'Timeline' },
-                    { key: 'kanban', icon: 'kanban', label: 'Kanban' }
+                    { key: 'grid', icon: 'grid', label: 'Grid View' },
+                    { key: 'list', icon: 'list', label: 'List View' },
+                    { key: 'timeline', icon: 'timeline', label: 'Timeline View' },
+                    { key: 'kanban', icon: 'kanban', label: 'Kanban View' }
                   ].map(({ key, icon, label }) => (
                     <button
                       key={key}
                       onClick={() => handleViewModeChange(key)}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all view-mode-transition ${
+                      className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 ${
                         viewMode === key
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'bg-white text-gray-900 shadow-lg ring-2 ring-blue-500/20'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
                       } ${isTransitioning ? 'pointer-events-none opacity-50' : ''}`}
                       title={label}
                       disabled={isTransitioning}
@@ -942,10 +1705,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
               </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Enhanced Search Bar */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -954,27 +1717,28 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
                 placeholder="Search activities..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="block w-full pl-12 pr-4 py-3 border border-gray-300/60 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm font-medium hover:border-gray-400 transition-all duration-300 hover:shadow-sm focus:shadow-lg"
               />
             </div>
 
-            {/* Filter Controls */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Type Filters */}
+            {/* Enhanced Filter Controls */}
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Primary Type Filters */}
               <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-700 mr-2">Filter by:</span>
                 {[
                   { key: 'all', label: 'All', color: 'gray' },
                   { key: 'assignment', label: 'Assignments', color: 'blue' },
                   { key: 'quiz', label: 'Quizzes', color: 'purple' },
-                  { key: 'material', label: 'Materials', color: 'amber' }
+                  { key: 'material', label: 'Materials', color: 'emerald' }
                 ].map(({ key, label, color }) => (
                   <button
                     key={key}
                     onClick={() => setFilter(key)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md border transition-colors duration-200 ${
+                    className={`px-4 py-2 text-sm font-semibold rounded-lg border transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                       filter === key
-                        ? `bg-${color}-600 text-white border-${color}-600`
-                        : `bg-white text-gray-700 border-gray-300 hover:bg-gray-50`
+                        ? `bg-${color}-600 text-white border-${color}-600 shadow-lg ${color === 'gray' ? 'shadow-gray-200' : `shadow-${color}-200`} focus:ring-${color}-500/20`
+                        : `bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm focus:ring-gray-500/20`
                     }`}
                   >
                     {label}
@@ -982,12 +1746,15 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
                 ))}
               </div>
 
-              {/* Quick Filter Chips */}
-              <div className="flex items-center gap-2">
+              {/* Enhanced Quick Filter Chips */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-gray-700">Quick filters:</span>
                 {[
                   { key: 'thisWeek', label: 'Due This Week', color: 'blue' },
                   { key: 'overdue', label: 'Overdue', color: 'red' },
-                  { key: 'notStarted', label: 'Not Started', color: 'gray' }
+                  { key: 'notStarted', label: 'Not Started', color: 'gray' },
+                  { key: 'inProgress', label: 'In Progress', color: 'yellow' },
+                  { key: 'completed', label: 'Completed', color: 'emerald' }
                 ].map(({ key, label, color }) => (
                   <button
                     key={key}
@@ -1000,12 +1767,12 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
                         setDateRange('all');
                       }
                     }}
-                    className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors duration-200 ${
+                    className={`px-4 py-2 text-xs font-semibold rounded-full border transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                       (key === 'thisWeek' || key === 'overdue') && dateRange === key
-                        ? `bg-${color}-100 text-${color}-700 border-${color}-200`
-                        : key === 'notStarted' && statusFilter === key
-                        ? `bg-${color}-100 text-${color}-700 border-${color}-200`
-                        : `bg-white text-gray-600 border-gray-200 hover:bg-gray-50`
+                        ? `bg-${color}-100 text-${color}-700 border-${color}-200 shadow-sm focus:ring-${color}-500/20`
+                        : statusFilter === key
+                        ? `bg-${color}-100 text-${color === 'inProgress' ? 'yellow-700' : color}-700 border-${color === 'inProgress' ? 'yellow-200' : color}-200 shadow-sm focus:ring-${color === 'inProgress' ? 'yellow-500/20' : color}-500/20`
+                        : `bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm focus:ring-gray-500/20`
                     }`}
                   >
                     {label}
@@ -1013,49 +1780,52 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
                 ))}
               </div>
 
-              {/* Advanced Filters Toggle */}
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
-              >
-                <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                </svg>
-                Filters
-              </button>
-
-              {/* Sort Dropdown */}
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors duration-200"
+              {/* Enhanced Advanced Filters Toggle */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-gray-700">More options:</span>
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 hover:scale-105 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500/20 focus:ring-offset-2"
                 >
-                  <option value="newest">Newest</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="dueDate">Due Date</option>
-                  <option value="title">Title</option>
-                  <option value="mostUrgent">Most Urgent</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                   </svg>
+                  Advanced Filters
+                </button>
+
+                {/* Enhanced Sort Dropdown */}
+                <div className="relative">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm font-semibold text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 hover:shadow-sm"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="dueDate">Due Date</option>
+                    <option value="title">Title A-Z</option>
+                    <option value="mostUrgent">Most Urgent</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Advanced Filters Panel */}
+            {/* Enhanced Advanced Filters Panel */}
             {showAdvancedFilters && (
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl p-6 border border-gray-200/60 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Date Range Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                  <div className="group">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3 group-focus-within:text-blue-700 transition-colors duration-300">Date Range</label>
                     <select
                       value={dateRange}
                       onChange={(e) => setDateRange(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="w-full px-4 py-3 border border-gray-300/60 rounded-lg text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-400 transition-all duration-300"
                     >
                       <option value="all">All Time</option>
                       <option value="thisWeek">This Week</option>
@@ -1065,27 +1835,28 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
                   </div>
 
                   {/* Status Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                  <div className="group">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3 group-focus-within:text-blue-700 transition-colors duration-300">Status</label>
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="w-full px-4 py-3 border border-gray-300/60 rounded-lg text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-400 transition-all duration-300"
                     >
                       <option value="all">All Status</option>
                       <option value="notStarted">Not Started</option>
                       <option value="inProgress">In Progress</option>
+                      <option value="submitted">Submitted</option>
                       <option value="completed">Completed</option>
                     </select>
                   </div>
 
                   {/* Group By */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Group By</label>
+                  <div className="group">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3 group-focus-within:text-blue-700 transition-colors duration-300">Group By</label>
                     <select
                       value={groupBy}
                       onChange={(e) => setGroupBy(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="w-full px-4 py-3 border border-gray-300/60 rounded-lg text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-400 transition-all duration-300"
                     >
                       <option value="none">No Grouping</option>
                       <option value="dueDate">Due Date</option>
@@ -1098,51 +1869,51 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
             )}
           </div>
         </div>
-        <div className={`p-8 smooth-layout-change ${isTransitioning ? 'layout-transition-active' : ''}`}>
-          {loading ? (
-            <div className="space-y-4">
+        <div className={`p-10 smooth-layout-change ${isTransitioning ? 'layout-transition-active' : ''}`}>
+          {(loading && !isDragOperationInProgress) ? (
+            <div className="space-y-6">
               {[...Array(3)].map((_,i) => (
-                <div key={i} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm animate-pulse">
+                <div key={i} className="bg-white border border-gray-100/60 rounded-2xl p-6 shadow-sm animate-pulse hover:shadow-md transition-shadow duration-300">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
+                    <div className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 rounded-xl animate-pulse"></div>
                     <div className="flex-1 space-y-3">
-                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/3 animate-pulse"></div>
+                      <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/4 animate-pulse"></div>
+                      <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/2 animate-pulse"></div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : assignments.length === 0 ? (
-            <div className="py-20 text-center">
+            <div className="py-20 text-center group">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl"></div>
-                <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
-                  <svg className="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl group-hover:from-blue-400/30 group-hover:to-purple-400/30 transition-all duration-500"></div>
+                <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                  <svg className="w-12 h-12 text-blue-500 group-hover:text-blue-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>
-              <h4 className="text-xl font-bold text-gray-900 mb-3">No activities yet</h4>
-              <p className="text-gray-600 max-w-md mx-auto leading-relaxed">Activities will appear here once your instructor creates assignments, quizzes, or materials for this course.</p>
+              <h4 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-gray-800 transition-colors duration-300">No activities yet</h4>
+              <p className="text-gray-600 max-w-md mx-auto leading-relaxed group-hover:text-gray-700 transition-colors duration-300">Activities will appear here once your instructor creates assignments, quizzes, or materials for this course.</p>
             </div>
           ) : (() => {
             const filtered = getFilteredAndSortedAssignments();
             
             if (filtered.length === 0) {
               return (
-                <div className="py-20 text-center">
+                <div className="py-20 text-center group">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl"></div>
-                    <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100">
-                      <svg className="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl group-hover:from-amber-400/30 group-hover:to-orange-400/30 transition-all duration-500"></div>
+                    <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                      <svg className="w-12 h-12 text-amber-500 group-hover:text-amber-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                     </div>
                   </div>
-                  <h4 className="text-xl font-bold text-gray-900 mb-3">No matching activities</h4>
-                  <p className="text-gray-600 max-w-md mx-auto leading-relaxed">Try adjusting your filters to see more activities, or check back later for new content.</p>
+                  <h4 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-gray-800 transition-colors duration-300">No matching activities</h4>
+                  <p className="text-gray-600 max-w-md mx-auto leading-relaxed group-hover:text-gray-700 transition-colors duration-300">Try adjusting your filters to see more activities, or check back later for new content.</p>
                 </div>
               );
             }
@@ -1151,12 +1922,12 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
             switch (viewMode) {
               case 'grid':
                 return (
-                  <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}>
+                  <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12 layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}>
                     {filtered.map((assignment) => (
-                      <EnhancedActivityCard 
-                        key={assignment._id} 
-                        assignment={assignment} 
-                        submission={submissions.find(s => s.assignment === assignment._id)}
+                      <EnhancedActivityCard
+                        key={assignment._id}
+                        assignment={assignment}
+                        submission={submissions.find(s => String(s.assignment) === String(assignment._id))}
                         isInstructor={isInstructor}
                         onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
                         onDelete={() => handleDeleteClasswork(assignment._id)}
@@ -1170,12 +1941,12 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
               
               case 'list':
                 return (
-                  <div className={`space-y-4 layout-transition-list-to-grid ${isTransitioning ? 'layout-transition-active' : ''}`}>
+                  <div className={`space-y-3 lg:space-y-4 layout-transition-list-to-grid ${isTransitioning ? 'layout-transition-active' : ''}`}>
                     {filtered.map((assignment) => (
-                      <EnhancedActivityCard 
-                        key={assignment._id} 
-                        assignment={assignment} 
-                        submission={submissions.find(s => s.assignment === assignment._id)}
+                      <EnhancedActivityCard
+                        key={assignment._id}
+                        assignment={assignment}
+                        submission={submissions.find(s => String(s.assignment) === String(assignment._id))}
                         isInstructor={isInstructor}
                         onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
                         onDelete={() => handleDeleteClasswork(assignment._id)}
@@ -1190,13 +1961,13 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
               case 'timeline':
                 return (
                   <div className={`relative layout-transition-to-timeline ${isTransitioning ? 'layout-transition-active' : ''}`}>
-                    <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-blue-200"></div>
-                    <div className="space-y-8">
+                    <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-blue-200"></div>
+                    <div className="space-y-6 lg:space-y-8">
                       {filtered.map((assignment) => (
-                        <EnhancedActivityCard 
-                          key={assignment._id} 
-                          assignment={assignment} 
-                          submission={submissions.find(s => s.assignment === assignment._id)}
+                        <EnhancedActivityCard
+                          key={assignment._id}
+                          assignment={assignment}
+                          submission={submissions.find(s => String(s.assignment) === String(assignment._id))}
                           isInstructor={isInstructor}
                           onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
                           onDelete={() => handleDeleteClasswork(assignment._id)}
@@ -1211,35 +1982,75 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
               
               case 'kanban':
                 return (
-                  <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 layout-transition-to-kanban ${isTransitioning ? 'layout-transition-active' : ''}`}>
+                  <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 layout-transition-to-kanban ${isTransitioning ? 'layout-transition-active' : ''}`}>
+                    {isDragLoading && (
+                      <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-sm font-medium">Updating...</span>
+                      </div>
+                    )}
                     {['notStarted', 'inProgress', 'completed'].map((status) => {
-                      const statusAssignments = filtered.filter(assignment => {
-                        const submission = submissions.find(s => s.assignment === assignment._id);
-                        if (status === 'notStarted') return !submission;
-                        if (status === 'inProgress') return submission && submission.status === 'draft';
-                        if (status === 'completed') return submission && submission.status === 'submitted';
+                      // Simplified filtering with better state synchronization
+                      const statusAssignments = assignments.filter(assignment => {
+                        const submission = submissions.find(s => String(s.assignment) === String(assignment._id));
+
+                        if (status === 'notStarted') {
+                          return !submission; // No submission = Not Started
+                        }
+                        if (status === 'inProgress') {
+                          return submission && submission.status === 'draft'; // Draft = In Progress
+                        }
+                        if (status === 'completed') {
+                          return submission && submission.status === 'submitted' && submission.grade !== undefined && submission.grade !== null; // Submitted + graded = Completed
+                        }
                         return false;
                       });
-                      
+
                       return (
-                        <div key={status} className="bg-gray-50 rounded-lg p-4">
-                          <h3 className="text-sm font-semibold text-gray-700 mb-4 capitalize">
-                            {status.replace(/([A-Z])/g, ' $1').trim()}
+                        <div
+                          key={status}
+                          className={`kanban-column bg-gray-50/50 rounded-xl p-5 border border-gray-200/60 transition-all duration-200 ${isDragLoading ? 'opacity-75 pointer-events-none' : ''}`}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, status)}
+                          style={{ minHeight: '200px' }}
+                        >
+                          <h3 className="text-base font-bold text-gray-800 mb-5 capitalize flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                              status === 'notStarted' ? 'bg-gray-400' :
+                              status === 'inProgress' ? 'bg-yellow-500 animate-pulse' :
+                              'bg-emerald-500'
+                            }`}></div>
+                            {status === 'inProgress' ? 'In Progress' :
+                             status.replace(/([A-Z])/g, ' $1').trim()}
+                            <span className="text-sm font-normal text-gray-500">({statusAssignments.length})</span>
                           </h3>
-                          <div className="space-y-3">
-                            {statusAssignments.map((assignment) => (
-                              <EnhancedActivityCard 
-                                key={assignment._id} 
-                                assignment={assignment} 
-                                submission={submissions.find(s => s.assignment === assignment._id)}
-                                isInstructor={isInstructor}
-                                onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
-                                onDelete={() => handleDeleteClasswork(assignment._id)}
-                                onSubmit={() => { setSubmittingAssignmentId(assignment._id); setIsSubmitAssignmentModalOpen(true); }}
-                                onOpenContent={onOpenContent}
-                                viewMode="kanban"
-                              />
-                            ))}
+                          <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+                            {statusAssignments.map((assignment) => {
+                              const assignmentSubmission = submissions.find(s => String(s.assignment) === String(assignment._id));
+
+                              return (
+                                <div
+                                  key={assignment._id}
+                                  className="kanban-card cursor-move"
+                                  draggable="true"
+                                  onDragStart={(e) => handleDragStart(e, assignment._id)}
+                                  onDragEnd={handleDragEnd}
+                                  style={{ pointerEvents: 'auto' }}
+                                >
+                                  <EnhancedActivityCard
+                                    assignment={assignment}
+                                    submission={assignmentSubmission}
+                                    isInstructor={isInstructor}
+                                    onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
+                                    onDelete={() => handleDeleteClasswork(assignment._id)}
+                                    onSubmit={() => { setSubmittingAssignmentId(assignment._id); setIsSubmitAssignmentModalOpen(true); }}
+                                    onOpenContent={onOpenContent}
+                                    viewMode="kanban"
+                                  />
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );
@@ -1254,7 +2065,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
                       <EnhancedActivityCard 
                         key={assignment._id} 
                         assignment={assignment} 
-                        submission={submissions.find(s => s.assignment === assignment._id)}
+                        submission={submissions.find(s => String(s.assignment) === String(assignment._id))}
                         isInstructor={isInstructor}
                         onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
                         onDelete={() => handleDeleteClasswork(assignment._id)}
@@ -1278,7 +2089,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
           setEditingClasswork(null);
         }}
         courseId={courseDetails?._id}
-        onClassworkCreated={fetchAssignments}
+        onClassworkCreated={onClassworkCreated || fetchAssignments}
         initialData={editingClasswork}
         type={classworkType}
       />
@@ -1290,6 +2101,174 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent }) => {
         courseId={courseDetails?._id}
         onSubmissionSuccess={fetchAssignments}
       />
+
+      {/* Enhanced Drag and Drop Styles */}
+      <style jsx>{`
+        .kanban-card {
+          cursor: move;
+          transition: all 0.2s ease;
+          user-select: none;
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          position: relative;
+          touch-action: none;
+        }
+
+        .kanban-card::before {
+          content: '⋮⋮';
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          color: #9CA3AF;
+          font-size: 12px;
+          opacity: 0.5;
+          transition: opacity 0.2s ease;
+        }
+
+        .kanban-card:hover::before {
+          opacity: 1;
+        }
+
+        .kanban-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .kanban-card:hover::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+          border-radius: inherit;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          pointer-events: none;
+          z-index: 10;
+        }
+
+        .kanban-card:hover::before {
+          opacity: 1;
+        }
+
+        .kanban-card.dragging {
+          opacity: 0.5;
+          transform: rotate(2deg) scale(1.05);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+          z-index: 1000;
+        }
+
+        .kanban-column {
+          transition: all 0.2s ease;
+          min-height: 200px;
+        }
+
+        .kanban-column.drag-over {
+          background-color: rgba(59, 130, 246, 0.1);
+          border-color: rgba(59, 130, 246, 0.5);
+          transform: scale(1.02);
+        }
+
+        .kanban-column.drag-over::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+          border-radius: inherit;
+          pointer-events: none;
+          z-index: 5;
+        }
+
+        /* Prevent text selection during drag */
+        .kanban-card * {
+          pointer-events: auto;
+        }
+
+        .kanban-card.dragging * {
+          pointer-events: none;
+        }
+
+        /* Ensure drag works properly */
+        .kanban-card {
+          pointer-events: auto;
+        }
+
+        .kanban-card.dragging {
+          pointer-events: none;
+        }
+
+        /* Fix for nested elements interfering with drag */
+        .kanban-card > * {
+          pointer-events: none;
+        }
+
+        .kanban-card {
+          pointer-events: auto;
+        }
+
+        /* Enhanced drop zone indicator */
+        .kanban-column.drag-over::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 60px;
+          height: 60px;
+          border: 2px dashed rgba(59, 130, 246, 0.6);
+          border-radius: 50%;
+          background: rgba(59, 130, 246, 0.1);
+          animation: pulse-drop-zone 1.5s ease-in-out infinite;
+          z-index: 10;
+        }
+
+        @keyframes pulse-drop-zone {
+          0% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0.6;
+          }
+          50% {
+            transform: translate(-50%, -50%) scale(1.1);
+            opacity: 0.9;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0.6;
+          }
+        }
+
+        /* Smooth transitions for all interactive elements */
+        .kanban-card,
+        .kanban-column {
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Enhanced focus states for accessibility */
+        .kanban-card:focus {
+          outline: 2px solid rgba(59, 130, 246, 0.5);
+          outline-offset: 2px;
+        }
+
+        /* Loading state for cards during drag operations */
+        .kanban-card.dragging {
+          animation: drag-pulse 0.6s ease-in-out infinite alternate;
+        }
+
+        @keyframes drag-pulse {
+          0% {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+          }
+          100% {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -70,7 +70,13 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
         throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
       }
 
-      onClassworkCreated();
+      console.log('🔍 CLASSWORK: Calling onClassworkCreated callback');
+      if (onClassworkCreated && typeof onClassworkCreated === 'function') {
+        onClassworkCreated();
+        console.log('🔍 CLASSWORK: onClassworkCreated callback executed successfully');
+      } else {
+        console.warn('🔍 CLASSWORK: onClassworkCreated is not a function or is undefined');
+      }
       onClose();
     } catch (err) {
       setError(err.message);

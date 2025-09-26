@@ -153,12 +153,16 @@ export default function LoginPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log('🔍 Checking authentication status...');
         const res = await fetch('/api/auth/profile');
         if (res.ok) {
+          console.log('✅ User already authenticated, redirecting to /home');
           router.push('/home');
+        } else {
+          console.log('❌ Authentication check failed:', res.status, res.statusText);
         }
       } catch (error) {
-        console.error('Failed to check authentication status:', error);
+        console.error('❌ Failed to check authentication status:', error);
       }
     };
     checkAuth();
@@ -181,9 +185,18 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
+        console.log('✅ Login successful, token received');
+        // Store token in localStorage for immediate access
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          console.log('✅ Token stored in localStorage');
+        } else {
+          console.warn('⚠️ No token received in response');
+        }
         router.push('/home');
       } else {
-        setError(data.message);
+        console.error('❌ Login failed:', data.message);
+        setError(data.message || 'Login failed. Please try again.');
       }
     } catch (error) {
       setError('An error occurred. Please try again.');
@@ -221,9 +234,17 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        console.log('Google user synced to MongoDB and logged in');
+        console.log('✅ Google user synced to MongoDB and logged in');
+        // Store token in localStorage for immediate access
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          console.log('✅ Google token stored in localStorage');
+        } else {
+          console.warn('⚠️ No token received from Google sign-in');
+        }
         router.push('/home');
       } else {
+        console.error('❌ Google sign-in failed:', data.message);
         setError(data.message || 'Failed to complete Google sign-in');
       }
     } catch (error) {
