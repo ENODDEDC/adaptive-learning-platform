@@ -23,7 +23,7 @@ import { useAdaptiveLayout } from '../../context/AdaptiveLayoutContext';
 
 const CourseContent = () => {
   const { openCreateCourseModal, openJoinCourseModal, openCreateClusterModal, openJoinClusterModal } = useLayout();
-  const { userBehavior, trackInteraction, behaviorHistory } = useAdaptiveLayout();
+  const { userBehavior, trackInteraction, behaviorHistory, updateLayoutPreference } = useAdaptiveLayout();
 
   // Track user interactions for smart indicators
   const trackUserInteraction = async (type, courseId = null, metadata = {}) => {

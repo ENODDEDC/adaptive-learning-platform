@@ -9,7 +9,7 @@ class PreferenceLearningService {
     this.preferences = null;
     this.isLearning = false;
     this.lastAnalysis = null;
-    this.analysisInterval = 30000; // 30 seconds
+    this.analysisInterval = process.env.NODE_ENV === 'production' ? 30000 : 120000; // 30 seconds in production, 2 minutes in development
     this.maxInteractions = 1000; // Keep only recent interactions
   }
 
@@ -20,9 +20,7 @@ class PreferenceLearningService {
     try {
       await this.loadPreferences();
       this.startLearning();
-      console.log('Preference learning service initialized');
     } catch (error) {
-      console.error('Failed to initialize preference learning service:', error);
     }
   }
 
@@ -41,7 +39,6 @@ class PreferenceLearningService {
         return this.preferences;
       }
     } catch (error) {
-      console.error('Failed to load preferences:', error);
     }
 
     return null;
@@ -70,7 +67,6 @@ class PreferenceLearningService {
         return this.preferences;
       }
     } catch (error) {
-      console.error('Failed to save preferences:', error);
     }
 
     return null;
@@ -144,7 +140,6 @@ class PreferenceLearningService {
     // Listen for layout changes
     this.observeLayoutChanges();
 
-    console.log('Preference learning started');
   }
 
   /**
@@ -163,7 +158,6 @@ class PreferenceLearningService {
     // Remove event listeners
     this.cleanup();
 
-    console.log('Preference learning stopped');
   }
 
   /**
@@ -200,7 +194,6 @@ class PreferenceLearningService {
         this.notifyPreferenceUpdate(data.preferences);
       }
     } catch (error) {
-      console.error('Failed to analyze behavior:', error);
     }
   }
 
@@ -251,7 +244,6 @@ class PreferenceLearningService {
     // Record the adaptation
     this.recordAdaptation(recommendation, oldPreferences);
 
-    console.log(`Applied recommendation: ${recommendation.type} = ${recommendation.value}`);
   }
 
   /**

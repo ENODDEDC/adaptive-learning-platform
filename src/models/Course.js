@@ -34,6 +34,10 @@ const courseSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'User',
   }],
+  instructors: [{
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  }],
 }, { timestamps: true });
 
 const Course = mongoose.models.Course || mongoose.model('Course', courseSchema);

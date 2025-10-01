@@ -69,7 +69,6 @@ export default function Home() {
       setUser(userData);
     } catch (err) {
       setError(err.message);
-      console.error('Failed to fetch user profile:', err);
       setLoading(false);
     }
   };
@@ -112,7 +111,6 @@ export default function Home() {
       setEnrolledCourses(enrolled);
     } catch (err) {
       setError(err.message);
-      console.error('Failed to fetch user courses:', err);
     } finally {
       setLoading(false);
     }

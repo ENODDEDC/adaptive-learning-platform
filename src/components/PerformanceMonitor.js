@@ -16,14 +16,7 @@ const PerformanceMonitor = ({ isOpen, onClose }) => {
       refreshStats();
     }
 
-    // Auto-refresh every 5 seconds
-    const interval = setInterval(() => {
-      if (isOpen) {
-        refreshStats();
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
+    // Removed auto-refresh to reduce API calls
   }, [isOpen]);
 
   const refreshStats = async () => {
@@ -35,7 +28,7 @@ const PerformanceMonitor = ({ isOpen, onClose }) => {
       setCacheStats(cache);
       setPredictiveStats(predictive);
     } catch (error) {
-      console.error('Failed to refresh stats:', error);
+      // Silent fail for performance stats refresh
     } finally {
       setIsRefreshing(false);
     }
@@ -47,7 +40,7 @@ const PerformanceMonitor = ({ isOpen, onClose }) => {
       await cacheService.clearAll();
       await refreshStats();
     } catch (error) {
-      console.error('Failed to clear cache:', error);
+      // Silent fail for cache clearing
     } finally {
       setIsRefreshing(false);
     }

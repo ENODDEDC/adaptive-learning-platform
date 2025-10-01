@@ -17,7 +17,7 @@ import {
   PlusIcon
 } from '@heroicons/react/24/outline';
 import { Dialog, Transition } from '@headlessui/react';
-import ProfileModal from './ProfileModal';
+import CourseBrowserModal from './CourseBrowserModal';
 
 
 function classNames(...classes) {
@@ -26,7 +26,6 @@ function classNames(...classes) {
 
 const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [openProfileModal, setOpenProfileModal] = useState(false);
   const [user, setUser] = useState(null);
   const router = useRouter();
   const [notifications, setNotifications] = useState([]);
@@ -38,6 +37,8 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   const [isEnrolledCoursesExpanded, setIsEnrolledCoursesExpanded] = useState(false);
   const [scheduledCount, setScheduledCount] = useState(0);
   const [navigatingTo, setNavigatingTo] = useState(null);
+  const [isCourseBrowserOpen, setIsCourseBrowserOpen] = useState(false);
+  const [courseBrowserType, setCourseBrowserType] = useState(''); // 'created' or 'enrolled'
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -55,13 +56,12 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
         setNotifications(data);
         setUnreadCount(data.filter(n => !n.read).length);
       } catch (error) {
-        console.error('Error fetching notifications:', error);
+        // Silent fail for notification fetching
       }
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000); // Fetch every minute
-    return () => clearInterval(interval);
+    // Removed aggressive polling to reduce API calls
   }, [user]);
 
   const markAsRead = async (notificationIds) => {
@@ -81,7 +81,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
       ));
       setUnreadCount(prev => prev - notificationIds.length);
     } catch (error) {
-      console.error('Error marking notifications as read:', error);
+      // Silent fail for marking notifications as read
     }
   };
 
@@ -116,7 +116,6 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
         const userData = await response.json();
         setUser(userData);
       } catch (error) {
-        console.error('Error fetching user profile:', error);
         setUser(null);
       }
     };
@@ -158,7 +157,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
 
         setCourses({ created, enrolled });
       } catch (error) {
-        console.error('Error fetching courses:', error);
+        // Silent fail for course fetching
       }
     };
 
@@ -177,7 +176,6 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
         const data = await response.json();
         setScheduledCount(data.scheduledCourses.length);
       } catch (error) {
-        console.error('Error fetching scheduled count:', error);
         setScheduledCount(0);
       }
     };
@@ -205,10 +203,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
         setUser(null); // Clear user state
         router.push('/login');
       } else {
-        console.error('Logout failed:', res.statusText);
+        // Silent fail for logout
       }
     } catch (error) {
-      console.error('Error during logout:', error);
+      // Silent fail for logout error
     }
   };
 
@@ -231,10 +229,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   return (
     <React.Fragment>
       <aside
-        className={`bg-white/95 backdrop-blur-md border-r border-white/30 fixed top-0 left-0 h-full z-30 flex flex-col shadow-2xl transition-all duration-500 ease-in-out ${isCollapsed ? 'w-20 items-center rounded-r-2xl' : 'w-64 rounded-r-3xl'}`}
+        className={`bg-white/95 backdrop-blur-md border-r border-white/30 fixed top-0 left-0 h-screen z-30 flex flex-col shadow-2xl transition-all duration-500 ease-in-out ${isCollapsed ? 'w-20 items-center rounded-r-2xl' : 'w-64 rounded-r-3xl'}`}
       >
         {/* Header Section */}
-        <div className={`${isCollapsed ? 'p-4' : 'p-6'} border-b border-gray-100`}>
+        <div className={`${isCollapsed ? 'p-4' : 'p-6'} border-b border-gray-100 flex-shrink-0`}>
           {/* Hamburger toggle */}
           <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} mb-4`}>
             <button
@@ -275,15 +273,6 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
               <div className="absolute left-full top-0 z-50 ml-2 w-64 overflow-hidden bg-white border border-gray-200 shadow-xl rounded-xl">
                 <div className="py-2">
                   <button
-                    onClick={() => setOpenProfileModal(true)}
-                    className="w-full px-4 py-3 text-sm text-left text-gray-700 transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
-                      Profile
-                    </div>
-                  </button>
-                  <button
                     onClick={() => setIsNotificationModalOpen(true)}
                     className="w-full px-4 py-3 text-sm text-left text-gray-700 transition-colors hover:bg-gray-50"
                   >
@@ -297,7 +286,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                       )}
                     </div>
                   </button>
-
+ 
                   <button
                     onClick={handleSignOut}
                     className="w-full px-4 py-3 text-sm text-left text-red-600 transition-colors hover:bg-red-50"
@@ -329,6 +318,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
 
       {/* Navigation Section */}
       <nav className={`flex-1 ${isCollapsed ? 'p-2' : 'p-6'} pt-6`} role="navigation" aria-label="Main navigation">
+        <div className={`${isCollapsed ? 'h-full' : 'h-[calc(100vh-200px)] overflow-y-auto elegant-scrollbar relative pr-1'}`}>
         {!isCollapsed && (
           <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
             <h3 className="px-3 mb-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">Navigation</h3>
@@ -420,35 +410,59 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                         />
                       </button>
 
-                      {isCreatedCoursesExpanded && courses.created?.map((course, index) => (
-                        <button
-                          key={course.id}
-                          onClick={() => handleNavigation(`/courses/${course.id}`, `Course: ${course.title}`)}
-                          disabled={navigatingTo === `Course: ${course.title}`}
-                          className="group flex items-center gap-2 rounded-lg font-medium transition-all duration-200 text-gray-600 hover:text-blue-700 hover:bg-blue-50/50 px-3 py-2 ml-4 text-xs border-l-2 border-transparent hover:border-blue-300 w-full text-left disabled:opacity-75"
-                          style={{ animationDelay: `${index * 0.05}s` }}
-                        >
-                          {navigatingTo === `Course: ${course.title}` ? (
-                            <div className="w-1.5 h-1.5 flex items-center justify-center">
-                              <div className="w-3 h-3 border border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                            </div>
-                          ) : (
-                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full group-hover:bg-blue-600 transition-colors"></div>
+                      {isCreatedCoursesExpanded && (
+                        <>
+                          {/* Show only first 2 recent courses */}
+                          {courses.created?.slice(0, 2).map((course, index) => (
+                            <button
+                              key={course.id}
+                              onClick={() => handleNavigation(`/courses/${course.id}`, `Course: ${course.title}`)}
+                              disabled={navigatingTo === `Course: ${course.title}`}
+                              className="group flex items-center gap-2 rounded-lg font-medium transition-all duration-200 text-gray-600 hover:text-blue-700 hover:bg-blue-50/50 px-3 py-2 ml-4 text-xs border-l-2 border-transparent hover:border-blue-300 w-full text-left disabled:opacity-75"
+                              style={{ animationDelay: `${index * 0.05}s` }}
+                            >
+                              {navigatingTo === `Course: ${course.title}` ? (
+                                <div className="w-1.5 h-1.5 flex items-center justify-center">
+                                  <div className="w-3 h-3 border border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                              ) : (
+                                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full group-hover:bg-blue-600 transition-colors"></div>
+                              )}
+                              <span className="truncate">
+                                {navigatingTo === `Course: ${course.title}` ? 'Loading...' : course.title}
+                              </span>
+                              <div className="ml-auto flex items-center gap-1">
+                                <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500"
+                                    style={{ width: `${course.progress}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-xs text-gray-400">{course.progress}%</span>
+                              </div>
+                            </button>
+                          ))}
+
+                          {/* View All button for created courses */}
+                          {courses.created?.length > 2 && (
+                            <button
+                              onClick={() => {
+                                setCourseBrowserType('created');
+                                setIsCourseBrowserOpen(true);
+                              }}
+                              className="group flex items-center gap-2 px-3 py-2 ml-4 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 rounded-lg transition-all duration-200 w-full text-left"
+                            >
+                              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                              <span>View All ({courses.created.length - 2} more)</span>
+                              <div className="ml-auto">
+                                <div className="w-4 h-4 border border-blue-300 rounded group-hover:border-blue-400 transition-colors flex items-center justify-center">
+                                  <span className="text-xs text-blue-500">+</span>
+                                </div>
+                              </div>
+                            </button>
                           )}
-                          <span className="truncate">
-                            {navigatingTo === `Course: ${course.title}` ? 'Loading...' : course.title}
-                          </span>
-                          <div className="ml-auto flex items-center gap-1">
-                            <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500"
-                                style={{ width: `${course.progress}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs text-gray-400">{course.progress}%</span>
-                          </div>
-                        </button>
-                      ))}
+                        </>
+                      )}
                     </div>
 
                     {/* Enrolled Courses Section */}
@@ -471,35 +485,59 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                         />
                       </button>
 
-                      {isEnrolledCoursesExpanded && courses.enrolled?.map((course, index) => (
-                        <button
-                          key={course.id}
-                          onClick={() => handleNavigation(`/courses/${course.id}`, `Course: ${course.title}`)}
-                          disabled={navigatingTo === `Course: ${course.title}`}
-                          className="group flex items-center gap-2 rounded-lg font-medium transition-all duration-200 text-gray-600 hover:text-purple-700 hover:bg-purple-50/50 px-3 py-2 ml-4 text-xs border-l-2 border-transparent hover:border-purple-300 w-full text-left disabled:opacity-75"
-                          style={{ animationDelay: `${index * 0.05}s` }}
-                        >
-                          {navigatingTo === `Course: ${course.title}` ? (
-                            <div className="w-1.5 h-1.5 flex items-center justify-center">
-                              <div className="w-3 h-3 border border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-                            </div>
-                          ) : (
-                            <div className="w-1.5 h-1.5 bg-purple-400 rounded-full group-hover:bg-purple-600 transition-colors"></div>
+                      {isEnrolledCoursesExpanded && (
+                        <>
+                          {/* Show only first 2 recent courses */}
+                          {courses.enrolled?.slice(0, 2).map((course, index) => (
+                            <button
+                              key={course.id}
+                              onClick={() => handleNavigation(`/courses/${course.id}`, `Course: ${course.title}`)}
+                              disabled={navigatingTo === `Course: ${course.title}`}
+                              className="group flex items-center gap-2 rounded-lg font-medium transition-all duration-200 text-gray-600 hover:text-purple-700 hover:bg-purple-50/50 px-3 py-2 ml-4 text-xs border-l-2 border-transparent hover:border-purple-300 w-full text-left disabled:opacity-75"
+                              style={{ animationDelay: `${index * 0.05}s` }}
+                            >
+                              {navigatingTo === `Course: ${course.title}` ? (
+                                <div className="w-1.5 h-1.5 flex items-center justify-center">
+                                  <div className="w-3 h-3 border border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                              ) : (
+                                <div className="w-1.5 h-1.5 bg-purple-400 rounded-full group-hover:bg-purple-600 transition-colors"></div>
+                              )}
+                              <span className="truncate">
+                                {navigatingTo === `Course: ${course.title}` ? 'Loading...' : course.title}
+                              </span>
+                              <div className="ml-auto flex items-center gap-1">
+                                <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-purple-400 to-purple-600 transition-all duration-500"
+                                    style={{ width: `${course.progress}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-xs text-gray-400">{course.progress}%</span>
+                              </div>
+                            </button>
+                          ))}
+
+                          {/* View All button for enrolled courses */}
+                          {courses.enrolled?.length > 2 && (
+                            <button
+                              onClick={() => {
+                                setCourseBrowserType('enrolled');
+                                setIsCourseBrowserOpen(true);
+                              }}
+                              className="group flex items-center gap-2 px-3 py-2 ml-4 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50/50 rounded-lg transition-all duration-200 w-full text-left"
+                            >
+                              <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
+                              <span>View All ({courses.enrolled.length - 2} more)</span>
+                              <div className="ml-auto">
+                                <div className="w-4 h-4 border border-purple-300 rounded group-hover:border-purple-400 transition-colors flex items-center justify-center">
+                                  <span className="text-xs text-purple-500">+</span>
+                                </div>
+                              </div>
+                            </button>
                           )}
-                          <span className="truncate">
-                            {navigatingTo === `Course: ${course.title}` ? 'Loading...' : course.title}
-                          </span>
-                          <div className="ml-auto flex items-center gap-1">
-                            <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-purple-400 to-purple-600 transition-all duration-500"
-                                style={{ width: `${course.progress}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs text-gray-400">{course.progress}%</span>
-                          </div>
-                        </button>
-                      ))}
+                        </>
+                      )}
                     </div>
 
                     {/* Quick Actions */}
@@ -594,7 +632,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
             );
           })}
         </ul>
-        
+
         {/* Footer section */}
         {!isCollapsed && (
           <div className="pt-6 mt-8 border-t border-gray-100 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
@@ -611,9 +649,9 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
             </div>
           </div>
         )}
+        </div>
       </nav>
       </aside>
-      <ProfileModal open={openProfileModal} setOpen={setOpenProfileModal} user={user} />
 
       {/* Notification Modal */}
       <Transition.Root show={isNotificationModalOpen} as={Fragment}>
@@ -688,9 +726,18 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
             </div>
           </div>
         </Dialog>
-      </Transition.Root>
-    </React.Fragment>
-  );
+       </Transition.Root>
+
+       <CourseBrowserModal
+         open={isCourseBrowserOpen}
+         setOpen={setIsCourseBrowserOpen}
+         courses={courseBrowserType === 'created' ? (courses.created || []) : (courses.enrolled || [])}
+         type={courseBrowserType}
+         onNavigate={handleNavigation}
+         navigatingTo={navigatingTo}
+       />
+     </React.Fragment>
+   );
 };
 
 const getIconForLink = (label) => {

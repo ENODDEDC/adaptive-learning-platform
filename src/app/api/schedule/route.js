@@ -11,12 +11,8 @@ export async function GET(request) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     const userId = payload.userId;
-    console.log(`Fetching scheduled courses for userId: ${userId}`);
-
     await connectMongoDB();
-    console.log('MongoDB connected. Querying for scheduled courses...');
     const scheduledCourses = await ScheduledCourse.find({ userId }).populate('courseId', 'subject section');
-    console.log(`Found ${scheduledCourses.length} scheduled courses.`);
     return NextResponse.json({ scheduledCourses });
   } catch (error) {
     console.error('Get Scheduled Courses Error:', error.message, error.stack);

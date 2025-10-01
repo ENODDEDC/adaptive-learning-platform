@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import featureFlags from '../utils/featureFlags';
 
 const AdaptiveLayoutContext = createContext();
 
@@ -248,21 +249,12 @@ export const AdaptiveLayoutProvider = ({ children }) => {
     loadAdaptiveData();
   }, []);
 
-  // Monitor sync queue - temporarily disabled
+  // Monitor sync queue - optimized for development performance
   useEffect(() => {
-    // Sync monitoring temporarily disabled to prevent errors
-    // TODO: Re-enable once sync service is properly configured
-    // if (!syncService) return;
-
-    // const interval = setInterval(() => {
-    //   setSyncStatus(prev => ({
-    //     ...prev,
-    //     pendingChanges: syncService.syncQueue.length,
-    //     isOnline: syncService.isOnline
-    //   }));
-    // }, 1000);
-
-    // return () => clearInterval(interval);
+    // Only enable in production to reduce development overhead
+    if (process.env.NODE_ENV === 'production' && syncService) {
+      // Removed auto-sync interval to reduce API calls
+    }
   }, [syncService]);
 
   const loadAdaptiveData = async () => {
@@ -374,8 +366,13 @@ export const AdaptiveLayoutProvider = ({ children }) => {
     }
   }, []);
 
-  // Track user interactions
+  // Track user interactions - optimized for performance
   const trackInteraction = useCallback(async (interactionType, details = {}) => {
+    // Skip tracking in development if heavy features are disabled
+    if (!featureFlags.isEnabled('ENABLE_ADAPTIVE_LAYOUT')) {
+      return;
+    }
+
     const timestamp = new Date().toISOString();
     const interaction = {
       type: interactionType,
@@ -398,7 +395,7 @@ export const AdaptiveLayoutProvider = ({ children }) => {
     //   }
     // }
 
-    // Update behavior patterns locally
+    // Update behavior patterns locally - optimized for development
     setUserBehavior(prev => {
       const newBehavior = { ...prev };
 

@@ -151,7 +151,7 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                   required
                 >
                   <option value="assignment">Assignment</option>
-                  <option value="quiz">Quiz</option>
+                  <option value="form">Form</option>
                   <option value="material">Material</option>
                 </select>
               </div>

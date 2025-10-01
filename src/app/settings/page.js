@@ -1,177 +1,224 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  UserIcon,
+  KeyIcon,
+  CogIcon,
+  BellIcon,
+  ShieldCheckIcon,
+  ChartBarIcon,
+  ChevronRightIcon
+} from '@heroicons/react/24/outline';
+import ProfileSettings from '@/components/settings/ProfileSettings';
+import AccountSettings from '@/components/settings/AccountSettings';
+import LearningPreferences from '@/components/settings/LearningPreferences';
+import NotificationSettings from '@/components/settings/NotificationSettings';
+import PrivacySettings from '@/components/settings/PrivacySettings';
+import AnalyticsSettings from '@/components/settings/AnalyticsSettings';
 
-export default function SettingsPage() {
-  const [searchQuery, setSearchQuery] = useState('');
+const SettingsPage = () => {
+  const [activeSection, setActiveSection] = useState('profile');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  // Settings sections matching platform design
   const settingsSections = [
     {
-      title: 'Core Principles',
-      icon: '🏛️',
-      custom: true,
-      items: [
-        { label: 'Personalization', value: 'Tailored content for your learning style.' },
-        { label: 'Engagement', value: 'Interactive and motivating materials.' },
-        { label: 'Professionalism', value: 'High academic standards, friendly tone.' },
-        { label: 'Consistency', value: 'Structured lessons and assessments.' },
-      ],
+      id: 'profile',
+      title: 'Profile Settings',
+      description: 'Manage your personal information and profile',
+      icon: UserIcon,
+      color: 'blue',
+      href: '#'
     },
     {
-      title: 'Learning Settings',
-      icon: '🎓',
-      items: [
-        { label: 'Difficulty Level', value: 'Intermediate' },
-        { label: 'Learning Style Support', value: 'All four styles' },
-        { label: 'Pace', value: 'Standardized' },
-        { label: 'Content Examples', value: 'General academic' },
-      ],
+      id: 'account',
+      title: 'Account & Security',
+      description: 'Password, authentication, and security settings',
+      icon: KeyIcon,
+      color: 'red',
+      href: '#'
     },
     {
-      title: 'Notifications & Engagement',
-      icon: '🔔',
-      items: [
-        { label: 'Study Reminders', value: 'Daily at 6 PM, Weekly on Fridays' },
-        { label: 'Motivation Triggers', value: 'Quotes and badges' },
-      ],
+      id: 'preferences',
+      title: 'Learning Preferences',
+      description: 'AI behavior and adaptive learning settings',
+      icon: CogIcon,
+      color: 'purple',
+      href: '#'
     },
     {
-      title: 'Interface Preferences',
-      icon: '🎨',
-      items: [
-        { label: 'Theme', value: 'Light mode with blue accents' },
-        { label: 'Layout', value: 'Card-based, minimal' },
-        { label: 'Typography', value: 'Sans-serif, medium' },
-        { label: 'Accessibility', value: 'Always enabled' },
-      ],
+      id: 'notifications',
+      title: 'Notifications',
+      description: 'Configure alerts and communication preferences',
+      icon: BellIcon,
+      color: 'amber',
+      href: '#'
     },
     {
-      title: 'Performance & Analytics',
-      icon: '📊',
-      items: [
-        { label: 'Progress Tracking', value: 'Dashboard with charts' },
-        { label: 'Analytics', value: 'Lesson completion and scores' },
-        { label: 'Goal Setting', value: 'Static goal at onboarding' },
-        { label: 'Reflection', value: 'Weekly journal prompt' },
-      ],
+      id: 'privacy',
+      title: 'Privacy & Data',
+      description: 'Control your data and privacy settings',
+      icon: ShieldCheckIcon,
+      color: 'green',
+      href: '#'
     },
     {
-      title: 'Collaboration & Social Learning',
-      icon: '👥',
-      items: [
-        { label: 'Study Groups', value: 'Assigned groups of 5' },
-        { label: 'Discussion Forums', value: 'Open access with AI moderation' },
-        { label: 'Peer Review', value: '2 reviews per assignment' },
-        { label: 'Mentorship', value: 'Randomly assigned mentor' },
-      ],
-    },
-    {
-      title: 'Privacy & Security',
-      icon: '🔒',
-      items: [
-        { label: 'Compliance', value: 'GDPR/COPPA compliant' },
-        { label: 'Screen Time Reminders', value: 'Every 45 minutes' },
-        { label: 'Parent Reports', value: 'Optional monthly emails' },
-      ],
-    },
-    {
-      title: 'AI Behavior Guidelines',
-      icon: '🤖',
-      items: [
-        { label: 'Tone', value: 'Professional, friendly, supportive' },
-        { label: 'Instruction Style', value: 'Explanation, example, practice' },
-        { label: 'Assessment', value: 'Immediate feedback' },
-        { label: 'Perspective', value: 'Real-world connections' },
-      ],
-    },
-    {
-      title: 'Implementation Instructions',
-      icon: '⚙️',
-      items: [
-        { label: 'Onboarding', value: '5 static survey questions' },
-        { label: 'Baseline Assessment', value: '10-question diagnostic quiz' },
-        { label: 'Profile Creation', value: 'Store survey/quiz results' },
-        { label: 'Calibration', value: 'No ongoing calibration' },
-      ],
-    },
-    {
-      title: 'Success Metrics',
-      icon: '📈',
-      items: [
-        { label: 'Completion Rate', value: 'Lesson completion rate' },
-        { label: 'Performance', value: 'Quiz performance averages' },
-        { label: 'Engagement', value: 'Discussion posts per student' },
-        { label: 'Satisfaction', value: 'Self-reported satisfaction survey' },
-      ],
-    },
-    {
-      title: 'Emergency Protocols',
-      icon: '⚠️',
-      items: [
-        { label: 'Academic Distress', value: 'Suggest help articles' },
-        { label: 'Technical Issues', value: 'Provide troubleshooting FAQ' },
-        { label: 'Wellbeing Concerns', value: 'Display wellbeing resources' },
-        { label: 'Accessibility', value: 'Alt text and captions' },
-      ],
-    },
+      id: 'analytics',
+      title: 'Analytics & Insights',
+      description: 'View your learning analytics and progress',
+      icon: ChartBarIcon,
+      color: 'indigo',
+      href: '#'
+    }
   ];
 
-  const filteredSections = settingsSections.filter(section =>
-    section.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    section.items.some(item =>
-      item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.value.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  // Fetch user data on component mount
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/profile');
+      if (res.ok) {
+        const userData = await res.json();
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderSettingsSection = () => {
+    switch (activeSection) {
+      case 'profile':
+        return <ProfileSettings user={user} onUpdate={fetchUserProfile} />;
+      case 'account':
+        return <AccountSettings />;
+      case 'preferences':
+        return <LearningPreferences />;
+      case 'notifications':
+        return <NotificationSettings />;
+      case 'privacy':
+        return <PrivacySettings />;
+      case 'analytics':
+        return <AnalyticsSettings />;
+      default:
+        return <ProfileSettings user={user} onUpdate={fetchUserProfile} />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-white text-gray-800 p-8">
-      <header className="mb-12 text-center">
-        <h1 className="text-5xl font-extrabold text-gray-900">Settings</h1>
-        <p className="text-lg text-gray-600 mt-2">Customize your learning experience</p>
-        <div className="mt-6">
-          <input
-            type="text"
-            placeholder="Search settings..."
-            className="w-full max-w-md p-3 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredSections.map((section) => (
-          section.custom ? (
-            <section key={section.title} className="md:col-span-2 lg:col-span-3 mb-4 p-8 bg-gray-50 rounded-2xl shadow-md">
-              <h2 className="text-3xl font-bold text-gray-800 mb-6">{section.title}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-                {section.items.map(item => (
-                  <div key={item.label} className="p-6 bg-white rounded-xl shadow-sm">
-                    <strong className="text-lg text-blue-600">{item.label}</strong>
-                    <p className="text-gray-600 mt-1">{item.value}</p>
-                  </div>
-                ))}
+    <div className="bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Manage your account settings and preferences
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">
+                  {user?.name} {user?.surname}
+                </p>
+                <p className="text-sm text-gray-600">{user?.email}</p>
               </div>
-            </section>
-          ) : (
-            <section key={section.title} className="p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                <span className="mr-3 text-2xl">{section.icon}</span>
-                {section.title}
-              </h2>
-              <ul className="space-y-3">
-                {section.items.map((item) => (
-                  <li key={item.label} className="flex justify-between">
-                    <strong className="text-gray-600">{item.label}:</strong>
-                    <span className="text-gray-800 text-right">{item.value}</span>
-                  </li>
-                ))}
+              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+                <span className="text-sm font-medium text-white">
+                  {(user?.name?.[0] || 'U').toUpperCase()}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Settings Navigation */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex gap-8" style={{ height: 'calc(100vh - 200px)' }}>
+          {/* Navigation Sidebar */}
+          <div className="w-80 flex-shrink-0">
+            <nav className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-full overflow-y-auto">
+              <ul className="space-y-2">
+                {settingsSections.map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <li key={section.id}>
+                      <button
+                        onClick={() => setActiveSection(section.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-all duration-200 ${
+                          activeSection === section.id
+                            ? 'bg-blue-50 border border-blue-200 text-blue-700'
+                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg ${
+                          activeSection === section.id
+                            ? `bg-${section.color}-100 text-${section.color}-600`
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{section.title}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {section.description}
+                          </div>
+                        </div>
+                        <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
-            </section>
-          )
-        ))}
+            </nav>
+          </div>
+
+          {/* Settings Content */}
+          <div className="flex-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full">
+              <div className="h-full overflow-y-auto">
+                <div className="p-6">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeSection}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {renderSettingsSection()}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default SettingsPage;

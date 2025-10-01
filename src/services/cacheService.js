@@ -26,7 +26,7 @@ class CacheService {
     };
 
     this.initializeStorage();
-    this.startCleanupTimer();
+    // Removed startCleanupTimer() to reduce background activity
     this.initializePredictiveLoading();
   }
 
@@ -112,7 +112,6 @@ class CacheService {
 
       return true;
     } catch (error) {
-      console.error('Cache set error:', error);
       return false;
     }
   }
@@ -225,7 +224,7 @@ class CacheService {
       try {
         localStorage.setItem(`cache_${key}`, JSON.stringify(cacheItem));
       } catch (retryError) {
-        console.warn('Failed to cache to localStorage:', retryError);
+        // Silent fail for localStorage cache
       }
     }
   }
@@ -238,7 +237,6 @@ class CacheService {
       const item = JSON.parse(serialized);
       return this.isExpired(item) ? null : item;
     } catch (error) {
-      console.warn('Error reading from localStorage:', error);
       return null;
     }
   }
@@ -280,7 +278,7 @@ class CacheService {
         }
       }
     } catch (error) {
-      console.warn('Error cleaning up localStorage:', error);
+      // Silent fail for localStorage cleanup
     }
   }
 
@@ -381,7 +379,7 @@ class CacheService {
         Object.assign(this.predictionModel, parsed);
       }
     } catch (error) {
-      console.warn('Failed to load prediction model:', error);
+      // Silent fail for prediction model loading
     }
   }
 
@@ -392,7 +390,7 @@ class CacheService {
     try {
       localStorage.setItem('predictionModel', JSON.stringify(this.predictionModel));
     } catch (error) {
-      console.warn('Failed to save prediction model:', error);
+      // Silent fail for prediction model saving
     }
   }
 
@@ -522,7 +520,7 @@ class CacheService {
         this.learnAccessPattern(key, { type: 'predictive_load' });
       }
     } catch (error) {
-      console.warn('Predictive load failed for:', key, error);
+      // Silent fail for predictive loading
     } finally {
       this.prefetchQueue.delete(key);
     }

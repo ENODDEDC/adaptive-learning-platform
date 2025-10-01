@@ -1126,4 +1126,86 @@ body {
     box-shadow: -3px -3px 6px rgba(0, 0, 0, 0.1);
     z-index: 9998;
   }
+
+  /* Ultra-Subtle Scrollbar for Sidebar Navigation - Modern UX Approach */
+  .elegant-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .elegant-scrollbar::-webkit-scrollbar {
+    width: 2px;
+  }
+
+  .elegant-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 1px;
+  }
+
+  .elegant-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 1px;
+    border: none;
+    transition: all 0.3s ease;
+    min-height: 30px;
+  }
+
+  .elegant-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5);
+    width: 3px;
+  }
+
+  .elegant-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.7);
+  }
+
+  /* Smooth scrolling behavior */
+  .elegant-scrollbar {
+    scroll-behavior: smooth;
+  }
+
+  /* Subtle fade indicators for scrollable content */
+  .elegant-scrollbar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05), transparent);
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .elegant-scrollbar::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.05), transparent);
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  /* Show fade indicators only when scrolling is possible */
+  .elegant-scrollbar:has(> div) {
+    padding-right: 4px; /* Make room for the thin scrollbar */
+  }
+
+  /* Scroll indicator - shows when content can be scrolled */
+  .elegant-scrollbar.scrollable::after {
+    opacity: 0.3;
+  }
+
+  .elegant-scrollbar.scrollable:hover::after {
+    opacity: 0.6;
+  }
 }

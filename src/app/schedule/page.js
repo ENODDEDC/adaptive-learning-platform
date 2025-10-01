@@ -43,7 +43,6 @@ const SchedulePage = () => {
     };
 
     const fetchScheduledCourses = async () => {
-      console.log('Fetching scheduled courses...');
       try {
         const response = await fetch('/api/schedule');
 

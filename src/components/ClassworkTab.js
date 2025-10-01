@@ -3,15 +3,19 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { format } from 'date-fns';
 import CreateClassworkModal from '@/components/CreateClassworkModal';
+// Removed FormBuilderModal - now using full-page editor
 import SubmitAssignmentModal from '@/components/SubmitAssignmentModal';
 import ContentViewer from '@/components/ContentViewer.client';
 
 const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkCreated }) => {
   const [assignments, setAssignments] = useState([]);
+  const [forms, setForms] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [isCreateClassworkModalOpen, setIsCreateClassworkModalOpen] = useState(false);
+  // Removed form builder modal state - now using full-page editor
   const [isClassworkMenuOpen, setIsClassworkMenuOpen] = useState(false);
   const [editingClasswork, setEditingClasswork] = useState(null);
+  const [editingForm, setEditingForm] = useState(null);
   const [classworkType, setClassworkType] = useState('assignment');
   const [isSubmitAssignmentModalOpen, setIsSubmitAssignmentModalOpen] = useState(false);
   const [submittingAssignmentId, setSubmittingAssignmentId] = useState(null);
@@ -34,6 +38,50 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   const [groupBy, setGroupBy] = useState('none'); // none, dueDate, type, status
   const [openDropdownId, setOpenDropdownId] = useState(null); // Track which dropdown is open
   const [isDragOperationInProgress, setIsDragOperationInProgress] = useState(false); // Track drag operations
+
+  // Helper function to create a new form and redirect to editor
+  const handleCreateForm = async () => {
+    try {
+      const formData = {
+        title: 'Untitled Form',
+        description: '',
+        type: 'form',
+        questions: [{
+          id: Date.now().toString(),
+          type: 'multiple_choice',
+          title: '',
+          required: false,
+          options: ['Option 1']
+        }],
+        courseId: courseDetails?._id
+      };
+
+      const res = await fetch(`/api/courses/${courseDetails?._id}/forms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(formData)
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to create form');
+      }
+
+      const responseData = await res.json();
+      // Redirect to the full-page editor
+      window.location.href = `/forms/${responseData.form._id}/edit`;
+    } catch (err) {
+      console.error('Failed to create form:', err);
+      alert('Failed to create form. Please try again.');
+    }
+  };
+
+  // Helper function to edit existing form
+  const handleEditForm = (form) => {
+    window.location.href = `/forms/${form._id}/edit`;
+  };
 
   // Handle smooth view mode transitions
   const handleViewModeChange = (newMode) => {
@@ -68,24 +116,30 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
   // Enhanced filtering and sorting logic
   const getFilteredAndSortedAssignments = useCallback(() => {
-    let filtered = assignments.filter(assignment => {
+    // Combine assignments and forms
+    let allItems = [
+      ...assignments.map(item => ({ ...item, itemType: 'assignment' })),
+      ...forms.map(item => ({ ...item, itemType: 'form' }))
+    ];
+
+    let filtered = allItems.filter(item => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesSearch =
-          assignment.title?.toLowerCase().includes(query) ||
-          assignment.description?.toLowerCase().includes(query) ||
-          assignment.type?.toLowerCase().includes(query);
+          item.title?.toLowerCase().includes(query) ||
+          item.description?.toLowerCase().includes(query) ||
+          item.type?.toLowerCase().includes(query);
         if (!matchesSearch) return false;
       }
 
       // Type filter
-      if (filter !== 'all' && assignment.type !== filter) return false;
+      if (filter !== 'all' && item.type !== filter && item.itemType !== filter) return false;
 
-      // Date range filter
-      if (dateRange !== 'all' && assignment.dueDate) {
+      // Date range filter (only for assignments, forms don't have due dates)
+      if (dateRange !== 'all' && item.itemType === 'assignment' && item.dueDate) {
         const now = new Date();
-        const dueDate = new Date(assignment.dueDate);
+        const dueDate = new Date(item.dueDate);
         const daysDiff = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
 
         switch (dateRange) {
@@ -103,20 +157,26 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
       // Status filter - Skip in Kanban mode since Kanban handles its own filtering
       if (statusFilter !== 'all' && viewMode !== 'kanban') {
-        const submission = submissions.find(s => String(s.assignment) === String(assignment._id));
-        const isCompleted = submission && submission.status === 'submitted' && submission.grade !== undefined && submission.grade !== null;
-        const isInProgress = submission && submission.status === 'draft';
+        // Forms don't have submissions, so only filter assignments
+        if (item.itemType === 'assignment') {
+          const submission = submissions.find(s => String(s.assignment) === String(item._id));
+          const isCompleted = submission && submission.status === 'submitted' && submission.grade !== undefined && submission.grade !== null;
+          const isInProgress = submission && submission.status === 'draft';
 
-        switch (statusFilter) {
-          case 'notStarted':
-            if (submission) return false;
-            break;
-          case 'inProgress':
-            if (!isInProgress) return false;
-            break;
-          case 'completed':
-            if (!isCompleted) return false;
-            break;
+          switch (statusFilter) {
+            case 'notStarted':
+              if (submission) return false;
+              break;
+            case 'inProgress':
+              if (!isInProgress) return false;
+              break;
+            case 'completed':
+              if (!isCompleted) return false;
+              break;
+          }
+        } else if (item.itemType === 'form') {
+          // Forms are always considered "not started" for status filtering
+          if (statusFilter !== 'notStarted') return false;
         }
       }
 
@@ -131,15 +191,23 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         case 'oldest':
           return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
         case 'dueDate':
-          return new Date(a.dueDate || '9999-12-31') - new Date(b.dueDate || '9999-12-31');
+          // Forms don't have due dates, so sort them after assignments with due dates
+          const aDue = a.itemType === 'assignment' ? a.dueDate : '9999-12-31';
+          const bDue = b.itemType === 'assignment' ? b.dueDate : '9999-12-31';
+          return new Date(aDue) - new Date(bDue);
         case 'title':
           return (a.title || '').localeCompare(b.title || '');
         case 'mostUrgent':
-          const aDue = new Date(a.dueDate || '9999-12-31');
-          const bDue = new Date(b.dueDate || '9999-12-31');
+          // Only assignments can be urgent, forms are never urgent
+          if (a.itemType === 'form' && b.itemType === 'form') return 0;
+          if (a.itemType === 'form') return 1;
+          if (b.itemType === 'form') return -1;
+
+          const aDueDate = new Date(a.dueDate || '9999-12-31');
+          const bDueDate = new Date(b.dueDate || '9999-12-31');
           const now = new Date();
-          const aUrgency = Math.ceil((aDue - now) / (1000 * 60 * 60 * 24));
-          const bUrgency = Math.ceil((bDue - now) / (1000 * 60 * 60 * 24));
+          const aUrgency = Math.ceil((aDueDate - now) / (1000 * 60 * 60 * 24));
+          const bUrgency = Math.ceil((bDueDate - now) / (1000 * 60 * 60 * 24));
           return aUrgency - bUrgency;
         default:
           return 0;
@@ -151,30 +219,41 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
   // Dropdown Menu Component
   const DropdownMenu = ({ assignment, onEdit, onDelete, onOpenContent, onSubmit, isOpen, onToggle }) => {
+    const item = assignment;
+    const isForm = item?.itemType === 'form' || item?.type === 'form';
+
     const handleViewDetails = () => {
       if (onOpenContent) {
-        if (assignment.attachments && assignment.attachments.length > 0) {
-          if (assignment.attachments.length === 1) {
-            onOpenContent(assignment.attachments[0]);
+        if (item.attachments && item.attachments.length > 0) {
+          if (item.attachments.length === 1) {
+            onOpenContent(item.attachments[0]);
           } else {
             const multiAttachmentContent = {
-              title: assignment.title,
+              title: item.title,
               contentType: 'multi-attachment',
-              attachments: assignment.attachments,
+              attachments: item.attachments,
               currentIndex: 0
             };
             onOpenContent(multiAttachmentContent);
           }
         } else {
           const mockContent = {
-            title: assignment.title,
+            title: item.title,
             filePath: null,
             mimeType: 'text/plain',
             fileSize: 0,
-            contentType: 'assignment'
+            contentType: item.itemType || 'assignment'
           };
           onOpenContent(mockContent);
         }
+      }
+      onToggle();
+    };
+
+    const handlePreviewForm = () => {
+      if (isForm && item._id) {
+        // Open form preview in new tab
+        window.open(`/forms/${item._id}`, '_blank');
       }
       onToggle();
     };
@@ -197,6 +276,19 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         {isOpen && (
           <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
             <div className="py-1">
+              {isForm && (
+                <button
+                  onClick={handlePreviewForm}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 hover:text-purple-700 transition-colors duration-150"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Preview Form
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   onEdit();
@@ -230,7 +322,11 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   };
 
   // Enhanced Activity Card Component
-  const EnhancedActivityCard = ({ assignment, submission, isInstructor, onEdit, onDelete, onSubmit, onOpenContent, viewMode }) => {
+  const EnhancedActivityCard = ({ assignment, form, submission, isInstructor, onEdit, onDelete, onSubmit, onOpenContent, viewMode }) => {
+    // Handle both assignments and forms
+    const item = assignment || form;
+    const itemType = form ? 'form' : 'assignment';
+
     const typeConfig = {
       assignment: {
         icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
@@ -303,22 +399,45 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         darkBg: 'bg-orange-600',
         lightText: 'text-orange-600',
         darkText: 'text-white'
+      },
+      form: {
+        icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7h-2m0 0H9m4 0v4m-4-4v4" /></svg>,
+        color: 'emerald',
+        bgColor: 'emerald-50/80',
+        borderColor: 'emerald-200/60',
+        textColor: 'emerald-700',
+        accentColor: 'emerald-600',
+        gradientFrom: 'from-emerald-500',
+        gradientTo: 'to-emerald-600',
+        gradientBg: 'from-emerald-50/50 to-teal-50/50',
+        shadowColor: 'shadow-emerald-100/50',
+        hoverBg: 'hover:bg-emerald-50/90',
+        ringColor: 'ring-emerald-500/20',
+        lightBg: 'bg-emerald-25',
+        darkBg: 'bg-emerald-600',
+        lightText: 'text-emerald-600',
+        darkText: 'text-white'
       }
     };
 
-    const config = typeConfig[assignment.type] || typeConfig.assignment;
+    const config = typeConfig[item.type] || typeConfig.assignment;
     const isCompleted = submission && submission.status === 'submitted' && submission.grade !== undefined && submission.grade !== null;
     const isInProgress = submission && submission.status === 'draft';
-    const isOverdue = assignment.dueDate && new Date(assignment.dueDate) < new Date() && !isCompleted;
+    const isOverdue = item.itemType === 'assignment' && item.dueDate && new Date(item.dueDate) < new Date() && !isCompleted;
     
     // Enhanced Progress calculation with more realistic logic
     const getProgress = () => {
+      // Forms don't have progress like assignments
+      if (itemType === 'form') {
+        return 0; // Forms show 0 progress
+      }
+
       if (isCompleted) return 100;
       if (isInProgress) {
         // Simulate progress based on time elapsed and urgency
         const now = new Date();
-        const created = new Date(assignment.createdAt);
-        const due = new Date(assignment.dueDate);
+        const created = new Date(item.createdAt);
+        const due = new Date(item.dueDate);
         const totalTime = due - created;
         const elapsedTime = now - created;
         const progressRatio = Math.min(elapsedTime / totalTime, 0.9); // Cap at 90% until completed
@@ -331,6 +450,9 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
     // Enhanced Urgency calculation with more granular levels
     const getUrgency = () => {
+      // Forms are never urgent
+      if (itemType === 'form') return 'normal';
+
       if (isOverdue) return 'overdue';
 
       if (daysLeft <= 0) return 'overdue';
@@ -341,10 +463,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
       return 'normal';
     };
 
-    // Calculate daysLeft first for use in other parts of the component
+    // Calculate daysLeft first for use in other parts of the component (only for assignments)
     const now = new Date();
-    const dueDate = new Date(assignment.dueDate);
-    const daysLeft = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+    const dueDate = item.itemType === 'assignment' ? new Date(item.dueDate) : new Date();
+    const daysLeft = item.itemType === 'assignment' ? Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24)) : 999;
 
     const urgency = getUrgency();
 
@@ -497,13 +619,13 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 </div>
                 <div className="flex flex-col gap-2">
                   <span className={`inline-flex px-3 py-1.5 text-sm font-bold rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor} shadow-sm ${config.shadowColor} hover:scale-105 transition-all duration-300 hover:shadow-md`}>
-                    {(assignment.type || 'assignment').charAt(0).toUpperCase() + (assignment.type || 'assignment').slice(1)}
+                    {(item.type || 'assignment').charAt(0).toUpperCase() + (item.type || 'assignment').slice(1)}
                   </span>
                   <div className="text-xs text-gray-500 font-semibold flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    {assignment.createdAt ? format(new Date(assignment.createdAt), 'MMM dd, yyyy') : ''}
+                    {item.createdAt ? format(new Date(item.createdAt), 'MMM dd, yyyy') : ''}
                   </div>
                 </div>
               </div>
@@ -528,17 +650,17 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
             {/* Enhanced Title with Better Typography */}
             <div className="mb-4">
               <h3 className="text-xl font-bold text-gray-900 mb-4 line-clamp-2 leading-tight hover:text-gray-800 transition-colors duration-300 group-hover:text-blue-700">
-                {assignment.title}
+                {item.title}
               </h3>
-              {assignment.description && (
+              {item.description && (
                 <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
-                  {assignment.description}
+                  {item.description}
                 </p>
               )}
             </div>
 
             {/* Enhanced Progress Bar with Better Visual Design */}
-            {assignment.type === 'assignment' && (
+            {item.itemType === 'assignment' && (
               <div className="mb-6">
                 <div className="flex items-center justify-between text-sm font-semibold text-gray-700 mb-3">
                   <div className="flex items-center gap-2">
@@ -571,10 +693,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
 
             {/* Compact Attachments */}
-            {Array.isArray(assignment.attachments) && assignment.attachments.length > 0 && (
+            {Array.isArray(item.attachments) && item.attachments.length > 0 && (
               <div className="mb-4">
                 <div className="flex flex-wrap gap-2">
-                  {assignment.attachments.slice(0, 3).map((attachment, index) => {
+                  {item.attachments.slice(0, 3).map((attachment, index) => {
                     const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
                     const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
                     return (
@@ -593,9 +715,9 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                       </button>
                     );
                   })}
-                  {assignment.attachments.length > 3 && (
+                  {item.attachments.length > 3 && (
                     <div className="inline-flex items-center gap-1 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
-                      <span className="text-xs font-medium text-blue-700">+{assignment.attachments.length - 3}</span>
+                      <span className="text-xs font-medium text-blue-700">+{item.attachments.length - 3}</span>
                     </div>
                   )}
                 </div>
@@ -606,8 +728,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
             <div className="flex items-center justify-between pt-4 border-t border-gray-100">
               {/* Left side - Progress and files */}
               <div className="text-xs text-gray-500 font-medium">
-                {assignment.type === 'assignment' && `Progress: ${Math.round(progress)}% • `}
-                {assignment.attachments && assignment.attachments.length > 0 && `${assignment.attachments.length} file${assignment.attachments.length > 1 ? 's' : ''}`}
+                {item.itemType === 'assignment' && `Progress: ${Math.round(progress)}% • `}
+                {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
               </div>
 
               {/* Right side - Action menu */}
@@ -617,8 +739,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 onDelete={onDelete}
                 onOpenContent={onOpenContent}
                 onSubmit={onSubmit}
-                isOpen={openDropdownId === assignment._id}
-                onToggle={() => toggleDropdown(assignment._id)}
+                isOpen={openDropdownId === item._id}
+                onToggle={() => toggleDropdown(item._id)}
               />
             </div>
           </div>
@@ -643,10 +765,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className={`inline-flex px-3 py-1.5 text-xs font-bold rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor} shadow-sm ${config.shadowColor}`}>
-                      {(assignment.type || 'assignment').charAt(0).toUpperCase() + (assignment.type || 'assignment').slice(1)}
+                      {(item.type || 'assignment').charAt(0).toUpperCase() + (item.type || 'assignment').slice(1)}
                     </span>
                     <div className="text-xs text-gray-500 font-medium">
-                      {assignment.createdAt ? format(new Date(assignment.createdAt), 'MMM dd, yyyy') : ''}
+                      {item.createdAt ? format(new Date(item.createdAt), 'MMM dd, yyyy') : ''}
                     </div>
                   </div>
                 </div>
@@ -657,23 +779,23 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                     {/* Title and Description */}
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1 hover:text-blue-700 transition-colors duration-200">
-                        {assignment.title}
+                        {item.title}
                       </h3>
-                      {assignment.description && (
+                      {item.description && (
                         <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed mb-3">
-                          {assignment.description}
+                          {item.description}
                         </p>
                       )}
 
                       {/* Compact Metadata Row */}
                       <div className="flex items-center gap-3 text-sm text-gray-500">
-                        {assignment.attachments && assignment.attachments.length > 0 && (
+                        {item.attachments && item.attachments.length > 0 && (
                           <div className="flex items-center gap-2">
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                             </svg>
                             <div className="flex items-center gap-1">
-                              {assignment.attachments.slice(0, 2).map((attachment, index) => {
+                              {item.attachments.slice(0, 2).map((attachment, index) => {
                                 const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
                                 const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
                                 return (
@@ -692,13 +814,13 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                                   </button>
                                 );
                               })}
-                              {assignment.attachments.length > 2 && (
-                                <span className="text-xs font-medium text-gray-500">+{assignment.attachments.length - 2}</span>
+                              {item.attachments.length > 2 && (
+                                <span className="text-xs font-medium text-gray-500">+{item.attachments.length - 2}</span>
                               )}
                             </div>
                           </div>
                         )}
-                        {assignment.type === 'assignment' && (
+                        {item.itemType === 'assignment' && (
                           <div className="flex items-center gap-1">
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -710,7 +832,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                     </div>
 
                     {/* Progress Bar for Assignments */}
-                    {assignment.type === 'assignment' && (
+                    {item.itemType === 'assignment' && (
                       <div className="flex-shrink-0 w-24">
                         <div className="flex items-center justify-between text-xs font-medium text-gray-700 mb-1">
                           <span>Progress</span>
@@ -755,8 +877,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                       onDelete={onDelete}
                       onOpenContent={onOpenContent}
                       onSubmit={onSubmit}
-                      isOpen={openDropdownId === assignment._id}
-                      onToggle={() => toggleDropdown(assignment._id)}
+                      isOpen={openDropdownId === item._id}
+                      onToggle={() => toggleDropdown(item._id)}
                     />
                   ) : (
                     <>
@@ -811,18 +933,18 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
               <div className="flex-1">
                 <div className="flex items-center gap-4 mb-3">
                   <span className={`inline-flex px-4 py-2 text-sm font-bold rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor} shadow-md ${config.shadowColor}`}>
-                    {(assignment.type || 'assignment').charAt(0).toUpperCase() + (assignment.type || 'assignment').slice(1)}
+                    {(item.type || 'assignment').charAt(0).toUpperCase() + (item.type || 'assignment').slice(1)}
                   </span>
                   <div className="text-sm text-gray-500 font-medium">
-                    Created {assignment.createdAt ? format(new Date(assignment.createdAt), 'MMM dd, yyyy') : 'Recently'}
+                    Created {item.createdAt ? format(new Date(item.createdAt), 'MMM dd, yyyy') : 'Recently'}
                   </div>
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3 leading-tight hover:text-blue-700 transition-colors duration-200">
-                  {assignment.title}
+                  {item.title}
                 </h3>
-                {assignment.description && (
+                {item.description && (
                   <p className="text-gray-600 leading-relaxed text-base">
-                    {assignment.description}
+                    {item.description}
                   </p>
                 )}
               </div>
@@ -852,7 +974,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
               <div className="space-y-6">
 
                 {/* Enhanced Progress for Assignments */}
-                {assignment.type === 'assignment' && (
+                {item.itemType === 'assignment' && (
                   <div>
                     <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                       <div className={`w-5 h-5 ${config.bgColor} ${config.borderColor} border rounded-lg flex items-center justify-center shadow-sm`}>
@@ -916,9 +1038,9 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                   </svg>
                   Attachments
                 </h4>
-                {Array.isArray(assignment.attachments) && assignment.attachments.length > 0 ? (
+                {Array.isArray(item.attachments) && item.attachments.length > 0 ? (
                    <div className="flex flex-wrap gap-2">
-                     {assignment.attachments.slice(0, 3).map((attachment, index) => {
+                     {item.attachments.slice(0, 3).map((attachment, index) => {
                        const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
                        const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
                        return (
@@ -937,9 +1059,9 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                          </button>
                        );
                      })}
-                     {assignment.attachments.length > 3 && (
+                     {item.attachments.length > 3 && (
                        <div className="inline-flex items-center gap-1 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
-                         <span className="text-xs font-medium text-blue-700">+{assignment.attachments.length - 3}</span>
+                         <span className="text-xs font-medium text-blue-700">+{item.attachments.length - 3}</span>
                        </div>
                      )}
                    </div>
@@ -954,8 +1076,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
             {/* Compact Actions */}
             <div className="flex items-center justify-between pt-6 border-t border-gray-100">
               <div className="text-sm text-gray-500 font-medium">
-                {assignment.type === 'assignment' && `Progress: ${Math.round(progress)}% • `}
-                {assignment.attachments && assignment.attachments.length > 0 && `${assignment.attachments.length} file${assignment.attachments.length > 1 ? 's' : ''}`}
+                {item.itemType === 'assignment' && `Progress: ${Math.round(progress)}% • `}
+                {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
               </div>
 
               <div className="flex items-center gap-2">
@@ -966,8 +1088,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                     onDelete={onDelete}
                     onOpenContent={onOpenContent}
                     onSubmit={onSubmit}
-                    isOpen={openDropdownId === assignment._id}
-                    onToggle={() => toggleDropdown(assignment._id)}
+                    isOpen={openDropdownId === item._id}
+                    onToggle={() => toggleDropdown(item._id)}
                   />
                 ) : (
                   <>
@@ -1001,11 +1123,11 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="text-base font-bold text-gray-900 line-clamp-2 mb-2 leading-tight hover:text-blue-700 transition-colors duration-200">
-                {assignment.title}
+                {item.title}
               </h4>
               <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor} shadow-sm`}>
-                  {(assignment.type || 'assignment').charAt(0).toUpperCase() + (assignment.type || 'assignment').slice(1)}
+                  {(item.type || 'assignment').charAt(0).toUpperCase() + (item.type || 'assignment').slice(1)}
                 </span>
               </div>
             </div>
@@ -1030,7 +1152,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
           </div>
 
           {/* Progress Bar for Assignments */}
-          {assignment.type === 'assignment' && (
+          {item.itemType === 'assignment' && (
             <div className="mb-4">
               <div className="flex items-center justify-between text-xs font-medium text-gray-700 mb-2">
                 <span>Progress</span>
@@ -1046,10 +1168,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
           )}
 
           {/* Compact Attachments */}
-          {Array.isArray(assignment.attachments) && assignment.attachments.length > 0 && (
+          {Array.isArray(item.attachments) && item.attachments.length > 0 && (
             <div className="mb-4">
               <div className="flex flex-wrap gap-1">
-                {assignment.attachments.slice(0, 2).map((attachment, index) => {
+                {item.attachments.slice(0, 2).map((attachment, index) => {
                   const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
                   const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
                   return (
@@ -1068,9 +1190,9 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                     </button>
                   );
                 })}
-                {assignment.attachments.length > 2 && (
+                {item.attachments.length > 2 && (
                   <div className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
-                    <span>+{assignment.attachments.length - 2}</span>
+                    <span>+{item.attachments.length - 2}</span>
                   </div>
                 )}
               </div>
@@ -1080,19 +1202,19 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
           {/* Compact Actions */}
           <div className="flex items-center justify-between pt-3 border-t border-gray-100">
             <div className="text-xs text-gray-500 font-medium">
-              {assignment.attachments && assignment.attachments.length > 0 && `${assignment.attachments.length} file${assignment.attachments.length > 1 ? 's' : ''}`}
+              {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
             </div>
 
             <div className="flex items-center gap-2">
               {isInstructor ? (
                 <DropdownMenu
-                  assignment={assignment}
+                  assignment={item}
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onOpenContent={onOpenContent}
                   onSubmit={onSubmit}
-                  isOpen={openDropdownId === assignment._id}
-                  onToggle={() => toggleDropdown(assignment._id)}
+                  isOpen={openDropdownId === item._id}
+                  onToggle={() => toggleDropdown(item._id)}
                 />
               ) : (
                 <>
@@ -1126,28 +1248,28 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`inline-flex px-2 py-1 text-xs font-medium rounded border ${config.bgColor} ${config.borderColor} ${config.textColor}`}>
-                    {(assignment.type || 'assignment').charAt(0).toUpperCase() + (assignment.type || 'assignment').slice(1)}
+                    {(item.type || 'assignment').charAt(0).toUpperCase() + (item.type || 'assignment').slice(1)}
                   </span>
                   <span className="text-xs text-gray-400">•</span>
                   <span className="text-xs text-gray-500">
-                    {assignment.createdAt ? format(new Date(assignment.createdAt), 'MMM dd, yyyy') : ''}
+                    {item.createdAt ? format(new Date(item.createdAt), 'MMM dd, yyyy') : ''}
                   </span>
                 </div>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 break-words mb-2">
-                {assignment.title}
+                {item.title}
               </h3>
               <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                 <div className="flex items-center gap-1">
                   <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>Due: {assignment.dueDate ? format(new Date(assignment.dueDate), 'MMM dd, yyyy') : 'No due date'}</span>
+                  <span>Due: {item.dueDate ? format(new Date(item.dueDate), 'MMM dd, yyyy') : 'No due date'}</span>
                 </div>
               </div>
-              {Array.isArray(assignment.attachments) && assignment.attachments.length > 0 && (
+              {Array.isArray(item.attachments) && item.attachments.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {assignment.attachments.map((att) => (
+                  {item.attachments.map((att) => (
                     <div key={att._id} className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-md">
                       <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -1319,13 +1441,36 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     }
   }, [courseDetails, sortBy]);
 
+  const fetchForms = useCallback(async () => {
+    if (!courseDetails) return;
+
+    try {
+      const res = await fetch(`/api/courses/${courseDetails._id}/forms`, {
+        credentials: 'include' // Use cookies for authentication
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log('🔍 FORMS: Fetched forms:', data.forms.length, 'items');
+        setForms(data.forms || []);
+      } else {
+        console.error('🔍 FORMS: Failed to fetch forms, status:', res.status);
+        setForms([]);
+      }
+    } catch (err) {
+      console.warn('🔍 FORMS: Failed to fetch forms:', err);
+      setForms([]);
+    }
+  }, [courseDetails]);
+
   useEffect(() => {
     console.log('🔍 CLASSWORK: useEffect triggered - courseDetails:', !!courseDetails, 'sortBy:', sortBy);
     if (courseDetails) {
       console.log('🔍 CLASSWORK: useEffect calling fetchAssignments');
       fetchAssignments();
+      fetchForms();
     }
-  }, [courseDetails, fetchAssignments, sortBy]);
+  }, [courseDetails, fetchAssignments, fetchForms, sortBy]);
 
   const handleDeleteClasswork = useCallback(async (classworkId) => {
     if (!window.confirm('Are you sure you want to delete this classwork?')) {
@@ -1333,17 +1478,9 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     }
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
-        return;
-      }
-
       const res = await fetch(`/api/classwork/${classworkId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include' // Use cookie-based authentication
       });
 
       if (!res.ok) {
@@ -1351,12 +1488,14 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
       }
 
-      fetchAssignments();
+      console.log('🔍 CLASSWORK: Classwork deleted successfully, refreshing data');
+      fetchAssignments(); // Refresh assignments list
+      fetchForms(); // Also refresh forms list
     } catch (err) {
       setError(err.message);
-      console.error('Failed to delete classwork:', err);
+      console.error('🔍 CLASSWORK: Failed to delete classwork:', err);
     }
-  }, [fetchAssignments]);
+  }, [fetchAssignments, fetchForms]);
 
   // Drag and Drop Handlers
   const handleDragStart = useCallback((e, assignmentId) => {
@@ -1606,15 +1745,16 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                         <div className="text-xs text-gray-500">Create a new assignment with attachments</div>
                       </div>
                     </button>
-                    <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100/50 hover:text-purple-900 transition-all duration-200 group" onClick={() => { setClassworkType('quiz'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors duration-200">
-                        <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100/50 hover:text-emerald-900 transition-all duration-200 group" onClick={() => { handleCreateForm(); setIsClassworkMenuOpen(false); }}>
+                      <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-200">
+                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7h-2m0 0H9m4 0v4m-4-4v4" />
                         </svg>
                       </div>
                       <div>
-                        <div className="font-semibold">Quiz</div>
-                        <div className="text-xs text-gray-500">Create an interactive quiz or test</div>
+                        <div className="font-semibold">Form</div>
+                        <div className="text-xs text-gray-500">Create forms and collect responses</div>
                       </div>
                     </button>
                     <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100/50 hover:text-orange-900 transition-all duration-200 group" onClick={() => { setClassworkType('question'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
@@ -1651,111 +1791,123 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         {/* Enhanced Header */}
         <div className="px-8 py-5 border-b border-gray-100">
           <div className="flex flex-col gap-4">
-            {/* Title and View Controls */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Minimal Header */}
+            <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-gray-900 leading-tight">Activities</h2>
-                <p className="text-sm font-medium text-gray-600 mt-1">All classwork and assignments</p>
+                <h2 className="text-lg font-semibold text-gray-900">Activities</h2>
+                <p className="text-sm text-gray-500 mt-0.5">All classwork and assignments</p>
               </div>
-              
-              {/* Enhanced View Mode Toggle */}
+
+              {/* Essential Controls Only */}
               <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-gray-700">View:</span>
-                <div className="flex items-center bg-gray-100/80 backdrop-blur-sm rounded-lg p-1 shadow-inner">
-                  {[
-                    { key: 'grid', icon: 'grid', label: 'Grid View' },
-                    { key: 'list', icon: 'list', label: 'List View' },
-                    { key: 'timeline', icon: 'timeline', label: 'Timeline View' },
-                    { key: 'kanban', icon: 'kanban', label: 'Kanban View' }
-                  ].map(({ key, icon, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => handleViewModeChange(key)}
-                      className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 ${
-                        viewMode === key
-                          ? 'bg-white text-gray-900 shadow-lg ring-2 ring-blue-500/20'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-                      } ${isTransitioning ? 'pointer-events-none opacity-50' : ''}`}
-                      title={label}
-                      disabled={isTransitioning}
-                    >
-                      {icon === 'grid' && (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                        </svg>
-                      )}
-                      {icon === 'list' && (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                        </svg>
-                      )}
-                      {icon === 'timeline' && (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                        </svg>
-                      )}
-                      {icon === 'kanban' && (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-                        </svg>
-                      )}
-                    </button>
-                  ))}
+                {/* Compact Search */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                    <svg className="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 pr-3 py-1.5 border border-gray-300 rounded-md text-sm w-48 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* View Mode Toggle */}
+                <div className="flex items-center bg-gray-100 rounded-md p-1">
+                  <button
+                    onClick={() => handleViewModeChange('grid')}
+                    className={`p-1.5 rounded transition-all duration-200 ${
+                      viewMode === 'grid'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    title="Grid view"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleViewModeChange('list')}
+                    className={`p-1.5 rounded transition-all duration-200 ${
+                      viewMode === 'list'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    title="List view"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleViewModeChange('timeline')}
+                    className={`p-1.5 rounded transition-all duration-200 ${
+                      viewMode === 'timeline'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    title="Timeline view"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleViewModeChange('kanban')}
+                    className={`p-1.5 rounded transition-all duration-200 ${
+                      viewMode === 'kanban'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    title="Kanban view"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Enhanced Search Bar */}
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Search activities..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-12 pr-4 py-3 border border-gray-300/60 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm font-medium hover:border-gray-400 transition-all duration-300 hover:shadow-sm focus:shadow-lg"
-              />
-            </div>
-
-            {/* Enhanced Filter Controls */}
-            <div className="flex flex-wrap items-center gap-4">
-              {/* Primary Type Filters */}
+            {/* Minimal Filter Controls */}
+            <div className="flex items-center gap-4">
+              {/* Essential Filters Only */}
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-gray-700 mr-2">Filter by:</span>
-                {[
-                  { key: 'all', label: 'All', color: 'gray' },
-                  { key: 'assignment', label: 'Assignments', color: 'blue' },
-                  { key: 'quiz', label: 'Quizzes', color: 'purple' },
-                  { key: 'material', label: 'Materials', color: 'emerald' }
-                ].map(({ key, label, color }) => (
-                  <button
-                    key={key}
-                    onClick={() => setFilter(key)}
-                    className={`px-4 py-2 text-sm font-semibold rounded-lg border transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                      filter === key
-                        ? `bg-${color}-600 text-white border-${color}-600 shadow-lg ${color === 'gray' ? 'shadow-gray-200' : `shadow-${color}-200`} focus:ring-${color}-500/20`
-                        : `bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm focus:ring-gray-500/20`
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+                <span className="text-sm text-gray-600">Filter:</span>
+                <div className="flex items-center bg-gray-100 rounded-md p-1">
+                  {[
+                    { key: 'all', label: 'All' },
+                    { key: 'assignment', label: 'Assignments' },
+                    { key: 'form', label: 'Forms' },
+                    { key: 'material', label: 'Materials' }
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setFilter(key)}
+                      className={`px-2.5 py-1 text-sm rounded transition-all duration-200 ${
+                        filter === key
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Enhanced Quick Filter Chips */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-gray-700">Quick filters:</span>
+              {/* Only Essential Quick Filters */}
+              <div className="flex items-center gap-1.5">
                 {[
-                  { key: 'thisWeek', label: 'Due This Week', color: 'blue' },
-                  { key: 'overdue', label: 'Overdue', color: 'red' },
-                  { key: 'notStarted', label: 'Not Started', color: 'gray' },
-                  { key: 'inProgress', label: 'In Progress', color: 'yellow' },
-                  { key: 'completed', label: 'Completed', color: 'emerald' }
-                ].map(({ key, label, color }) => (
+                  { key: 'thisWeek', label: 'Due This Week' },
+                  { key: 'overdue', label: 'Overdue' },
+                  { key: 'completed', label: 'Completed' }
+                ].map(({ key, label }) => (
                   <button
                     key={key}
                     onClick={() => {
@@ -1767,12 +1919,12 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                         setDateRange('all');
                       }
                     }}
-                    className={`px-4 py-2 text-xs font-semibold rounded-full border transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    className={`px-2 py-1 text-xs rounded-full transition-all duration-200 ${
                       (key === 'thisWeek' || key === 'overdue') && dateRange === key
-                        ? `bg-${color}-100 text-${color}-700 border-${color}-200 shadow-sm focus:ring-${color}-500/20`
+                        ? 'bg-blue-100 text-blue-700'
                         : statusFilter === key
-                        ? `bg-${color}-100 text-${color === 'inProgress' ? 'yellow-700' : color}-700 border-${color === 'inProgress' ? 'yellow-200' : color}-200 shadow-sm focus:ring-${color === 'inProgress' ? 'yellow-500/20' : color}-500/20`
-                        : `bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm focus:ring-gray-500/20`
+                        ? 'bg-gray-100 text-gray-700'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                     }`}
                   >
                     {label}
@@ -1780,93 +1932,18 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 ))}
               </div>
 
-              {/* Enhanced Advanced Filters Toggle */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-gray-700">More options:</span>
-                <button
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 hover:scale-105 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500/20 focus:ring-offset-2"
-                >
-                  <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                  </svg>
-                  Advanced Filters
-                </button>
-
-                {/* Enhanced Sort Dropdown */}
-                <div className="relative">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm font-semibold text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 hover:shadow-sm"
-                  >
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="dueDate">Due Date</option>
-                    <option value="title">Title A-Z</option>
-                    <option value="mostUrgent">Most Urgent</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+              {/* Simple Sort */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="text-sm text-gray-600 bg-transparent border-none focus:outline-none cursor-pointer"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="dueDate">Due Date</option>
+              </select>
             </div>
 
-            {/* Enhanced Advanced Filters Panel */}
-            {showAdvancedFilters && (
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl p-6 border border-gray-200/60 shadow-sm hover:shadow-md transition-all duration-300">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Date Range Filter */}
-                  <div className="group">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3 group-focus-within:text-blue-700 transition-colors duration-300">Date Range</label>
-                    <select
-                      value={dateRange}
-                      onChange={(e) => setDateRange(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300/60 rounded-lg text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-400 transition-all duration-300"
-                    >
-                      <option value="all">All Time</option>
-                      <option value="thisWeek">This Week</option>
-                      <option value="thisMonth">This Month</option>
-                      <option value="overdue">Overdue</option>
-                    </select>
-                  </div>
-
-                  {/* Status Filter */}
-                  <div className="group">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3 group-focus-within:text-blue-700 transition-colors duration-300">Status</label>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300/60 rounded-lg text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-400 transition-all duration-300"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="notStarted">Not Started</option>
-                      <option value="inProgress">In Progress</option>
-                      <option value="submitted">Submitted</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                  </div>
-
-                  {/* Group By */}
-                  <div className="group">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3 group-focus-within:text-blue-700 transition-colors duration-300">Group By</label>
-                    <select
-                      value={groupBy}
-                      onChange={(e) => setGroupBy(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300/60 rounded-lg text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-400 transition-all duration-300"
-                    >
-                      <option value="none">No Grouping</option>
-                      <option value="dueDate">Due Date</option>
-                      <option value="type">Type</option>
-                      <option value="status">Status</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
         <div className={`p-10 smooth-layout-change ${isTransitioning ? 'layout-transition-active' : ''}`}>
@@ -1923,15 +2000,23 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
               case 'grid':
                 return (
                   <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12 layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}>
-                    {filtered.map((assignment) => (
+                    {filtered.map((item) => (
                       <EnhancedActivityCard
-                        key={assignment._id}
-                        assignment={assignment}
-                        submission={submissions.find(s => String(s.assignment) === String(assignment._id))}
+                        key={item._id}
+                        assignment={item.itemType === 'assignment' ? item : null}
+                        form={item.itemType === 'form' ? item : null}
+                        submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
                         isInstructor={isInstructor}
-                        onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
-                        onDelete={() => handleDeleteClasswork(assignment._id)}
-                        onSubmit={() => { setSubmittingAssignmentId(assignment._id); setIsSubmitAssignmentModalOpen(true); }}
+                        onEdit={() => {
+                          if (item.itemType === 'form') {
+                            handleEditForm(item);
+                          } else {
+                            setEditingClasswork(item);
+                            setIsCreateClassworkModalOpen(true);
+                          }
+                        }}
+                        onDelete={() => handleDeleteClasswork(item._id)}
+                        onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
                         onOpenContent={onOpenContent}
                         viewMode="grid"
                       />
@@ -1942,15 +2027,23 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
               case 'list':
                 return (
                   <div className={`space-y-3 lg:space-y-4 layout-transition-list-to-grid ${isTransitioning ? 'layout-transition-active' : ''}`}>
-                    {filtered.map((assignment) => (
+                    {filtered.map((item) => (
                       <EnhancedActivityCard
-                        key={assignment._id}
-                        assignment={assignment}
-                        submission={submissions.find(s => String(s.assignment) === String(assignment._id))}
+                        key={item._id}
+                        assignment={item.itemType === 'assignment' ? item : null}
+                        form={item.itemType === 'form' ? item : null}
+                        submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
                         isInstructor={isInstructor}
-                        onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
-                        onDelete={() => handleDeleteClasswork(assignment._id)}
-                        onSubmit={() => { setSubmittingAssignmentId(assignment._id); setIsSubmitAssignmentModalOpen(true); }}
+                        onEdit={() => {
+                          if (item.itemType === 'form') {
+                            handleEditForm(item);
+                          } else {
+                            setEditingClasswork(item);
+                            setIsCreateClassworkModalOpen(true);
+                          }
+                        }}
+                        onDelete={() => handleDeleteClasswork(item._id)}
+                        onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
                         onOpenContent={onOpenContent}
                         viewMode="list"
                       />
@@ -1963,15 +2056,23 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                   <div className={`relative layout-transition-to-timeline ${isTransitioning ? 'layout-transition-active' : ''}`}>
                     <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-blue-200"></div>
                     <div className="space-y-6 lg:space-y-8">
-                      {filtered.map((assignment) => (
+                      {filtered.map((item) => (
                         <EnhancedActivityCard
-                          key={assignment._id}
-                          assignment={assignment}
-                          submission={submissions.find(s => String(s.assignment) === String(assignment._id))}
+                          key={item._id}
+                          assignment={item.itemType === 'assignment' ? item : null}
+                          form={item.itemType === 'form' ? item : null}
+                          submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
                           isInstructor={isInstructor}
-                          onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
-                          onDelete={() => handleDeleteClasswork(assignment._id)}
-                          onSubmit={() => { setSubmittingAssignmentId(assignment._id); setIsSubmitAssignmentModalOpen(true); }}
+                          onEdit={() => {
+                            if (item.itemType === 'form') {
+                              handleEditForm(item);
+                            } else {
+                              setEditingClasswork(item);
+                              setIsCreateClassworkModalOpen(true);
+                            }
+                          }}
+                          onDelete={() => handleDeleteClasswork(item._id)}
+                          onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
                           onOpenContent={onOpenContent}
                           viewMode="timeline"
                         />
@@ -2006,6 +2107,9 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                         return false;
                       });
 
+                      // Add forms to appropriate columns (forms are never "in progress" or "completed")
+                      const statusForms = status === 'notStarted' ? forms : [];
+
                       return (
                         <div
                           key={status}
@@ -2023,7 +2127,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                             }`}></div>
                             {status === 'inProgress' ? 'In Progress' :
                              status.replace(/([A-Z])/g, ' $1').trim()}
-                            <span className="text-sm font-normal text-gray-500">({statusAssignments.length})</span>
+                            <span className="text-sm font-normal text-gray-500">({statusAssignments.length + (status === 'notStarted' ? statusForms.length : 0)})</span>
                           </h3>
                           <div className="space-y-3 max-h-[70vh] overflow-y-auto">
                             {statusAssignments.map((assignment) => {
@@ -2051,6 +2155,27 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                                 </div>
                               );
                             })}
+                            {statusForms.map((form) => (
+                              <div
+                                key={form._id}
+                                className="kanban-card cursor-move"
+                                draggable="true"
+                                onDragStart={(e) => handleDragStart(e, form._id)}
+                                onDragEnd={handleDragEnd}
+                                style={{ pointerEvents: 'auto' }}
+                              >
+                                <EnhancedActivityCard
+                                  form={form}
+                                  isInstructor={isInstructor}
+                                  onEdit={() => {
+                                    handleEditForm(form);
+                                  }}
+                                  onDelete={() => handleDeleteClasswork(form._id)}
+                                  onOpenContent={onOpenContent}
+                                  viewMode="kanban"
+                                />
+                              </div>
+                            ))}
                           </div>
                         </div>
                       );
@@ -2093,6 +2218,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         initialData={editingClasswork}
         type={classworkType}
       />
+
+      {/* FormBuilderModal removed - now using full-page editor */}
 
       <SubmitAssignmentModal
         isOpen={isSubmitAssignmentModalOpen}

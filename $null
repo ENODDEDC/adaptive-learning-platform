@@ -1,0 +1,5 @@
+ [33m[1m⚠[22m[39m Invalid next.config.mjs options detected: 
+ [33m[1m⚠[22m[39m     Unrecognized key(s) in object: 'logging', 'turbopack' at "experimental"
+ [33m[1m⚠[22m[39m See more info here: https://nextjs.org/docs/messages/invalid-next-config
+(node:30796) [MONGOOSE] Warning: Duplicate schema index on {"userId":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)

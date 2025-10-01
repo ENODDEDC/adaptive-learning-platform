@@ -12,6 +12,7 @@ import JoinCourseModal from '@/components/JoinCourseModal';
 import CreateClusterModal from '@/components/CreateClusterModal';
 import JoinClusterModal from '@/components/JoinClusterModal';
 import { useLayout } from '../context/LayoutContext';
+import featureFlags from '../utils/featureFlags';
 
 const Layout = ({ children }) => {
   const pathname = usePathname();
@@ -38,6 +39,12 @@ const Layout = ({ children }) => {
      if (isMounted) { // Only run on client side
        const fetchUserProfile = async () => {
          try {
+           // Skip user profile fetching in development to reduce API calls
+           if (featureFlags.shouldDisableHeavyFeatures()) {
+             setUser(null);
+             return;
+           }
+
            // Token is now sent via HTTP-only cookie, no need to retrieve from localStorage
            // The middleware will handle authentication and redirection.
            const res = await fetch('/api/auth/profile'); // Assuming a single profile endpoint for simplicity, or separate based on context
@@ -45,12 +52,10 @@ const Layout = ({ children }) => {
              const data = await res.json();
              setUser(data);
            } else {
-             console.error('Failed to fetch user profile:', res.status, res.statusText);
-             // No need to remove from localStorage, as it's cookie-based now
+             // Silent fail for user profile fetch
              setUser(null);
            }
          } catch (error) {
-           console.error('Failed to fetch user profile:', error);
            setUser(null);
          }
        };
@@ -65,6 +70,13 @@ const Layout = ({ children }) => {
       setUpcomingTasksExpanded(isSidebarCollapsed); // If collapsing sidebar, expand tasks; if expanding sidebar, collapse tasks
     }
   };
+
+  // Auto-collapse sidebar for forms routes
+  useEffect(() => {
+    if (pathname?.startsWith('/forms/')) {
+      setIsSidebarCollapsed(true);
+    }
+  }, [pathname]);
 
   // Collapse sidebar when other components request it
   useEffect(() => {
@@ -136,7 +148,7 @@ const Layout = ({ children }) => {
             }
             closeCreateCourseModal();
           } catch (error) {
-            console.error('Failed to create course by user:', error);
+            // Silent fail for course creation
           }
         }}
         adminName={user?.name}
@@ -161,7 +173,7 @@ const Layout = ({ children }) => {
             // This would require a way to communicate from Layout to Home, e.g., context or a global state management.
             // For now, we'll assume the user will see the updated list on next page load or manual refresh.
           } catch (error) {
-            console.error('Failed to join course:', error);
+            // Silent fail for course joining
           }
         }}
       />
@@ -170,7 +182,6 @@ const Layout = ({ children }) => {
         onClose={closeCreateClusterModal}
         onCreateCluster={async (clusterData) => {
           try {
-            console.log('Sending cluster creation request:', clusterData);
             const res = await fetch('/api/clusters', {
               method: 'POST',
               headers: {
@@ -180,14 +191,12 @@ const Layout = ({ children }) => {
             });
 
             const responseData = await res.json();
-            console.log('Cluster creation response:', res.status, responseData);
 
             if (!res.ok) {
               throw new Error(responseData.message || `Error: ${res.status} ${res.statusText}`);
             }
             closeCreateClusterModal();
           } catch (error) {
-            console.error('Failed to create cluster:', error);
             alert(`Failed to create cluster: ${error.message}`);
           }
         }}
@@ -210,7 +219,7 @@ const Layout = ({ children }) => {
             }
             closeJoinClusterModal();
           } catch (error) {
-            console.error('Failed to join cluster:', error);
+            // Silent fail for cluster joining
           }
         }}
       />

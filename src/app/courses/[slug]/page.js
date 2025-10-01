@@ -26,7 +26,8 @@ const CourseDetailPage = ({
   console.log('🔍 DEBUG: Extracted slug from params:', slug);
 
   const [activeTab, setActiveTab] = useState('stream'); // Default to 'Stream' tab
-  const [isInstructor, setIsInstructor] = useState(true); // For demonstration, set to true for instructor view
+  const [user, setUser] = useState(null);
+  const [isInstructor, setIsInstructor] = useState(false);
   const [courseDetails, setCourseDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setErrorState] = useState('');
@@ -70,6 +71,9 @@ const CourseDetailPage = ({
 
       const data = await res.json();
       console.log('🔍 DEBUG: fetchCourseDetails received data:', data);
+      console.log('🔍 DEBUG: Course details:', data.course);
+      console.log('🔍 DEBUG: Course createdBy field:', data.course.createdBy);
+      console.log('🔍 DEBUG: Course createdBy type:', typeof data.course.createdBy);
       setCourseDetails(data.course);
       console.log('🔍 DEBUG: fetchCourseDetails completed successfully');
     } catch (err) {
@@ -81,10 +85,31 @@ const CourseDetailPage = ({
     }
   }, [slug]);
 
+  const fetchCurrentUser = useCallback(async () => {
+    try {
+      console.log('🔍 DEBUG: Fetching current user profile...');
+      const res = await fetch('/api/auth/profile');
+      console.log('🔍 DEBUG: User profile API response status:', res.status);
+
+      if (res.ok) {
+        const userData = await res.json();
+        console.log('🔍 DEBUG: User profile data received:', userData);
+        console.log('🔍 DEBUG: User ID:', userData._id || userData.id);
+        console.log('🔍 DEBUG: User name:', userData.name || userData.fullname);
+        setUser(userData);
+      } else {
+        console.error('🔍 DEBUG: Failed to fetch user profile, status:', res.status);
+      }
+    } catch (err) {
+      console.error('🔍 DEBUG: Error fetching user profile:', err);
+    }
+  }, []);
+
   useEffect(() => {
     console.log('🔍 DEBUG: useEffect for fetchCourseDetails triggered');
     fetchCourseDetails();
-  }, [fetchCourseDetails]);
+    fetchCurrentUser();
+  }, [fetchCourseDetails, fetchCurrentUser]);
 
   // Hydration tracking
   useEffect(() => {
@@ -179,6 +204,23 @@ const CourseDetailPage = ({
       fetchStreamItems();
     }
   }, [courseDetails, fetchStreamItems]);
+
+  // Determine if current user is the instructor (course creator)
+  useEffect(() => {
+    if (courseDetails && user) {
+      // Handle both cases: createdBy as object with _id or direct ID string
+      const courseCreatorId = courseDetails.createdBy._id || courseDetails.createdBy;
+      const currentUserId = user._id || user.id;
+
+      const userIsInstructor = courseCreatorId === currentUserId;
+      console.log('🔍 DEBUG: User is instructor:', userIsInstructor);
+      console.log('🔍 DEBUG: Course created by:', courseCreatorId);
+      console.log('🔍 DEBUG: Current user ID:', currentUserId);
+      console.log('🔍 DEBUG: Course createdBy type:', typeof courseDetails.createdBy);
+      console.log('🔍 DEBUG: Course createdBy value:', courseDetails.createdBy);
+      setIsInstructor(userIsInstructor);
+    }
+  }, [courseDetails, user]);
 
   const handlePostAnnouncement = useCallback(async () => {
     console.log('🔍 DEBUG: handlePostAnnouncement called');

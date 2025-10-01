@@ -511,14 +511,12 @@ class PredictiveLoadingService {
     // Update cache hit rate
     this.updateCacheHitRate();
 
-    console.log(`Prediction successful: ${key} (${source}) in ${loadTime}ms`);
   }
 
   /**
    * Record prediction failure
    */
   recordPredictionFailure(key, reason) {
-    console.warn(`Prediction failed: ${key} (${reason})`);
   }
 
   /**
@@ -575,7 +573,6 @@ class PredictiveLoadingService {
 
        localStorage.setItem('predictiveLoadingState', JSON.stringify(state));
      } catch (error) {
-       console.warn('Failed to save prediction state:', error);
      }
    }
 
@@ -597,7 +594,6 @@ class PredictiveLoadingService {
          this.performanceMetrics = { ...this.performanceMetrics, ...parsed.performanceMetrics };
        }
      } catch (error) {
-       console.warn('Failed to load prediction state:', error);
      }
    }
 
@@ -623,7 +619,6 @@ class PredictiveLoadingService {
     */
    startPredictivePrefetch(context, options = {}) {
      try {
-       console.log(`Starting predictive prefetch for context: ${context}`, options);
 
        // Initialize browser-specific functionality if not already done
        this.initializeForBrowser();
@@ -644,7 +639,6 @@ class PredictiveLoadingService {
 
        return true;
      } catch (error) {
-       console.error('Failed to start predictive prefetch:', error);
        return false;
      }
    }
@@ -689,11 +683,7 @@ class PredictiveLoadingService {
       clearInterval(this.backgroundLoopInterval);
     }
 
-    this.backgroundLoopInterval = setInterval(() => {
-      if (this.config.enableBackgroundLoading) {
-        this.runBackgroundPredictions();
-      }
-    }, 30000); // Run every 30 seconds
+    // Removed background prediction loop to reduce API calls
   }
 
   /**
@@ -704,11 +694,7 @@ class PredictiveLoadingService {
       clearInterval(this.viewportPredictionInterval);
     }
 
-    this.viewportPredictionInterval = setInterval(() => {
-      if (this.config.enableSmartPrefetch) {
-        this.predictViewportCourses();
-      }
-    }, 2000); // Check every 2 seconds
+    // Removed viewport prediction interval to reduce API calls
   }
 
   /**
@@ -751,7 +737,6 @@ class PredictiveLoadingService {
     // Save current state
     this.savePredictionState();
 
-    console.log('Stopped predictive prefetch');
   }
 
   /**

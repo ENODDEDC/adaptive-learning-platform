@@ -131,7 +131,17 @@ export async function DELETE(request, { params }) {
     await connectMongoDB();
     const { id } = params;
 
-    const classwork = await Assignment.findById(id);
+    // Try to find the item as an assignment first
+    let classwork = await Assignment.findById(id);
+    let isForm = false;
+
+    // If not found as assignment, try to find as form
+    if (!classwork) {
+      const { Form } = await import('@/models/Form');
+      classwork = await Form.findById(id);
+      isForm = true;
+    }
+
     if (!classwork) {
       return NextResponse.json({ message: 'Classwork not found' }, { status: 404 });
     }
@@ -142,14 +152,23 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
     }
 
-    // TODO: Implement co-teacher check once coTeachers field is added to Course model
-    if (course.createdBy.toString() !== userId) {
-        return NextResponse.json({ message: 'Forbidden: Only course creator can delete classwork' }, { status: 403 });
+    // Check if user has permission to delete (course creator or co-teacher)
+    const isCreator = course.createdBy.toString() === userId;
+    const isCoTeacher = course.instructors?.some(instructor => instructor.toString() === userId);
+    
+    if (!isCreator && !isCoTeacher) {
+        return NextResponse.json({ message: 'Forbidden: Only course creator or co-teachers can delete classwork' }, { status: 403 });
     }
 
-    await Assignment.findByIdAndDelete(id);
+    // Delete the appropriate model
+    if (isForm) {
+      const { Form } = await import('@/models/Form');
+      await Form.findByIdAndDelete(id);
+    } else {
+      await Assignment.findByIdAndDelete(id);
+    }
 
-    return NextResponse.json({ message: 'Classwork deleted' }, { status: 200 });
+    return NextResponse.json({ message: 'Classwork deleted successfully' }, { status: 200 });
   } catch (error) {
     console.error('Delete Classwork Error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

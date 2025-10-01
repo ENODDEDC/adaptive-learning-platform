@@ -17,21 +17,14 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
 
   const fetchComments = useCallback(async (itemId, itemType) => {
     try {
-      console.log('🔍 LOCALSTORAGE: Attempting to get token from localStorage');
-      console.log('🔍 LOCALSTORAGE: localStorage available:', typeof localStorage !== 'undefined');
-      console.log('🔍 LOCALSTORAGE: isClient:', isClient);
-      if (!isClient || typeof localStorage === 'undefined') {
-        console.log('🔍 LOCALSTORAGE: Skipping localStorage access - not on client');
+      console.log('🔍 COMMENTS: Fetching comments for item:', itemId, 'type:', itemType);
+      if (!isClient) {
+        console.log('🔍 COMMENTS: Skipping - not on client');
         return;
       }
-      const token = localStorage.getItem('token');
-      console.log('🔍 LOCALSTORAGE: Token retrieved:', token ? 'yes' : 'no');
-      if (!token) {
-        setError('User not authenticated.');
-        return;
-      }
+      
       const commentsRes = await fetch(`/api/courses/${courseDetails._id}/${itemType === 'announcement' ? 'announcements' : 'classwork'}/${itemId}/comments`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include' // Use cookies for authentication
       });
       if (!commentsRes.ok) {
         console.error(`Failed to fetch comments for item ${itemId}:`, commentsRes.statusText);
@@ -64,22 +57,17 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
 
   const handlePinAnnouncement = async (announcementId, pinned) => {
     try {
-      if (!isClient || typeof localStorage === 'undefined') {
-        console.log('🔍 LOCALSTORAGE: Skipping pin operation - not on client');
-        return;
-      }
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('User not authenticated.');
+      if (!isClient) {
+        console.log('🔍 PIN: Skipping pin operation - not on client');
         return;
       }
 
       const res = await fetch(`/api/courses/${courseDetails._id}/announcements`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
+        credentials: 'include', // Use cookies for authentication
         body: JSON.stringify({ announcementId, pinned }),
       });
 
