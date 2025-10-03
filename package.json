@@ -54,7 +54,8 @@
     "react-hot-toast": "^2.6.0",
     "react-office-viewer": "^1.0.4",
     "sharp": "^0.34.4",
-    "turndown": "^7.2.1"
+    "turndown": "^7.2.1",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

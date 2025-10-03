@@ -185,37 +185,143 @@ const AttachmentPreviewContent = ({ attachment }) => {
       
       if (isWordDocument) {
         try {
-          const conversionApiUrl = `/api/convert-docx?filePath=${encodeURIComponent(attachment.filePath.replace(window.location.origin, ''))}`;
-          const response = await fetch(conversionApiUrl);
-          if (!response.ok) {
-            let errorDetails = `Server error: ${response.statusText}`;
-            try {
-              const errData = await response.json();
-              errorDetails = errData.details || errData.error || errorDetails;
-            } catch (jsonError) {
-              // Ignore if the error response is not JSON
+          console.log('🔍 Processing Word document:', attachment);
+          
+          // Check if this is a Backblaze B2 file (URL contains /api/files/)
+          console.log('🔍 Attachment object:', attachment);
+          console.log('🔍 Attachment URL:', attachment.url);
+          console.log('🔍 Attachment filePath:', attachment.filePath);
+          
+          // Check both url and filePath for Backblaze B2 files
+          const fileUrl = attachment.url || attachment.filePath;
+          const isBackblazeFile = fileUrl && fileUrl.includes('/api/files/');
+          console.log('🔍 File URL to check:', fileUrl);
+          console.log('🔍 Is Backblaze file:', isBackblazeFile);
+          
+          let response;
+          
+          if (isBackblazeFile) {
+            // Extract file key from URL for Backblaze B2 files
+            const urlParts = fileUrl.split('/api/files/');
+            console.log('🔍 URL parts:', urlParts);
+            const fileKey = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
+            console.log('🔍 Extracted file key:', fileKey);
+            
+            if (!fileKey) {
+              throw new Error('Could not extract file key from URL');
             }
-            throw new Error(errorDetails);
-          }
-          const html = await response.text();
-          if (html) {
-            // Create a temporary element to extract headings from the HTML
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
-            const extractedHeadings = Array.from(headingElements).map((heading, index) => {
-              const id = `heading-${index}`;
-              heading.id = id;
-              return {
-                id,
-                text: cleanHeadingText(heading.textContent),
-                level: parseInt(heading.tagName.substring(1)),
-              };
+            
+            console.log('🔍 Converting Backblaze B2 Word document with key:', fileKey);
+            
+            response = await fetch('/api/files/convert', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ fileKey }),
             });
-            setHeadings(extractedHeadings);
-            setHtmlContent(html);
+            
+            if (!response.ok) {
+              let errorDetails = `Server error: ${response.statusText}`;
+              try {
+                const responseText = await response.text();
+                console.error('🔍 Raw error response (attachment):', responseText);
+                
+                if (responseText) {
+                  try {
+                    const errData = JSON.parse(responseText);
+                    console.error('🔍 Parsed error response (attachment):', errData);
+                    errorDetails = errData.message || errData.error || errorDetails;
+                    
+                    // Add more context to the error
+                    if (errData.fileKey) {
+                      errorDetails += ` (File key: ${errData.fileKey})`;
+                    }
+                  } catch (parseError) {
+                    console.error('🔍 Could not parse error response as JSON (attachment):', parseError);
+                    errorDetails = responseText || errorDetails;
+                  }
+                } else {
+                  errorDetails = 'Empty error response from server';
+                }
+              } catch (textError) {
+                console.error('🔍 Could not read error response as text (attachment):', textError);
+              }
+              throw new Error(errorDetails);
+            }
+            
+            let result;
+            try {
+              const responseText = await response.text();
+              console.log('🔍 Raw success response (attachment):', responseText);
+              
+              if (!responseText) {
+                throw new Error('Empty response from conversion API');
+              }
+              
+              result = JSON.parse(responseText);
+              console.log('🔍 Parsed success response (attachment):', result);
+            } catch (jsonError) {
+              console.error('🔍 Could not parse success response as JSON (attachment):', jsonError);
+              throw new Error('Invalid JSON response from conversion API');
+            }
+            const html = result.html;
+            
+            if (html) {
+              // Create a temporary element to extract headings from the HTML
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = html;
+              const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
+              const extractedHeadings = Array.from(headingElements).map((heading, index) => {
+                const id = `heading-${index}`;
+                heading.id = id;
+                return {
+                  id,
+                  text: cleanHeadingText(heading.textContent),
+                  level: parseInt(heading.tagName.substring(1)),
+                };
+              });
+              setHeadings(extractedHeadings);
+              setHtmlContent(html);
+            } else {
+              throw new Error('Conversion returned empty HTML.');
+            }
           } else {
-            throw new Error('Conversion returned empty HTML.');
+            // Legacy local file conversion
+            const conversionApiUrl = `/api/convert-docx?filePath=${encodeURIComponent(attachment.filePath.replace(window.location.origin, ''))}`;
+            response = await fetch(conversionApiUrl);
+            
+            if (!response.ok) {
+              let errorDetails = `Server error: ${response.statusText}`;
+              try {
+                const errData = await response.json();
+                errorDetails = errData.details || errData.error || errorDetails;
+              } catch (jsonError) {
+                // Ignore if the error response is not JSON
+              }
+              throw new Error(errorDetails);
+            }
+            
+            const html = await response.text();
+            if (html) {
+              // Create a temporary element to extract headings from the HTML
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = html;
+              const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
+              const extractedHeadings = Array.from(headingElements).map((heading, index) => {
+                const id = `heading-${index}`;
+                heading.id = id;
+                return {
+                  id,
+                  text: cleanHeadingText(heading.textContent),
+                  level: parseInt(heading.tagName.substring(1)),
+                };
+              });
+              setHeadings(extractedHeadings);
+              setHtmlContent(html);
+            } else {
+              throw new Error('Conversion returned empty HTML.');
+            }
           }
         } catch (err) {
           console.error('Error fetching or converting docx:', err);
@@ -524,41 +630,142 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
 
       if (isWordDocument) {
         try {
-          const conversionApiUrl = `/api/convert-docx?filePath=${encodeURIComponent(content.filePath.replace(window.location.origin, ''))}`;
-          const response = await fetch(conversionApiUrl);
-          if (!response.ok) {
-            // Try to get error details from JSON, otherwise use status text
-            let errorDetails = `Server error: ${response.statusText}`;
-            try {
-              const errData = await response.json();
-              errorDetails = errData.details || errData.error || errorDetails;
-            } catch (jsonError) {
-              // Ignore if the error response is not JSON
-            }
-            throw new Error(errorDetails);
-          }
+          console.log('🔍 Processing Word document (content):', content);
           
-          const html = await response.text(); // The API returns full HTML (may contain <head> with styles)
-
-          if (html) {
-            // Create a temporary element to extract headings from the HTML
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
-            const extractedHeadings = Array.from(headingElements).map((heading, index) => {
-              const id = generateHeadingId(heading.textContent, index);
-              heading.id = id; // Add ID to the element itself for scrolling
-              return {
-                id,
-                text: cleanHeadingText(heading.textContent),
-                level: parseInt(heading.tagName.substring(1)),
-              };
+          // Check if this is a Backblaze B2 file (URL contains /api/files/)
+          const fileUrl = content.url || content.filePath;
+          const isBackblazeFile = fileUrl && fileUrl.includes('/api/files/');
+          console.log('🔍 File URL to check (content):', fileUrl);
+          console.log('🔍 Is Backblaze file (content):', isBackblazeFile);
+          
+          let response;
+          
+          if (isBackblazeFile) {
+            // Extract file key from URL for Backblaze B2 files
+            const urlParts = fileUrl.split('/api/files/');
+            console.log('🔍 URL parts (content):', urlParts);
+            const fileKey = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
+            console.log('🔍 Extracted file key (content):', fileKey);
+            
+            if (!fileKey) {
+              throw new Error('Could not extract file key from URL');
+            }
+            
+            console.log('🔍 Converting Backblaze B2 Word document with key (content):', fileKey);
+            
+            response = await fetch('/api/files/convert', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ fileKey }),
             });
-            setHeadings(extractedHeadings);
-            // Keep the raw HTML intact so we can render it inside an isolated iframe via srcDoc
-            setHtmlContent(html);
+            
+            if (!response.ok) {
+              let errorDetails = `Server error: ${response.statusText}`;
+              try {
+                const responseText = await response.text();
+                console.error('🔍 Raw error response:', responseText);
+                
+                if (responseText) {
+                  try {
+                    const errData = JSON.parse(responseText);
+                    console.error('🔍 Parsed error response:', errData);
+                    errorDetails = errData.message || errData.error || errorDetails;
+                    
+                    // Add more context to the error
+                    if (errData.fileKey) {
+                      errorDetails += ` (File key: ${errData.fileKey})`;
+                    }
+                  } catch (parseError) {
+                    console.error('🔍 Could not parse error response as JSON:', parseError);
+                    errorDetails = responseText || errorDetails;
+                  }
+                } else {
+                  errorDetails = 'Empty error response from server';
+                }
+              } catch (textError) {
+                console.error('🔍 Could not read error response as text:', textError);
+              }
+              throw new Error(errorDetails);
+            }
+            
+            let result;
+            try {
+              const responseText = await response.text();
+              console.log('🔍 Raw success response:', responseText);
+              
+              if (!responseText) {
+                throw new Error('Empty response from conversion API');
+              }
+              
+              result = JSON.parse(responseText);
+              console.log('🔍 Parsed success response:', result);
+            } catch (jsonError) {
+              console.error('🔍 Could not parse success response as JSON:', jsonError);
+              throw new Error('Invalid JSON response from conversion API');
+            }
+            const html = result.html;
+            
+            if (html) {
+              // Create a temporary element to extract headings from the HTML
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = html;
+              const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
+              const extractedHeadings = Array.from(headingElements).map((heading, index) => {
+                const id = generateHeadingId(heading.textContent, index);
+                heading.id = id; // Add ID to the element itself for scrolling
+                return {
+                  id,
+                  text: cleanHeadingText(heading.textContent),
+                  level: parseInt(heading.tagName.substring(1)),
+                };
+              });
+              setHeadings(extractedHeadings);
+              // Keep the raw HTML intact so we can render it inside an isolated iframe via srcDoc
+              setHtmlContent(html);
+            } else {
+              throw new Error('Conversion returned empty HTML.');
+            }
           } else {
-            throw new Error('Conversion returned empty HTML.');
+            // Legacy local file conversion
+            const conversionApiUrl = `/api/convert-docx?filePath=${encodeURIComponent(content.filePath.replace(window.location.origin, ''))}`;
+            response = await fetch(conversionApiUrl);
+            
+            if (!response.ok) {
+              // Try to get error details from JSON, otherwise use status text
+              let errorDetails = `Server error: ${response.statusText}`;
+              try {
+                const errData = await response.json();
+                errorDetails = errData.details || errData.error || errorDetails;
+              } catch (jsonError) {
+                // Ignore if the error response is not JSON
+              }
+              throw new Error(errorDetails);
+            }
+            
+            const html = await response.text(); // The API returns full HTML (may contain <head> with styles)
+
+            if (html) {
+              // Create a temporary element to extract headings from the HTML
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = html;
+              const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
+              const extractedHeadings = Array.from(headingElements).map((heading, index) => {
+                const id = generateHeadingId(heading.textContent, index);
+                heading.id = id; // Add ID to the element itself for scrolling
+                return {
+                  id,
+                  text: cleanHeadingText(heading.textContent),
+                  level: parseInt(heading.tagName.substring(1)),
+                };
+              });
+              setHeadings(extractedHeadings);
+              // Keep the raw HTML intact so we can render it inside an isolated iframe via srcDoc
+              setHtmlContent(html);
+            } else {
+              throw new Error('Conversion returned empty HTML.');
+            }
           }
         } catch (err) {
           console.error('Error fetching or converting docx:', err);
@@ -939,7 +1146,18 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
         );
 
       case 'pdf':
-          return <iframe src={content.filePath} className="w-full h-[75vh] rounded-lg border" title={content.title} />;
+          return (
+            <iframe 
+              src={content.filePath} 
+              className="w-full h-full border-0" 
+              title={content.title}
+              style={{ 
+                width: '100%', 
+                height: '100%',
+                minHeight: 'calc(100vh - 200px)'
+              }}
+            />
+          );
 
       case 'docx':
           return (
@@ -947,8 +1165,16 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
               className="w-full rounded-lg bg-white"
               title={content.title}
               srcDoc={iframeSrcDoc}
-              style={{ width: '100%', minWidth: '100%', height: 'calc(100vh - 200px)', minHeight: '600px', border: 'none' }}
+              style={{ 
+                width: '100%', 
+                minWidth: '100%', 
+                height: 'calc(100vh - 200px)', 
+                minHeight: '600px', 
+                border: 'none',
+                overflow: 'auto'
+              }}
               ref={iframeRef} // Add ref to iframe
+              scrolling="yes"
             />
           );
 
@@ -1208,7 +1434,14 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
             </div>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full flex-shrink-0 ml-4"><XMarkIcon className="w-6 h-6" /></button>
+        <button 
+          onClick={onClose} 
+          className="p-2 text-slate-500 hover:bg-slate-100 rounded-full flex-shrink-0 ml-4 relative hover:text-slate-700 transition-colors"
+          style={{ zIndex: 10000 }}
+          title="Close viewer"
+        >
+          <XMarkIcon className="w-6 h-6" />
+        </button>
       </div>
       )}
 

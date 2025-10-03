@@ -1017,7 +1017,7 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999]" ref={containerRef} style={{ pointerEvents: 'auto' }}>
+    <div className="fixed inset-0 z-[9999]" ref={containerRef} style={{ pointerEvents: 'none' }}>
       {/* Floating Notes */}
       {floatingNotes.map(note => (
         <FloatingNote
@@ -1047,7 +1047,7 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
       {/* Main Toggle Button */}
       <button
         onClick={() => setIsNotesOpen(!isNotesOpen)}
-        className="fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-opacity-50 pointer-events-auto z-50"
+        className="fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-opacity-50 pointer-events-auto z-40"
       >
         <PencilSquareIcon className="h-6 w-6" />
       </button>

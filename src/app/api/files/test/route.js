@@ -28,14 +28,22 @@ export async function GET(request) {
       key: file.Key,
       size: file.Size,
       lastModified: file.LastModified,
-      url: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/files/${encodeURIComponent(file.Key)}`
+      url: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/files/${encodeURIComponent(file.Key)}`,
+      isDocx: file.Key.toLowerCase().endsWith('.docx')
     })) || [];
+
+    // Find .docx files for testing
+    const docxFiles = files.filter(file => file.isDocx);
 
     return NextResponse.json({
       message: 'Backblaze B2 connection successful',
       bucket: process.env.B2_BUCKET_NAME,
       fileCount: files.length,
-      files: files
+      docxCount: docxFiles.length,
+      files: files,
+      docxFiles: docxFiles,
+      testConversionUrl: docxFiles.length > 0 ? `/api/files/convert` : null,
+      sampleConversionPayload: docxFiles.length > 0 ? { fileKey: docxFiles[0].key } : null
     });
 
   } catch (error) {
