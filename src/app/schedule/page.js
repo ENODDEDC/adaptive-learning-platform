@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { api } from '../../services/apiService';
 
 const timeSlots = Array.from({ length: 15 }, (_, i) => {
   const hour = i + 7; // Starting from 7 AM
@@ -27,7 +28,7 @@ const SchedulePage = () => {
     const fetchJoinedCourses = async () => {
       console.log('Fetching joined courses...');
       try {
-        const response = await fetch('/api/courses');
+        const response = await api.getCourses();
 
         if (!response.ok) {
           throw new Error('Failed to fetch joined courses');
@@ -44,7 +45,7 @@ const SchedulePage = () => {
 
     const fetchScheduledCourses = async () => {
       try {
-        const response = await fetch('/api/schedule');
+        const response = await api.getSchedule();
 
         if (!response.ok) {
           const errorData = await response.json();

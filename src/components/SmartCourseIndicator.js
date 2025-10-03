@@ -73,7 +73,7 @@ const SmartCourseIndicator = ({ course, userBehavior, behaviorHistory, className
     };
 
     calculateRelevance();
-  }, [course.id, userBehavior, behaviorHistory]);
+  }, [course.id, course.progress, userBehavior, behaviorHistory]);
 
   // Calculate completion likelihood
   useEffect(() => {
@@ -133,7 +133,7 @@ const SmartCourseIndicator = ({ course, userBehavior, behaviorHistory, className
     };
 
     calculateCompletionLikelihood();
-  }, [course, behaviorHistory]);
+  }, [course.id, course.progress, behaviorHistory]);
 
   const getRelevanceColor = (score) => {
     if (score >= 80) return 'text-green-600 bg-green-100 border-green-200';

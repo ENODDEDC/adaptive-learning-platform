@@ -1215,7 +1215,7 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
                         
                         {note.contextualText && (
                           <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-1">
-                            "{note.contextualText.substring(0, 80)}{note.contextualText.length > 80 ? '...' : ''}"
+                            &ldquo;{note.contextualText.substring(0, 80)}{note.contextualText.length > 80 ? '...' : ''}&rdquo;
                           </p>
                         )}
                         
@@ -1300,5 +1300,7 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
     </div>
   );
 });
+
+EnhancedFloatingNotes.displayName = 'EnhancedFloatingNotes';
 
 export default EnhancedFloatingNotes;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import FileUpload from './FileUpload';
 
@@ -10,6 +10,10 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
   const [files, setFiles] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleFilesReady = useCallback((newFiles) => {
+    setFiles(newFiles);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -41,20 +45,30 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
       return;
     }
 
-    try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('dueDate', dueDate || '');
-      formData.append('type', type);
-      
-      const newFiles = files.filter(file => !file._id); // Filter out existing files
-      const existingAttachments = files.filter(file => file._id); // Filter for existing files
+    // Check if there are any pending files that haven't been uploaded yet
+    const pendingFiles = files.filter(file => !file.url && !file._id);
+    if (pendingFiles.length > 0) {
+      setError('Please wait for all files to finish uploading before creating the classwork.');
+      setLoading(false);
+      return;
+    }
 
-      formData.append('existingAttachments', JSON.stringify(existingAttachments));
-      
-      newFiles.forEach(file => {
-        formData.append('attachments', file);
+    try {
+      // Prepare classwork data - files are already uploaded to Backblaze via FileUpload component
+      const uploadedFiles = files.filter(file => file.url || file._id);
+      const classworkData = {
+        title,
+        description,
+        dueDate: dueDate || null,
+        type,
+        attachments: uploadedFiles // Only include uploaded files
+      };
+
+      console.log('🔍 CLASSWORK: Creating classwork with data:', {
+        title,
+        type,
+        attachmentCount: uploadedFiles.length,
+        attachments: uploadedFiles.map(f => ({ name: f.originalName || f.fileName, url: f.url }))
       });
 
       const method = initialData ? 'PUT' : 'POST';
@@ -62,13 +76,19 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
 
       const res = await fetch(url, {
         method,
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(classworkData),
       });
 
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
       }
+
+      const responseData = await res.json();
+      console.log('🔍 CLASSWORK: Classwork created successfully:', responseData);
 
       console.log('🔍 CLASSWORK: Calling onClassworkCreated callback');
       if (onClassworkCreated && typeof onClassworkCreated === 'function') {
@@ -159,7 +179,11 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
             
             <div>
               <label className="block mb-1.5 text-sm font-medium text-gray-700">Attachments</label>
-              <FileUpload onFilesReady={setFiles} initialFiles={files} />
+              <FileUpload
+                onFilesReady={handleFilesReady}
+                initialFiles={files}
+                folder={`classwork/${courseId}`}
+              />
             </div>
           </form>
 

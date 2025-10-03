@@ -279,7 +279,7 @@ const OfficeOnlineViewer = ({
                   </div>
                   <div>
                     <h5 className="font-medium text-purple-900">File Format</h5>
-                    <p className="text-sm text-purple-700">Ensure it's a valid .ppt or .pptx file</p>
+                    <p className="text-sm text-purple-700">Ensure it&rsquo;s a valid .ppt or .pptx file</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg">

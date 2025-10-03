@@ -13,6 +13,7 @@ import CreateClusterModal from '@/components/CreateClusterModal';
 import JoinClusterModal from '@/components/JoinClusterModal';
 import { useLayout } from '../context/LayoutContext';
 import featureFlags from '../utils/featureFlags';
+import { api } from '../services/apiService';
 
 const Layout = ({ children }) => {
   const pathname = usePathname();
@@ -47,7 +48,7 @@ const Layout = ({ children }) => {
 
            // Token is now sent via HTTP-only cookie, no need to retrieve from localStorage
            // The middleware will handle authentication and redirection.
-           const res = await fetch('/api/auth/profile'); // Assuming a single profile endpoint for simplicity, or separate based on context
+           const res = await api.getUserProfile();
            if (res.ok) {
              const data = await res.json();
              setUser(data);
@@ -158,22 +159,32 @@ const Layout = ({ children }) => {
         onClose={closeJoinCourseModal}
         onJoinCourse={async (courseKey) => {
           try {
+            console.log('Attempting to join course with key:', courseKey);
             const res = await fetch('/api/courses/join', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
+              credentials: 'include', // Include cookies for authentication
               body: JSON.stringify({ courseKey }),
             });
+            
+            const responseData = await res.json();
+            console.log('Join course response:', responseData);
+            
             if (!res.ok) {
-              throw new Error(`Error: ${res.status} ${res.statusText}`);
+              throw new Error(responseData.message || `Error: ${res.status} ${res.statusText}`);
             }
+            
             closeJoinCourseModal();
-            // Optionally, trigger a refresh of courses on the home page
-            // This would require a way to communicate from Layout to Home, e.g., context or a global state management.
-            // For now, we'll assume the user will see the updated list on next page load or manual refresh.
+            // Show success message
+            alert('Successfully joined the course!');
+            
+            // Refresh the page to show updated courses
+            window.location.reload();
           } catch (error) {
-            // Silent fail for course joining
+            console.error('Error joining course:', error);
+            alert(`Failed to join course: ${error.message}`);
           }
         }}
       />

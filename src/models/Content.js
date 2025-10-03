@@ -84,6 +84,29 @@ const contentSchema = new Schema({
   pdfPath: {
     type: String,
   },
+  // Cloud storage metadata (for Backblaze B2, AWS S3, etc.)
+  cloudStorage: {
+    provider: {
+      type: String,
+      enum: ['local', 'backblaze-b2', 'aws-s3', 'firebase'],
+      default: 'local',
+    },
+    key: {
+      type: String, // The file key/path in cloud storage
+    },
+    url: {
+      type: String, // The public URL to access the file
+    },
+    bucket: {
+      type: String, // The bucket/container name
+    },
+    region: {
+      type: String, // The storage region
+    },
+    metadata: {
+      type: Schema.Types.Mixed, // Additional provider-specific metadata
+    },
+  },
 }, {
   timestamps: true
 });

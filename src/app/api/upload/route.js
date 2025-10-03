@@ -1,53 +1,103 @@
-import { NextResponse } from 'next/server';
-import path from 'path';
-import { writeFile, mkdir } from 'fs/promises';
-import { uploadToS3, generateS3Key } from '../../../utils/s3Utils';
+import { NextRequest, NextResponse } from 'next/server';
+import backblazeService from '@/services/backblazeService';
+import { verifyToken } from '@/utils/auth';
 
 export async function POST(request) {
   try {
+    console.log('🚀 Upload API called');
+
+    // Verify authentication
+    const payload = await verifyToken();
+    if (!payload) {
+      console.error('❌ Upload failed: Unauthorized');
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const files = formData.getAll('files');
+    const folder = formData.get('folder') || 'classwork';
+
+    console.log('📁 Upload request:', {
+      fileCount: files.length,
+      folder,
+      userId: payload.userId
+    });
 
     if (!files || files.length === 0) {
-      return NextResponse.json({ message: 'No files uploaded' }, { status: 400 });
+      console.error('❌ No files provided');
+      return NextResponse.json({ message: 'No files provided' }, { status: 400 });
     }
 
-    const uploadedFileUrls = [];
+    const uploadResults = [];
 
     for (const file of files) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const originalName = file.name.replace(/\s/g, '_');
-      const fileExtension = path.extname(originalName);
+      if (file instanceof File) {
+        // Convert file to buffer
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
 
-      // Upload to S3
-      const s3Key = generateS3Key('uploads', fileExtension);
-      const uploadResult = await uploadToS3(buffer, s3Key, {
-        contentType: file.type || 'application/octet-stream',
-        optimize: false // Don't optimize non-image files
-      });
+        // Upload to Backblaze B2
+        const result = await backblazeService.uploadFile(
+          buffer,
+          file.name,
+          file.type,
+          folder
+        );
 
-      // Also save locally for backward compatibility (can be removed later)
-      try {
-        const filename = Date.now() + '-' + originalName;
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-        await mkdir(uploadDir, { recursive: true });
-        const filePath = path.join(uploadDir, filename);
-        await writeFile(filePath, buffer);
-      } catch (localError) {
-        console.warn('Failed to save locally:', localError.message);
+        uploadResults.push({
+          ...result,
+          uploadedAt: new Date().toISOString(),
+          uploadedBy: payload.userId,
+        });
       }
-
-      uploadedFileUrls.push({
-        url: uploadResult.url,
-        localUrl: `/uploads/${Date.now()}-${originalName}`,
-        s3Key: uploadResult.key,
-        size: uploadResult.size
-      });
     }
 
-    return NextResponse.json({ urls: uploadedFileUrls }, { status: 200 });
+    return NextResponse.json({
+      message: 'Files uploaded successfully',
+      files: uploadResults,
+    }, { status: 200 });
+
   } catch (error) {
-    console.error('Error uploading files:', error);
-    return NextResponse.json({ message: 'Failed to upload files', error: error.message }, { status: 500 });
+    console.error('❌ Upload API error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      statusCode: error.statusCode,
+    });
+    return NextResponse.json({
+      message: 'Failed to upload files',
+      error: error.message,
+      details: error.stack,
+    }, { status: 500 });
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    // Verify authentication
+    const payload = await verifyToken();
+    if (!payload) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { fileKey } = await request.json();
+
+    if (!fileKey) {
+      return NextResponse.json({ message: 'File key is required' }, { status: 400 });
+    }
+
+    await backblazeService.deleteFile(fileKey);
+
+    return NextResponse.json({
+      message: 'File deleted successfully',
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error('Delete error:', error);
+    return NextResponse.json({
+      message: 'Failed to delete file',
+      error: error.message,
+    }, { status: 500 });
   }
 }

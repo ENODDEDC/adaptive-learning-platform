@@ -20,10 +20,12 @@ const JoinCourseModal = ({ isOpen, onClose, onJoinCourse }) => {
     setIsLoading(true);
 
     try {
-      await onJoinCourse(courseKey);
+      await onJoinCourse(courseKey.trim().toUpperCase()); // Ensure uppercase and trimmed
       refreshCourses(); // Refresh courses on the home page
+      setCourseKey(''); // Clear the input on success
     } catch (error) {
       console.error('Error joining course:', error);
+      setError(error.message || 'Failed to join course. Please try again.');
     } finally {
       setIsLoading(false);
     }

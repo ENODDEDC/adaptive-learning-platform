@@ -321,7 +321,7 @@ const ProfileSettings = ({ user, onUpdate }) => {
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
                   <h4 className="font-medium text-gray-900">Activity Status</h4>
-                  <p className="text-sm text-gray-600">Show when you're online and active</p>
+                  <p className="text-sm text-gray-600">Show when you&rsquo;re online and active</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" className="sr-only peer" defaultChecked />

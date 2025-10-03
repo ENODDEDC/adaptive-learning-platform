@@ -337,7 +337,26 @@ const AttachmentPreviewContent = ({ attachment }) => {
       );
 
     case 'pdf':
-      return <iframe src={attachment.filePath} className="w-full h-full rounded-lg border" title={attachment.title} />;
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center p-8">
+            <div className="text-6xl mb-4">📄</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">{attachment.title || 'PDF Document'}</h3>
+            <p className="text-gray-600 mb-6">Click the button below to open the PDF in a new tab</p>
+            <a
+              href={attachment.url || attachment.filePath}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Open PDF in New Tab
+            </a>
+          </div>
+        </div>
+      );
 
     case 'docx':
       return (
@@ -1058,7 +1077,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
               
               <div className="space-y-4 max-w-md">
                 <p className="text-gray-500">
-                  This assignment doesn't have any file attachments. The assignment details and instructions are shown in the assignment card.
+                  This assignment doesn&rsquo;t have any file attachments. The assignment details and instructions are shown in the assignment card.
                 </p>
                 
                 <div className="flex gap-3 justify-center">

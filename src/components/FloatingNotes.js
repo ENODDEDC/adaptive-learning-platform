@@ -425,12 +425,12 @@ const FloatingNotes = forwardRef(({ contentId, courseId, userId, isVisible = tru
     }
   }, [resizingNote, handleResizeMouseMove, handleResizeMouseUp]);
 
-  if (!isVisible) return null;
-
   useImperativeHandle(ref, () => ({
     createContextualNote,
     getNotes: () => savedNotes,
   }));
+
+  if (!isVisible) return null;
 
   return (
     <div ref={containerRef} className="fixed inset-0 pointer-events-none z-[9999]">
@@ -543,7 +543,7 @@ const FloatingNotes = forwardRef(({ contentId, courseId, userId, isVisible = tru
                           <div className="flex-1 min-w-0">
                              {note.contextualText && (
                               <div className="text-purple-600 text-xs mt-1 italic">
-                                "{note.contextualText}"
+                                &ldquo;{note.contextualText}&rdquo;
                               </div>
                             )}
                             <div
@@ -791,5 +791,8 @@ const FloatingNote = React.memo(({
     </div>
   );
 });
+
+FloatingNotes.displayName = 'FloatingNotes';
+FloatingNote.displayName = 'FloatingNote';
 
 export default FloatingNotes;

@@ -291,6 +291,8 @@ const ClusterCard = React.memo(({
   );
 });
 
+ClusterCard.displayName = 'ClusterCard';
+
 const ClustersPage = () => {
   const { openCreateClusterModal, openJoinClusterModal } = useLayout();
   const router = useRouter();

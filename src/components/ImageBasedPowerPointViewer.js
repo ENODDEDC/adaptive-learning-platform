@@ -22,20 +22,6 @@ const ImageBasedPowerPointViewer = ({ content, onClose }) => {
     )
   });
 
-  // If fallback is triggered, use PDFPowerPointViewer with enhanced scrolling prevention
-  if (useFallback) {
-    console.log('🔄 Using PDFPowerPointViewer fallback with enhanced scrolling prevention');
-    return (
-      <PDFPowerPointViewer
-        filePath={content?.filePath ? content.filePath.replace(window.location.origin, '') : ''}
-        fileName={content?.title || content?.originalName}
-        contentId={content?._id}
-        onClose={onClose}
-        isModal={true}
-      />
-    );
-  }
-
   // Convert PowerPoint to PDF first, then PDF pages to images
   useEffect(() => {
     const convertPowerPoint = async () => {
@@ -165,6 +151,20 @@ const ImageBasedPowerPointViewer = ({ content, onClose }) => {
   const handleImageLoadStart = (index) => {
     setLoadingImages(prev => ({ ...prev, [index]: true }));
   };
+
+  // If fallback is triggered, use PDFPowerPointViewer with enhanced scrolling prevention
+  if (useFallback) {
+    console.log('🔄 Using PDFPowerPointViewer fallback with enhanced scrolling prevention');
+    return (
+      <PDFPowerPointViewer
+        filePath={content?.filePath ? content.filePath.replace(window.location.origin, '') : ''}
+        fileName={content?.title || content?.originalName}
+        contentId={content?._id}
+        onClose={onClose}
+        isModal={true}
+      />
+    );
+  }
 
   if (loading) {
     return (

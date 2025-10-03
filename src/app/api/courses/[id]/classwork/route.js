@@ -17,20 +17,15 @@ export async function POST(request, { params }) {
 
     await connectMongoDB();
     const { id } = await params;
-    const formData = await request.formData();
+    const { title, description, dueDate, type, attachments } = await request.json();
 
-    const title = formData.get('title');
-    const description = formData.get('description');
-    const dueDate = formData.get('dueDate');
-    const type = formData.get('type');
-    const attachmentFiles = formData.getAll('attachments');
     console.log('--- Classwork POST Request Data ---');
     console.log('Course ID:', id);
     console.log('Title:', title);
     console.log('Description:', description);
     console.log('Due Date:', dueDate);
     console.log('Type:', type);
-    console.log('Number of attachment files:', attachmentFiles.length);
+    console.log('Attachments:', attachments);
 
     if (!id || !title || !type) {
       console.error('Missing required fields: Course ID, title, or type.');
@@ -47,51 +42,57 @@ export async function POST(request, { params }) {
     }
 
     const attachmentIds = [];
-    if (attachmentFiles && attachmentFiles.length > 0) {
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'courses', id);
-      console.log('Upload directory:', uploadDir);
-      await fs.mkdir(uploadDir, { recursive: true });
-      console.log('Upload directory ensured.');
-
-      for (const file of attachmentFiles) {
-        console.log('Processing file:', file.name, 'Type:', file.type, 'Size:', file.size);
-        const fileName = `${Date.now()}_${file.name}`;
-        const filePath = path.join(uploadDir, fileName);
-        const fileUrl = `/uploads/courses/${id}/${fileName}`;
-        console.log('File path for saving:', filePath);
-
-        const fileBuffer = Buffer.from(await file.arrayBuffer());
-        console.log('Writing file to disk...');
-        await fs.writeFile(filePath, fileBuffer);
-        console.log('File written to disk successfully.');
-
-        // Determine content type based on MIME type
-        let contentType = 'material'; // default
-        if (file.type.startsWith('video/')) {
-          contentType = 'video';
-        } else if (file.type.startsWith('audio/')) {
-          contentType = 'audio';
-        } else if (file.type.startsWith('application/') || file.type.startsWith('text/')) {
-          contentType = 'document';
+    
+    // Handle Backblaze B2 attachments
+    if (attachments && attachments.length > 0) {
+      for (const attachment of attachments) {
+        // If it's already a saved Content document (has _id), just use it
+        if (attachment._id) {
+          attachmentIds.push(attachment._id);
+          continue;
         }
 
-        const newContent = new Content({
-          courseId: id,
-          title: fileName, // Use the unique filename as the title to avoid duplicate key errors
-          originalName: file.name, // Keep the original file name
-          filename: fileName,
-          filePath: fileUrl,
-          contentType: contentType,
-          fileSize: file.size,
-          mimeType: file.type,
-          uploadedBy: userId,
-        });
-        console.log('New Content object created:', newContent);
-        await newContent.save();
-        console.log('Content saved, ID:', newContent._id);
-        attachmentIds.push(newContent._id);
+        // If it's a new Backblaze upload, create a Content document
+        if (attachment.url && attachment.key) {
+          // Determine content type based on MIME type
+          let contentType = 'material'; // default
+          if (attachment.contentType) {
+            if (attachment.contentType.startsWith('video/')) {
+              contentType = 'video';
+            } else if (attachment.contentType.startsWith('audio/')) {
+              contentType = 'audio';
+            } else if (attachment.contentType.startsWith('application/') || attachment.contentType.startsWith('text/')) {
+              contentType = 'document';
+            }
+          }
+
+          const newContent = new Content({
+            courseId: id,
+            title: attachment.fileName || attachment.originalName,
+            originalName: attachment.originalName,
+            filename: attachment.fileName,
+            filePath: attachment.url, // Backblaze B2 URL
+            contentType: contentType,
+            fileSize: attachment.size,
+            mimeType: attachment.contentType,
+            uploadedBy: userId,
+            // Store Backblaze-specific metadata
+            cloudStorage: {
+              provider: 'backblaze-b2',
+              key: attachment.key,
+              url: attachment.url,
+              bucket: process.env.B2_BUCKET_NAME
+            }
+          });
+
+          console.log('New Content object created for Backblaze file:', newContent);
+          await newContent.save();
+          console.log('Content saved, ID:', newContent._id);
+          attachmentIds.push(newContent._id);
+        }
       }
     }
+    
     console.log('Attachment IDs:', attachmentIds);
 
     console.log('Creating new Assignment...');
@@ -117,7 +118,6 @@ export async function POST(request, { params }) {
     return NextResponse.json(populatedClasswork, { status: 201 });
   } catch (error) {
     console.error('Create Classwork Error:', error);
-    // Return a more specific error message in debug mode if needed, but for now, keep it generic for production
     return NextResponse.json({ message: 'Internal server error', details: error.message }, { status: 500 });
   }
 }

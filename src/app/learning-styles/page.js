@@ -45,7 +45,7 @@ const LearningStylesPage = () => {
     },
     {
       id: 4,
-      question: "You remember information best when it's presented as:",
+      question: "You remember information best when it&rsquo;s presented as:",
       options: [
         { text: "Pictures, diagrams, or color-coded materials", style: "visual", value: "A" },
         { text: "Spoken words, music, or rhythmic patterns", style: "auditory", value: "B" },
@@ -75,7 +75,7 @@ const LearningStylesPage = () => {
     },
     {
       id: 7,
-      question: "When you're trying to concentrate, you need:",
+      question: "When you&rsquo;re trying to concentrate, you need:",
       options: [
         { text: "A clean, organized visual environment", style: "visual", value: "A" },
         { text: "Background music or complete silence", style: "auditory", value: "B" },
@@ -269,7 +269,7 @@ const LearningStylesPage = () => {
                   <h4 className="font-semibold text-yellow-800 mb-1">Assessment Information</h4>
                   <p className="text-yellow-700 text-sm">
                     This assessment takes about 5-7 minutes to complete. Answer honestly based on your natural preferences. 
-                    There are no right or wrong answers - we're simply identifying how you learn best.
+                    There are no right or wrong answers - we&rsquo;re simply identifying how you learn best.
                   </p>
                 </div>
               </div>
@@ -524,9 +524,9 @@ const LearningStylesPage = () => {
           {/* Action Buttons */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">What's Next?</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">What&rsquo;s Next?</h3>
               <p className="text-gray-600 mb-6">
-                Your learning style results have been saved to your profile. We'll use this information to personalize your learning experience.
+                Your learning style results have been saved to your profile. We&rsquo;ll use this information to personalize your learning experience.
               </p>
               
               <div className="flex flex-wrap justify-center gap-4">

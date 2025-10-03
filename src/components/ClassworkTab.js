@@ -19,6 +19,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   const [classworkType, setClassworkType] = useState('assignment');
   const [isSubmitAssignmentModalOpen, setIsSubmitAssignmentModalOpen] = useState(false);
   const [submittingAssignmentId, setSubmittingAssignmentId] = useState(null);
+  const [isCreatingForm, setIsCreatingForm] = useState(false);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
@@ -39,44 +40,22 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   const [openDropdownId, setOpenDropdownId] = useState(null); // Track which dropdown is open
   const [isDragOperationInProgress, setIsDragOperationInProgress] = useState(false); // Track drag operations
 
-  // Helper function to create a new form and redirect to editor
-  const handleCreateForm = async () => {
-    try {
-      const formData = {
-        title: 'Untitled Form',
-        description: '',
-        type: 'form',
-        questions: [{
-          id: Date.now().toString(),
-          type: 'multiple_choice',
-          title: '',
-          required: false,
-          options: ['Option 1']
-        }],
-        courseId: courseDetails?._id
-      };
+  // Form builder modal removed - now using full-page editor
 
-      const res = await fetch(`/api/courses/${courseDetails?._id}/forms`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(formData)
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to create form');
-      }
-
-      const responseData = await res.json();
-      // Redirect to the full-page editor
-      window.location.href = `/forms/${responseData.form._id}/edit`;
-    } catch (err) {
-      console.error('Failed to create form:', err);
-      alert('Failed to create form. Please try again.');
+  // Helper function to redirect to full-page form editor
+  const handleCreateForm = () => {
+    // Check if courseDetails is available
+    if (!courseDetails || !courseDetails._id) {
+      console.error('Course details not available:', courseDetails);
+      alert('Course information is not loaded yet. Please wait a moment and try again.');
+      return;
     }
+
+    // Redirect to full-page form editor for consistency
+    window.location.href = `/forms/new?courseId=${courseDetails._id}`;
   };
+
+
 
   // Helper function to edit existing form
   const handleEditForm = (form) => {
@@ -424,7 +403,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     const isCompleted = submission && submission.status === 'submitted' && submission.grade !== undefined && submission.grade !== null;
     const isInProgress = submission && submission.status === 'draft';
     const isOverdue = item.itemType === 'assignment' && item.dueDate && new Date(item.dueDate) < new Date() && !isCompleted;
-    
+
     // Enhanced Progress calculation with more realistic logic
     const getProgress = () => {
       // Forms don't have progress like assignments
@@ -629,7 +608,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                   </div>
                 </div>
               </div>
-              
+
               {/* Status Badges */}
               <div className="flex flex-col items-end gap-2">
                 {isCompleted && (
@@ -1039,37 +1018,37 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                   Attachments
                 </h4>
                 {Array.isArray(item.attachments) && item.attachments.length > 0 ? (
-                   <div className="flex flex-wrap gap-2">
-                     {item.attachments.slice(0, 3).map((attachment, index) => {
-                       const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
-                       const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
-                       return (
-                         <button
-                           key={attachment._id || index}
-                           onClick={() => onOpenContent ? onOpenContent(attachment) : null}
-                           className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 group cursor-pointer"
-                           title={`Click to preview ${fileName}`}
-                         >
-                           <svg className="w-3 h-3 text-gray-500 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                           </svg>
-                           <span className="text-xs font-medium text-gray-700 group-hover:text-blue-700">
-                             {extension}
-                           </span>
-                         </button>
-                       );
-                     })}
-                     {item.attachments.length > 3 && (
-                       <div className="inline-flex items-center gap-1 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
-                         <span className="text-xs font-medium text-blue-700">+{item.attachments.length - 3}</span>
-                       </div>
-                     )}
-                   </div>
-                 ) : (
-                   <div className="text-sm text-gray-500 italic">
-                     No attachments
-                   </div>
-                 )}
+                  <div className="flex flex-wrap gap-2">
+                    {item.attachments.slice(0, 3).map((attachment, index) => {
+                      const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
+                      const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+                      return (
+                        <button
+                          key={attachment._id || index}
+                          onClick={() => onOpenContent ? onOpenContent(attachment) : null}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 group cursor-pointer"
+                          title={`Click to preview ${fileName}`}
+                        >
+                          <svg className="w-3 h-3 text-gray-500 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-xs font-medium text-gray-700 group-hover:text-blue-700">
+                            {extension}
+                          </span>
+                        </button>
+                      );
+                    })}
+                    {item.attachments.length > 3 && (
+                      <div className="inline-flex items-center gap-1 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
+                        <span className="text-xs font-medium text-blue-700">+{item.attachments.length - 3}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 italic">
+                    No attachments
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1705,357 +1684,312 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     <div className="space-y-8">
       {/* Enhanced Professional classwork management section */}
       <>
-      {isInstructor && (
-        <div className="bg-white border border-gray-200/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 relative">
-          <div className="px-8 py-6 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 leading-tight">Classwork</h2>
-                <p className="text-sm font-medium text-gray-600 mt-1">Create and manage assignments, quizzes, and materials</p>
-              </div>
-              <div className="relative">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-3 px-6 py-3 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-600 rounded-xl hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg shadow-blue-500/25"
-                  onClick={() => setIsClassworkMenuOpen(!isClassworkMenuOpen)}
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
-                  </svg>
-                  Create
-                  <svg className="w-5 h-5 transition-transform duration-300" style={{transform: isClassworkMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)'}} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clipRule="evenodd"/>
-                  </svg>
-                </button>
-                <div id="classwork-menu" className={`absolute right-0 z-50 w-72 mt-3 origin-top-right bg-white border border-gray-200/60 rounded-xl shadow-2xl backdrop-blur-sm focus:outline-none ${isClassworkMenuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'} transition-all duration-200`}>
-                  <div className="py-3">
-                    <div className="px-4 py-2 mb-2">
-                      <h3 className="text-sm font-bold text-gray-900">Create New</h3>
-                      <p className="text-xs text-gray-600">Choose the type of activity to create</p>
+        {isInstructor && (
+          <div className="bg-white border border-gray-200/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 relative">
+            <div className="px-8 py-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 leading-tight">Classwork</h2>
+                  <p className="text-sm font-medium text-gray-600 mt-1">Create and manage assignments, quizzes, and materials</p>
+                </div>
+                <div className="relative">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-3 px-6 py-3 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-600 rounded-xl hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg shadow-blue-500/25"
+                    onClick={() => setIsClassworkMenuOpen(!isClassworkMenuOpen)}
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Create
+                    <svg className="w-5 h-5 transition-transform duration-300" style={{ transform: isClassworkMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  <div id="classwork-menu" className={`absolute right-0 z-50 w-72 mt-3 origin-top-right bg-white border border-gray-200/60 rounded-xl shadow-2xl backdrop-blur-sm focus:outline-none ${isClassworkMenuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'} transition-all duration-200`}>
+                    <div className="py-3">
+                      <div className="px-4 py-2 mb-2">
+                        <h3 className="text-sm font-bold text-gray-900">Create New</h3>
+                        <p className="text-xs text-gray-600">Choose the type of activity to create</p>
+                      </div>
+                      <div className="border-t border-gray-100"></div>
+                      <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100/50 hover:text-blue-900 transition-all duration-200 group" onClick={() => { setClassworkType('assignment'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-200">
+                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-semibold">Assignment</div>
+                          <div className="text-xs text-gray-500">Create a new assignment with attachments</div>
+                        </div>
+                      </button>
+                      <button
+                        className={`w-full flex items-center gap-4 px-5 py-4 text-left transition-all duration-200 group ${isCreatingForm
+                            ? 'text-gray-400 cursor-not-allowed opacity-50'
+                            : 'text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100/50 hover:text-emerald-900'
+                          }`}
+                        onClick={() => {
+                          if (!isCreatingForm) {
+                            handleCreateForm().finally(() => {
+                              setIsClassworkMenuOpen(false);
+                            });
+                          }
+                        }}
+                        disabled={isCreatingForm}
+                      >
+                        <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-200">
+                          <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7h-2m0 0H9m4 0v4m-4-4v4" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-semibold">
+                            {isCreatingForm ? 'Creating...' : 'Form'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {isCreatingForm ? 'Please wait...' : 'Create forms and collect responses'}
+                          </div>
+                        </div>
+                      </button>
+                      <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100/50 hover:text-orange-900 transition-all duration-200 group" onClick={() => { setClassworkType('question'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
+                        <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors duration-200">
+                          <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-semibold">Question</div>
+                          <div className="text-xs text-gray-500">Post a question for discussion</div>
+                        </div>
+                      </button>
+                      <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100/50 hover:text-emerald-900 transition-all duration-200 group" onClick={() => { setClassworkType('material'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
+                        <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-200">
+                          <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-semibold">Material</div>
+                          <div className="text-xs text-gray-500">Share course materials and resources</div>
+                        </div>
+                      </button>
                     </div>
-                    <div className="border-t border-gray-100"></div>
-                    <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100/50 hover:text-blue-900 transition-all duration-200 group" onClick={() => { setClassworkType('assignment'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-200">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <div className="font-semibold">Assignment</div>
-                        <div className="text-xs text-gray-500">Create a new assignment with attachments</div>
-                      </div>
-                    </button>
-                    <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100/50 hover:text-emerald-900 transition-all duration-200 group" onClick={() => { handleCreateForm(); setIsClassworkMenuOpen(false); }}>
-                      <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-200">
-                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7h-2m0 0H9m4 0v4m-4-4v4" />
-                        </svg>
-                      </div>
-                      <div>
-                        <div className="font-semibold">Form</div>
-                        <div className="text-xs text-gray-500">Create forms and collect responses</div>
-                      </div>
-                    </button>
-                    <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100/50 hover:text-orange-900 transition-all duration-200 group" onClick={() => { setClassworkType('question'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
-                      <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors duration-200">
-                        <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <div className="font-semibold">Question</div>
-                        <div className="text-xs text-gray-500">Post a question for discussion</div>
-                      </div>
-                    </button>
-                    <button className="w-full flex items-center gap-4 px-5 py-4 text-left text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100/50 hover:text-emerald-900 transition-all duration-200 group" onClick={() => { setClassworkType('material'); setIsCreateClassworkModalOpen(true); setIsClassworkMenuOpen(false); }}>
-                      <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-200">
-                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                      </div>
-                      <div>
-                        <div className="font-semibold">Material</div>
-                        <div className="text-xs text-gray-500">Share course materials and resources</div>
-                      </div>
-                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="bg-white border border-gray-200/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
-        {/* Enhanced Header */}
-        <div className="px-8 py-5 border-b border-gray-100">
-          <div className="flex flex-col gap-4">
-            {/* Minimal Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Activities</h2>
-                <p className="text-sm text-gray-500 mt-0.5">All classwork and assignments</p>
-              </div>
+        <div className="bg-white border border-gray-200/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+          {/* Enhanced Header */}
+          <div className="px-8 py-5 border-b border-gray-100">
+            <div className="flex flex-col gap-4">
+              {/* Minimal Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Activities</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">All classwork and assignments</p>
+                </div>
 
-              {/* Essential Controls Only */}
-              <div className="flex items-center gap-3">
-                {/* Compact Search */}
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                    <svg className="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+                {/* Essential Controls Only */}
+                <div className="flex items-center gap-3">
+                  {/* Compact Search */}
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                      <svg className="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-8 pr-3 py-1.5 border border-gray-300 rounded-md text-sm w-48 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 border border-gray-300 rounded-md text-sm w-48 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                </div>
 
-                {/* View Mode Toggle */}
-                <div className="flex items-center bg-gray-100 rounded-md p-1">
-                  <button
-                    onClick={() => handleViewModeChange('grid')}
-                    className={`p-1.5 rounded transition-all duration-200 ${
-                      viewMode === 'grid'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                    title="Grid view"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleViewModeChange('list')}
-                    className={`p-1.5 rounded transition-all duration-200 ${
-                      viewMode === 'list'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                    title="List view"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleViewModeChange('timeline')}
-                    className={`p-1.5 rounded transition-all duration-200 ${
-                      viewMode === 'timeline'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                    title="Timeline view"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleViewModeChange('kanban')}
-                    className={`p-1.5 rounded transition-all duration-200 ${
-                      viewMode === 'kanban'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                    title="Kanban view"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-                    </svg>
-                  </button>
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center bg-gray-100 rounded-md p-1">
+                    <button
+                      onClick={() => handleViewModeChange('grid')}
+                      className={`p-1.5 rounded transition-all duration-200 ${viewMode === 'grid'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      title="Grid view"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleViewModeChange('list')}
+                      className={`p-1.5 rounded transition-all duration-200 ${viewMode === 'list'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      title="List view"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleViewModeChange('timeline')}
+                      className={`p-1.5 rounded transition-all duration-200 ${viewMode === 'timeline'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      title="Timeline view"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleViewModeChange('kanban')}
+                      className={`p-1.5 rounded transition-all duration-200 ${viewMode === 'kanban'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      title="Kanban view"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Minimal Filter Controls */}
-            <div className="flex items-center gap-4">
-              {/* Essential Filters Only */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Filter:</span>
-                <div className="flex items-center bg-gray-100 rounded-md p-1">
+              {/* Minimal Filter Controls */}
+              <div className="flex items-center gap-4">
+                {/* Essential Filters Only */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Filter:</span>
+                  <div className="flex items-center bg-gray-100 rounded-md p-1">
+                    {[
+                      { key: 'all', label: 'All' },
+                      { key: 'assignment', label: 'Assignments' },
+                      { key: 'form', label: 'Forms' },
+                      { key: 'material', label: 'Materials' }
+                    ].map(({ key, label }) => (
+                      <button
+                        key={key}
+                        onClick={() => setFilter(key)}
+                        className={`px-2.5 py-1 text-sm rounded transition-all duration-200 ${filter === key
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Only Essential Quick Filters */}
+                <div className="flex items-center gap-1.5">
                   {[
-                    { key: 'all', label: 'All' },
-                    { key: 'assignment', label: 'Assignments' },
-                    { key: 'form', label: 'Forms' },
-                    { key: 'material', label: 'Materials' }
+                    { key: 'thisWeek', label: 'Due This Week' },
+                    { key: 'overdue', label: 'Overdue' },
+                    { key: 'completed', label: 'Completed' }
                   ].map(({ key, label }) => (
                     <button
                       key={key}
-                      onClick={() => setFilter(key)}
-                      className={`px-2.5 py-1 text-sm rounded transition-all duration-200 ${
-                        filter === key
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
+                      onClick={() => {
+                        if (key === 'thisWeek' || key === 'overdue') {
+                          setDateRange(key);
+                          setStatusFilter('all');
+                        } else {
+                          setStatusFilter(key);
+                          setDateRange('all');
+                        }
+                      }}
+                      className={`px-2 py-1 text-xs rounded-full transition-all duration-200 ${(key === 'thisWeek' || key === 'overdue') && dateRange === key
+                          ? 'bg-blue-100 text-blue-700'
+                          : statusFilter === key
+                            ? 'bg-gray-100 text-gray-700'
+                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                        }`}
                     >
                       {label}
                     </button>
                   ))}
                 </div>
+
+                {/* Simple Sort */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="text-sm text-gray-600 bg-transparent border-none focus:outline-none cursor-pointer"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="dueDate">Due Date</option>
+                </select>
               </div>
 
-              {/* Only Essential Quick Filters */}
-              <div className="flex items-center gap-1.5">
-                {[
-                  { key: 'thisWeek', label: 'Due This Week' },
-                  { key: 'overdue', label: 'Overdue' },
-                  { key: 'completed', label: 'Completed' }
-                ].map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      if (key === 'thisWeek' || key === 'overdue') {
-                        setDateRange(key);
-                        setStatusFilter('all');
-                      } else {
-                        setStatusFilter(key);
-                        setDateRange('all');
-                      }
-                    }}
-                    className={`px-2 py-1 text-xs rounded-full transition-all duration-200 ${
-                      (key === 'thisWeek' || key === 'overdue') && dateRange === key
-                        ? 'bg-blue-100 text-blue-700'
-                        : statusFilter === key
-                        ? 'bg-gray-100 text-gray-700'
-                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    {label}
-                  </button>
+            </div>
+          </div>
+          <div className={`p-10 smooth-layout-change ${isTransitioning ? 'layout-transition-active' : ''}`}>
+            {(loading && !isDragOperationInProgress) ? (
+              <div className="space-y-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-white border border-gray-100/60 rounded-2xl p-6 shadow-sm animate-pulse hover:shadow-md transition-shadow duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 rounded-xl animate-pulse"></div>
+                      <div className="flex-1 space-y-3">
+                        <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/3 animate-pulse"></div>
+                        <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/4 animate-pulse"></div>
+                        <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/2 animate-pulse"></div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-
-              {/* Simple Sort */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="text-sm text-gray-600 bg-transparent border-none focus:outline-none cursor-pointer"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="dueDate">Due Date</option>
-              </select>
-            </div>
-
-          </div>
-        </div>
-        <div className={`p-10 smooth-layout-change ${isTransitioning ? 'layout-transition-active' : ''}`}>
-          {(loading && !isDragOperationInProgress) ? (
-            <div className="space-y-6">
-              {[...Array(3)].map((_,i) => (
-                <div key={i} className="bg-white border border-gray-100/60 rounded-2xl p-6 shadow-sm animate-pulse hover:shadow-md transition-shadow duration-300">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 rounded-xl animate-pulse"></div>
-                    <div className="flex-1 space-y-3">
-                      <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/3 animate-pulse"></div>
-                      <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/4 animate-pulse"></div>
-                      <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/2 animate-pulse"></div>
-                    </div>
+            ) : assignments.length === 0 ? (
+              <div className="py-20 text-center group">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl group-hover:from-blue-400/30 group-hover:to-purple-400/30 transition-all duration-500"></div>
+                  <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                    <svg className="w-12 h-12 text-blue-500 group-hover:text-blue-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : assignments.length === 0 ? (
-            <div className="py-20 text-center group">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl group-hover:from-blue-400/30 group-hover:to-purple-400/30 transition-all duration-500"></div>
-                <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                  <svg className="w-12 h-12 text-blue-500 group-hover:text-blue-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
+                <h4 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-gray-800 transition-colors duration-300">No activities yet</h4>
+                <p className="text-gray-600 max-w-md mx-auto leading-relaxed group-hover:text-gray-700 transition-colors duration-300">Activities will appear here once your instructor creates assignments, quizzes, or materials for this course.</p>
               </div>
-              <h4 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-gray-800 transition-colors duration-300">No activities yet</h4>
-              <p className="text-gray-600 max-w-md mx-auto leading-relaxed group-hover:text-gray-700 transition-colors duration-300">Activities will appear here once your instructor creates assignments, quizzes, or materials for this course.</p>
-            </div>
-          ) : (() => {
-            const filtered = getFilteredAndSortedAssignments();
-            
-            if (filtered.length === 0) {
-              return (
-                <div className="py-20 text-center group">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl group-hover:from-amber-400/30 group-hover:to-orange-400/30 transition-all duration-500"></div>
-                    <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                      <svg className="w-12 h-12 text-amber-500 group-hover:text-amber-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <h4 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-gray-800 transition-colors duration-300">No matching activities</h4>
-                  <p className="text-gray-600 max-w-md mx-auto leading-relaxed group-hover:text-gray-700 transition-colors duration-300">Try adjusting your filters to see more activities, or check back later for new content.</p>
-                </div>
-              );
-            }
+            ) : (() => {
+              const filtered = getFilteredAndSortedAssignments();
 
-            // Render based on view mode
-            switch (viewMode) {
-              case 'grid':
+              if (filtered.length === 0) {
                 return (
-                  <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12 layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}>
-                    {filtered.map((item) => (
-                      <EnhancedActivityCard
-                        key={item._id}
-                        assignment={item.itemType === 'assignment' ? item : null}
-                        form={item.itemType === 'form' ? item : null}
-                        submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
-                        isInstructor={isInstructor}
-                        onEdit={() => {
-                          if (item.itemType === 'form') {
-                            handleEditForm(item);
-                          } else {
-                            setEditingClasswork(item);
-                            setIsCreateClassworkModalOpen(true);
-                          }
-                        }}
-                        onDelete={() => handleDeleteClasswork(item._id)}
-                        onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
-                        onOpenContent={onOpenContent}
-                        viewMode="grid"
-                      />
-                    ))}
+                  <div className="py-20 text-center group">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl group-hover:from-amber-400/30 group-hover:to-orange-400/30 transition-all duration-500"></div>
+                      <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                        <svg className="w-12 h-12 text-amber-500 group-hover:text-amber-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <h4 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-gray-800 transition-colors duration-300">No matching activities</h4>
+                    <p className="text-gray-600 max-w-md mx-auto leading-relaxed group-hover:text-gray-700 transition-colors duration-300">Try adjusting your filters to see more activities, or check back later for new content.</p>
                   </div>
                 );
-              
-              case 'list':
-                return (
-                  <div className={`space-y-3 lg:space-y-4 layout-transition-list-to-grid ${isTransitioning ? 'layout-transition-active' : ''}`}>
-                    {filtered.map((item) => (
-                      <EnhancedActivityCard
-                        key={item._id}
-                        assignment={item.itemType === 'assignment' ? item : null}
-                        form={item.itemType === 'form' ? item : null}
-                        submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
-                        isInstructor={isInstructor}
-                        onEdit={() => {
-                          if (item.itemType === 'form') {
-                            handleEditForm(item);
-                          } else {
-                            setEditingClasswork(item);
-                            setIsCreateClassworkModalOpen(true);
-                          }
-                        }}
-                        onDelete={() => handleDeleteClasswork(item._id)}
-                        onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
-                        onOpenContent={onOpenContent}
-                        viewMode="list"
-                      />
-                    ))}
-                  </div>
-                );
-              
-              case 'timeline':
-                return (
-                  <div className={`relative layout-transition-to-timeline ${isTransitioning ? 'layout-transition-active' : ''}`}>
-                    <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-blue-200"></div>
-                    <div className="space-y-6 lg:space-y-8">
+              }
+
+              // Render based on view mode
+              switch (viewMode) {
+                case 'grid':
+                  return (
+                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12 layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}>
                       {filtered.map((item) => (
                         <EnhancedActivityCard
                           key={item._id}
@@ -2074,137 +2008,192 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                           onDelete={() => handleDeleteClasswork(item._id)}
                           onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
                           onOpenContent={onOpenContent}
-                          viewMode="timeline"
+                          viewMode="grid"
                         />
                       ))}
                     </div>
-                  </div>
-                );
-              
-              case 'kanban':
-                return (
-                  <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 layout-transition-to-kanban ${isTransitioning ? 'layout-transition-active' : ''}`}>
-                    {isDragLoading && (
-                      <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-sm font-medium">Updating...</span>
+                  );
+
+                case 'list':
+                  return (
+                    <div className={`space-y-3 lg:space-y-4 layout-transition-list-to-grid ${isTransitioning ? 'layout-transition-active' : ''}`}>
+                      {filtered.map((item) => (
+                        <EnhancedActivityCard
+                          key={item._id}
+                          assignment={item.itemType === 'assignment' ? item : null}
+                          form={item.itemType === 'form' ? item : null}
+                          submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
+                          isInstructor={isInstructor}
+                          onEdit={() => {
+                            if (item.itemType === 'form') {
+                              handleEditForm(item);
+                            } else {
+                              setEditingClasswork(item);
+                              setIsCreateClassworkModalOpen(true);
+                            }
+                          }}
+                          onDelete={() => handleDeleteClasswork(item._id)}
+                          onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
+                          onOpenContent={onOpenContent}
+                          viewMode="list"
+                        />
+                      ))}
+                    </div>
+                  );
+
+                case 'timeline':
+                  return (
+                    <div className={`relative layout-transition-to-timeline ${isTransitioning ? 'layout-transition-active' : ''}`}>
+                      <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-blue-200"></div>
+                      <div className="space-y-6 lg:space-y-8">
+                        {filtered.map((item) => (
+                          <EnhancedActivityCard
+                            key={item._id}
+                            assignment={item.itemType === 'assignment' ? item : null}
+                            form={item.itemType === 'form' ? item : null}
+                            submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
+                            isInstructor={isInstructor}
+                            onEdit={() => {
+                              if (item.itemType === 'form') {
+                                handleEditForm(item);
+                              } else {
+                                setEditingClasswork(item);
+                                setIsCreateClassworkModalOpen(true);
+                              }
+                            }}
+                            onDelete={() => handleDeleteClasswork(item._id)}
+                            onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
+                            onOpenContent={onOpenContent}
+                            viewMode="timeline"
+                          />
+                        ))}
                       </div>
-                    )}
-                    {['notStarted', 'inProgress', 'completed'].map((status) => {
-                      // Simplified filtering with better state synchronization
-                      const statusAssignments = assignments.filter(assignment => {
-                        const submission = submissions.find(s => String(s.assignment) === String(assignment._id));
+                    </div>
+                  );
 
-                        if (status === 'notStarted') {
-                          return !submission; // No submission = Not Started
-                        }
-                        if (status === 'inProgress') {
-                          return submission && submission.status === 'draft'; // Draft = In Progress
-                        }
-                        if (status === 'completed') {
-                          return submission && submission.status === 'submitted' && submission.grade !== undefined && submission.grade !== null; // Submitted + graded = Completed
-                        }
-                        return false;
-                      });
+                case 'kanban':
+                  return (
+                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 layout-transition-to-kanban ${isTransitioning ? 'layout-transition-active' : ''}`}>
+                      {isDragLoading && (
+                        <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-sm font-medium">Updating...</span>
+                        </div>
+                      )}
+                      {['notStarted', 'inProgress', 'completed'].map((status) => {
+                        // Simplified filtering with better state synchronization
+                        const statusAssignments = assignments.filter(assignment => {
+                          const submission = submissions.find(s => String(s.assignment) === String(assignment._id));
 
-                      // Add forms to appropriate columns (forms are never "in progress" or "completed")
-                      const statusForms = status === 'notStarted' ? forms : [];
+                          if (status === 'notStarted') {
+                            return !submission; // No submission = Not Started
+                          }
+                          if (status === 'inProgress') {
+                            return submission && submission.status === 'draft'; // Draft = In Progress
+                          }
+                          if (status === 'completed') {
+                            return submission && submission.status === 'submitted' && submission.grade !== undefined && submission.grade !== null; // Submitted + graded = Completed
+                          }
+                          return false;
+                        });
 
-                      return (
-                        <div
-                          key={status}
-                          className={`kanban-column bg-gray-50/50 rounded-xl p-5 border border-gray-200/60 transition-all duration-200 ${isDragLoading ? 'opacity-75 pointer-events-none' : ''}`}
-                          onDragOver={handleDragOver}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, status)}
-                          style={{ minHeight: '200px' }}
-                        >
-                          <h3 className="text-base font-bold text-gray-800 mb-5 capitalize flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full ${
-                              status === 'notStarted' ? 'bg-gray-400' :
-                              status === 'inProgress' ? 'bg-yellow-500 animate-pulse' :
-                              'bg-emerald-500'
-                            }`}></div>
-                            {status === 'inProgress' ? 'In Progress' :
-                             status.replace(/([A-Z])/g, ' $1').trim()}
-                            <span className="text-sm font-normal text-gray-500">({statusAssignments.length + (status === 'notStarted' ? statusForms.length : 0)})</span>
-                          </h3>
-                          <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-                            {statusAssignments.map((assignment) => {
-                              const assignmentSubmission = submissions.find(s => String(s.assignment) === String(assignment._id));
+                        // Add forms to appropriate columns (forms are never "in progress" or "completed")
+                        const statusForms = status === 'notStarted' ? forms : [];
 
-                              return (
+                        return (
+                          <div
+                            key={status}
+                            className={`kanban-column bg-gray-50/50 rounded-xl p-5 border border-gray-200/60 transition-all duration-200 ${isDragLoading ? 'opacity-75 pointer-events-none' : ''}`}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, status)}
+                            style={{ minHeight: '200px' }}
+                          >
+                            <h3 className="text-base font-bold text-gray-800 mb-5 capitalize flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${status === 'notStarted' ? 'bg-gray-400' :
+                                  status === 'inProgress' ? 'bg-yellow-500 animate-pulse' :
+                                    'bg-emerald-500'
+                                }`}></div>
+                              {status === 'inProgress' ? 'In Progress' :
+                                status.replace(/([A-Z])/g, ' $1').trim()}
+                              <span className="text-sm font-normal text-gray-500">({statusAssignments.length + (status === 'notStarted' ? statusForms.length : 0)})</span>
+                            </h3>
+                            <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+                              {statusAssignments.map((assignment) => {
+                                const assignmentSubmission = submissions.find(s => String(s.assignment) === String(assignment._id));
+
+                                return (
+                                  <div
+                                    key={assignment._id}
+                                    className="kanban-card cursor-move"
+                                    draggable="true"
+                                    onDragStart={(e) => handleDragStart(e, assignment._id)}
+                                    onDragEnd={handleDragEnd}
+                                    style={{ pointerEvents: 'auto' }}
+                                  >
+                                    <EnhancedActivityCard
+                                      assignment={assignment}
+                                      submission={assignmentSubmission}
+                                      isInstructor={isInstructor}
+                                      onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
+                                      onDelete={() => handleDeleteClasswork(assignment._id)}
+                                      onSubmit={() => { setSubmittingAssignmentId(assignment._id); setIsSubmitAssignmentModalOpen(true); }}
+                                      onOpenContent={onOpenContent}
+                                      viewMode="kanban"
+                                    />
+                                  </div>
+                                );
+                              })}
+                              {statusForms.map((form) => (
                                 <div
-                                  key={assignment._id}
+                                  key={form._id}
                                   className="kanban-card cursor-move"
                                   draggable="true"
-                                  onDragStart={(e) => handleDragStart(e, assignment._id)}
+                                  onDragStart={(e) => handleDragStart(e, form._id)}
                                   onDragEnd={handleDragEnd}
                                   style={{ pointerEvents: 'auto' }}
                                 >
                                   <EnhancedActivityCard
-                                    assignment={assignment}
-                                    submission={assignmentSubmission}
+                                    form={form}
                                     isInstructor={isInstructor}
-                                    onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
-                                    onDelete={() => handleDeleteClasswork(assignment._id)}
-                                    onSubmit={() => { setSubmittingAssignmentId(assignment._id); setIsSubmitAssignmentModalOpen(true); }}
+                                    onEdit={() => {
+                                      handleEditForm(form);
+                                    }}
+                                    onDelete={() => handleDeleteClasswork(form._id)}
                                     onOpenContent={onOpenContent}
                                     viewMode="kanban"
                                   />
                                 </div>
-                              );
-                            })}
-                            {statusForms.map((form) => (
-                              <div
-                                key={form._id}
-                                className="kanban-card cursor-move"
-                                draggable="true"
-                                onDragStart={(e) => handleDragStart(e, form._id)}
-                                onDragEnd={handleDragEnd}
-                                style={{ pointerEvents: 'auto' }}
-                              >
-                                <EnhancedActivityCard
-                                  form={form}
-                                  isInstructor={isInstructor}
-                                  onEdit={() => {
-                                    handleEditForm(form);
-                                  }}
-                                  onDelete={() => handleDeleteClasswork(form._id)}
-                                  onOpenContent={onOpenContent}
-                                  viewMode="kanban"
-                                />
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              
-              default:
-                return (
-                  <div className={`space-y-6 layout-transition-default ${isTransitioning ? 'layout-transition-active' : ''}`}>
-                    {filtered.map((assignment) => (
-                      <EnhancedActivityCard 
-                        key={assignment._id} 
-                        assignment={assignment} 
-                        submission={submissions.find(s => String(s.assignment) === String(assignment._id))}
-                        isInstructor={isInstructor}
-                        onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
-                        onDelete={() => handleDeleteClasswork(assignment._id)}
-                        onSubmit={() => { setSubmittingAssignmentId(assignment._id); setIsSubmitAssignmentModalOpen(true); }}
-                        onOpenContent={onOpenContent}
-                        viewMode="default"
-                      />
-                    ))}
-                  </div>
-                );
-            }
-          })()}
+                        );
+                      })}
+                    </div>
+                  );
+
+                default:
+                  return (
+                    <div className={`space-y-6 layout-transition-default ${isTransitioning ? 'layout-transition-active' : ''}`}>
+                      {filtered.map((assignment) => (
+                        <EnhancedActivityCard
+                          key={assignment._id}
+                          assignment={assignment}
+                          submission={submissions.find(s => String(s.assignment) === String(assignment._id))}
+                          isInstructor={isInstructor}
+                          onEdit={() => { setEditingClasswork(assignment); setIsCreateClassworkModalOpen(true); }}
+                          onDelete={() => handleDeleteClasswork(assignment._id)}
+                          onSubmit={() => { setSubmittingAssignmentId(assignment._id); setIsSubmitAssignmentModalOpen(true); }}
+                          onOpenContent={onOpenContent}
+                          viewMode="default"
+                        />
+                      ))}
+                    </div>
+                  );
+              }
+            })()}
+          </div>
         </div>
-      </div>
       </>
 
       <CreateClassworkModal
@@ -2228,6 +2217,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         courseId={courseDetails?._id}
         onSubmissionSuccess={fetchAssignments}
       />
+
+
 
       {/* Enhanced Drag and Drop Styles */}
       <style jsx>{`

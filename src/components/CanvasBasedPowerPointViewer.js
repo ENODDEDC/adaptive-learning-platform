@@ -39,20 +39,6 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
     )
   });
 
-  // If fallback is triggered, use enhanced PDFPowerPointViewer
-  if (useFallback) {
-    console.log('🔄 Using enhanced PDFPowerPointViewer fallback');
-    return (
-      <PDFPowerPointViewer
-        filePath={filePath}
-        fileName={fileName}
-        contentId={contentId}
-        onClose={onClose}
-        isModal={isModal}
-      />
-    );
-  }
-
   // Initialize PDF.js
   useEffect(() => {
     const initializePdfJs = async () => {
@@ -463,6 +449,20 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
       renderPage(1);
     }
   }, [pdfDoc]);
+
+  // If fallback is triggered, use enhanced PDFPowerPointViewer
+  if (useFallback) {
+    console.log('🔄 Using enhanced PDFPowerPointViewer fallback');
+    return (
+      <PDFPowerPointViewer
+        filePath={filePath}
+        fileName={fileName}
+        contentId={contentId}
+        onClose={onClose}
+        isModal={isModal}
+      />
+    );
+  }
 
   // Loading state
   if (isLoading) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import FileUpload from './FileUpload';
 
 const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSuccess, initialContent = '', initialAttachments = [] }) => {
@@ -7,6 +7,10 @@ const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSucc
   const [files, setFiles] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleFilesReady = useCallback((newFiles) => {
+    setFiles(newFiles);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -69,7 +73,7 @@ const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSucc
           </div>
           <div>
             <label className="block mb-2 text-sm font-medium text-gray-700">Attach Files</label>
-            <FileUpload onFilesReady={setFiles} />
+            <FileUpload onFilesReady={handleFilesReady} />
           </div>
           <div className="flex justify-end gap-4 pt-2">
             <button

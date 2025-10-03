@@ -501,7 +501,7 @@ export default function RegisterPage() {
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">Connection</span>
                 </h1>
                 <p className="text-white/70 text-sm">
-                  We've sent a verification code to <strong className="text-blue-400">{formData.email}</strong>
+                  We&rsquo;ve sent a verification code to <strong className="text-blue-400">{formData.email}</strong>
                 </p>
               </div>
 

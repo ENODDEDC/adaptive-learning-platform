@@ -392,7 +392,7 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
               </svg>
             </div>
             <h4 className="mb-3 text-lg font-semibold text-gray-900">No activity yet</h4>
-            <p className="text-sm leading-relaxed text-gray-600 max-w-md mx-auto">When your instructor posts announcements or assignments, they'll appear here. Check back soon!</p>
+            <p className="text-sm leading-relaxed text-gray-600 max-w-md mx-auto">When your instructor posts announcements or assignments, they&rsquo;ll appear here. Check back soon!</p>
           </div>
         ) : (
           <div className="space-y-6">

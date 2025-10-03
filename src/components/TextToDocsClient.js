@@ -335,7 +335,7 @@ export default function TextToDocsClient() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-3">Access Denied</h2>
             <p className="text-gray-600 mb-6">
-              This page can only be accessed through the AI Assistant on the home page. Please use the "Text to Docs" feature from there.
+              This page can only be accessed through the AI Assistant on the home page. Please use the &ldquo;Text to Docs&rdquo; feature from there.
             </p>
             <button
               onClick={() => router.push('/home')}

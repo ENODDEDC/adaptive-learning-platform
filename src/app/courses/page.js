@@ -1437,7 +1437,7 @@ const CourseContent = () => {
                               <div>
                                 <div className="font-semibold mb-1">Course Progress</div>
                                 <div className="text-sm opacity-90">
-                                  You've completed {course.progress}% of this course. Keep up the great work!
+                                  You&rsquo;ve completed {course.progress}% of this course. Keep up the great work!
                                 </div>
                               </div>
                             }

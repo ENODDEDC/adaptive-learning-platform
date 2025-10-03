@@ -18,6 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Dialog, Transition } from '@headlessui/react';
 import CourseBrowserModal from './CourseBrowserModal';
+import { api } from '../services/apiService';
 
 
 function classNames(...classes) {
@@ -46,9 +47,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
       if (!user) return;
 
       try {
-        const response = await fetch('/api/notifications', {
-          credentials: 'include'
-        }); // Include credentials to send httpOnly cookie
+        const response = await api.getNotifications();
         if (!response.ok) {
           throw new Error('Failed to fetch notifications');
         }
@@ -68,14 +67,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     if (notificationIds.length === 0) return;
 
     try {
-      await fetch('/api/notifications', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ notificationIds }),
-      });
+      await api.markNotificationsRead(notificationIds);
       setNotifications(prev => prev.map(n =>
         notificationIds.includes(n._id) ? { ...n, read: true } : n
       ));
@@ -105,14 +97,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const response = await fetch('/api/auth/profile', {
-          credentials: 'include'
-        }); // Include credentials to send httpOnly cookie
-
+        const response = await api.getUserProfile();
         if (!response.ok) {
           throw new Error('Failed to fetch user profile');
         }
-
         const userData = await response.json();
         setUser(userData);
       } catch (error) {
@@ -124,10 +112,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
       if (!user) return;
 
       try {
-        const response = await fetch('/api/courses', {
-          credentials: 'include'
-        });
-
+        const response = await api.getCourses();
         if (!response.ok) {
           throw new Error('Failed to fetch courses');
         }
@@ -165,10 +150,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
       if (!user) return;
 
       try {
-        const response = await fetch('/api/schedule', {
-          credentials: 'include'
-        });
-
+        const response = await api.getSchedule();
         if (!response.ok) {
           throw new Error('Failed to fetch scheduled courses');
         }

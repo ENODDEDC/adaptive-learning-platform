@@ -248,8 +248,8 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-white">For Students</h3>
                 <p className="text-white/70 leading-relaxed mb-6">
-                  "Stuck on calculus at 2 AM? Intelevo's AI explains complex problems step-by-step,
-                  creates custom practice sets, and even generates study schedules based on your progress."
+                  &ldquo;Stuck on calculus at 2 AM? Intelevo&rsquo;s AI explains complex problems step-by-step,
+                  creates custom practice sets, and even generates study schedules based on your progress.&rdquo;
                 </p>
                 <div className="text-sm text-blue-400 font-medium">Sarah, Computer Science Student</div>
               </div>
@@ -266,8 +266,8 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-white">For Instructors</h3>
                 <p className="text-white/70 leading-relaxed mb-6">
-                  "Create engaging courses with AI-assisted content generation, automated grading,
-                  and real-time student progress insights. Spend more time teaching, less time administrating."
+                  &ldquo;Create engaging courses with AI-assisted content generation, automated grading,
+                  and real-time student progress insights. Spend more time teaching, less time administrating.&rdquo;
                 </p>
                 <div className="text-sm text-purple-400 font-medium">Dr. Martinez, Physics Professor</div>
               </div>
@@ -284,8 +284,8 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-white">For Groups</h3>
                 <p className="text-white/70 leading-relaxed mb-6">
-                  "Form study clusters with classmates, share resources, collaborate on projects,
-                  and learn from peers. Our AI matches you with compatible study partners."
+                  &ldquo;Form study clusters with classmates, share resources, collaborate on projects,
+                  and learn from peers. Our AI matches you with compatible study partners.&rdquo;
                 </p>
                 <div className="text-sm text-pink-400 font-medium">Study Group Alpha</div>
               </div>
