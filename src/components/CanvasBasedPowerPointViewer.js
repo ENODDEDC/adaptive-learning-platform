@@ -151,7 +151,18 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
         }
 
         console.log('✅ PowerPoint converted successfully:', data.pdfUrl);
-        const fullPdfUrl = `${window.location.origin}${data.pdfUrl}`;
+        
+        // Handle both relative and absolute URLs
+        let fullPdfUrl;
+        if (data.pdfUrl.startsWith('http://') || data.pdfUrl.startsWith('https://')) {
+          // Already a full URL
+          fullPdfUrl = data.pdfUrl;
+        } else {
+          // Relative URL, prepend origin
+          fullPdfUrl = `${window.location.origin}${data.pdfUrl}`;
+        }
+        
+        console.log('🔗 Full PDF URL:', fullPdfUrl);
         setPdfUrl(fullPdfUrl);
         setTotalPages(data.pageCount || 1);
 

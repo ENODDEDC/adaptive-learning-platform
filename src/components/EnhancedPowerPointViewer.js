@@ -43,7 +43,154 @@ const EnhancedPowerPointViewer = ({ filePath, fileName, contentId, onClose, isMo
   const viewerRef = useRef(null);
   const slideContainerRef = useRef(null);
 
-  // Fetch PPT data with text extraction
+  // Create slide image from text content
+  const createSlideImage = useCallback((slideNumber, text, hasImages, isError) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Standard slide dimensions (16:9 aspect ratio)
+    canvas.width = 1920;
+    canvas.height = 1080;
+
+    // Background
+    if (isError) {
+      // Error slide - red background
+      ctx.fillStyle = '#fef2f2';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Error border
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8);
+      
+      // Error icon and text
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 72px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚠️', canvas.width / 2, canvas.height / 2 - 100);
+      
+      ctx.fillStyle = '#7f1d1d';
+      ctx.font = 'bold 48px Arial';
+      ctx.fillText(`Slide ${slideNumber} - Error`, canvas.width / 2, canvas.height / 2);
+      
+      ctx.font = '32px Arial';
+      ctx.fillText('Failed to process this slide', canvas.width / 2, canvas.height / 2 + 60);
+      
+    } else {
+      // Normal slide - clean white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Subtle border
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+
+      // Header area with gradient
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, 120);
+      gradient.addColorStop(0, '#f8fafc');
+      gradient.addColorStop(1, '#e2e8f0');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, 120);
+
+      // Header border
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 120);
+      ctx.lineTo(canvas.width, 120);
+      ctx.stroke();
+
+      // Slide number
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 48px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Slide ${slideNumber}`, 60, 75);
+
+      // Content area
+      if (text && text.length > 0) {
+        // Split text into words and create lines
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+        const maxWidth = canvas.width - 120; // Margins
+        
+        ctx.font = '42px Arial';
+        
+        for (const word of words) {
+          const testLine = currentLine + word + ' ';
+          const metrics = ctx.measureText(testLine);
+          
+          if (metrics.width > maxWidth && currentLine !== '') {
+            lines.push(currentLine.trim());
+            currentLine = word + ' ';
+          } else {
+            currentLine = testLine;
+          }
+          
+          if (lines.length >= 18) break; // Limit lines to fit slide
+        }
+        
+        if (currentLine.trim()) {
+          lines.push(currentLine.trim());
+        }
+
+        // Render text lines
+        const lineHeight = 52;
+        const startY = 200;
+        
+        lines.forEach((line, index) => {
+          const y = startY + (index * lineHeight);
+          
+          if (index === 0 && lines.length > 1 && line.length < 80) {
+            // First line as title if it's short enough
+            ctx.font = 'bold 56px Arial';
+            ctx.fillStyle = '#0f172a';
+          } else {
+            // Regular content
+            ctx.font = '42px Arial';
+            ctx.fillStyle = '#334155';
+          }
+          
+          ctx.textAlign = 'left';
+          ctx.fillText(line, 60, y);
+        });
+        
+        // Add indicators for images if present
+        if (hasImages) {
+          ctx.fillStyle = '#3b82f6';
+          ctx.font = '32px Arial';
+          ctx.textAlign = 'right';
+          ctx.fillText('📷 Contains Images', canvas.width - 60, canvas.height - 100);
+        }
+        
+      } else {
+        // No text found
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '48px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No text content found in this slide', canvas.width / 2, canvas.height / 2);
+        
+        // Placeholder icon
+        ctx.font = '120px Arial';
+        ctx.fillText('📄', canvas.width / 2, canvas.height / 2 - 100);
+      }
+
+      // Footer
+      ctx.fillStyle = '#64748b';
+      ctx.font = '28px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(`PowerPoint Slide ${slideNumber}`, 60, canvas.height - 40);
+      
+      // Timestamp
+      ctx.textAlign = 'right';
+      ctx.fillText(new Date().toLocaleDateString(), canvas.width - 60, canvas.height - 40);
+    }
+
+    return canvas.toDataURL('image/png', 0.9);
+  }, []);
+
+  // Fetch PPT data with server-side conversion
   useEffect(() => {
     let isMounted = true;
 
@@ -65,54 +212,58 @@ const EnhancedPowerPointViewer = ({ filePath, fileName, contentId, onClose, isMo
           throw new Error('Invalid file path provided');
         }
 
-        // Use direct PowerPoint extraction
-        console.log('🔍 Starting direct PowerPoint extraction...');
+        console.log('🔍 Starting server-side PowerPoint conversion...');
+        console.log('📁 Processing PowerPoint file:', filePathString);
         
-        try {
-          const { extractPowerPointSlides } = await import('../utils/directPptExtractor.js');
-          
-          // Construct full URL for the file
-          const fullFileUrl = filePathString.startsWith('http') 
-            ? filePathString 
-            : `${window.location.origin}${filePathString}`;
-          
-          console.log('📁 Processing PowerPoint file:', fullFileUrl);
-          
-          const result = await extractPowerPointSlides(fullFileUrl);
-          
-          if (!isMounted) return;
-          
-          console.log('🎯 Direct PowerPoint extraction successful:', result);
-          console.log('🎯 Extraction method used:', result.method);
-          console.log('🎯 Total slides extracted:', result.slides?.length);
-          
-          if (result.slides && result.slides.length > 0) {
-            // Debug each slide
-            result.slides.forEach((slide, index) => {
-              console.log(`📄 Slide ${index + 1}:`, {
-                hasImage: !!slide.imageUrl,
-                hasText: !!slide.text,
-                textLength: slide.text?.length || 0,
-                textPreview: slide.text?.substring(0, 100) || 'No text',
-                actualText: slide.text
-              });
-            });
+        // Use server-side PowerPoint conversion API
+        const response = await fetch('/api/files/convert-ppt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            filePath: filePathString,
+            fileName: fileName || 'presentation.pptx'
+          })
+        });
 
-            setSlides(result.slides);
-            console.log('✅ PowerPoint slides extracted and loaded successfully');
-            return;
-          } else {
-            throw new Error('No slides were extracted from PowerPoint');
-          }
-          
-        } catch (extractionError) {
-          console.error('❌ Direct PowerPoint extraction failed:', extractionError);
-          throw new Error(`PowerPoint extraction failed: ${extractionError.message}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to convert PowerPoint file');
         }
 
+        const result = await response.json();
+        
+        if (!isMounted) return;
+        
+        console.log('🎯 Server-side PowerPoint conversion successful:', result);
+        console.log('🎯 Total slides extracted:', result.slides?.length);
+        
+        if (result.slides && result.slides.length > 0) {
+          // Create slide images from text content
+          const slidesWithImages = result.slides.map((slide, index) => {
+            console.log(`📄 Slide ${index + 1}:`, {
+              hasText: !!slide.text,
+              textLength: slide.text?.length || 0,
+              textPreview: slide.text?.substring(0, 100) || 'No text'
+            });
+
+            return {
+              ...slide,
+              imageUrl: createSlideImage(slide.slideNumber, slide.text, slide.hasImages, slide.error)
+            };
+          });
+
+          setSlides(slidesWithImages);
+          console.log('✅ PowerPoint slides processed and loaded successfully');
+          return;
+        } else {
+          throw new Error('No slides were extracted from PowerPoint');
+        }
+        
       } catch (err) {
         if (!isMounted) return;
-        console.error('❌ All conversion methods failed:', err);
+        console.error('❌ PowerPoint conversion failed:', err);
         setError(err.message || 'Failed to load presentation');
       } finally {
         if (isMounted) {

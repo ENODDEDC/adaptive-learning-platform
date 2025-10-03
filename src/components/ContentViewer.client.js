@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import PowerPointViewer from './PowerPointViewer';
 import EnhancedFloatingNotes from './EnhancedFloatingNotes';
+import EnhancedPDFViewer from './EnhancedPDFViewer';
 
 // --- Helper Functions ---
 const formatFileSize = (bytes) => {
@@ -1146,18 +1147,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
         );
 
       case 'pdf':
-          return (
-            <iframe 
-              src={content.filePath} 
-              className="w-full h-full border-0" 
-              title={content.title}
-              style={{ 
-                width: '100%', 
-                height: '100%',
-                minHeight: 'calc(100vh - 200px)'
-              }}
-            />
-          );
+          return <EnhancedPDFViewer content={content} />;
 
       case 'docx':
           return (
