@@ -160,15 +160,123 @@ export async function DELETE(request, { params }) {
         return NextResponse.json({ message: 'Forbidden: Only course creator or co-teachers can delete classwork' }, { status: 403 });
     }
 
+    console.log('🗑️ Deleting classwork:', {
+      classworkId: id,
+      title: classwork.title,
+      isForm,
+      attachments: classwork.attachments?.length || 0
+    });
+
+    // Delete associated files from cloud storage before deleting the classwork
+    if (classwork.attachments && classwork.attachments.length > 0) {
+      console.log('🔍 Found attachments to delete:', classwork.attachments.length);
+      
+      try {
+        const Content = (await import('@/models/Content')).default;
+        
+        // Get all attachment content records
+        const attachmentContents = await Content.find({
+          _id: { $in: classwork.attachments }
+        });
+        
+        console.log('📎 Processing', attachmentContents.length, 'attachment files for deletion');
+        
+        for (const content of attachmentContents) {
+          try {
+            console.log('🗑️ Deleting attachment:', {
+              contentId: content._id,
+              title: content.title,
+              filePath: content.filePath
+            });
+
+            // Delete from cloud storage if it's a cloud-stored file
+            if (content.filePath && !content.filePath.startsWith('/uploads/')) {
+              // This looks like a cloud storage key, try to delete from Backblaze
+              console.log('🔍 Attempting to delete from cloud storage:', content.filePath);
+              console.log('🔍 Content cloudStorage metadata:', content.cloudStorage);
+              
+              // Import backblaze service
+              const backblazeService = (await import('@/services/backblazeService')).default;
+              
+              // Extract the file key from the path - try multiple methods
+              let fileKey = content.filePath;
+              
+              // Method 1: Check if cloudStorage metadata has the key
+              if (content.cloudStorage && content.cloudStorage.key) {
+                fileKey = content.cloudStorage.key;
+                console.log('🔑 Using cloudStorage key:', fileKey);
+              }
+              // Method 2: Extract from API URL
+              else if (fileKey.startsWith('/api/files/')) {
+                fileKey = decodeURIComponent(fileKey.replace('/api/files/', ''));
+                console.log('🔑 Extracted from API URL:', fileKey);
+              }
+              // Method 3: Check if it's a direct Backblaze URL
+              else if (fileKey.includes('backblazeb2.com') || fileKey.includes('b2-api.backblazeb2.com')) {
+                // Extract key from full Backblaze URL
+                const urlParts = fileKey.split('/');
+                fileKey = urlParts.slice(-2).join('/'); // Get last two parts (folder/filename)
+                console.log('🔑 Extracted from Backblaze URL:', fileKey);
+              }
+              
+              console.log('🔑 Final cloud storage file key:', fileKey);
+              
+              try {
+                await backblazeService.deleteFile(fileKey);
+                console.log('✅ Attachment deleted from cloud storage successfully');
+              } catch (deleteError) {
+                console.error('❌ Failed to delete from cloud storage:', deleteError);
+                console.error('❌ File key that failed:', fileKey);
+                console.error('❌ Original filePath:', content.filePath);
+                // Continue with other files even if one fails
+              }
+              
+            } else if (content.filePath && content.filePath.startsWith('/uploads/')) {
+              // This is a local file, delete from local storage
+              console.log('🔍 Attempting to delete local file:', content.filePath);
+              
+              const fs = await import('fs/promises');
+              const path = await import('path');
+              const localPath = path.join(process.cwd(), 'public', content.filePath);
+              
+              try {
+                await fs.unlink(localPath);
+                console.log('✅ Local attachment file deleted');
+              } catch (fileError) {
+                console.warn('⚠️ Local file deletion failed (file may not exist):', fileError.message);
+              }
+            }
+
+            // Delete the content record from database
+            await Content.findByIdAndDelete(content._id);
+            console.log('✅ Attachment content record deleted from database');
+            
+          } catch (attachmentError) {
+            console.error('❌ Failed to delete attachment:', content._id, attachmentError);
+            // Continue with other attachments even if one fails
+          }
+        }
+        
+      } catch (attachmentCleanupError) {
+        console.error('❌ Attachment cleanup failed:', attachmentCleanupError);
+        // Continue with classwork deletion even if attachment cleanup fails
+        console.log('⚠️ Continuing with classwork deletion despite attachment cleanup error');
+      }
+    }
+
     // Delete the appropriate model
     if (isForm) {
       const { Form } = await import('@/models/Form');
       await Form.findByIdAndDelete(id);
+      console.log('✅ Form deleted from database');
     } else {
       await Assignment.findByIdAndDelete(id);
+      console.log('✅ Assignment deleted from database');
     }
 
-    return NextResponse.json({ message: 'Classwork deleted successfully' }, { status: 200 });
+    return NextResponse.json({ 
+      message: 'Classwork and associated files deleted successfully' 
+    }, { status: 200 });
   } catch (error) {
     console.error('Delete Classwork Error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

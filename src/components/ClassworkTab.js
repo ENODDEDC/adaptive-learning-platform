@@ -6,6 +6,235 @@ import CreateClassworkModal from '@/components/CreateClassworkModal';
 // Removed FormBuilderModal - now using full-page editor
 import SubmitAssignmentModal from '@/components/SubmitAssignmentModal';
 import ContentViewer from '@/components/ContentViewer.client';
+import AttachmentPreview from '@/components/AttachmentPreview';
+
+// Modern PDF Thumbnail Component for Clean Grid View
+const ModernPDFThumbnail = ({ attachment, onPreview }) => {
+  const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
+  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+
+  useEffect(() => {
+    // Auto-generate PDF thumbnail if it doesn't exist
+    if (!thumbnailUrl && !isGeneratingThumbnail) {
+      generatePdfThumbnail();
+    }
+  }, [thumbnailUrl]);
+
+  const generatePdfThumbnail = async () => {
+    if (isGeneratingThumbnail) return;
+    
+    setIsGeneratingThumbnail(true);
+    
+    try {
+      const requestBody = {
+        fileKey: attachment.cloudStorage?.key,
+        filePath: attachment.filePath,
+        contentId: attachment._id
+      };
+      
+      const response = await fetch('/api/pdf-thumbnail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.thumbnailUrl) {
+          setThumbnailUrl(result.thumbnailUrl);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error generating PDF thumbnail:', error);
+    } finally {
+      setIsGeneratingThumbnail(false);
+    }
+  };
+
+  const fileName = attachment.originalName || attachment.title || 'PDF Document';
+
+  return (
+    <button
+      onClick={() => onPreview ? onPreview(attachment) : null}
+      className="w-full group"
+    >
+      {/* PDF Thumbnail Container */}
+      <div className="relative w-full aspect-[4/3] bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 mb-3">
+        {isGeneratingThumbnail ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+            <span className="text-xs text-gray-600">Loading...</span>
+          </div>
+        ) : thumbnailUrl ? (
+          <>
+            <iframe
+              src={thumbnailUrl.startsWith('http') ? `${thumbnailUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH&pagemode=none&zoom=page-width&disableTextLayer=true&disableRange=true&disableAutoFetch=true` : `${window.location.origin}${thumbnailUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH&pagemode=none&zoom=page-width&disableTextLayer=true&disableRange=true&disableAutoFetch=true`}
+              className="w-full h-full pointer-events-none border-0"
+              title={`${fileName} thumbnail`}
+              style={{
+                transform: 'scale(0.25)',
+                transformOrigin: 'top left',
+                width: '400%',
+                height: '400%'
+              }}
+            />
+            {/* PDF Badge */}
+            <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm">
+              PDF
+            </div>
+            {/* Hover Overlay */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg">
+                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+            <svg className="w-8 h-8 text-red-400 mb-2" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5z" />
+            </svg>
+            <span className="text-xs text-gray-500">PDF Preview</span>
+          </div>
+        )}
+      </div>
+
+      {/* File Info */}
+      <div className="text-left w-full min-w-0">
+        <p className="font-medium text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors" title={fileName}>
+          {fileName}
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : 'PDF Document'}
+        </p>
+      </div>
+    </button>
+  );
+};
+
+// Enhanced PDF Thumbnail Component for Grid View
+const EnhancedPDFThumbnail = ({ attachment, onPreview }) => {
+  const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
+  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+
+  useEffect(() => {
+    // Auto-generate PDF thumbnail if it doesn't exist
+    if (!thumbnailUrl && !isGeneratingThumbnail) {
+      generatePdfThumbnail();
+    }
+  }, [thumbnailUrl]);
+
+  const generatePdfThumbnail = async () => {
+    if (isGeneratingThumbnail) return;
+    
+    setIsGeneratingThumbnail(true);
+    
+    try {
+      const requestBody = {
+        fileKey: attachment.cloudStorage?.key,
+        filePath: attachment.filePath,
+        contentId: attachment._id
+      };
+      
+      const response = await fetch('/api/pdf-thumbnail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.thumbnailUrl) {
+          setThumbnailUrl(result.thumbnailUrl);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error generating PDF thumbnail:', error);
+    } finally {
+      setIsGeneratingThumbnail(false);
+    }
+  };
+
+  const fileName = attachment.originalName || attachment.title || 'PDF Document';
+
+  return (
+    <div className="w-full bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group">
+      {/* PDF Header */}
+      <div className="bg-gradient-to-r from-red-500 to-red-600 px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
+            <span className="text-white text-sm font-bold">📄</span>
+          </div>
+          <span className="text-white font-semibold text-sm">PDF Document</span>
+        </div>
+        <div className="text-white/80 text-xs">
+          {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : ''}
+        </div>
+      </div>
+
+      {/* PDF Thumbnail */}
+      <div className="p-4">
+        <div className="relative w-full aspect-[4/3] bg-white rounded-lg border-2 border-gray-200 shadow-inner overflow-hidden mb-3">
+          {isGeneratingThumbnail ? (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+              <div className="w-8 h-8 border-3 border-red-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+              <span className="text-sm text-gray-600 font-medium">Generating preview...</span>
+            </div>
+          ) : thumbnailUrl ? (
+            <iframe
+              src={thumbnailUrl.startsWith('http') ? `${thumbnailUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH&pagemode=none&zoom=page-width&disableTextLayer=true&disableRange=true&disableAutoFetch=true` : `${window.location.origin}${thumbnailUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH&pagemode=none&zoom=page-width&disableTextLayer=true&disableRange=true&disableAutoFetch=true`}
+              className="w-full h-full pointer-events-none border-0"
+              title={`${fileName} thumbnail`}
+              style={{
+                transform: 'scale(0.25)',
+                transformOrigin: 'top left',
+                width: '400%',
+                height: '400%'
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+              <svg className="w-12 h-12 text-red-400 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5z" />
+              </svg>
+              <span className="text-sm text-gray-500 font-medium">PDF Preview</span>
+            </div>
+          )}
+          
+          {/* Hover Overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+            <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 transform scale-75 group-hover:scale-100 transition-all duration-300">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* File Info */}
+        <div className="text-center">
+          <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate group-hover:text-red-700 transition-colors">
+            {fileName}
+          </h4>
+          <button
+            onClick={() => onPreview ? onPreview(attachment) : null}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            Open PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkCreated }) => {
   const [assignments, setAssignments] = useState([]);
@@ -29,7 +258,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
   // Enhanced filtering and view states
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('grid'); // grid, list, timeline, kanban
+  const [viewMode, setViewMode] = useState('grid'); // grid, list
   const [prevViewMode, setPrevViewMode] = useState('grid');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -134,8 +363,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         }
       }
 
-      // Status filter - Skip in Kanban mode since Kanban handles its own filtering
-      if (statusFilter !== 'all' && viewMode !== 'kanban') {
+      // Status filter
+      if (statusFilter !== 'all') {
         // Forms don't have submissions, so only filter assignments
         if (item.itemType === 'assignment') {
           const submission = submissions.find(s => String(s.assignment) === String(item._id));
@@ -253,7 +482,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+          <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-[60]">
             <div className="py-1">
               {isForm && (
                 <button
@@ -579,149 +808,101 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     // Render different layouts based on view mode
     if (viewMode === 'grid') {
       return (
-        <div className={`group relative bg-white border ${config.borderColor} rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.02] hover:-translate-y-1 min-h-[400px]`}>
-          {/* Enhanced Gradient Header */}
-          <div className={`h-3 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} relative overflow-hidden`}>
-            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-white/10"></div>
-          </div>
-
-          <div className="p-8">
-            {/* Enhanced Header with Better Layout */}
-            <div className="flex items-start justify-between mb-6">
-              {/* Left Section - Icon and Type */}
-              <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 ${config.bgColor} ${config.borderColor} border rounded-2xl flex items-center justify-center shadow-lg ${config.shadowColor} hover:scale-110 transition-all duration-300 hover:shadow-xl hover:rotate-3`}>
-                  <div className={config.textColor}>
-                    {config.icon}
-                  </div>
+        <div className="group relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px]">
+          {/* Clean Header */}
+          <div className="p-6 pb-4">
+            {/* Header with Type and Date */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <span className="text-lg">📄</span>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <span className={`inline-flex px-3 py-1.5 text-sm font-bold rounded-full ${config.bgColor} ${config.textColor} border ${config.borderColor} shadow-sm ${config.shadowColor} hover:scale-105 transition-all duration-300 hover:shadow-md`}>
+                <div>
+                  <span className="inline-flex px-3 py-1 text-xs font-semibold text-gray-700 bg-gray-100 rounded-full">
                     {(item.type || 'assignment').charAt(0).toUpperCase() + (item.type || 'assignment').slice(1)}
                   </span>
-                  <div className="text-xs text-gray-500 font-semibold flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {item.createdAt ? format(new Date(item.createdAt), 'MMM dd, yyyy') : ''}
-                  </div>
                 </div>
               </div>
-
-              {/* Status Badges */}
-              <div className="flex flex-col items-end gap-2">
-                {isCompleted && (
-                  <span className="inline-flex items-center px-3 py-1.5 text-sm font-bold text-emerald-700 bg-emerald-50/90 border border-emerald-200/70 rounded-full shadow-sm hover:scale-105 transition-all duration-300">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></div>
-                    Completed
-                  </span>
-                )}
-                {isInProgress && (
-                  <span className="inline-flex items-center px-3 py-1.5 text-sm font-bold text-blue-700 bg-blue-50/90 border border-blue-200/70 rounded-full shadow-sm hover:scale-105 transition-all duration-300">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
-                    In Progress
-                  </span>
-                )}
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {item.createdAt ? format(new Date(item.createdAt), 'MMM dd, yyyy') : ''}
               </div>
             </div>
 
-            {/* Enhanced Title with Better Typography */}
-            <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 line-clamp-2 leading-tight hover:text-gray-800 transition-colors duration-300 group-hover:text-blue-700">
-                {item.title}
-              </h3>
-              {item.description && (
-                <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
-                  {item.description}
-                </p>
-              )}
-            </div>
-
-            {/* Enhanced Progress Bar with Better Visual Design */}
-            {item.itemType === 'assignment' && (
-              <div className="mb-6">
-                <div className="flex items-center justify-between text-sm font-semibold text-gray-700 mb-3">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <span>Progress</span>
-                  </div>
-                  <span className={`${config.textColor} font-bold text-base`}>{Math.round(progress)}%</span>
-                </div>
-                <div className="relative">
-                  <div className="w-full bg-gray-200/60 rounded-full h-3 shadow-inner border border-gray-300/30">
-                    <div
-                      className={`h-3 rounded-full bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} transition-all duration-700 shadow-md relative overflow-hidden`}
-                      style={{ width: `${progress}%` }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent animate-pulse"></div>
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-white/20"></div>
-                    </div>
-                  </div>
-                  {/* Progress milestones */}
-                  <div className="flex justify-between mt-1">
-                    <span className="text-xs text-gray-500">0%</span>
-                    <span className="text-xs text-gray-500">50%</span>
-                    <span className="text-xs text-gray-500">100%</span>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Title */}
+            <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">
+              {item.title}
+            </h3>
+          </div>
 
 
-            {/* Compact Attachments */}
+          {/* Main Content Area */}
+          <div className="flex-1 px-6">
+            {/* Attachments */}
             {Array.isArray(item.attachments) && item.attachments.length > 0 && (
               <div className="mb-4">
-                <div className="flex flex-wrap gap-2">
-                  {item.attachments.slice(0, 3).map((attachment, index) => {
-                    const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
-                    const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+                {item.attachments.slice(0, 1).map((attachment, index) => {
+                  // Modern PDF thumbnail for grid view
+                  if (attachment.mimeType === 'application/pdf') {
                     return (
-                      <button
+                      <ModernPDFThumbnail
                         key={attachment._id || index}
-                        onClick={() => onOpenContent ? onOpenContent(attachment) : null}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 group cursor-pointer"
-                        title={`Click to preview ${fileName}`}
-                      >
-                        <svg className="w-3 h-3 text-gray-500 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        attachment={attachment}
+                        onPreview={onOpenContent}
+                      />
+                    );
+                  }
+                  
+                  // Modern file display for other types
+                  const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
+                  const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+                  return (
+                    <button
+                      key={attachment._id || index}
+                      onClick={() => onOpenContent ? onOpenContent(attachment) : null}
+                      className="w-full flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 group"
+                      title={`Click to preview ${fileName}`}
+                    >
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
-                        <span className="text-xs font-medium text-gray-700 group-hover:text-blue-700">
-                          {extension}
-                        </span>
-                      </button>
-                    );
-                  })}
-                  {item.attachments.length > 3 && (
-                    <div className="inline-flex items-center gap-1 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
-                      <span className="text-xs font-medium text-blue-700">+{item.attachments.length - 3}</span>
-                    </div>
-                  )}
-                </div>
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="font-medium text-gray-900 text-sm truncate" title={fileName}>{fileName}</p>
+                        <p className="text-xs text-gray-500">{extension}</p>
+                      </div>
+                      <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  );
+                })}
+                {item.attachments.length > 1 && (
+                  <div className="mt-2 text-center">
+                    <span className="text-xs text-gray-500">+{item.attachments.length - 1} more file{item.attachments.length > 2 ? 's' : ''}</span>
+                  </div>
+                )}
               </div>
             )}
+          </div>
 
-            {/* Compact Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              {/* Left side - Progress and files */}
-              <div className="text-xs text-gray-500 font-medium">
-                {item.itemType === 'assignment' && `Progress: ${Math.round(progress)}% • `}
-                {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
-              </div>
-
-              {/* Right side - Action menu */}
-              <DropdownMenu
-                assignment={assignment}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onOpenContent={onOpenContent}
-                onSubmit={onSubmit}
-                isOpen={openDropdownId === item._id}
-                onToggle={() => toggleDropdown(item._id)}
-              />
+          {/* Footer */}
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+            <div className="text-xs text-gray-500">
+              {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
             </div>
+            <DropdownMenu
+              assignment={assignment}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onOpenContent={onOpenContent}
+              onSubmit={onSubmit}
+              isOpen={openDropdownId === item._id}
+              onToggle={() => toggleDropdown(item._id)}
+            />
           </div>
         </div>
       );
@@ -1018,8 +1199,20 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                   Attachments
                 </h4>
                 {Array.isArray(item.attachments) && item.attachments.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="space-y-2">
                     {item.attachments.slice(0, 3).map((attachment, index) => {
+                      // Custom compact PDF thumbnail for grid view
+                      if (attachment.mimeType === 'application/pdf') {
+                        return (
+                          <EnhancedPDFThumbnail
+                            key={attachment._id || index}
+                            attachment={attachment}
+                            onPreview={onOpenContent}
+                          />
+                        );
+                      }
+                      
+                      // Keep simple buttons for other file types
                       const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
                       const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
                       return (
@@ -1838,18 +2031,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                       </svg>
                     </button>
-                    <button
-                      onClick={() => handleViewModeChange('timeline')}
-                      className={`p-1.5 rounded transition-all duration-200 ${viewMode === 'timeline'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      title="Timeline view"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                      </svg>
-                    </button>
+
                     <button
                       onClick={() => handleViewModeChange('kanban')}
                       className={`p-1.5 rounded transition-all duration-200 ${viewMode === 'kanban'
