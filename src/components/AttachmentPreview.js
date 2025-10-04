@@ -11,10 +11,15 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
 
   useEffect(() => {
     setThumbnailUrl(attachment.thumbnailUrl);
-    
+
     // Auto-generate PDF thumbnail if it doesn't exist
     if (attachment.mimeType === 'application/pdf' && !attachment.thumbnailUrl && !isGeneratingThumbnail) {
       generatePdfThumbnail();
+    }
+
+    // Auto-generate DOCX thumbnail if it doesn't exist
+    if (isDocxFile(attachment) && !attachment.thumbnailUrl && !isGeneratingThumbnail) {
+      generateDocxThumbnail();
     }
   }, [attachment.thumbnailUrl, attachment.mimeType]);
 
@@ -110,12 +115,74 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
     }
   };
 
+  const generateDocxThumbnail = async () => {
+    if (isGeneratingThumbnail) return;
+
+    setIsGeneratingThumbnail(true);
+    console.log('🖼️ Generating DOCX thumbnail for:', attachment.title);
+
+    try {
+      const requestBody = {
+        fileKey: attachment.cloudStorage?.key,
+        filePath: attachment.filePath,
+        contentId: attachment._id
+      };
+
+      console.log('📤 Sending DOCX thumbnail request:', requestBody);
+
+      const response = await fetch('/api/docx-thumbnail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('📥 DOCX thumbnail response status:', response.status);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ DOCX thumbnail generated successfully:', result);
+
+        if (result.thumbnailUrl) {
+          setThumbnailUrl(result.thumbnailUrl);
+          console.log('🖼️ DOCX thumbnail URL set:', result.thumbnailUrl);
+        } else {
+          console.warn('⚠️ No thumbnail URL in DOCX response:', result);
+        }
+      } else {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          errorData = await response.text();
+        }
+        console.error('❌ Failed to generate DOCX thumbnail:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error generating DOCX thumbnail:', error);
+    } finally {
+      setIsGeneratingThumbnail(false);
+    }
+  };
+
   const isVideo = attachment?.contentType === 'video' || attachment?.mimeType?.startsWith('video/');
   const isAudio = attachment?.contentType === 'audio' || attachment?.mimeType?.startsWith('audio/');
   const isDocument = attachment?.contentType === 'document' || attachment?.mimeType?.startsWith('application/');
   const isDocx = attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   const isImage = attachment?.mimeType?.startsWith('image/');
   const isPdf = attachment?.mimeType === 'application/pdf';
+
+  // Helper function to detect DOCX files
+  const isDocxFile = (attachment) => {
+    return attachment?.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+           attachment?.originalName?.toLowerCase().endsWith('.docx') ||
+           attachment?.title?.toLowerCase().endsWith('.docx');
+  };
   
   const getFileTypeIcon = () => {
     if (isVideo) return '🎥';
@@ -126,7 +193,7 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
     if (isDocument) return '📄';
     return '📄';
   };
-  
+
   const getFileTypeLabel = () => {
     if (isVideo) return 'Video';
     if (isAudio) return 'Audio';
@@ -179,7 +246,7 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
               </div>
             </div>
           ) : thumbnailUrl ? (
-            // PDF Thumbnail using PDF.js (same approach as PowerPoint viewer)
+            // PDF/DOCX Thumbnail using PDF.js (same approach as PowerPoint viewer)
             <div className="relative w-20 h-14 bg-white rounded-md border shadow-sm overflow-hidden">
               <iframe
                 src={thumbnailUrl.startsWith('http') ? `${thumbnailUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH&pagemode=none&zoom=page-width&disableTextLayer=true&disableRange=true&disableAutoFetch=true` : `${window.location.origin}${thumbnailUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH&pagemode=none&zoom=page-width&disableTextLayer=true&disableRange=true&disableAutoFetch=true`}
@@ -191,13 +258,18 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
                   width: '400%',
                   height: '400%'
                 }}
-                onLoad={() => console.log('🖼️ PDF thumbnail iframe loaded successfully')}
-                onError={() => console.error('❌ PDF thumbnail iframe failed to load')}
+                onLoad={() => console.log('🖼️ Thumbnail iframe loaded successfully')}
+                onError={() => console.error('❌ Thumbnail iframe failed to load')}
               />
-              {/* PDF Badge */}
+              {/* File Type Badge */}
               {isPdf && (
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-bold">📄</span>
+                </div>
+              )}
+              {isDocx && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">📝</span>
                 </div>
               )}
             </div>
