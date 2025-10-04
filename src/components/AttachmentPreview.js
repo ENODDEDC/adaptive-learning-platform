@@ -21,6 +21,11 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
     if (isDocxFile(attachment) && !attachment.thumbnailUrl && !isGeneratingThumbnail) {
       generateDocxThumbnail();
     }
+
+    // Auto-generate PPTX thumbnail if it doesn't exist
+    if (isPptxFile(attachment) && !attachment.thumbnailUrl && !isGeneratingThumbnail) {
+      generatePptxThumbnail();
+    }
   }, [attachment.thumbnailUrl, attachment.mimeType]);
 
   const generatePdfThumbnail = async () => {
@@ -170,6 +175,61 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
     }
   };
 
+  const generatePptxThumbnail = async () => {
+    if (isGeneratingThumbnail) return;
+
+    setIsGeneratingThumbnail(true);
+    console.log('🖼️ Generating PPTX thumbnail for:', attachment.title);
+
+    try {
+      const requestBody = {
+        fileKey: attachment.cloudStorage?.key,
+        filePath: attachment.filePath,
+        contentId: attachment._id
+      };
+
+      console.log('📤 Sending PPTX thumbnail request:', requestBody);
+
+      const response = await fetch('/api/pptx-thumbnail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('📥 PPTX thumbnail response status:', response.status);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ PPTX thumbnail generated successfully:', result);
+
+        if (result.thumbnailUrl) {
+          setThumbnailUrl(result.thumbnailUrl);
+          console.log('🖼️ PPTX thumbnail URL set:', result.thumbnailUrl);
+        } else {
+          console.warn('⚠️ No thumbnail URL in PPTX response:', result);
+        }
+      } else {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          errorData = await response.text();
+        }
+        console.error('❌ Failed to generate PPTX thumbnail:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error generating PPTX thumbnail:', error);
+    } finally {
+      setIsGeneratingThumbnail(false);
+    }
+  };
+
   const isVideo = attachment?.contentType === 'video' || attachment?.mimeType?.startsWith('video/');
   const isAudio = attachment?.contentType === 'audio' || attachment?.mimeType?.startsWith('audio/');
   const isDocument = attachment?.contentType === 'document' || attachment?.mimeType?.startsWith('application/');
@@ -182,6 +242,13 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
     return attachment?.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
            attachment?.originalName?.toLowerCase().endsWith('.docx') ||
            attachment?.title?.toLowerCase().endsWith('.docx');
+  };
+
+  // Helper function to detect PPTX files
+  const isPptxFile = (attachment) => {
+    return attachment?.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+           attachment?.originalName?.toLowerCase().endsWith('.pptx') ||
+           attachment?.title?.toLowerCase().endsWith('.pptx');
   };
   
   const getFileTypeIcon = () => {
@@ -270,6 +337,11 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
               {isDocx && (
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-bold">📝</span>
+                </div>
+              )}
+              {isPptxFile(attachment) && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">📊</span>
                 </div>
               )}
             </div>

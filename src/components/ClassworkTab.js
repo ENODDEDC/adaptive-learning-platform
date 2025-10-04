@@ -128,9 +128,10 @@ const ModernPDFFileThumbnail = ({ attachment, onPreview }) => {
             />
             {/* File Type Badge */}
             <div className={`absolute top-2 right-2 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm ${
-              isPdfFile(attachment) ? 'bg-red-500' : 'bg-blue-500'
+              isPdfFile(attachment) ? 'bg-red-500' :
+              isDocxFile(attachment) ? 'bg-blue-500' : 'bg-orange-500'
             }`}>
-              {isPdfFile(attachment) ? 'PDF' : 'DOCX'}
+              {isPdfFile(attachment) ? 'PDF' : isDocxFile(attachment) ? 'DOCX' : 'PPTX'}
             </div>
             {/* Hover Overlay */}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -148,13 +149,18 @@ const ModernPDFFileThumbnail = ({ attachment, onPreview }) => {
               <svg className="w-8 h-8 text-red-400 mb-2" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5z" />
               </svg>
-            ) : (
+            ) : isDocxFile(attachment) ? (
               <svg className="w-8 h-8 text-blue-400 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5z" />
+              </svg>
+            ) : (
+              <svg className="w-8 h-8 text-orange-400 mb-2" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5z" />
               </svg>
             )}
             <span className="text-xs text-gray-500">
-              {isPdfFile(attachment) ? 'PDF Preview' : 'DOCX Preview'}
+              {isPdfFile(attachment) ? 'PDF Preview' :
+               isDocxFile(attachment) ? 'DOCX Preview' : 'PPTX Preview'}
             </span>
           </div>
         )}
@@ -191,6 +197,12 @@ const EnhancedPDFFileThumbnail = ({ attachment, onPreview }) => {
            attachment?.title?.toLowerCase().endsWith('.docx');
   };
 
+  const isPptxFile = (attachment) => {
+    return attachment?.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+           attachment?.originalName?.toLowerCase().endsWith('.pptx') ||
+           attachment?.title?.toLowerCase().endsWith('.pptx');
+  };
+
   useEffect(() => {
     // Auto-generate thumbnail if it doesn't exist
     if (!thumbnailUrl && !isGeneratingThumbnail) {
@@ -198,6 +210,8 @@ const EnhancedPDFFileThumbnail = ({ attachment, onPreview }) => {
         generatePdfThumbnail();
       } else if (isDocxFile(attachment)) {
         generateDocxThumbnail();
+      } else if (isPptxFile(attachment)) {
+        generatePptxThumbnail();
       }
     }
   }, [thumbnailUrl, attachment]);
@@ -264,6 +278,37 @@ const EnhancedPDFFileThumbnail = ({ attachment, onPreview }) => {
     }
   };
 
+  const generatePptxThumbnail = async () => {
+    if (isGeneratingThumbnail) return;
+
+    setIsGeneratingThumbnail(true);
+
+    try {
+      const requestBody = {
+        fileKey: attachment.cloudStorage?.key,
+        filePath: attachment.filePath,
+        contentId: attachment._id
+      };
+
+      const response = await fetch('/api/pptx-thumbnail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.thumbnailUrl) {
+          setThumbnailUrl(result.thumbnailUrl);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error generating PPTX thumbnail:', error);
+    } finally {
+      setIsGeneratingThumbnail(false);
+    }
+  };
+
   const fileName = attachment.originalName || attachment.title || 'Document';
 
   return (
@@ -272,16 +317,18 @@ const EnhancedPDFFileThumbnail = ({ attachment, onPreview }) => {
       <div className={`px-4 py-2 flex items-center justify-between ${
         isPdfFile(attachment)
           ? 'bg-gradient-to-r from-red-500 to-red-600'
-          : 'bg-gradient-to-r from-blue-500 to-blue-600'
+          : isDocxFile(attachment)
+            ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+            : 'bg-gradient-to-r from-orange-500 to-orange-600'
       }`}>
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
             <span className="text-white text-sm font-bold">
-              {isPdfFile(attachment) ? '📄' : '📝'}
+              {isPdfFile(attachment) ? '📄' : isDocxFile(attachment) ? '📝' : '📊'}
             </span>
           </div>
           <span className="text-white font-semibold text-sm">
-            {isPdfFile(attachment) ? 'PDF Document' : 'Word Document'}
+            {isPdfFile(attachment) ? 'PDF Document' : isDocxFile(attachment) ? 'Word Document' : 'PowerPoint'}
           </span>
         </div>
         <div className="text-white/80 text-xs">
@@ -295,7 +342,8 @@ const EnhancedPDFFileThumbnail = ({ attachment, onPreview }) => {
           {isGeneratingThumbnail ? (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
               <div className={`w-8 h-8 border-3 border-t-transparent rounded-full animate-spin mb-2 ${
-                isPdfFile(attachment) ? 'border-red-500' : 'border-blue-500'
+                isPdfFile(attachment) ? 'border-red-500' :
+                isDocxFile(attachment) ? 'border-blue-500' : 'border-orange-500'
               }`}></div>
               <span className="text-sm text-gray-600 font-medium">Generating preview...</span>
             </div>
@@ -314,12 +362,14 @@ const EnhancedPDFFileThumbnail = ({ attachment, onPreview }) => {
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
               <svg className={`w-12 h-12 mb-2 fill="currentColor" ${
-                isPdfFile(attachment) ? 'text-red-400' : 'text-blue-400'
+                isPdfFile(attachment) ? 'text-red-400' :
+                isDocxFile(attachment) ? 'text-blue-400' : 'text-orange-400'
               }`} viewBox="0 0 24 24">
                 <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5z" />
               </svg>
               <span className="text-sm text-gray-500 font-medium">
-                {isPdfFile(attachment) ? 'PDF Preview' : 'DOCX Preview'}
+                {isPdfFile(attachment) ? 'PDF Preview' :
+                 isDocxFile(attachment) ? 'DOCX Preview' : 'PPTX Preview'}
               </span>
             </div>
           )}
@@ -327,7 +377,10 @@ const EnhancedPDFFileThumbnail = ({ attachment, onPreview }) => {
           {/* Hover Overlay */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
             <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 transform scale-75 group-hover:scale-100 transition-all duration-300">
-              <svg className={`w-6 h-6 ${isPdfFile(attachment) ? 'text-red-600' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-6 h-6 ${
+                isPdfFile(attachment) ? 'text-red-600' :
+                isDocxFile(attachment) ? 'text-blue-600' : 'text-orange-600'
+              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
@@ -345,14 +398,16 @@ const EnhancedPDFFileThumbnail = ({ attachment, onPreview }) => {
             className={`inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md ${
               isPdfFile(attachment)
                 ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-blue-500 hover:bg-blue-600'
+                : isDocxFile(attachment)
+                  ? 'bg-blue-500 hover:bg-blue-600'
+                  : 'bg-orange-500 hover:bg-orange-600'
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            {isPdfFile(attachment) ? 'Open PDF' : 'Open DOCX'}
+            {isPdfFile(attachment) ? 'Open PDF' : isDocxFile(attachment) ? 'Open DOCX' : 'Open PPTX'}
           </button>
         </div>
       </div>
@@ -968,9 +1023,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
             {Array.isArray(item.attachments) && item.attachments.length > 0 && (
               <div className="mb-4">
                 {item.attachments.slice(0, 1).map((attachment, index) => {
-                  // Modern PDF/DOCX thumbnail for grid view
+                  // Modern PDF/DOCX/PPTX thumbnail for grid view
                   if (attachment.mimeType === 'application/pdf' ||
-                      attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                      attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                      attachment.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
                     return (
                       <ModernPDFFileThumbnail
                         key={attachment._id || index}
@@ -1326,9 +1382,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 {Array.isArray(item.attachments) && item.attachments.length > 0 ? (
                   <div className="space-y-2">
                     {item.attachments.slice(0, 3).map((attachment, index) => {
-                      // Custom compact PDF/DOCX thumbnail for grid view
+                      // Custom compact PDF/DOCX/PPTX thumbnail for grid view
                       if (attachment.mimeType === 'application/pdf' ||
-                          attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                          attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                          attachment.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
                         return (
                           <EnhancedPDFFileThumbnail
                             key={attachment._id || index}
