@@ -5,11 +5,13 @@ const questionSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['multiple_choice', 'checkboxes', 'short_answer', 'paragraph', 'dropdown', 'linear_scale', 'date', 'time']
+    enum: ['multiple_choice', 'checkboxes', 'short_answer', 'paragraph', 'dropdown', 'linear_scale', 'date', 'time', 'true_false']
   },
   title: { type: String, required: true },
   required: { type: Boolean, default: false },
   options: [String], // For multiple choice, checkboxes, dropdown
+  correctAnswer: { type: mongoose.Schema.Types.Mixed, default: null }, // Can be a string or an array of strings
+  points: { type: Number, default: 1, min: 0 }, // Points assigned to this question
   // For linear scale
   scaleMin: { type: Number, default: 1 },
   scaleMax: { type: Number, default: 5 },

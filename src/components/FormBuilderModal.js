@@ -7,6 +7,7 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
   const [questions, setQuestions] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPointsSummary, setShowPointsSummary] = useState(false);
 
   // Question types (Google Forms style)
   const QUESTION_TYPES = [
@@ -17,7 +18,8 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
     { value: 'dropdown', label: 'Dropdown', icon: '▼' },
     { value: 'linear_scale', label: 'Linear Scale', icon: '⋙' },
     { value: 'date', label: 'Date', icon: '📅' },
-    { value: 'time', label: 'Time', icon: '🕐' }
+    { value: 'time', label: 'Time', icon: '🕐' },
+    { value: 'true_false', label: 'True/False', icon: '✓' }
   ];
 
   useEffect(() => {
@@ -42,6 +44,8 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
     title: '',
     required: false,
     options: ['Option 1'], // For multiple choice, checkboxes, dropdown
+    correctAnswer: '', // To store the correct answer
+    points: 1, // Points for this question
     // For linear scale
     scaleMin: 1,
     scaleMax: 5,
@@ -60,9 +64,33 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
   };
 
   const updateQuestion = (questionId, updates) => {
-    setQuestions(questions.map(q =>
-      q.id === questionId ? { ...q, ...updates } : q
-    ));
+    console.log('=== MODAL UPDATE QUESTION DEBUG ===');
+    console.log('Question ID:', questionId);
+    console.log('Updates:', updates);
+    console.log('Current questions state:', questions.map(q => ({
+      id: q.id,
+      title: q.title,
+      correctAnswer: q.correctAnswer,
+      points: q.points
+    })));
+
+    setQuestions(questions.map(q => {
+      if (q.id === questionId) {
+        const newQuestion = { ...q, ...updates };
+        // If question type is changed, reset the correct answer
+        if (updates.type && q.type !== updates.type) {
+          newQuestion.correctAnswer = updates.type === 'checkboxes' ? [] : '';
+        }
+        console.log('New question after update:', {
+          id: newQuestion.id,
+          title: newQuestion.title,
+          correctAnswer: newQuestion.correctAnswer,
+          points: newQuestion.points
+        });
+        return newQuestion;
+      }
+      return q;
+    }));
   };
 
   const moveQuestion = (questionId, direction) => {
@@ -203,10 +231,10 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
           {/* Header */}
           <div className="flex items-center justify-between pb-4 border-b border-gray-200">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
                 {initialData ? 'Edit Form' : 'Create Form'}
               </h2>
-              <p className="text-sm text-gray-600 mt-1">Build your form with multiple question types</p>
+              <p className="mt-1 text-sm text-gray-600">Build your form with multiple question types</p>
             </div>
             <button
               type="button"
@@ -220,14 +248,14 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
           </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="p-3 mt-4 border border-red-200 rounded-lg bg-red-50">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex-grow mt-6 overflow-hidden flex flex-col">
+          <form onSubmit={handleSubmit} className="flex flex-col flex-grow mt-6 overflow-hidden">
             {/* Form Basic Info */}
-            <div className="space-y-4 mb-6">
+            <div className="mb-6 space-y-4">
               <div>
                 <label className="block mb-1.5 text-sm font-medium text-gray-700">Form Title</label>
                 <input
@@ -254,11 +282,24 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
             {/* Questions Section */}
             <div className="flex-grow overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Questions</h3>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Questions</h3>
+                  <div className="mt-1">
+                    <button
+                      onClick={() => setShowPointsSummary(!showPointsSummary)}
+                      className="flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                    >
+                      {showPointsSummary ? 'Hide' : 'Show'} Points Summary
+                      <svg className={`w-4 h-4 transition-transform ${showPointsSummary ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
                 <button
                   type="button"
                   onClick={addQuestion}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border rounded-lg text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -266,6 +307,40 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
                   Add Question
                 </button>
               </div>
+
+              {/* Points Summary */}
+              {showPointsSummary && (
+                <div className="p-3 mb-4 border rounded-lg bg-emerald-50 border-emerald-200">
+                  <h4 className="mb-2 text-base font-semibold text-emerald-900">Points Summary</h4>
+                  <div className="space-y-1">
+                    <div className="grid grid-cols-12 gap-2 pb-1 text-xs font-medium border-b text-emerald-700 border-emerald-200">
+                      <div className="col-span-8">Question</div>
+                      <div className="col-span-2 text-center">Points</div>
+                      <div className="col-span-2 text-center">Type</div>
+                    </div>
+                    {questions.map((question, index) => (
+                      <div key={question.id} className="grid grid-cols-12 gap-2 py-1 text-xs text-gray-700">
+                        <div className="col-span-8">
+                          Q{index + 1}: {question.title || 'Untitled Question'}
+                        </div>
+                        <div className="col-span-2 font-medium text-center">
+                          {question.points || 0}
+                        </div>
+                        <div className="col-span-2 text-xs text-center text-gray-500">
+                          {QUESTION_TYPES.find(t => t.value === question.type)?.label || question.type}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="grid grid-cols-12 gap-2 pt-1 text-xs font-bold border-t text-emerald-900 border-emerald-300">
+                      <div className="col-span-8">Total Points</div>
+                      <div className="col-span-2 text-center">
+                        {questions.reduce((sum, q) => sum + (q.points || 0), 0)}
+                      </div>
+                      <div className="col-span-2"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-4">
                 {questions.map((question, index) => (
@@ -290,7 +365,7 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
             </div>
 
             {/* Footer Actions */}
-            <div className="flex justify-between pt-6 mt-6 border-t border-gray-200 flex-shrink-0">
+            <div className="flex justify-between flex-shrink-0 pt-6 mt-6 border-t border-gray-200">
               <div>
                 {initialData && (
                   <button
@@ -347,7 +422,7 @@ const QuestionEditor = ({
   const selectedType = questionTypes.find(type => type.value === question.type) || questionTypes[0];
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+    <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
       {/* Question Header */}
       <div className="flex items-center gap-3 mb-3">
         <span className="text-sm font-medium text-gray-500">Q{index + 1}</span>
@@ -367,7 +442,7 @@ const QuestionEditor = ({
             <button
               type="button"
               onClick={onMoveUp}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded"
+              className="p-1 text-gray-400 rounded hover:text-gray-600"
               title="Move up"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -379,7 +454,7 @@ const QuestionEditor = ({
             <button
               type="button"
               onClick={onMoveDown}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded"
+              className="p-1 text-gray-400 rounded hover:text-gray-600"
               title="Move down"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -391,7 +466,7 @@ const QuestionEditor = ({
             <button
               type="button"
               onClick={onRemove}
-              className="p-1 text-gray-400 hover:text-red-600 rounded"
+              className="p-1 text-gray-400 rounded hover:text-red-600"
               title="Remove question"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -402,26 +477,71 @@ const QuestionEditor = ({
         </div>
       </div>
 
-      {/* Question Title */}
+      {/* Question Title and Points */}
       <div className="mb-3">
-        <input
-          type="text"
-          value={question.title}
-          onChange={(e) => onUpdate({ title: e.target.value })}
-          placeholder="Enter your question..."
-          className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
-        />
+        <div className="flex gap-3">
+          <div className="flex-grow">
+            <input
+              type="text"
+              value={question.title}
+              onChange={(e) => onUpdate({ title: e.target.value })}
+              placeholder="Enter your question..."
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+          <div className="flex items-center gap-2 min-w-[100px]">
+            <label className="text-sm text-gray-700 whitespace-nowrap">Points:</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={question.points}
+              onChange={(e) => onUpdate({ points: parseInt(e.target.value) || 0 })}
+              className="w-16 px-2 py-1 text-center bg-white border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Question Options based on type */}
       {(question.type === 'multiple_choice' || question.type === 'checkboxes' || question.type === 'dropdown') && (
-        <div className="space-y-2 mb-3">
+        <div className="mb-3 space-y-2">
+          <label className="block mb-1 text-sm font-medium text-gray-700">Options & Correct Answer</label>
           {question.options.map((option, optionIndex) => (
             <div key={optionIndex} className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 w-6">
-                {question.type === 'multiple_choice' ? (optionIndex === 0 ? '○' : '○') :
-                 question.type === 'checkboxes' ? '☐' : `${optionIndex + 1}.`}
-              </span>
+              {question.type === 'multiple_choice' ? (
+                <input
+                  type="radio"
+                  name={`correct-answer-${question.id}`}
+                  checked={question.correctAnswer === option}
+                  onChange={() => onUpdate({ correctAnswer: option })}
+                  className="w-4 h-4 cursor-pointer form-radio text-emerald-600"
+                  title="Set as correct answer"
+                />
+              ) : question.type === 'checkboxes' ? (
+                <input
+                  type="checkbox"
+                  checked={Array.isArray(question.correctAnswer) && question.correctAnswer.includes(option)}
+                  onChange={(e) => {
+                    const newCorrectAnswer = [...(question.correctAnswer || [])];
+                    if (e.target.checked) {
+                      if (!newCorrectAnswer.includes(option)) {
+                        newCorrectAnswer.push(option);
+                      }
+                    } else {
+                      const index = newCorrectAnswer.indexOf(option);
+                      if (index > -1) {
+                        newCorrectAnswer.splice(index, 1);
+                      }
+                    }
+                    onUpdate({ correctAnswer: newCorrectAnswer });
+                  }}
+                  className="w-4 h-4 rounded cursor-pointer form-checkbox text-emerald-600"
+                  title="Set as correct answer"
+                />
+              ) : (
+                <span className="w-6 text-sm text-gray-500">{optionIndex + 1}.</span>
+              )}
               <input
                 type="text"
                 value={option}
@@ -433,7 +553,7 @@ const QuestionEditor = ({
                 <button
                   type="button"
                   onClick={() => onRemoveOption(optionIndex)}
-                  className="p-1 text-gray-400 hover:text-red-600 rounded"
+                  className="p-1 text-gray-400 rounded hover:text-red-600"
                   title="Remove option"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -460,7 +580,7 @@ const QuestionEditor = ({
       {question.type === 'linear_scale' && (
         <div className="grid grid-cols-2 gap-4 mb-3">
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Min Value</label>
+            <label className="block mb-1 text-sm text-gray-700">Min Value</label>
             <input
               type="number"
               min="0"
@@ -471,7 +591,7 @@ const QuestionEditor = ({
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Max Value</label>
+            <label className="block mb-1 text-sm text-gray-700">Max Value</label>
             <input
               type="number"
               min="2"
@@ -482,7 +602,7 @@ const QuestionEditor = ({
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Min Label (Optional)</label>
+            <label className="block mb-1 text-sm text-gray-700">Min Label (Optional)</label>
             <input
               type="text"
               value={question.scaleMinLabel}
@@ -492,7 +612,7 @@ const QuestionEditor = ({
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Max Label (Optional)</label>
+            <label className="block mb-1 text-sm text-gray-700">Max Label (Optional)</label>
             <input
               type="text"
               value={question.scaleMaxLabel}
@@ -504,6 +624,51 @@ const QuestionEditor = ({
         </div>
       )}
 
+      {/* Correct answer for text-based questions */}
+      {(question.type === 'short_answer' || question.type === 'paragraph') && (
+        <div className="mb-3">
+          <label className="block mb-1 text-sm font-medium text-gray-700">Correct Answer</label>
+          <input
+            type="text"
+            value={question.correctAnswer || ''}
+            onChange={(e) => onUpdate({ correctAnswer: e.target.value })}
+            placeholder="Enter the correct answer..."
+            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          />
+        </div>
+      )}
+
+      {/* True/False question type */}
+      {question.type === 'true_false' && (
+        <div className="mb-3">
+          <label className="block mb-2 text-sm font-medium text-gray-700">Correct Answer</label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input
+                type="radio"
+                name={`correct-answer-${question.id}`}
+                value="true"
+                checked={question.correctAnswer === 'true'}
+                onChange={() => onUpdate({ correctAnswer: 'true' })}
+                className="w-4 h-4 text-emerald-600 form-radio"
+              />
+              <span className="text-sm font-medium text-gray-700">True</span>
+            </label>
+            <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input
+                type="radio"
+                name={`correct-answer-${question.id}`}
+                value="false"
+                checked={question.correctAnswer === 'false'}
+                onChange={() => onUpdate({ correctAnswer: 'false' })}
+                className="w-4 h-4 text-emerald-600 form-radio"
+              />
+              <span className="text-sm font-medium text-gray-700">False</span>
+            </label>
+          </div>
+        </div>
+      )}
+
       {/* Required Toggle */}
       <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 text-sm text-gray-700">
@@ -511,7 +676,7 @@ const QuestionEditor = ({
             type="checkbox"
             checked={question.required}
             onChange={(e) => onUpdate({ required: e.target.checked })}
-            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            className="border-gray-300 rounded text-emerald-600 focus:ring-emerald-500"
           />
           Required
         </label>

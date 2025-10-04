@@ -16,6 +16,21 @@ export async function GET(request, { params }) {
       return NextResponse.json({ message: 'Form not found' }, { status: 404 });
     }
 
+    console.log('=== FORM LOAD API DEBUG ===');
+    console.log('Form being sent to frontend:', {
+      id: form._id,
+      title: form.title,
+      questionsCount: form.questions?.length,
+      sampleQuestion: form.questions?.[0] ? {
+        id: form.questions[0].id,
+        title: form.questions[0].title,
+        type: form.questions[0].type,
+        correctAnswer: form.questions[0].correctAnswer,
+        points: form.questions[0].points,
+        options: form.questions[0].options
+      } : 'No questions'
+    });
+
     return NextResponse.json({ form }, { status: 200 });
   } catch (error) {
     console.error('Error fetching form:', error);
@@ -34,8 +49,21 @@ export async function PUT(request, { params }) {
     }
 
     await connectMongo();
+    console.log('=== FORM UPDATE DB CONNECTION ===');
+    console.log('Database connected for form update');
+
     const { id } = params;
     const { title, description, questions } = await request.json();
+
+    console.log('=== FORM UPDATE API DEBUG ===');
+    console.log('Questions being updated:', questions.map(q => ({
+      id: q.id,
+      title: q.title,
+      type: q.type,
+      correctAnswer: q.correctAnswer,
+      points: q.points,
+      options: q.options
+    })));
 
     const form = await Form.findById(id);
     if (!form) {
@@ -52,6 +80,16 @@ export async function PUT(request, { params }) {
       { title, description, questions },
       { new: true }
     ).populate('createdBy', 'name email');
+
+    console.log('=== FORM UPDATED DEBUG ===');
+    console.log('Updated form questions:', updatedForm.questions.map(q => ({
+      id: q.id,
+      title: q.title,
+      type: q.type,
+      correctAnswer: q.correctAnswer,
+      points: q.points,
+      options: q.options
+    })));
 
     return NextResponse.json({
       message: 'Form updated successfully',

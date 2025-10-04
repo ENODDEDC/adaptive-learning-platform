@@ -7,12 +7,28 @@ export async function POST(request, { params }) {
   try {
     const payload = await verifyToken();
     if (!payload) {
+      console.error('Form submission failed: No valid token found');
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('Form submission - User ID:', payload.userId, 'Form ID:', params.id);
+
     await connectMongo();
     const { id } = params;
-    const { responses } = await request.json();
+
+    // Validate request body
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
+      return NextResponse.json({ message: 'Invalid JSON in request body' }, { status: 400 });
+    }
+
+    const { responses } = body;
+
+    if (!responses || typeof responses !== 'object') {
+      return NextResponse.json({ message: 'Missing or invalid responses object' }, { status: 400 });
+    }
 
     const form = await Form.findById(id);
     if (!form) {
@@ -25,8 +41,9 @@ export async function POST(request, { params }) {
         response => response.studentId.toString() === payload.userId
       );
       if (existingResponse) {
-        return NextResponse.json({ 
-          message: 'You have already submitted this form' 
+        return NextResponse.json({
+          message: 'You have already submitted this form. Multiple responses are not allowed for this form.',
+          code: 'DUPLICATE_SUBMISSION'
         }, { status: 400 });
       }
     }
@@ -54,9 +71,23 @@ export async function POST(request, { params }) {
     }, { status: 201 });
   } catch (error) {
     console.error('Error submitting form:', error);
+    console.error('Error stack:', error.stack);
+
+    // Provide more specific error messages based on error type
+    let errorMessage = 'Internal server error';
+    let statusCode = 500;
+
+    if (error.name === 'ValidationError') {
+      errorMessage = 'Form data validation failed';
+      statusCode = 400;
+    } else if (error.name === 'CastError') {
+      errorMessage = 'Invalid form ID';
+      statusCode = 400;
+    }
+
     return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
+      { message: errorMessage, error: process.env.NODE_ENV === 'development' ? error.message : undefined },
+      { status: statusCode }
     );
   }
 }

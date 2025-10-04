@@ -17,6 +17,7 @@ const FormNewPage = () => {
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [autoSave, setAutoSave] = useState(false); // Disabled for new forms
+  const [showPointsSummary, setShowPointsSummary] = useState(false);
   
   // Authorization states
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -140,7 +141,9 @@ const FormNewPage = () => {
     scaleMin: 1,
     scaleMax: 5,
     scaleMinLabel: '',
-    scaleMaxLabel: ''
+    scaleMaxLabel: '',
+    correctAnswer: '',
+    points: 1,
   });
 
   const addQuestion = (type = 'multiple_choice') => {
@@ -159,9 +162,45 @@ const FormNewPage = () => {
   };
 
   const updateQuestion = (questionId, updates) => {
-    setQuestions(questions.map(q =>
-      q.id === questionId ? { ...q, ...updates } : q
-    ));
+    console.log('=== NEW FORM UPDATE QUESTION DEBUG ===');
+    console.log('Question ID:', questionId);
+    console.log('Updates:', updates);
+
+    setQuestions(prevQuestions => {
+      console.log('Previous questions state:', prevQuestions.map(q => ({
+        id: q.id,
+        title: q.title,
+        correctAnswer: q.correctAnswer,
+        points: q.points
+      })));
+
+      const newQuestions = prevQuestions.map(q => {
+        if (q.id === questionId) {
+          const newQuestion = { ...q, ...updates };
+          // If question type is changed, reset the correct answer
+          if (updates.type && q.type !== updates.type) {
+            newQuestion.correctAnswer = updates.type === 'checkboxes' ? [] : '';
+          }
+          console.log('New question after update:', {
+            id: newQuestion.id,
+            title: newQuestion.title,
+            correctAnswer: newQuestion.correctAnswer,
+            points: newQuestion.points
+          });
+          return newQuestion;
+        }
+        return q;
+      });
+
+      console.log('Final questions state:', newQuestions.map(q => ({
+        id: q.id,
+        title: q.title,
+        correctAnswer: q.correctAnswer,
+        points: q.points
+      })));
+
+      return newQuestions;
+    });
   };
 
   const moveQuestion = (questionId, direction) => {
@@ -258,6 +297,19 @@ const FormNewPage = () => {
         courseId
       };
 
+      console.log('=== FORM CREATION DEBUG ===');
+      console.log('Questions being sent:', questions.map(q => ({
+        id: q.id,
+        title: q.title,
+        type: q.type,
+        correctAnswer: q.correctAnswer,
+        points: q.points,
+        options: q.options
+      })));
+
+      // Also log the raw formData
+      console.log('Raw formData being sent:', JSON.stringify(formData, null, 2));
+
       const res = await fetch(`/api/courses/${courseId}/forms`, {
         method: 'POST',
         headers: {
@@ -286,9 +338,9 @@ const FormNewPage = () => {
   // Show loading while checking authorization
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="w-12 h-12 mx-auto mb-4 border-b-2 border-indigo-600 rounded-full animate-spin"></div>
           <p className="text-gray-600">Checking permissions...</p>
         </div>
       </div>
@@ -298,12 +350,12 @@ const FormNewPage = () => {
   // Show error if not authorized
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error || 'Access denied'}</p>
+          <p className="mb-4 text-red-600">{error || 'Access denied'}</p>
           <button 
             onClick={() => router.back()}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
           >
             Go Back
           </button>
@@ -315,9 +367,9 @@ const FormNewPage = () => {
   // Show loading while initializing form
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="w-12 h-12 mx-auto mb-4 border-b-2 border-indigo-600 rounded-full animate-spin"></div>
           <p className="text-gray-600">Setting up form builder...</p>
         </div>
       </div>
@@ -327,14 +379,14 @@ const FormNewPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50" style={{ height: '100vh', overflowY: 'auto' }}>
       {/* Enhanced Header */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="sticky top-0 z-40 border-b border-gray-200 shadow-sm bg-white/95 backdrop-blur-xl">
+        <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Left side - Back button and title */}
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.back()}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:text-gray-900 hover:bg-gray-100"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -361,7 +413,7 @@ const FormNewPage = () => {
               <button
                 onClick={saveForm}
                 disabled={saving}
-                className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="px-6 py-2 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl"
               >
                 {saving ? 'Creating...' : 'Create Form'}
               </button>
@@ -375,15 +427,15 @@ const FormNewPage = () => {
         {/* Form Editor */}
         <div className={`${showPreview ? '' : 'max-w-4xl mx-auto'}`}>
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div className="p-4 mb-6 border border-red-200 bg-red-50 rounded-xl">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
           {/* Form Basic Info */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-8">
+          <div className="p-8 mb-8 bg-white border border-gray-100 shadow-lg rounded-2xl">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="flex items-center justify-center w-12 h-12 shadow-lg bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -399,7 +451,7 @@ const FormNewPage = () => {
                 <label className="block mb-2 text-sm font-medium text-gray-700">Form Title</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                  className="w-full px-4 py-3 transition-all duration-200 border-2 border-gray-200 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Enter an engaging form title..."
@@ -409,7 +461,7 @@ const FormNewPage = () => {
               <div>
                 <label className="block mb-2 text-sm font-medium text-gray-700">Description (Optional)</label>
                 <textarea
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 resize-none"
+                  className="w-full px-4 py-3 transition-all duration-200 border-2 border-gray-200 resize-none bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   rows="3"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -419,10 +471,10 @@ const FormNewPage = () => {
             </div>
           </div>       
    {/* Questions Section */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <div className="p-8 bg-white border border-gray-100 shadow-lg rounded-2xl">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+                <div className="flex items-center justify-center w-10 h-10 shadow-lg bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -430,22 +482,33 @@ const FormNewPage = () => {
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">Questions ({questions.length})</h3>
                   <p className="text-gray-600">Build your form with different question types</p>
+                  <div className="mt-2">
+                    <button
+                      onClick={() => setShowPointsSummary(!showPointsSummary)}
+                      className="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                    >
+                      {showPointsSummary ? 'Hide' : 'Show'} Points Summary
+                      <svg className={`w-4 h-4 transition-transform ${showPointsSummary ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Quick Add Buttons */}
               <div className="flex items-center gap-2">
                 <div className="relative group">
-                  <button className="px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-all duration-200">
+                  <button className="px-4 py-2 text-sm font-medium transition-all duration-200 border rounded-lg text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100">
                     Quick Add ▼
                   </button>
-                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  <div className="absolute right-0 z-10 invisible w-64 mt-2 transition-all duration-200 bg-white border border-gray-200 shadow-lg opacity-0 rounded-xl group-hover:opacity-100 group-hover:visible">
                     <div className="p-2">
                       {QUESTION_TYPES.slice(0, 4).map(type => (
                         <button
                           key={type.value}
                           onClick={() => addQuestion(type.value)}
-                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left hover:bg-gray-50 rounded-lg transition-colors duration-150"
+                          className="flex items-center w-full gap-3 px-3 py-2 text-sm text-left transition-colors duration-150 rounded-lg hover:bg-gray-50"
                         >
                           <span className="text-lg">{type.icon}</span>
                           <div>
@@ -459,12 +522,46 @@ const FormNewPage = () => {
                 </div>
                 <button
                   onClick={() => addQuestion()}
-                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-teal-600 rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="px-4 py-2 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:shadow-xl"
                 >
                   Add Question
                 </button>
               </div>
             </div>
+
+            {/* Points Summary */}
+            {showPointsSummary && (
+              <div className="p-4 mb-6 border border-indigo-200 bg-indigo-50 rounded-xl">
+                <h4 className="mb-3 text-lg font-semibold text-indigo-900">Points Summary</h4>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-12 gap-4 pb-2 text-sm font-medium text-indigo-700 border-b border-indigo-200">
+                    <div className="col-span-8">Question</div>
+                    <div className="col-span-2 text-center">Points</div>
+                    <div className="col-span-2 text-center">Type</div>
+                  </div>
+                  {questions.map((question, index) => (
+                    <div key={question.id} className="grid grid-cols-12 gap-4 py-1 text-sm text-gray-700">
+                      <div className="col-span-8">
+                        Q{index + 1}: {question.title || 'Untitled Question'}
+                      </div>
+                      <div className="col-span-2 font-medium text-center">
+                        {question.points || 0}
+                      </div>
+                      <div className="col-span-2 text-xs text-center text-gray-500">
+                        {QUESTION_TYPES.find(t => t.value === question.type)?.label || question.type}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-12 gap-4 pt-2 text-sm font-bold text-indigo-900 border-t border-indigo-300">
+                    <div className="col-span-8">Total Points</div>
+                    <div className="col-span-2 text-center">
+                      {questions.reduce((sum, q) => sum + (q.points || 0), 0)}
+                    </div>
+                    <div className="col-span-2"></div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-6">
               {questions.map((question, index) => (
@@ -493,9 +590,9 @@ const FormNewPage = () => {
         {/* Live Preview */}
         {showPreview && (
           <div className="sticky top-24 h-fit">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div className="p-6 bg-white border border-gray-100 shadow-lg rounded-2xl">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -536,7 +633,7 @@ const EnhancedQuestionEditor = ({
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <div className="group relative bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-6 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg">
+    <div className="relative p-6 transition-all duration-300 border-2 border-gray-200 group bg-gradient-to-br from-gray-50 to-white rounded-2xl hover:border-indigo-300 hover:shadow-lg">
       {/* Question Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
@@ -547,23 +644,23 @@ const EnhancedQuestionEditor = ({
             <select
               value={question.type}
               onChange={(e) => onUpdate({ type: e.target.value })}
-              className="px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+              className="px-3 py-2 text-sm bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
               {questionTypes.map(type => (
                 <option key={type.value} value={type.value}>{type.icon} {type.label}</option>
               ))}
             </select>
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+            <span className="px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded-full">
               {selectedType.description}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="flex items-center gap-1 transition-opacity duration-200 opacity-0 group-hover:opacity-100">
           {canMoveUp && (
             <button
               onClick={onMoveUp}
-              className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
+              className="p-2 text-gray-400 transition-all duration-200 rounded-lg hover:text-indigo-600 hover:bg-indigo-50"
               title="Move up"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -574,7 +671,7 @@ const EnhancedQuestionEditor = ({
           {canMoveDown && (
             <button
               onClick={onMoveDown}
-              className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
+              className="p-2 text-gray-400 transition-all duration-200 rounded-lg hover:text-indigo-600 hover:bg-indigo-50"
               title="Move down"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -584,7 +681,7 @@ const EnhancedQuestionEditor = ({
           )}
           <button
             onClick={onDuplicate}
-            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+            className="p-2 text-gray-400 transition-all duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50"
             title="Duplicate question"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -594,7 +691,7 @@ const EnhancedQuestionEditor = ({
           {canRemove && (
             <button
               onClick={onRemove}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+              className="p-2 text-gray-400 transition-all duration-200 rounded-lg hover:text-red-600 hover:bg-red-50"
               title="Remove question"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -604,7 +701,7 @@ const EnhancedQuestionEditor = ({
           )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-all duration-200"
+            className="p-2 text-gray-400 transition-all duration-200 rounded-lg hover:text-gray-600 hover:bg-gray-50"
             title={isExpanded ? "Collapse" : "Expand"}
           >
             <svg className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -616,38 +713,82 @@ const EnhancedQuestionEditor = ({
 
       {isExpanded && (
         <>
-          {/* Question Title */}
+          {/* Question Title and Points */}
           <div className="mb-6">
-            <input
-              type="text"
-              value={question.title}
-              onChange={(e) => onUpdate({ title: e.target.value })}
-              placeholder="Enter your question..."
-              className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg font-medium transition-all duration-200"
-            />
+            <div className="flex gap-4">
+              <div className="flex-grow">
+                <input
+                  type="text"
+                  value={question.title}
+                  onChange={(e) => onUpdate({ title: e.target.value })}
+                  placeholder="Enter your question..."
+                  className="w-full px-4 py-3 text-lg font-medium transition-all duration-200 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <div className="flex items-center gap-2 min-w-[120px]">
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Points:</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={question.points}
+                  onChange={(e) => onUpdate({ points: parseInt(e.target.value) || 0 })}
+                  className="w-20 px-3 py-2 text-center bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Question Options based on type */}
           {(question.type === 'multiple_choice' || question.type === 'checkboxes' || question.type === 'dropdown') && (
-            <div className="space-y-3 mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Options</label>
+            <div className="mb-6 space-y-3">
+              <label className="block mb-3 text-sm font-medium text-gray-700">Options & Correct Answer</label>
               {question.options.map((option, optionIndex) => (
                 <div key={optionIndex} className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-6 h-6 text-gray-400">
-                    {question.type === 'multiple_choice' ? '○' :
-                     question.type === 'checkboxes' ? '☐' : `${optionIndex + 1}.`}
-                  </div>
+                  {question.type === 'multiple_choice' ? (
+                    <input
+                      type="radio"
+                      name={`correct-answer-${question.id}`}
+                      checked={question.correctAnswer === option}
+                      onChange={() => onUpdate({ correctAnswer: option })}
+                      className="w-5 h-5 text-indigo-600 cursor-pointer form-radio"
+                      title="Set as correct answer"
+                    />
+                  ) : question.type === 'checkboxes' ? (
+                    <input
+                      type="checkbox"
+                      checked={Array.isArray(question.correctAnswer) && question.correctAnswer.includes(option)}
+                      onChange={(e) => {
+                        const newCorrectAnswer = [...(question.correctAnswer || [])];
+                        if (e.target.checked) {
+                          if (!newCorrectAnswer.includes(option)) {
+                            newCorrectAnswer.push(option);
+                          }
+                        } else {
+                          const index = newCorrectAnswer.indexOf(option);
+                          if (index > -1) {
+                            newCorrectAnswer.splice(index, 1);
+                          }
+                        }
+                        onUpdate({ correctAnswer: newCorrectAnswer });
+                      }}
+                      className="w-5 h-5 text-indigo-600 rounded cursor-pointer form-checkbox"
+                      title="Set as correct answer"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center w-6 h-6 text-gray-400">{optionIndex + 1}.</div>
+                  )}
                   <input
                     type="text"
                     value={option}
                     onChange={(e) => onUpdateOption(optionIndex, e.target.value)}
                     placeholder={`Option ${optionIndex + 1}`}
-                    className="flex-grow px-3 py-2 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+                    className="flex-grow px-3 py-2 transition-all duration-200 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                   {question.options.length > 1 && (
                     <button
                       onClick={() => onRemoveOption(optionIndex)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                      className="p-2 text-gray-400 transition-all duration-200 rounded-lg hover:text-red-600 hover:bg-red-50"
                       title="Remove option"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -659,7 +800,7 @@ const EnhancedQuestionEditor = ({
               ))}
               <button
                 onClick={onAddOption}
-                className="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -673,7 +814,7 @@ const EnhancedQuestionEditor = ({
           {question.type === 'linear_scale' && (
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Scale Range</label>
+                <label className="block mb-2 text-sm font-medium text-gray-700">Scale Range</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
@@ -695,7 +836,7 @@ const EnhancedQuestionEditor = ({
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Labels (Optional)</label>
+                <label className="block mb-2 text-sm font-medium text-gray-700">Labels (Optional)</label>
                 <div className="space-y-2">
                   <input
                     type="text"
@@ -716,6 +857,20 @@ const EnhancedQuestionEditor = ({
             </div>
           )}
 
+          {/* Correct answer for text-based questions */}
+          {(question.type === 'short_answer' || question.type === 'paragraph') && (
+            <div className="mb-6">
+              <label className="block mb-2 text-sm font-medium text-gray-700">Correct Answer</label>
+              <input
+                type="text"
+                value={question.correctAnswer || ''}
+                onChange={(e) => onUpdate({ correctAnswer: e.target.value })}
+                placeholder="Enter the correct answer..."
+                className="w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+          )}
+
           {/* Required Toggle */}
           <div className="flex items-center gap-3">
             <input
@@ -723,7 +878,7 @@ const EnhancedQuestionEditor = ({
               id={`required-${question.id}`}
               checked={question.required}
               onChange={(e) => onUpdate({ required: e.target.checked })}
-              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
             />
             <label htmlFor={`required-${question.id}`} className="text-sm font-medium text-gray-700">
               Required question
@@ -739,21 +894,21 @@ const EnhancedQuestionEditor = ({
 const FormPreview = ({ title, description, questions }) => {
   return (
     <div className="space-y-6">
-      <div className="border-b border-gray-200 pb-4">
+      <div className="pb-4 border-b border-gray-200">
         <h2 className="text-xl font-bold text-gray-900">{title || 'Untitled Form'}</h2>
         {description && (
-          <p className="text-gray-600 mt-2">{description}</p>
+          <p className="mt-2 text-gray-600">{description}</p>
         )}
       </div>
       
       {questions.map((question, index) => (
         <div key={question.id} className="space-y-3">
           <div className="flex items-start gap-2">
-            <span className="text-sm font-medium text-gray-500 mt-1">{index + 1}.</span>
+            <span className="mt-1 text-sm font-medium text-gray-500">{index + 1}.</span>
             <div className="flex-grow">
               <h3 className="font-medium text-gray-900">
                 {question.title || 'Untitled Question'}
-                {question.required && <span className="text-red-500 ml-1">*</span>}
+                {question.required && <span className="ml-1 text-red-500">*</span>}
               </h3>
               
               {/* Preview based on question type */}
@@ -781,7 +936,7 @@ const FormPreview = ({ title, description, questions }) => {
                 )}
                 
                 {question.type === 'dropdown' && (
-                  <select disabled className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                  <select disabled className="w-full px-3 py-2 text-gray-600 border border-gray-300 rounded-lg bg-gray-50">
                     <option>Choose an option</option>
                     {question.options.map((option, optionIndex) => (
                       <option key={optionIndex}>{option}</option>
@@ -794,7 +949,7 @@ const FormPreview = ({ title, description, questions }) => {
                     type="text"
                     disabled
                     placeholder="Short answer text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    className="w-full px-3 py-2 text-gray-600 border border-gray-300 rounded-lg bg-gray-50"
                   />
                 )}
                 
@@ -803,7 +958,7 @@ const FormPreview = ({ title, description, questions }) => {
                     disabled
                     placeholder="Long answer text"
                     rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 resize-none"
+                    className="w-full px-3 py-2 text-gray-600 border border-gray-300 rounded-lg resize-none bg-gray-50"
                   />
                 )}
                 
@@ -830,7 +985,7 @@ const FormPreview = ({ title, description, questions }) => {
                   <input
                     type="date"
                     disabled
-                    className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    className="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg bg-gray-50"
                   />
                 )}
                 
@@ -838,7 +993,7 @@ const FormPreview = ({ title, description, questions }) => {
                   <input
                     type="time"
                     disabled
-                    className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    className="px-3 py-2 text-gray-600 border border-gray-300 rounded-lg bg-gray-50"
                   />
                 )}
               </div>

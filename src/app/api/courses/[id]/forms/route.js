@@ -25,9 +25,13 @@ export async function POST(request, { params }) {
 
     try {
       await connectMongo();
+      console.log('=== DATABASE CONNECTION DEBUG ===');
       console.log('Database connected successfully');
+      console.log('MONGODB_URI exists:', !!process.env.MONGODB_URI);
     } catch (dbError) {
+      console.error('=== DATABASE CONNECTION FAILED ===');
       console.error('Database connection failed:', dbError);
+      console.error('MONGODB_URI:', process.env.MONGODB_URI ? 'Set' : 'Not set');
       return NextResponse.json({ message: 'Database connection failed' }, { status: 500 });
     }
 
@@ -42,7 +46,16 @@ export async function POST(request, { params }) {
     const { title, description, questions, type } = requestBody;
     const { id: courseId } = params;
 
+    console.log('=== FORM CREATION API DEBUG ===');
     console.log('Form data received:', { title, description, questionsCount: questions?.length, courseId });
+    console.log('Sample question data:', questions?.[0] ? {
+      id: questions[0].id,
+      title: questions[0].title,
+      type: questions[0].type,
+      correctAnswer: questions[0].correctAnswer,
+      points: questions[0].points,
+      options: questions[0].options
+    } : 'No questions');
 
     // Validate required fields
     if (!title || !questions || !courseId) {
@@ -88,10 +101,27 @@ export async function POST(request, { params }) {
     let savedForm;
     try {
       savedForm = await form.save();
-      console.log('Form saved successfully:', savedForm._id);
+      console.log('=== FORM SAVED DEBUG ===');
+      console.log('Saved form questions:', savedForm.questions.map(q => ({
+        id: q.id,
+        title: q.title,
+        type: q.type,
+        correctAnswer: q.correctAnswer,
+        points: q.points,
+        options: q.options
+      })));
+      console.log('=== FORM SAVED SUCCESSFULLY ===');
+      console.log('Saved form ID:', savedForm._id);
+      console.log('Saved questions:', savedForm.questions.map(q => ({
+        id: q.id,
+        title: q.title,
+        correctAnswer: q.correctAnswer,
+        points: q.points
+      })));
     } catch (saveError) {
+      console.error('=== FORM SAVE ERROR ===');
       console.error('Error saving form:', saveError);
-      return NextResponse.json({ message: 'Failed to save form to database' }, { status: 500 });
+      return NextResponse.json({ message: 'Failed to save form to database', error: saveError.message }, { status: 500 });
     }
 
     return NextResponse.json({
