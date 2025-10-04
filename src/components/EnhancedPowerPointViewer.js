@@ -43,6 +43,100 @@ const EnhancedPowerPointViewer = ({ filePath, fileName, contentId, onClose, isMo
   const viewerRef = useRef(null);
   const slideContainerRef = useRef(null);
 
+  // Convert PDF to individual slide images using PDF.js
+  const convertPdfToSlides = useCallback(async (pdfUrl, pageCount) => {
+    try {
+      console.log('🔄 Converting PDF to slide images using PDF.js...');
+      
+      // Dynamically import PDF.js
+      const pdfjsLib = await import('pdfjs-dist');
+      
+      // Set worker source
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      
+      // Load the PDF document
+      const loadingTask = pdfjsLib.getDocument(pdfUrl);
+      const pdf = await loadingTask.promise;
+      
+      console.log('📄 PDF loaded successfully, pages:', pdf.numPages);
+      
+      const slides = [];
+      
+      // Convert each page to an image
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        try {
+          console.log(`🖼️ Converting page ${pageNum} to image...`);
+          
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 2.0 }); // High quality scale
+          
+          // Create canvas
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          
+          // Render page to canvas
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+          };
+          
+          await page.render(renderContext).promise;
+          
+          // Convert canvas to data URL
+          const imageUrl = canvas.toDataURL('image/png', 0.9);
+          
+          // Extract text content from the page (for search functionality)
+          let textContent = '';
+          try {
+            const textContentObj = await page.getTextContent();
+            textContent = textContentObj.items
+              .map(item => item.str)
+              .join(' ')
+              .trim();
+          } catch (textError) {
+            console.warn(`⚠️ Failed to extract text from page ${pageNum}:`, textError);
+          }
+          
+          slides.push({
+            slideNumber: pageNum,
+            imageUrl: imageUrl,
+            text: textContent,
+            notes: '', // PDF doesn't contain speaker notes
+            hasImages: true, // PDF pages are essentially images
+            hasText: !!textContent,
+            isPdfPage: true
+          });
+          
+          console.log(`✅ Page ${pageNum} converted successfully`);
+          
+        } catch (pageError) {
+          console.error(`❌ Error converting page ${pageNum}:`, pageError);
+          
+          // Create error slide
+          slides.push({
+            slideNumber: pageNum,
+            imageUrl: createSlideImage(pageNum, `Error loading page: ${pageError.message}`, false, true),
+            text: `Error loading page: ${pageError.message}`,
+            notes: '',
+            hasImages: false,
+            hasText: false,
+            error: true,
+            isPdfPage: true
+          });
+        }
+      }
+      
+      console.log(`✅ PDF conversion completed: ${slides.length} slides created`);
+      return slides;
+      
+    } catch (error) {
+      console.error('❌ PDF to slides conversion failed:', error);
+      throw new Error(`Failed to convert PDF to slides: ${error.message}`);
+    }
+  }, [createSlideImage]);
+
   // Create slide image from text content
   const createSlideImage = useCallback((slideNumber, text, hasImages, isError) => {
     const canvas = document.createElement('canvas');
@@ -190,7 +284,7 @@ const EnhancedPowerPointViewer = ({ filePath, fileName, contentId, onClose, isMo
     return canvas.toDataURL('image/png', 0.9);
   }, []);
 
-  // Fetch PPT data with server-side conversion
+  // Fetch PPT data with PDF conversion
   useEffect(() => {
     let isMounted = true;
 
@@ -212,58 +306,38 @@ const EnhancedPowerPointViewer = ({ filePath, fileName, contentId, onClose, isMo
           throw new Error('Invalid file path provided');
         }
 
-        console.log('🔍 Starting server-side PowerPoint conversion...');
+        console.log('🔍 Converting PowerPoint to PDF for exact visual display...');
         console.log('📁 Processing PowerPoint file:', filePathString);
         
-        // Use server-side PowerPoint conversion API
-        const response = await fetch('/api/files/convert-ppt', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            filePath: filePathString,
-            fileName: fileName || 'presentation.pptx'
-          })
-        });
+        // Use PDF conversion API to get exact PowerPoint visuals
+        const response = await fetch(`/api/convert-ppt-to-pdf?filePath=${encodeURIComponent(filePathString)}&contentId=${contentId || ''}`);
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to convert PowerPoint file');
+          throw new Error(errorData.error || 'Failed to convert PowerPoint to PDF');
         }
 
         const result = await response.json();
         
         if (!isMounted) return;
         
-        console.log('🎯 Server-side PowerPoint conversion successful:', result);
-        console.log('🎯 Total slides extracted:', result.slides?.length);
+        console.log('🎯 PowerPoint to PDF conversion successful:', result);
+        console.log('🎯 PDF URL:', result.pdfUrl);
+        console.log('🎯 Total pages:', result.pageCount);
         
-        if (result.slides && result.slides.length > 0) {
-          // Create slide images from text content
-          const slidesWithImages = result.slides.map((slide, index) => {
-            console.log(`📄 Slide ${index + 1}:`, {
-              hasText: !!slide.text,
-              textLength: slide.text?.length || 0,
-              textPreview: slide.text?.substring(0, 100) || 'No text'
-            });
-
-            return {
-              ...slide,
-              imageUrl: createSlideImage(slide.slideNumber, slide.text, slide.hasImages, slide.error)
-            };
-          });
-
-          setSlides(slidesWithImages);
-          console.log('✅ PowerPoint slides processed and loaded successfully');
+        if (result.pdfUrl && result.pageCount > 0) {
+          // Convert PDF to individual page images using PDF.js
+          const pdfSlides = await convertPdfToSlides(result.pdfUrl, result.pageCount);
+          setSlides(pdfSlides);
+          console.log('✅ PDF slides loaded successfully');
           return;
         } else {
-          throw new Error('No slides were extracted from PowerPoint');
+          throw new Error('No PDF was generated from PowerPoint');
         }
         
       } catch (err) {
         if (!isMounted) return;
-        console.error('❌ PowerPoint conversion failed:', err);
+        console.error('❌ PowerPoint to PDF conversion failed:', err);
         setError(err.message || 'Failed to load presentation');
       } finally {
         if (isMounted) {
