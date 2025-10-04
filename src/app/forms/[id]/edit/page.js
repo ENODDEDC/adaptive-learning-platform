@@ -18,6 +18,15 @@ const FormEditPage = ({ params }) => {
   const [autoSave, setAutoSave] = useState(true);
   const [lastSaved, setLastSaved] = useState(null);
   const [showPointsSummary, setShowPointsSummary] = useState(false);
+
+  // Form settings
+  const [settings, setSettings] = useState({
+    allowMultipleResponses: false,
+    showProgress: true,
+    shuffleQuestions: false,
+    confirmBeforeSubmit: true,
+    showResultsAfterSubmission: false
+  });
   
   // Authorization states
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -184,6 +193,15 @@ const FormEditPage = ({ params }) => {
 
       setTitle(data.form.title || '');
       setDescription(data.form.description || '');
+
+      // Load settings with defaults
+      setSettings({
+        allowMultipleResponses: data.form.settings?.allowMultipleResponses || false,
+        showProgress: data.form.settings?.showProgress !== false, // Default to true
+        shuffleQuestions: data.form.settings?.shuffleQuestions || false,
+        confirmBeforeSubmit: data.form.settings?.confirmBeforeSubmit !== false, // Default to true
+        showResultsAfterSubmission: data.form.settings?.showResultsAfterSubmission || false
+      });
 
       // Ensure all questions have the required fields
       const questionsWithDefaults = (data.form.questions || [createEmptyQuestion()]).map(q => ({
@@ -373,7 +391,8 @@ const FormEditPage = ({ params }) => {
         title,
         description,
         type: 'form',
-        questions
+        questions,
+        settings
       };
 
       console.log('=== FORM UPDATE SEND DEBUG ===');
@@ -601,6 +620,89 @@ const FormEditPage = ({ params }) => {
                   placeholder="Provide context or instructions for your form..."
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Form Settings */}
+          <div className="p-8 mb-8 bg-white border border-gray-100 shadow-lg rounded-2xl">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center justify-center w-12 h-12 shadow-lg bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+                <p className="text-gray-600">Configure form behavior and options</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <label className="flex items-center gap-3 p-4 transition-colors border border-gray-200 cursor-pointer rounded-xl bg-gray-50 hover:bg-gray-100">
+                <input
+                  type="checkbox"
+                  checked={settings.allowMultipleResponses}
+                  onChange={(e) => setSettings(prev => ({ ...prev, allowMultipleResponses: e.target.checked }))}
+                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">Allow multiple responses</div>
+                  <div className="text-sm text-gray-500">Let users submit more than once</div>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 p-4 transition-colors border border-gray-200 cursor-pointer rounded-xl bg-gray-50 hover:bg-gray-100">
+                <input
+                  type="checkbox"
+                  checked={settings.showProgress}
+                  onChange={(e) => setSettings(prev => ({ ...prev, showProgress: e.target.checked }))}
+                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">Show progress bar</div>
+                  <div className="text-sm text-gray-500">Display completion progress</div>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 p-4 transition-colors border border-gray-200 cursor-pointer rounded-xl bg-gray-50 hover:bg-gray-100">
+                <input
+                  type="checkbox"
+                  checked={settings.shuffleQuestions}
+                  onChange={(e) => setSettings(prev => ({ ...prev, shuffleQuestions: e.target.checked }))}
+                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">Shuffle questions</div>
+                  <div className="text-sm text-gray-500">Randomize question order</div>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 p-4 transition-colors border border-gray-200 cursor-pointer rounded-xl bg-gray-50 hover:bg-gray-100">
+                <input
+                  type="checkbox"
+                  checked={settings.confirmBeforeSubmit}
+                  onChange={(e) => setSettings(prev => ({ ...prev, confirmBeforeSubmit: e.target.checked }))}
+                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">Confirm before submit</div>
+                  <div className="text-sm text-gray-500">Show confirmation dialog</div>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 p-4 transition-colors border border-gray-200 cursor-pointer rounded-xl bg-gray-50 hover:bg-gray-100 md:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={settings.showResultsAfterSubmission}
+                  onChange={(e) => setSettings(prev => ({ ...prev, showResultsAfterSubmission: e.target.checked }))}
+                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">Show results after submission</div>
+                  <div className="text-sm text-gray-500">Display scores and correct answers to students</div>
+                </div>
+              </label>
             </div>
           </div>
 

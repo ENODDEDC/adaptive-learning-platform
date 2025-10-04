@@ -31,7 +31,8 @@ const formSchema = new mongoose.Schema({
     allowMultipleResponses: { type: Boolean, default: false },
     showProgress: { type: Boolean, default: true },
     shuffleQuestions: { type: Boolean, default: false },
-    confirmBeforeSubmit: { type: Boolean, default: true }
+    confirmBeforeSubmit: { type: Boolean, default: true },
+    showResultsAfterSubmission: { type: Boolean, default: false }
   },
   responses: [{
     studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

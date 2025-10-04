@@ -9,6 +9,15 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
   const [loading, setLoading] = useState(false);
   const [showPointsSummary, setShowPointsSummary] = useState(false);
 
+  // Form settings
+  const [settings, setSettings] = useState({
+    allowMultipleResponses: false,
+    showProgress: true,
+    shuffleQuestions: false,
+    confirmBeforeSubmit: true,
+    showResultsAfterSubmission: false
+  });
+
   // Question types (Google Forms style)
   const QUESTION_TYPES = [
     { value: 'multiple_choice', label: 'Multiple Choice', icon: '○' },
@@ -28,11 +37,25 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
         setTitle(initialData.title || '');
         setDescription(initialData.description || '');
         setQuestions(initialData.questions || []);
+        setSettings({
+          allowMultipleResponses: initialData.settings?.allowMultipleResponses || false,
+          showProgress: initialData.settings?.showProgress !== false, // Default to true
+          shuffleQuestions: initialData.settings?.shuffleQuestions || false,
+          confirmBeforeSubmit: initialData.settings?.confirmBeforeSubmit !== false, // Default to true
+          showResultsAfterSubmission: initialData.settings?.showResultsAfterSubmission || false
+        });
       } else {
-        // Initialize with one empty question
+        // Initialize with one empty question and default settings
         setTitle('');
         setDescription('');
         setQuestions([createEmptyQuestion()]);
+        setSettings({
+          allowMultipleResponses: false,
+          showProgress: true,
+          shuffleQuestions: false,
+          confirmBeforeSubmit: true,
+          showResultsAfterSubmission: false
+        });
       }
       setError('');
     }
@@ -170,7 +193,8 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
         description,
         type: 'form',
         questions,
-        courseId
+        courseId,
+        settings
       };
 
       console.log('Sending form data:', {
@@ -276,6 +300,81 @@ const FormBuilderModal = ({ isOpen, onClose, courseId, onFormCreated, initialDat
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe your form..."
                 />
+              </div>
+            </div>
+
+            {/* Form Settings */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Settings</h3>
+              </div>
+              <div className="p-4 space-y-4 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <label className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={settings.allowMultipleResponses}
+                      onChange={(e) => setSettings(prev => ({ ...prev, allowMultipleResponses: e.target.checked }))}
+                      className="w-4 h-4 border-gray-300 rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">Allow multiple responses</div>
+                      <div className="text-xs text-gray-500">Let users submit more than once</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={settings.showProgress}
+                      onChange={(e) => setSettings(prev => ({ ...prev, showProgress: e.target.checked }))}
+                      className="w-4 h-4 border-gray-300 rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">Show progress bar</div>
+                      <div className="text-xs text-gray-500">Display completion progress</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={settings.shuffleQuestions}
+                      onChange={(e) => setSettings(prev => ({ ...prev, shuffleQuestions: e.target.checked }))}
+                      className="w-4 h-4 border-gray-300 rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">Shuffle questions</div>
+                      <div className="text-xs text-gray-500">Randomize question order</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={settings.confirmBeforeSubmit}
+                      onChange={(e) => setSettings(prev => ({ ...prev, confirmBeforeSubmit: e.target.checked }))}
+                      className="w-4 h-4 border-gray-300 rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">Confirm before submit</div>
+                      <div className="text-xs text-gray-500">Show confirmation dialog</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 md:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={settings.showResultsAfterSubmission}
+                      onChange={(e) => setSettings(prev => ({ ...prev, showResultsAfterSubmission: e.target.checked }))}
+                      className="w-4 h-4 border-gray-300 rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">Show results after submission</div>
+                      <div className="text-xs text-gray-500">Display scores and correct answers to students</div>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
 

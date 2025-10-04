@@ -53,7 +53,7 @@ export async function PUT(request, { params }) {
     console.log('Database connected for form update');
 
     const { id } = params;
-    const { title, description, questions } = await request.json();
+    const { title, description, questions, settings } = await request.json();
 
     console.log('=== FORM UPDATE API DEBUG ===');
     console.log('Questions being updated:', questions.map(q => ({
@@ -64,6 +64,7 @@ export async function PUT(request, { params }) {
       points: q.points,
       options: q.options
     })));
+    console.log('Settings being updated:', settings);
 
     const form = await Form.findById(id);
     if (!form) {
@@ -77,7 +78,7 @@ export async function PUT(request, { params }) {
 
     const updatedForm = await Form.findByIdAndUpdate(
       id,
-      { title, description, questions },
+      { title, description, questions, settings },
       { new: true }
     ).populate('createdBy', 'name email');
 

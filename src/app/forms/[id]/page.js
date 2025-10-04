@@ -677,25 +677,74 @@ const FormPreviewPage = ({ params }) => {
       {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="max-w-md mx-4 duration-300 transform bg-white shadow-2xl rounded-2xl animate-in fade-in-0 zoom-in-95">
+          <div className={`mx-4 duration-300 transform bg-white shadow-2xl rounded-2xl animate-in fade-in-0 zoom-in-95 ${submissionResult?.score ? 'max-w-2xl' : 'max-w-md'}`}>
             <div className="relative overflow-hidden">
               {/* Decorative gradient bar */}
-              <div className="h-2 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500"></div>
+              <div className={`h-2 ${submissionResult?.score ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500' : 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500'}`}></div>
 
               <div className="p-8">
                 {/* Success icon */}
-                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-6 bg-green-100 rounded-full">
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                <div className={`flex items-center justify-center w-16 h-16 mx-auto mb-6 ${submissionResult?.score ? 'bg-blue-100' : 'bg-green-100'} rounded-full`}>
+                  {submissionResult?.score ? (
+                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
                 </div>
 
                 <h3 className="mb-4 text-2xl font-bold text-center text-gray-900">
-                  Form Submitted Successfully!
+                  {submissionResult?.score ? 'Form Submitted - Here are your results!' : 'Form Submitted Successfully!'}
                 </h3>
 
-                <p className="mb-6 text-center text-gray-600">
-                  Thank you for completing the form. Your responses have been recorded.
+                {submissionResult?.score && (
+                  <div className="mb-6">
+                    {/* Score Summary */}
+                    <div className="p-4 mb-4 text-center border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
+                      <div className="mb-2 text-3xl font-bold text-blue-600">
+                        {submissionResult.score.earnedPoints}/{submissionResult.score.totalPoints}
+                      </div>
+                      <div className="mb-1 text-lg font-semibold text-blue-800">
+                        {submissionResult.score.percentage}% Score
+                      </div>
+                      <div className="text-sm text-blue-600">
+                        You got {submissionResult.score.questionResults.filter(r => r.isCorrect).length} out of {submissionResult.score.questionResults.length} questions correct
+                      </div>
+                    </div>
+
+                    {/* Question Results */}
+                    <div className="space-y-3 overflow-y-auto max-h-60">
+                      <h4 className="mb-3 font-semibold text-gray-900">Question Breakdown</h4>
+                      {submissionResult.score.questionResults.map((result, index) => (
+                        <div key={result.questionId} className={`p-3 rounded-lg border ${result.isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                          <div className="flex items-start justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-900">Q{index + 1}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-1 rounded-full ${result.isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {result.isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                              </span>
+                              <span className="text-sm font-medium text-gray-700">
+                                {result.pointsEarned}/{result.maxPoints} pts
+                              </span>
+                            </div>
+                          </div>
+                          <div className="mb-1 text-sm text-gray-600">{result.questionTitle}</div>
+                          {!result.isCorrect && result.showCorrectAnswer && result.correctAnswer && (
+                            <div className="text-xs text-gray-500">
+                              Correct answer: {result.displayText.includes('Correct:') ? result.displayText.split('Correct: ')[1] : result.correctAnswer}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className={`text-center ${submissionResult?.score ? 'mb-4' : 'mb-6'} text-gray-600`}>
+                  {submissionResult?.score ? 'Review your performance above. Your responses have been recorded.' : 'Thank you for completing the form. Your responses have been recorded.'}
                 </p>
 
                 <div className="flex justify-center">

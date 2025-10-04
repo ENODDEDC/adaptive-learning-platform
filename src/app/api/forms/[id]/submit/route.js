@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectMongo from '@/config/mongoConfig';
 import { Form } from '@/models/Form';
 import { verifyToken } from '@/utils/auth';
+import { calculateFormScore, formatQuestionResultForDisplay } from '@/utils/formScoring';
 
 export async function POST(request, { params }) {
   try {
@@ -62,13 +63,35 @@ export async function POST(request, { params }) {
       isComplete: true
     };
 
+    // Calculate scores if the form is configured to show results
+    let scoreResult = null;
+    if (form.settings?.showResultsAfterSubmission) {
+      scoreResult = calculateFormScore(form.questions, responses);
+
+      // Format results for display
+      scoreResult.questionResults = scoreResult.questionResults.map(result => {
+        const question = form.questions.find(q => q.id === result.questionId);
+        return {
+          ...result,
+          ...formatQuestionResultForDisplay(result, question?.type)
+        };
+      });
+    }
+
     form.responses.push(newResponse);
     await form.save();
 
-    return NextResponse.json({
+    const response = {
       message: 'Form submitted successfully',
       responseId: newResponse._id
-    }, { status: 201 });
+    };
+
+    // Include score results if enabled
+    if (scoreResult) {
+      response.score = scoreResult;
+    }
+
+    return NextResponse.json(response, { status: 201 });
   } catch (error) {
     console.error('Error submitting form:', error);
     console.error('Error stack:', error.stack);

@@ -43,11 +43,11 @@ export async function POST(request, { params }) {
       return NextResponse.json({ message: 'Invalid request body' }, { status: 400 });
     }
 
-    const { title, description, questions, type } = requestBody;
+    const { title, description, questions, type, settings } = requestBody;
     const { id: courseId } = params;
 
     console.log('=== FORM CREATION API DEBUG ===');
-    console.log('Form data received:', { title, description, questionsCount: questions?.length, courseId });
+    console.log('Form data received:', { title, description, questionsCount: questions?.length, courseId, settings });
     console.log('Sample question data:', questions?.[0] ? {
       id: questions[0].id,
       title: questions[0].title,
@@ -95,7 +95,8 @@ export async function POST(request, { params }) {
       type: 'form',
       courseId,
       createdBy: userId,
-      isActive: true
+      isActive: true,
+      settings: settings || {}
     });
 
     let savedForm;
@@ -132,6 +133,7 @@ export async function POST(request, { params }) {
         description: savedForm.description,
         type: savedForm.type,
         questions: savedForm.questions,
+        settings: savedForm.settings,
         createdAt: savedForm.createdAt
       }
     }, { status: 201 });
