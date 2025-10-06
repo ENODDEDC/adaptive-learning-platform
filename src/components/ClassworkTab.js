@@ -26,6 +26,12 @@ const ModernPDFFileThumbnail = ({ attachment, onPreview }) => {
            attachment?.title?.toLowerCase().endsWith('.docx');
   };
 
+  const isPptxFile = (attachment) => {
+    return attachment?.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+           attachment?.originalName?.toLowerCase().endsWith('.pptx') ||
+           attachment?.title?.toLowerCase().endsWith('.pptx');
+  };
+
   useEffect(() => {
     // Auto-generate thumbnail if it doesn't exist
     if (!thumbnailUrl && !isGeneratingThumbnail) {
@@ -33,6 +39,8 @@ const ModernPDFFileThumbnail = ({ attachment, onPreview }) => {
         generatePdfThumbnail();
       } else if (isDocxFile(attachment)) {
         generateDocxThumbnail();
+      } else if (isPptxFile(attachment)) {
+        generatePptxThumbnail();
       }
     }
   }, [thumbnailUrl, attachment]);
@@ -99,6 +107,37 @@ const ModernPDFFileThumbnail = ({ attachment, onPreview }) => {
     }
   };
 
+  const generatePptxThumbnail = async () => {
+    if (isGeneratingThumbnail) return;
+
+    setIsGeneratingThumbnail(true);
+
+    try {
+      const requestBody = {
+        fileKey: attachment.cloudStorage?.key,
+        filePath: attachment.filePath,
+        contentId: attachment._id
+      };
+
+      const response = await fetch('/api/pptx-thumbnail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.thumbnailUrl) {
+          setThumbnailUrl(result.thumbnailUrl);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error generating PPTX thumbnail:', error);
+    } finally {
+      setIsGeneratingThumbnail(false);
+    }
+  };
+
   const fileName = attachment.originalName || attachment.title || 'Document';
 
   return (
@@ -120,9 +159,9 @@ const ModernPDFFileThumbnail = ({ attachment, onPreview }) => {
               className="w-full h-full pointer-events-none border-0"
               title={`${fileName} thumbnail`}
               style={{
-                transform: 'scale(0.25)',
+                transform: 'scale(0.2)',
                 transformOrigin: 'top left',
-                width: '400%',
+                width: '500%',
                 height: '400%'
               }}
             />
@@ -353,9 +392,9 @@ const EnhancedPDFFileThumbnail = ({ attachment, onPreview }) => {
               className="w-full h-full pointer-events-none border-0"
               title={`${fileName} thumbnail`}
               style={{
-                transform: 'scale(0.25)',
+                transform: 'scale(0.2)',
                 transformOrigin: 'top left',
-                width: '400%',
+                width: '500%',
                 height: '400%'
               }}
             />
