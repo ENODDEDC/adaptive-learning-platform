@@ -217,6 +217,7 @@ class BackblazeService {
   async getFileBuffer(fileKey) {
     try {
       console.log('🔍 Getting file buffer for key:', fileKey);
+      console.log('📊 This will count as 1 Class B (Download) operation');
       
       const command = new GetObjectCommand({
         Bucket: this.bucketName,
@@ -233,6 +234,7 @@ class BackblazeService {
       
       const buffer = Buffer.concat(chunks);
       console.log('✅ File buffer retrieved, size:', buffer.length, 'bytes');
+      console.log('💰 Class B operation completed - this counts toward your daily quota');
       
       return buffer;
     } catch (error) {

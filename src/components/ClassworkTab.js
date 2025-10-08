@@ -8,6 +8,66 @@ import SubmitAssignmentModal from '@/components/SubmitAssignmentModal';
 import ContentViewer from '@/components/ContentViewer.client';
 import AttachmentPreview from '@/components/AttachmentPreview';
 
+// Form Thumbnail Component for Clean Grid View
+const FormThumbnail = ({ form, onPreview }) => {
+  return (
+    <button
+      onClick={() => onPreview ? onPreview(form) : null}
+      className="w-full group"
+    >
+      {/* Form Thumbnail Container */}
+      <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 mb-3">
+        {/* Form Preview Content */}
+        <div className="w-full h-full flex flex-col items-center justify-center p-4">
+          {/* Form Icon */}
+          <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
+            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          
+          {/* Form Title */}
+          <h4 className="text-sm font-semibold text-gray-800 text-center mb-2 line-clamp-2">
+            {form.title || 'Untitled Form'}
+          </h4>
+          
+          {/* Form Fields Preview */}
+          <div className="w-full space-y-1">
+            <div className="h-2 bg-purple-200 rounded-full w-3/4 mx-auto"></div>
+            <div className="h-2 bg-purple-200 rounded-full w-1/2 mx-auto"></div>
+            <div className="h-2 bg-purple-200 rounded-full w-2/3 mx-auto"></div>
+          </div>
+        </div>
+
+        {/* File Type Badge */}
+        <div className="absolute top-2 right-2 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm bg-purple-500">
+          FORM
+        </div>
+        
+        {/* Hover Overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg">
+            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {/* Form Info */}
+      <div className="text-left w-full min-w-0">
+        <p className="font-medium text-gray-900 text-sm truncate group-hover:text-purple-600 transition-colors" title={form.title}>
+          {form.title || 'Untitled Form'}
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Interactive Form
+        </p>
+      </div>
+    </button>
+  );
+};
+
 // Modern PDF/DOCX Thumbnail Component for Clean Grid View
 const ModernPDFFileThumbnail = ({ attachment, onPreview }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
@@ -1058,8 +1118,15 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
           {/* Main Content Area */}
           <div className="flex-1 px-6">
-            {/* Attachments */}
-            {Array.isArray(item.attachments) && item.attachments.length > 0 && (
+            {/* Form Thumbnail or Attachments */}
+            {item.itemType === 'form' ? (
+              <div className="mb-4">
+                <FormThumbnail
+                  form={item}
+                  onPreview={onOpenContent}
+                />
+              </div>
+            ) : Array.isArray(item.attachments) && item.attachments.length > 0 && (
               <div className="mb-4">
                 {item.attachments.slice(0, 1).map((attachment, index) => {
                   // Modern PDF/DOCX/PPTX thumbnail for grid view
@@ -1410,15 +1477,22 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 )}
               </div>
 
-              {/* Right Column - Attachments */}
+              {/* Right Column - Form Preview or Attachments */}
               <div>
                 <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                   </svg>
-                  Attachments
+                  {item.itemType === 'form' ? 'Form Preview' : 'Attachments'}
                 </h4>
-                {Array.isArray(item.attachments) && item.attachments.length > 0 ? (
+                {item.itemType === 'form' ? (
+                  <div className="space-y-2">
+                    <FormThumbnail
+                      form={item}
+                      onPreview={onOpenContent}
+                    />
+                  </div>
+                ) : Array.isArray(item.attachments) && item.attachments.length > 0 ? (
                   <div className="space-y-2">
                     {item.attachments.slice(0, 3).map((attachment, index) => {
                       // Custom compact PDF/DOCX/PPTX thumbnail for grid view

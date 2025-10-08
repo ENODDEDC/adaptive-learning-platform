@@ -7,15 +7,63 @@ import backblazeService from '@/services/backblazeService';
 import Content from '@/models/Content';
 import connectDB from '@/config/mongoConfig';
 
+// Rate limiting to prevent excessive API calls
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10;
+
 export async function POST(request) {
   console.log('🚀 PDF Thumbnail API called - Creating single-page PDF thumbnail');
   let tempPdfFile = null;
   let tempThumbnailPdf = null;
   
   try {
+    // Rate limiting check
+    const clientIP = request.headers.get('x-forwarded-for') || 'unknown';
+    const now = Date.now();
+    const windowStart = now - RATE_LIMIT_WINDOW;
+    
+    if (!rateLimitMap.has(clientIP)) {
+      rateLimitMap.set(clientIP, []);
+    }
+    
+    const requests = rateLimitMap.get(clientIP);
+    const recentRequests = requests.filter(time => time > windowStart);
+    
+    if (recentRequests.length >= MAX_REQUESTS_PER_WINDOW) {
+      console.warn('🚫 Rate limit exceeded for IP:', clientIP);
+      return NextResponse.json({ 
+        error: 'Rate limit exceeded. Please wait before generating more thumbnails.',
+        retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000)
+      }, { status: 429 });
+    }
+    
+    recentRequests.push(now);
+    rateLimitMap.set(clientIP, recentRequests);
+
     console.log('📝 Parsing request body...');
     const body = await request.json();
     const { fileKey, filePath, contentId } = body;
+
+    // Check if thumbnail already exists in database to prevent duplicate processing
+    if (contentId) {
+      try {
+        await connectDB();
+        const existingContent = await Content.findById(contentId);
+        if (existingContent && existingContent.thumbnailUrl) {
+          console.log('✅ Thumbnail already exists, returning cached URL:', existingContent.thumbnailUrl);
+          return NextResponse.json({
+            success: true,
+            thumbnailUrl: existingContent.thumbnailUrl,
+            thumbnailKey: existingContent.cloudStorage?.thumbnailKey,
+            method: 'cached',
+            cached: true
+          });
+        }
+      } catch (dbError) {
+        console.warn('⚠️ Failed to check existing thumbnail, proceeding with generation:', dbError.message);
+      }
+    }
     
     console.log('📋 Request data:', { fileKey, filePath });
 

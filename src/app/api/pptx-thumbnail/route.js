@@ -17,6 +17,26 @@ export async function POST(request) {
     const body = await request.json();
     const { fileKey, filePath, contentId } = body;
 
+    // Check if thumbnail already exists in database to prevent duplicate processing
+    if (contentId) {
+      try {
+        await connectDB();
+        const existingContent = await Content.findById(contentId);
+        if (existingContent && existingContent.thumbnailUrl) {
+          console.log('✅ PPTX Thumbnail already exists, returning cached URL:', existingContent.thumbnailUrl);
+          return NextResponse.json({
+            success: true,
+            thumbnailUrl: existingContent.thumbnailUrl,
+            thumbnailKey: existingContent.cloudStorage?.thumbnailKey,
+            method: 'cached',
+            cached: true
+          });
+        }
+      } catch (dbError) {
+        console.warn('⚠️ Failed to check existing PPTX thumbnail, proceeding with generation:', dbError.message);
+      }
+    }
+
     console.log('📋 Request data:', { fileKey, filePath });
 
     if (!fileKey && !filePath) {
