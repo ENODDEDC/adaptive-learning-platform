@@ -1011,7 +1011,8 @@ const EnhancedFloatingNotes = forwardRef(({ contentId, courseId, userId, isVisib
     createNote,
     createContextualNote,
     exportNotes,
-    getNotes: () => [...savedNotes, ...floatingNotes]
+    getNotes: () => [...savedNotes, ...floatingNotes],
+    toggleNotesPanel: () => setIsNotesOpen(!isNotesOpen)
   }));
 
   if (!isVisible) return null;

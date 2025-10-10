@@ -1,25 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { 
-  SparklesIcon, 
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  SparklesIcon,
   AcademicCapIcon,
   XMarkIcon,
   BookOpenIcon
 } from '@heroicons/react/24/outline';
 import AITutorModal from './AITutorModal';
+import DocumentToolsSidebar from './DocumentToolsSidebar';
+import EnhancedFloatingNotes from './EnhancedFloatingNotes';
 
 /**
  * DOCX Preview Component with AI Tutor Integration
  * This component wraps the DOCX preview and adds AI Tutor functionality
  */
-const DocxPreviewWithAI = ({ 
-  content, 
-  htmlContent, 
-  headings = [], 
-  notes = [], 
+const DocxPreviewWithAI = ({
+  content,
+  htmlContent,
+  headings = [],
+  notes = [],
   headingsWithNotes = new Set(),
-  injectOverrideStyles 
+  injectOverrideStyles
 }) => {
   const [showAITutor, setShowAITutor] = useState(false);
   const [docxContent, setDocxContent] = useState('');
@@ -35,6 +37,9 @@ const DocxPreviewWithAI = ({
   const [panelPosition, setPanelPosition] = useState({ x: 16, y: 16 }); // Initial position (top-left)
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  // Ref for floating notes
+  const floatingNotesRef = useRef(null);
 
   const extractDocxContent = async () => {
     if (isExtractingContent || docxContent) return docxContent;
@@ -84,10 +89,10 @@ const DocxPreviewWithAI = ({
 
       // Extract content if not already done
       const content = docxContent || await extractDocxContent();
-      
+
       // Generate tutorial content based on mode
       let apiEndpoint = '/api/ai-tutor/generate-tutorial';
-      let requestBody = { 
+      let requestBody = {
         docxText: content,
         studentLevel: 'intermediate'
       };
@@ -99,7 +104,7 @@ const DocxPreviewWithAI = ({
       }
 
       setCurrentConcept('Generating AI tutorial...');
-      
+
       const tutorialResponse = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -117,11 +122,11 @@ const DocxPreviewWithAI = ({
 
       // Generate audio directly with full content (no truncation)
       console.log('🔊 Generating audio for full content, length:', tutorialContent.length);
-      
+
       const audioResponse = await fetch('/api/ai-tutor/generate-audio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           text: tutorialContent, // Send FULL content - let the service handle chunking
           voiceName: 'Kore'
         })
@@ -135,12 +140,12 @@ const DocxPreviewWithAI = ({
 
       const audioData = await audioResponse.json();
       console.log('✅ Audio generated successfully, data length:', audioData.audioData?.length);
-      
+
       // Convert base64 to blob and create audio URL
       const audioBlob = new Blob([
         new Uint8Array(atob(audioData.audioData).split('').map(c => c.charCodeAt(0)))
       ], { type: 'audio/wav' });
-      
+
       const audioUrl = URL.createObjectURL(audioBlob);
       setCurrentAudio(audioUrl);
       setCurrentConcept('Playing AI tutorial...');
@@ -169,7 +174,7 @@ const DocxPreviewWithAI = ({
 
     } catch (error) {
       console.error('❌ Error in direct AI teaching:', error);
-      
+
       // Check if it's a quota exceeded error - use browser TTS as fallback
       if (error.message && error.message.includes('QUOTA_EXCEEDED_FALLBACK_TO_BROWSER_TTS')) {
         console.log('🔄 Google TTS quota exceeded, using browser TTS for complete audio...');
@@ -183,7 +188,7 @@ const DocxPreviewWithAI = ({
       } else {
         setExtractionError(`AI Tutor Error: ${error.message}`);
       }
-      
+
       setAiTutorActive(false);
       setShowModeSelection(false);
     }
@@ -193,7 +198,7 @@ const DocxPreviewWithAI = ({
   const generateBrowserTTSForCompleteText = (text) => {
     console.log('🔊 Using browser TTS as fallback for complete text...');
     console.log('📝 Full text length:', text.length);
-    
+
     if (!('speechSynthesis' in window)) {
       throw new Error('Browser does not support text-to-speech');
     }
@@ -204,15 +209,15 @@ const DocxPreviewWithAI = ({
     // Split long text into chunks for better browser TTS handling
     const maxChunkLength = 200; // Browser TTS works better with shorter chunks
     const chunks = [];
-    
+
     // Split by sentences first
     const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
     let currentChunk = '';
-    
+
     for (const sentence of sentences) {
       const trimmedSentence = sentence.trim();
       if (!trimmedSentence) continue;
-      
+
       if (currentChunk.length + trimmedSentence.length + 1 > maxChunkLength && currentChunk.length > 0) {
         chunks.push(currentChunk.trim() + '.');
         currentChunk = trimmedSentence;
@@ -220,23 +225,23 @@ const DocxPreviewWithAI = ({
         currentChunk += (currentChunk ? ' ' : '') + trimmedSentence;
       }
     }
-    
+
     if (currentChunk.trim()) {
       chunks.push(currentChunk.trim() + '.');
     }
-    
+
     console.log(`📊 Split text into ${chunks.length} chunks for browser TTS`);
-    
+
     // Get available voices
     const voices = window.speechSynthesis.getVoices();
     console.log('🎤 Available voices:', voices.map(v => ({ name: v.name, lang: v.lang })));
-    
+
     // Prefer Filipino voices, then English voices
-    const preferredVoice = voices.find(voice => 
-      voice.lang.includes('fil') || voice.lang.includes('tl') || 
+    const preferredVoice = voices.find(voice =>
+      voice.lang.includes('fil') || voice.lang.includes('tl') ||
       voice.name.toLowerCase().includes('filipino') ||
       voice.name.toLowerCase().includes('tagalog')
-    ) || voices.find(voice => 
+    ) || voices.find(voice =>
       voice.lang.includes('en') && voice.name.toLowerCase().includes('female')
     ) || voices.find(voice => voice.lang.includes('en'));
 
@@ -245,7 +250,7 @@ const DocxPreviewWithAI = ({
     }
 
     let currentChunkIndex = 0;
-    
+
     const speakNextChunk = () => {
       if (currentChunkIndex >= chunks.length) {
         console.log('🔊 Browser TTS completed all chunks');
@@ -258,21 +263,21 @@ const DocxPreviewWithAI = ({
         }, 3000);
         return;
       }
-      
+
       const chunk = chunks[currentChunkIndex];
       console.log(`🔊 Speaking chunk ${currentChunkIndex + 1}/${chunks.length}: ${chunk.substring(0, 50)}...`);
-      
+
       const utterance = new SpeechSynthesisUtterance(chunk);
-      
+
       if (preferredVoice) {
         utterance.voice = preferredVoice;
       }
-      
+
       // Configure speech settings
       utterance.rate = 0.9; // Slightly slower for better comprehension
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
-      
+
       // Set up event handlers
       utterance.onstart = () => {
         if (currentChunkIndex === 0) {
@@ -280,29 +285,29 @@ const DocxPreviewWithAI = ({
           setIsPlaying(true);
           setCurrentConcept('Playing with browser TTS (Google quota exceeded)');
         }
-        
+
         // Update progress based on chunk completion
         const progress = (currentChunkIndex / chunks.length) * 100;
         setAudioProgress(progress);
       };
-      
+
       utterance.onend = () => {
         console.log(`✅ Chunk ${currentChunkIndex + 1} completed`);
         currentChunkIndex++;
         // Small delay between chunks to avoid browser TTS issues
         setTimeout(speakNextChunk, 100);
       };
-      
+
       utterance.onerror = (event) => {
         console.error(`❌ Browser TTS error on chunk ${currentChunkIndex + 1}:`, event);
         setIsPlaying(false);
         throw new Error(`Browser TTS failed on chunk ${currentChunkIndex + 1}: ${event.error}`);
       };
-      
+
       // Start speaking this chunk
       window.speechSynthesis.speak(utterance);
     };
-    
+
     // Start speaking the first chunk
     speakNextChunk();
   };
@@ -311,40 +316,40 @@ const DocxPreviewWithAI = ({
   const handleMouseDown = (e) => {
     // Only handle left mouse button
     if (e.button !== 0) return;
-    
+
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Capture starting positions
     const startX = panelPosition.x;
     const startY = panelPosition.y;
     const startMouseX = e.clientX;
     const startMouseY = e.clientY;
-    
+
     setIsDragging(true);
-    
+
     // Mouse move handler
     const handleMove = (moveEvent) => {
       const newX = startX + (moveEvent.clientX - startMouseX);
       const newY = startY + (moveEvent.clientY - startMouseY);
-      
+
       // Boundary check
       const maxX = window.innerWidth - 320;
       const maxY = window.innerHeight - 250;
-      
+
       const finalX = Math.max(0, Math.min(newX, maxX));
       const finalY = Math.max(0, Math.min(newY, maxY));
-      
+
       setPanelPosition({ x: finalX, y: finalY });
     };
-    
+
     // Mouse up handler
     const handleUp = () => {
       setIsDragging(false);
       document.removeEventListener('mousemove', handleMove);
       document.removeEventListener('mouseup', handleUp);
     };
-    
+
     // Add event listeners
     document.addEventListener('mousemove', handleMove);
     document.addEventListener('mouseup', handleUp);
@@ -365,6 +370,30 @@ const DocxPreviewWithAI = ({
     }
   }, [aiTutorActive]);
 
+  const analyzeContentForEducational = async (content) => {
+    try {
+      const response = await fetch('/api/ai-tutor/analyze-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        return {
+          isEducational: result.isEducational,
+          reasoning: result.reasoning,
+          contentType: result.contentType,
+          confidence: result.confidence
+        };
+      }
+      return { isEducational: false, reasoning: 'Analysis failed', confidence: 0 };
+    } catch (error) {
+      console.error('❌ Error analyzing content:', error);
+      return { isEducational: false, reasoning: 'Network error during analysis', confidence: 0 };
+    }
+  };
+
   const handleAITutorClick = async () => {
     if (aiTutorActive) {
       // Stop current session
@@ -381,13 +410,49 @@ const DocxPreviewWithAI = ({
       return;
     }
 
-    // Show mode selection for 3 seconds, then start with default mode
-    setShowModeSelection(true);
-    setTimeout(() => {
-      if (showModeSelection) {
-        startDirectAITeaching('complete');
+    // First, extract and analyze content
+    try {
+      setIsExtractingContent(true);
+      const extractedContent = docxContent || await extractDocxContent();
+
+      // Analyze if content is educational using AI
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for AI tutoring. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+AI Tutor works best with instructional content, lessons, or study materials.`;
+
+        setExtractionError(errorMessage);
+        setIsExtractingContent(false);
+        // Make sure mode selection modal is NOT shown
+        setShowModeSelection(false);
+        return;
       }
-    }, 3000);
+
+      console.log('✅ Content approved for AI tutoring:', {
+        contentType: analysisResult.contentType,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning
+      });
+
+      // If educational, proceed with mode selection
+      setShowModeSelection(true);
+      setTimeout(() => {
+        if (showModeSelection) {
+          startDirectAITeaching('complete');
+        }
+      }, 3000);
+
+    } catch (error) {
+      setExtractionError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsExtractingContent(false);
+    }
   };
 
   const fileName = content.title || content.originalName || 'Document.docx';
@@ -395,41 +460,66 @@ const DocxPreviewWithAI = ({
   return (
     <>
       <div className="w-full h-full flex relative">
-        {/* AI Tutor Floating Button */}
-        <div className="absolute top-4 right-4 z-10">
-          <button
-            onClick={handleAITutorClick}
-            disabled={isExtractingContent}
-            className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl hover:from-purple-600 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="AI Tutor - Learn with AI assistance in Taglish"
-          >
-            {isExtractingContent ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <SparklesIcon className="w-5 h-5" />
-            )}
-            <span className="font-semibold">AI Tutor</span>
-            <AcademicCapIcon className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Error Message */}
+
+        {/* Error/Info Message - Moved to left bottom to avoid Document Tools sidebar */}
         {extractionError && (
-          <div className="absolute top-20 right-4 z-10 max-w-sm">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 shadow-lg">
+          <div className="absolute bottom-4 left-4 z-10 max-w-md">
+            <div className={`border rounded-lg p-3 shadow-lg ${extractionError.includes('not appear to contain educational')
+              ? 'bg-yellow-50 border-yellow-200'
+              : 'bg-red-50 border-red-200'
+              }`}>
               <div className="flex items-start gap-2">
                 <div className="flex-shrink-0">
-                  <XMarkIcon className="w-5 h-5 text-red-400" />
+                  {extractionError.includes('not appear to contain educational') ? (
+                    <div className="w-5 h-5 text-yellow-500">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  ) : (
+                    <XMarkIcon className="w-5 h-5 text-red-400" />
+                  )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-red-800 font-medium">AI Tutor Error</p>
-                  <p className="text-xs text-red-600 mt-1">{extractionError}</p>
-                  <button
-                    onClick={handleAITutorClick}
-                    className="text-xs text-red-700 underline hover:no-underline mt-2"
-                  >
-                    Try again
-                  </button>
+                  <p className={`text-sm font-medium ${extractionError.includes('not appear to contain educational')
+                    ? 'text-yellow-800'
+                    : 'text-red-800'
+                    }`}>
+                    {extractionError.includes('not appear to contain educational')
+                      ? 'AI Tutor Not Available'
+                      : 'AI Tutor Error'
+                    }
+                  </p>
+                  <p className={`text-xs mt-1 ${extractionError.includes('not appear to contain educational')
+                    ? 'text-yellow-700'
+                    : 'text-red-600'
+                    }`}>
+                    {extractionError}
+                  </p>
+                  {!extractionError.includes('not appear to contain educational') && (
+                    <button
+                      onClick={handleAITutorClick}
+                      className="text-xs text-red-700 underline hover:no-underline mt-2"
+                    >
+                      Try again
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content Analysis Loading */}
+        {isExtractingContent && (
+          <div className="absolute top-20 right-4 z-10 max-w-sm">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-lg">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="flex-1">
+                  <p className="text-sm text-blue-800 font-medium">Analyzing Content</p>
+                  <p className="text-xs text-blue-600 mt-1">Checking if document contains educational material...</p>
                 </div>
               </div>
             </div>
@@ -490,7 +580,18 @@ const DocxPreviewWithAI = ({
             </div>
           </aside>
         )}
-        
+
+        {/* Document Tools Sidebar */}
+        <DocumentToolsSidebar
+          onAITutorClick={handleAITutorClick}
+          onNotesClick={() => {
+            // Toggle notes panel using the ref
+            if (floatingNotesRef.current) {
+              floatingNotesRef.current.toggleNotesPanel();
+            }
+          }}
+        />
+
         {/* Main content */}
         <div className="flex-1 relative">
           {htmlContent ? (
@@ -509,7 +610,7 @@ const DocxPreviewWithAI = ({
             </div>
           )}
 
-            {/* AI Tutor Mode Selection - Platform Aligned */}
+          {/* AI Tutor Mode Selection - Platform Aligned */}
           {showModeSelection && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
               <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -632,11 +733,11 @@ const DocxPreviewWithAI = ({
 
           {/* AI Tutor Active Control Panel - Draggable */}
           {aiTutorActive && (
-            <div 
+            <div
               data-draggable-panel
               className="absolute z-20"
-              style={{ 
-                left: `${panelPosition.x}px`, 
+              style={{
+                left: `${panelPosition.x}px`,
                 top: `${panelPosition.y}px`,
                 userSelect: 'none', // Prevent text selection during drag
                 transition: isDragging ? 'none' : 'all 0.1s ease-out' // Smooth when not dragging
@@ -644,12 +745,11 @@ const DocxPreviewWithAI = ({
             >
               <div className="bg-white border border-gray-200 rounded-xl shadow-lg min-w-80 max-w-sm select-none">
                 {/* Draggable Header */}
-                <div 
-                  className={`flex items-center justify-between p-4 pb-2 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-t-xl border-b border-gray-100 ${
-                    isDragging ? 'cursor-grabbing' : 'cursor-grab'
-                  }`}
+                <div
+                  className={`flex items-center justify-between p-4 pb-2 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-t-xl border-b border-gray-100 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                    }`}
                   onMouseDown={handleMouseDown}
-                  style={{ 
+                  style={{
                     userSelect: 'none',
                     WebkitUserSelect: 'none',
                     MozUserSelect: 'none',
@@ -670,7 +770,7 @@ const DocxPreviewWithAI = ({
                     <XMarkIcon className="w-4 h-4" />
                   </button>
                 </div>
-                
+
                 {/* Panel Content */}
                 <div className="p-4 pt-3 space-y-3">
                   <div>
@@ -679,7 +779,7 @@ const DocxPreviewWithAI = ({
                       <span className="font-medium text-purple-600">{currentConcept}</span>
                     </div>
                   </div>
-                  
+
                   {isPlaying && (
                     <div>
                       <div className="flex items-center justify-between text-sm mb-1">
@@ -687,19 +787,19 @@ const DocxPreviewWithAI = ({
                         <span className="font-medium text-gray-900">{Math.round(audioProgress)}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
+                        <div
                           className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${audioProgress}%` }}
                         ></div>
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <SparklesIcon className="w-4 h-4" />
                     <span>Teaching mode: {tutorMode === 'complete' ? 'Complete Tutorial' : tutorMode === 'quick' ? 'Quick Overview' : 'Key Concepts'}</span>
                   </div>
-                  
+
                   {/* Visual indicator that panel is draggable */}
                   <div className="flex items-center justify-center pt-2 border-t border-gray-100">
                     <div className="flex gap-1">
@@ -735,7 +835,27 @@ const DocxPreviewWithAI = ({
             </div>
           )}
         </div>
+
+        {/* Document Tools Sidebar */}
+        <DocumentToolsSidebar
+          onAITutorClick={handleAITutorClick}
+          onNotesClick={() => {
+            // Toggle notes panel using the ref
+            if (floatingNotesRef.current) {
+              floatingNotesRef.current.toggleNotesPanel();
+            }
+          }}
+        />
       </div>
+
+      {/* Enhanced FloatingNotes component */}
+      <EnhancedFloatingNotes
+        ref={floatingNotesRef}
+        contentId={content?._id || content?.id || 'docx-content'}
+        courseId={content?.courseId || 'default-course'}
+        userId="current-user"
+        isVisible={true}
+      />
 
       {/* AI Tutor Modal */}
       <AITutorModal
