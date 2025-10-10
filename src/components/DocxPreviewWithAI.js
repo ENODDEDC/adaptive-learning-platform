@@ -32,6 +32,9 @@ const DocxPreviewWithAI = ({
   const [audioProgress, setAudioProgress] = useState(0);
   const [currentConcept, setCurrentConcept] = useState('');
   const [tutorMode, setTutorMode] = useState('');
+  const [panelPosition, setPanelPosition] = useState({ x: 16, y: 16 }); // Initial position (top-left)
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   const extractDocxContent = async () => {
     if (isExtractingContent || docxContent) return docxContent;
@@ -304,6 +307,64 @@ const DocxPreviewWithAI = ({
     speakNextChunk();
   };
 
+  // Clean dragging functionality
+  const handleMouseDown = (e) => {
+    // Only handle left mouse button
+    if (e.button !== 0) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Capture starting positions
+    const startX = panelPosition.x;
+    const startY = panelPosition.y;
+    const startMouseX = e.clientX;
+    const startMouseY = e.clientY;
+    
+    setIsDragging(true);
+    
+    // Mouse move handler
+    const handleMove = (moveEvent) => {
+      const newX = startX + (moveEvent.clientX - startMouseX);
+      const newY = startY + (moveEvent.clientY - startMouseY);
+      
+      // Boundary check
+      const maxX = window.innerWidth - 320;
+      const maxY = window.innerHeight - 250;
+      
+      const finalX = Math.max(0, Math.min(newX, maxX));
+      const finalY = Math.max(0, Math.min(newY, maxY));
+      
+      setPanelPosition({ x: finalX, y: finalY });
+    };
+    
+    // Mouse up handler
+    const handleUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+    };
+    
+    // Add event listeners
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+  };
+
+  // Cleanup effect - simple and safe
+  useEffect(() => {
+    // Cleanup on component unmount
+    return () => {
+      setIsDragging(false);
+    };
+  }, []);
+
+  // Stop dragging when AI tutor becomes inactive
+  useEffect(() => {
+    if (!aiTutorActive) {
+      setIsDragging(false);
+    }
+  }, [aiTutorActive]);
+
   const handleAITutorClick = async () => {
     if (aiTutorActive) {
       // Stop current session
@@ -448,72 +509,170 @@ const DocxPreviewWithAI = ({
             </div>
           )}
 
-            {/* Mode Selection Popup */}
+            {/* AI Tutor Mode Selection - Platform Aligned */}
           {showModeSelection && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-2xl max-w-md animate-pulse">
-                <div className="text-center mb-4">
-                  <SparklesIcon className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                  <h3 className="text-lg font-semibold text-gray-900">🤖 How should I teach this?</h3>
-                  <p className="text-sm text-gray-600 mt-1">Choose your learning mode or wait 3 seconds for complete tutorial</p>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+              <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl">
+                      <SparklesIcon className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900">AI Tutor</h2>
+                      <p className="text-sm text-gray-600">Choose your learning mode</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowModeSelection(false)}
+                    className="p-2 transition-colors rounded-lg hover:bg-gray-100"
+                  >
+                    <XMarkIcon className="w-6 h-6 text-gray-500" />
+                  </button>
                 </div>
-                
-                <div className="grid grid-cols-1 gap-3">
-                  <button
-                    onClick={() => startDirectAITeaching('complete')}
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all"
-                  >
-                    <BookOpenIcon className="w-5 h-5" />
-                    <div className="text-left">
-                      <div className="font-medium">📖 Complete Tutorial</div>
-                      <div className="text-xs opacity-90">Full explanation with examples</div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span>Auto-starting Complete Tutorial in 3 seconds...</span>
                     </div>
-                  </button>
-                  
-                  <button
-                    onClick={() => startDirectAITeaching('quick')}
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all"
-                  >
-                    <SparklesIcon className="w-5 h-5" />
-                    <div className="text-left">
-                      <div className="font-medium">⚡ Quick Overview</div>
-                      <div className="text-xs opacity-90">Key points in 5 minutes</div>
+                    <div className="w-full bg-gray-200 rounded-full h-1">
+                      <div className="bg-purple-500 h-1 rounded-full animate-pulse" style={{ width: '33%' }}></div>
                     </div>
-                  </button>
-                  
+                  </div>
+
+                  <div className="grid gap-4">
+                    {/* Complete Tutorial */}
+                    <button
+                      onClick={() => startDirectAITeaching('complete')}
+                      className="w-full group relative overflow-hidden bg-white border-2 border-gray-200 rounded-xl p-4 transition-all duration-300 hover:border-blue-300 hover:shadow-md"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                          <BookOpenIcon className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold text-gray-900 mb-1">Complete Tutorial</div>
+                          <div className="text-sm text-gray-600">Full explanation with examples and detailed concepts</div>
+                          <div className="text-xs text-blue-600 mt-1 font-medium">📚 Recommended for deep learning</div>
+                        </div>
+                        <div className="text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Quick Overview */}
+                    <button
+                      onClick={() => startDirectAITeaching('quick')}
+                      className="w-full group relative overflow-hidden bg-white border-2 border-gray-200 rounded-xl p-4 transition-all duration-300 hover:border-green-300 hover:shadow-md"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center group-hover:bg-green-100 transition-colors">
+                          <SparklesIcon className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold text-gray-900 mb-1">Quick Overview</div>
+                          <div className="text-sm text-gray-600">Essential points covered in 5 minutes</div>
+                          <div className="text-xs text-green-600 mt-1 font-medium">⚡ Perfect for quick review</div>
+                        </div>
+                        <div className="text-gray-400 group-hover:text-green-500 group-hover:translate-x-1 transition-all">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Key Concepts */}
+                    <button
+                      onClick={() => startDirectAITeaching('keypoints')}
+                      className="w-full group relative overflow-hidden bg-white border-2 border-gray-200 rounded-xl p-4 transition-all duration-300 hover:border-purple-300 hover:shadow-md"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                          <AcademicCapIcon className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold text-gray-900 mb-1">Key Concepts</div>
+                          <div className="text-sm text-gray-600">Focus on the most important ideas only</div>
+                          <div className="text-xs text-purple-600 mt-1 font-medium">🎯 Great for exam preparation</div>
+                        </div>
+                        <div className="text-gray-400 group-hover:text-purple-500 group-hover:translate-x-1 transition-all">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>AI-powered learning in Taglish</span>
+                  </div>
                   <button
-                    onClick={() => startDirectAITeaching('keypoints')}
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all"
+                    onClick={() => setShowModeSelection(false)}
+                    className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
                   >
-                    <AcademicCapIcon className="w-5 h-5" />
-                    <div className="text-left">
-                      <div className="font-medium">🎯 Key Concepts</div>
-                      <div className="text-xs opacity-90">Focus on important ideas</div>
-                    </div>
+                    Cancel
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* AI Tutor Active Control Panel */}
+          {/* AI Tutor Active Control Panel - Draggable */}
           {aiTutorActive && (
-            <div className="absolute top-4 left-4 z-20">
-              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-lg min-w-80">
-                <div className="flex items-center justify-between mb-3">
+            <div 
+              data-draggable-panel
+              className="absolute z-20"
+              style={{ 
+                left: `${panelPosition.x}px`, 
+                top: `${panelPosition.y}px`,
+                userSelect: 'none', // Prevent text selection during drag
+                transition: isDragging ? 'none' : 'all 0.1s ease-out' // Smooth when not dragging
+              }}
+            >
+              <div className="bg-white border border-gray-200 rounded-xl shadow-lg min-w-80 max-w-sm select-none">
+                {/* Draggable Header */}
+                <div 
+                  className={`flex items-center justify-between p-4 pb-2 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-t-xl border-b border-gray-100 ${
+                    isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                  }`}
+                  onMouseDown={handleMouseDown}
+                  style={{ 
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    MozUserSelect: 'none',
+                    msUserSelect: 'none'
+                  }}
+                >
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                     <span className="text-sm font-semibold text-gray-900">🤖 AI Tutor Active</span>
+                    <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                      Drag to move
+                    </div>
                   </div>
                   <button
                     onClick={handleAITutorClick}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded"
                   >
-                    <XMarkIcon className="w-5 h-5" />
+                    <XMarkIcon className="w-4 h-4" />
                   </button>
                 </div>
                 
-                <div className="space-y-3">
+                {/* Panel Content */}
+                <div className="p-4 pt-3 space-y-3">
                   <div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Status:</span>
@@ -539,6 +698,17 @@ const DocxPreviewWithAI = ({
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <SparklesIcon className="w-4 h-4" />
                     <span>Teaching mode: {tutorMode === 'complete' ? 'Complete Tutorial' : tutorMode === 'quick' ? 'Quick Overview' : 'Key Concepts'}</span>
+                  </div>
+                  
+                  {/* Visual indicator that panel is draggable */}
+                  <div className="flex items-center justify-center pt-2 border-t border-gray-100">
+                    <div className="flex gap-1">
+                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                    </div>
                   </div>
                 </div>
               </div>
