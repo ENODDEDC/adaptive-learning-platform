@@ -13,6 +13,8 @@ import {
 import PowerPointViewer from './PowerPointViewer';
 import EnhancedFloatingNotes from './EnhancedFloatingNotes';
 import EnhancedPDFViewer from './EnhancedPDFViewer';
+import AITutorModal from './AITutorModal';
+import DocxPreviewWithAI from './DocxPreviewWithAI';
 
 // --- Helper Functions ---
 const formatFileSize = (bytes) => {
@@ -467,56 +469,14 @@ const AttachmentPreviewContent = ({ attachment }) => {
 
     case 'docx':
       return (
-        <div className="w-full h-full flex">
-          {/* Sidebar with headings */}
-          {headings.length > 0 && (
-            <aside className="w-64 flex-shrink-0 h-full overflow-y-auto p-8 border-r bg-slate-50/50 hidden lg:block">
-              <h3 className="text-sm font-semibold text-slate-800 mb-4">On this page</h3>
-              <ul className="space-y-2">
-                {headings.map((heading) => (
-                  <li key={heading.id} className={`text-sm ${heading.level === 2 ? 'pl-3' : ''} ${heading.level === 3 ? 'pl-6' : ''}`}>
-                    <a
-                      href={`#${heading.id}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        const element = document.querySelector(`#${heading.id}`);
-                        if (element) {
-                          element.scrollIntoView({ behavior: 'smooth' });
-                        }
-                      }}
-                      className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors py-1"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                      <span className="truncate max-w-[11rem]" title={heading.text}>{heading.text}</span>
-                      {headingsWithNotes.has(heading.id) && (
-                        <span className="w-2 h-2 bg-blue-500 rounded-full" title="This section has notes"></span>
-                      )}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </aside>
-          )}
-          
-          {/* Main content */}
-          <div className="flex-1">
-            {htmlContent ? (
-              <iframe
-                className="w-full h-full rounded-lg bg-white"
-                title={attachment.title}
-                srcDoc={injectOverrideStyles(htmlContent)}
-                style={{ border: 'none' }}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="w-8 h-8 border-4 border-sky-200 border-t-sky-600 rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading document...</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <DocxPreviewWithAI
+          content={attachment}
+          htmlContent={htmlContent}
+          headings={headings}
+          notes={notes}
+          headingsWithNotes={headingsWithNotes}
+          injectOverrideStyles={injectOverrideStyles}
+        />
       );
 
     case 'text':
@@ -1151,20 +1111,13 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
 
       case 'docx':
           return (
-            <iframe
-              className="w-full rounded-lg bg-white"
-              title={content.title}
-              srcDoc={iframeSrcDoc}
-              style={{ 
-                width: '100%', 
-                minWidth: '100%', 
-                height: 'calc(100vh - 200px)', 
-                minHeight: '600px', 
-                border: 'none',
-                overflow: 'auto'
-              }}
-              ref={iframeRef} // Add ref to iframe
-              scrolling="yes"
+            <DocxPreviewWithAI
+              content={content}
+              htmlContent={htmlContent}
+              headings={headings}
+              notes={notes}
+              headingsWithNotes={headingsWithNotes}
+              injectOverrideStyles={injectOverrideStyles}
             />
           );
 

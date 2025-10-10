@@ -7,6 +7,7 @@ import CreateClassworkModal from '@/components/CreateClassworkModal';
 import SubmitAssignmentModal from '@/components/SubmitAssignmentModal';
 import ContentViewer from '@/components/ContentViewer.client';
 import AttachmentPreview from '@/components/AttachmentPreview';
+import EnhancedDocxThumbnail from '@/components/EnhancedDocxThumbnail';
 
 // Form Thumbnail Component for Clean Grid View
 const FormThumbnail = ({ form, onPreview }) => {
@@ -1129,9 +1130,21 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
             ) : Array.isArray(item.attachments) && item.attachments.length > 0 && (
               <div className="mb-4">
                 {item.attachments.slice(0, 1).map((attachment, index) => {
-                  // Modern PDF/DOCX/PPTX thumbnail for grid view
+                  // Enhanced DOCX thumbnail with AI tutor for DOCX files
+                  if (attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                      attachment.originalName?.toLowerCase().endsWith('.docx') ||
+                      attachment.title?.toLowerCase().endsWith('.docx')) {
+                    return (
+                      <EnhancedDocxThumbnail
+                        key={attachment._id || index}
+                        attachment={attachment}
+                        onPreview={onOpenContent}
+                      />
+                    );
+                  }
+                  
+                  // Modern PDF/PPTX thumbnail for other document types
                   if (attachment.mimeType === 'application/pdf' ||
-                      attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                       attachment.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
                     return (
                       <ModernPDFFileThumbnail
@@ -1495,9 +1508,22 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 ) : Array.isArray(item.attachments) && item.attachments.length > 0 ? (
                   <div className="space-y-2">
                     {item.attachments.slice(0, 3).map((attachment, index) => {
-                      // Custom compact PDF/DOCX/PPTX thumbnail for grid view
+                      // Enhanced DOCX thumbnail with AI tutor for DOCX files
+                      if (attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                          attachment.originalName?.toLowerCase().endsWith('.docx') ||
+                          attachment.title?.toLowerCase().endsWith('.docx')) {
+                        return (
+                          <EnhancedDocxThumbnail
+                            key={attachment._id || index}
+                            attachment={attachment}
+                            onPreview={onOpenContent}
+                            className="mb-2"
+                          />
+                        );
+                      }
+                      
+                      // Custom compact PDF/PPTX thumbnail for other document types
                       if (attachment.mimeType === 'application/pdf' ||
-                          attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                           attachment.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
                         return (
                           <EnhancedPDFFileThumbnail

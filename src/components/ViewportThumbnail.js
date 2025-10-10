@@ -18,17 +18,17 @@ const ViewportThumbnail = ({ attachment, onPreview, className = "" }) => {
   // File type detection
   const isPdfFile = (attachment) => {
     return attachment?.mimeType === 'application/pdf' ||
-           attachment?.originalName?.toLowerCase().endsWith('.pdf');
+      attachment?.originalName?.toLowerCase().endsWith('.pdf');
   };
 
   const isDocxFile = (attachment) => {
     return attachment?.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-           attachment?.originalName?.toLowerCase().endsWith('.docx');
+      attachment?.originalName?.toLowerCase().endsWith('.docx');
   };
 
   const isPptxFile = (attachment) => {
     return attachment?.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-           attachment?.originalName?.toLowerCase().endsWith('.pptx');
+      attachment?.originalName?.toLowerCase().endsWith('.pptx');
   };
 
   // Intersection Observer with delay
@@ -73,7 +73,7 @@ const ViewportThumbnail = ({ attachment, onPreview, className = "" }) => {
     // Generate when in view (only once)
     if (isInView && !hasGenerated.current && !isGeneratingThumbnail) {
       hasGenerated.current = true;
-      
+
       if (isPdfFile(attachment)) {
         generateThumbnail('/api/pdf-thumbnail');
       } else if (isDocxFile(attachment)) {
@@ -151,7 +151,7 @@ const ViewportThumbnail = ({ attachment, onPreview, className = "" }) => {
           </div>
         )}
       </div>
-      
+
       <div className="text-left w-full min-w-0">
         <p className="font-medium text-gray-900 text-sm truncate">{fileName}</p>
         <p className="text-xs text-gray-500 mt-1">
