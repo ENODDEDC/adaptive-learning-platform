@@ -50,17 +50,17 @@ const DocumentToolsSidebar = ({
           {/* Tools */}
           {isExpanded ? (
             <div className="p-3 space-y-3">
-              {/* AI Tutor */}
+              {/* AI Narrator */}
               <div className="group">
                 <button
                   onClick={onAITutorClick}
                   className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200"
-                  title="AI Tutor - Learn with AI assistance"
+                  title="AI Narrator - Listen with AI assistance"
                 >
                   <SparklesIcon className="w-5 h-5 flex-shrink-0" />
                   <div className="text-left flex-1">
-                    <div className="font-semibold text-sm">AI Tutor</div>
-                    <div className="text-xs opacity-90">Learn with AI assistance</div>
+                    <div className="font-semibold text-sm">AI Narrator</div>
+                    <div className="text-xs opacity-90">Listen with AI assistance</div>
                   </div>
                   <AcademicCapIcon className="w-5 h-5 opacity-80 group-hover:opacity-100 flex-shrink-0" />
                 </button>
@@ -83,11 +83,11 @@ const DocumentToolsSidebar = ({
             </div>
           ) : (
             <div className="p-2 flex gap-2">
-              {/* AI Tutor Icon */}
+              {/* AI Narrator Icon */}
               <button
                 onClick={onAITutorClick}
                 className="p-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200"
-                title="AI Tutor - Learn with AI assistance"
+                title="AI Narrator - Listen with AI assistance"
               >
                 <SparklesIcon className="w-5 h-5" />
               </button>

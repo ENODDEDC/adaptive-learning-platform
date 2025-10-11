@@ -107,7 +107,7 @@ const AITutorModal = ({ isOpen, onClose, docxContent, fileName }) => {
 
     } catch (err) {
       console.error('Error generating AI content:', err);
-      setError('Failed to generate AI tutorial content. Please try again.');
+      setError('Failed to generate AI narration content. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -306,7 +306,7 @@ const AITutorModal = ({ isOpen, onClose, docxContent, fileName }) => {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">AI Tutorial</h3>
+              <h3 className="text-xl font-semibold text-gray-900">AI Narration</h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => generateAudio(tutorialContent)}
@@ -352,7 +352,7 @@ const AITutorModal = ({ isOpen, onClose, docxContent, fileName }) => {
                 ) : (
                   <div className="text-center text-gray-500">
                     <BookOpenIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                    <p>AI tutorial content will appear here...</p>
+                    <p>AI narration content will appear here...</p>
                   </div>
                 )}
               </div>
@@ -532,7 +532,7 @@ const AITutorModal = ({ isOpen, onClose, docxContent, fileName }) => {
                 <BookOpenIcon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-white">AI Tutor</h2>
+                <h2 className="text-xl font-semibold text-white">AI Narrator</h2>
                 <p className="text-blue-100 text-sm">{fileName}</p>
                 <p className="text-blue-200 text-xs mt-1">Teaching based on document content only</p>
               </div>

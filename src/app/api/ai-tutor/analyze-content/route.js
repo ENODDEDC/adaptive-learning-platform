@@ -12,7 +12,7 @@ export async function POST(request) {
       });
     }
 
-    // Initialize Gemini AI (same as your existing AI Tutor service)
+    // Initialize Gemini AI (same as your existing AI Narrator service)
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
@@ -23,7 +23,7 @@ export async function POST(request) {
       : content;
 
     const prompt = `
-You are an AI content analyzer. Your task is to determine if the given document content is educational/learning material that would be suitable for AI tutoring.
+You are an AI content analyzer. Your task is to determine if the given document content is educational/learning material that would be suitable for AI narration.
 
 Educational content includes:
 - Lessons, tutorials, or instructional materials
@@ -44,7 +44,7 @@ Non-educational content includes:
 - Business documents (invoices, receipts, etc.)
 - Meeting minutes or agendas
 
-Analyze the following document content and determine if it's educational material suitable for AI tutoring:
+Analyze the following document content and determine if it's educational material suitable for AI narration:
 
 DOCUMENT CONTENT:
 ${truncatedContent}
@@ -57,7 +57,7 @@ Respond with ONLY a JSON object containing:
   "contentType": "Brief description of what type of content this is"
 }
 
-Be strict in your analysis - only classify content as educational if it genuinely contains learning material that students could benefit from AI tutoring assistance.`;
+Be strict in your analysis - only classify content as educational if it genuinely contains learning material that students could benefit from AI narration assistance.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;

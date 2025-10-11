@@ -44,20 +44,20 @@ The process of machine learning involves training algorithms on data to make pre
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <div className="bg-white rounded-xl shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">AI Tutor Test Page</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-6">AI Narrator Test Page</h1>
           
           <div className="space-y-6">
             {/* Quick Test Section */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
               <h2 className="text-xl font-semibold text-blue-900 mb-4">Quick Test</h2>
               <p className="text-blue-700 mb-4">
-                Test the AI tutor with sample content about Machine Learning.
+                Test the AI narrator with sample content about Machine Learning.
               </p>
               <button
                 onClick={handleTestAITutor}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
               >
-                Test AI Tutor with Sample Content
+                Test AI Narrator with Sample Content
               </button>
             </div>
 
@@ -65,7 +65,7 @@ The process of machine learning involves training algorithms on data to make pre
             <div className="bg-green-50 border border-green-200 rounded-lg p-6">
               <h2 className="text-xl font-semibold text-green-900 mb-4">Custom Content Test</h2>
               <p className="text-green-700 mb-4">
-                Enter your own content to test the AI tutor functionality.
+                Enter your own content to test the AI narrator functionality.
               </p>
               <textarea
                 value={testContent}
@@ -78,7 +78,7 @@ The process of machine learning involves training algorithms on data to make pre
                   onClick={handleCustomContent}
                   className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 >
-                  Test AI Tutor with Custom Content
+                  Test AI Narrator with Custom Content
                 </button>
                 <button
                   onClick={() => setTestContent(sampleContent)}
@@ -91,7 +91,7 @@ The process of machine learning involves training algorithms on data to make pre
 
             {/* Features Overview */}
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-purple-900 mb-4">AI Tutor Features</h2>
+              <h2 className="text-xl font-semibold text-purple-900 mb-4">AI Narrator Features</h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="bg-white p-4 rounded-lg border border-purple-200">
                   <h3 className="font-semibold text-purple-800 mb-2">📚 Tutorial Generation</h3>
@@ -126,8 +126,8 @@ The process of machine learning involves training algorithms on data to make pre
               <ol className="list-decimal list-inside space-y-2 text-yellow-800">
                 <li>Go to any course and click on the "Activities" tab</li>
                 <li>Find a DOCX file in the classwork cards</li>
-                <li>Look for the purple "AI Tutor" button on the DOCX thumbnail</li>
-                <li>Click the AI Tutor button to extract content and start learning</li>
+                <li>Look for the purple "AI Narrator" button on the DOCX thumbnail</li>
+                <li>Click the AI Narrator button to extract content and start learning</li>
                 <li>Explore the Tutorial, Quiz, Summary, and Study Tips tabs</li>
                 <li>Use the "Listen" button to hear AI-generated audio in Taglish</li>
               </ol>
@@ -136,7 +136,7 @@ The process of machine learning involves training algorithms on data to make pre
         </div>
       </div>
 
-      {/* AI Tutor Modal */}
+      {/* AI Narrator Modal */}
       <AITutorModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}

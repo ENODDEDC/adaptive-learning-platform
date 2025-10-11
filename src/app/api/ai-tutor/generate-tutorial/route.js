@@ -12,7 +12,7 @@ export async function POST(request) {
       );
     }
 
-    console.log(`🤖 Generating AI tutorial content in ${mode} mode...`);
+    console.log(`🤖 Generating AI narration content in ${mode} mode...`);
     
     let content;
     switch (mode) {

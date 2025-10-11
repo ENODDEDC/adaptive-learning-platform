@@ -147,22 +147,7 @@ const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "" }) => {
                 DOCX
               </div>
 
-              {/* AI Tutor Button - Prominent placement */}
-              <div className="absolute top-2 left-2">
-                <button
-                  onClick={handleAITutorClick}
-                  disabled={isExtractingContent}
-                  className="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="AI Tutor - Learn with AI assistance"
-                >
-                  {isExtractingContent ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <SparklesIcon className="w-4 h-4" />
-                  )}
-                  <span className="text-xs font-semibold">AI Tutor</span>
-                </button>
-              </div>
+
 
               {/* Hover Overlay with Actions */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -176,19 +161,7 @@ const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "" }) => {
                     <EyeIcon className="w-6 h-6 text-blue-600" />
                   </button>
 
-                  {/* AI Tutor Button (Secondary) */}
-                  <button
-                    onClick={handleAITutorClick}
-                    disabled={isExtractingContent}
-                    className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-full p-3 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg hover:from-purple-600 hover:to-indigo-700 disabled:opacity-50"
-                    title="AI Tutor"
-                  >
-                    {isExtractingContent ? (
-                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <AcademicCapIcon className="w-6 h-6" />
-                    )}
-                  </button>
+
                 </div>
               </div>
             </>
@@ -210,10 +183,7 @@ const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "" }) => {
             <p className="text-xs text-gray-500">
               {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : 'Word Document'}
             </p>
-            <div className="flex items-center gap-1 text-xs text-purple-600">
-              <SparklesIcon className="w-3 h-3" />
-              <span>AI Ready</span>
-            </div>
+
           </div>
         </div>
 
@@ -231,7 +201,7 @@ const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "" }) => {
         )}
       </div>
 
-      {/* AI Tutor Modal */}
+      {/* AI Narrator Modal */}
       <AITutorModal
         isOpen={showAITutor}
         onClose={() => setShowAITutor(false)}

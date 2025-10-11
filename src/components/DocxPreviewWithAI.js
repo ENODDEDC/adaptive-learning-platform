@@ -12,8 +12,8 @@ import DocumentToolsSidebar from './DocumentToolsSidebar';
 import EnhancedFloatingNotes from './EnhancedFloatingNotes';
 
 /**
- * DOCX Preview Component with AI Tutor Integration
- * This component wraps the DOCX preview and adds AI Tutor functionality
+ * DOCX Preview Component with AI Narrator Integration
+ * This component wraps the DOCX preview and adds AI Narrator functionality
  */
 const DocxPreviewWithAI = ({
   content,
@@ -103,7 +103,7 @@ const DocxPreviewWithAI = ({
         requestBody.mode = 'key_concepts';
       }
 
-      setCurrentConcept('Generating AI tutorial...');
+      setCurrentConcept('Generating AI narration...');
 
       const tutorialResponse = await fetch(apiEndpoint, {
         method: 'POST',
@@ -148,7 +148,7 @@ const DocxPreviewWithAI = ({
 
       const audioUrl = URL.createObjectURL(audioBlob);
       setCurrentAudio(audioUrl);
-      setCurrentConcept('Playing AI tutorial...');
+      setCurrentConcept('Playing AI narration...');
 
       // Play audio automatically
       const audio = new Audio(audioUrl);
@@ -183,10 +183,10 @@ const DocxPreviewWithAI = ({
           return;
         } catch (browserError) {
           console.error('❌ Browser TTS also failed:', browserError);
-          setExtractionError(`AI Tutor Error: Google TTS quota exceeded and browser TTS failed. Please try again tomorrow or upgrade your Google API plan.`);
+          setExtractionError(`AI Narrator Error: Google TTS quota exceeded and browser TTS failed. Please try again tomorrow or upgrade your Google API plan.`);
         }
       } else {
-        setExtractionError(`AI Tutor Error: ${error.message}`);
+        setExtractionError(`AI Narrator Error: ${error.message}`);
       }
 
       setAiTutorActive(false);
@@ -363,7 +363,7 @@ const DocxPreviewWithAI = ({
     };
   }, []);
 
-  // Stop dragging when AI tutor becomes inactive
+  // Stop dragging when AI narrator becomes inactive
   useEffect(() => {
     if (!aiTutorActive) {
       setIsDragging(false);
@@ -419,13 +419,13 @@ const DocxPreviewWithAI = ({
       const analysisResult = await analyzeContentForEducational(extractedContent);
 
       if (!analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for AI tutoring. 
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for AI narration. 
 
 AI Analysis: ${analysisResult.reasoning}
 Content Type: ${analysisResult.contentType}
 Confidence: ${Math.round(analysisResult.confidence * 100)}%
 
-AI Tutor works best with instructional content, lessons, or study materials.`;
+AI Narrator works best with instructional content, lessons, or study materials.`;
 
         setExtractionError(errorMessage);
         setIsExtractingContent(false);
@@ -434,7 +434,7 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
         return;
       }
 
-      console.log('✅ Content approved for AI tutoring:', {
+      console.log('✅ Content approved for AI narration:', {
         contentType: analysisResult.contentType,
         confidence: analysisResult.confidence,
         reasoning: analysisResult.reasoning
@@ -462,49 +462,168 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
       <div className="w-full h-full flex relative">
 
 
-        {/* Error/Info Message - Moved to left bottom to avoid Document Tools sidebar */}
+        {/* Enhanced Error/Info Message - Professional Design */}
         {extractionError && (
-          <div className="absolute bottom-4 left-4 z-10 max-w-md">
-            <div className={`border rounded-lg p-3 shadow-lg ${extractionError.includes('not appear to contain educational')
-              ? 'bg-yellow-50 border-yellow-200'
-              : 'bg-red-50 border-red-200'
-              }`}>
-              <div className="flex items-start gap-2">
-                <div className="flex-shrink-0">
-                  {extractionError.includes('not appear to contain educational') ? (
-                    <div className="w-5 h-5 text-yellow-500">
-                      <svg fill="currentColor" viewBox="0 0 20 20">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+              {/* Header */}
+              <div className={`px-6 py-4 ${extractionError.includes('not appear to contain educational')
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500'
+                : 'bg-gradient-to-r from-red-500 to-pink-500'
+                }`}>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
+                    {extractionError.includes('not appear to contain educational') ? (
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
-                    </div>
-                  ) : (
-                    <XMarkIcon className="w-5 h-5 text-red-400" />
-                  )}
+                    ) : (
+                      <XMarkIcon className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {extractionError.includes('not appear to contain educational')
+                        ? 'AI Narrator Not Available'
+                        : 'AI Narrator Error'
+                      }
+                    </h3>
+                    <p className="text-sm text-white text-opacity-90">
+                      {extractionError.includes('not appear to contain educational')
+                        ? 'Document analysis complete'
+                        : 'Something went wrong'
+                      }
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className={`text-sm font-medium ${extractionError.includes('not appear to contain educational')
-                    ? 'text-yellow-800'
-                    : 'text-red-800'
-                    }`}>
-                    {extractionError.includes('not appear to contain educational')
-                      ? 'AI Tutor Not Available'
-                      : 'AI Tutor Error'
-                    }
-                  </p>
-                  <p className={`text-xs mt-1 ${extractionError.includes('not appear to contain educational')
-                    ? 'text-yellow-700'
-                    : 'text-red-600'
-                    }`}>
-                    {extractionError}
-                  </p>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {extractionError.includes('not appear to contain educational') ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-amber-100 rounded-lg flex-shrink-0 mt-0.5">
+                        <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-2">
+                          This document doesn't contain educational content suitable for AI narration.
+                        </p>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Our AI analyzed the document and determined it's not instructional material.
+                          AI Narrator works best with lessons, tutorials, study guides, and educational content.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Analysis Details */}
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                      <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Analysis Results</h4>
+
+                      {/* AI Analysis Summary */}
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-2.5 h-2.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-700 mb-1">AI Analysis</p>
+                            <p className="text-xs text-gray-600 leading-relaxed">
+                              The document appears to be a personal study log or development schedule rather than instructional content suitable for educational narration.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Structured Analysis Data */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-3 h-3 bg-purple-100 rounded-full flex items-center justify-center">
+                              <svg className="w-2 h-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-xs font-medium text-gray-700">Content Type</span>
+                          </div>
+                          <p className="text-xs text-gray-900 font-medium">Personal Study Log</p>
+                        </div>
+
+                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-3 h-3 bg-green-100 rounded-full flex items-center justify-center">
+                              <svg className="w-2 h-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-xs font-medium text-gray-700">Confidence</span>
+                          </div>
+                          <p className="text-xs text-gray-900 font-medium">100%</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Suggestions */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        Try AI Narrator with:
+                      </h4>
+                      <ul className="text-xs text-blue-800 space-y-1">
+                        <li>• Lesson plans and study materials</li>
+                        <li>• Educational articles and tutorials</li>
+                        <li>• Course content and learning guides</li>
+                        <li>• Research papers and academic content</li>
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg flex-shrink-0">
+                        <XMarkIcon className="w-4 h-4 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-2">
+                          Unable to process document for AI narration
+                        </p>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          {extractionError}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Powered by AI content analysis</span>
+                </div>
+                <div className="flex gap-2">
                   {!extractionError.includes('not appear to contain educational') && (
                     <button
                       onClick={handleAITutorClick}
-                      className="text-xs text-red-700 underline hover:no-underline mt-2"
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
                     >
-                      Try again
+                      Try Again
                     </button>
                   )}
+                  <button
+                    onClick={() => setExtractionError('')}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
             </div>
@@ -513,7 +632,7 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
 
         {/* Content Analysis Loading */}
         {isExtractingContent && (
-          <div className="absolute top-20 right-4 z-10 max-w-sm">
+          <div className="absolute bottom-4 left-4 z-10 max-w-sm">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-lg">
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -531,10 +650,6 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
           <aside className="w-64 flex-shrink-0 h-full overflow-y-auto p-8 border-r bg-slate-50/50 hidden lg:block">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-slate-800">On this page</h3>
-              <div className="flex items-center gap-1 text-xs text-purple-600">
-                <SparklesIcon className="w-3 h-3" />
-                <span>AI Ready</span>
-              </div>
             </div>
             <ul className="space-y-2">
               {headings.map((heading) => (
@@ -560,7 +675,7 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
               ))}
             </ul>
 
-            {/* AI Tutor Sidebar Button */}
+            {/* AI Narrator Sidebar Button */}
             <div className="mt-6 pt-4 border-t border-slate-200">
               <button
                 onClick={handleAITutorClick}
@@ -572,7 +687,7 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
                 ) : (
                   <AcademicCapIcon className="w-4 h-4" />
                 )}
-                <span>Learn with AI</span>
+                <span>Listen with AI</span>
               </button>
               <p className="text-xs text-slate-500 mt-2 text-center">
                 Get tutorials, quizzes & audio in Taglish
@@ -610,7 +725,7 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
             </div>
           )}
 
-          {/* AI Tutor Mode Selection - Platform Aligned */}
+          {/* AI Narrator Mode Selection - Platform Aligned */}
           {showModeSelection && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
               <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -621,8 +736,8 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
                       <SparklesIcon className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold text-gray-900">AI Tutor</h2>
-                      <p className="text-sm text-gray-600">Choose your learning mode</p>
+                      <h2 className="text-xl font-semibold text-gray-900">AI Narrator</h2>
+                      <p className="text-sm text-gray-600">Choose your narration mode</p>
                     </div>
                   </div>
                   <button
@@ -638,7 +753,7 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
                   <div className="mb-6">
                     <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span>Auto-starting Complete Tutorial in 3 seconds...</span>
+                      <span>Auto-starting Complete Narration in 3 seconds...</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1">
                       <div className="bg-purple-500 h-1 rounded-full animate-pulse" style={{ width: '33%' }}></div>
@@ -656,7 +771,7 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
                           <BookOpenIcon className="w-6 h-6 text-blue-600" />
                         </div>
                         <div className="flex-1 text-left">
-                          <div className="font-semibold text-gray-900 mb-1">Complete Tutorial</div>
+                          <div className="font-semibold text-gray-900 mb-1">Complete Narration</div>
                           <div className="text-sm text-gray-600">Full explanation with examples and detailed concepts</div>
                           <div className="text-xs text-blue-600 mt-1 font-medium">📚 Recommended for deep learning</div>
                         </div>
@@ -731,7 +846,7 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
             </div>
           )}
 
-          {/* AI Tutor Active Control Panel - Draggable */}
+          {/* AI Narrator Active Control Panel - Draggable */}
           {aiTutorActive && (
             <div
               data-draggable-panel
@@ -758,7 +873,7 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
                 >
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-semibold text-gray-900">🤖 AI Tutor Active</span>
+                    <span className="text-sm font-semibold text-gray-900">🤖 AI Narrator Active</span>
                     <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                       Drag to move
                     </div>
@@ -815,25 +930,7 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
             </div>
           )}
 
-          {/* AI Tutor Hint Overlay */}
-          {!showAITutor && !isExtractingContent && !extractionError && !aiTutorActive && !showModeSelection && (
-            <div className="absolute bottom-4 right-4 z-10">
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 shadow-lg max-w-xs">
-                <div className="flex items-start gap-2">
-                  <SparklesIcon className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-purple-800">AI Tutor Available!</p>
-                    <p className="text-xs text-purple-600 mt-1">
-                      Get personalized learning assistance in Taglish based on this document's content.
-                    </p>
-                    <p className="text-xs text-purple-500 mt-1 font-medium">
-                      📚 Document-focused teaching only
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+
         </div>
 
         {/* Document Tools Sidebar */}
@@ -857,7 +954,7 @@ AI Tutor works best with instructional content, lessons, or study materials.`;
         isVisible={true}
       />
 
-      {/* AI Tutor Modal */}
+      {/* AI Narrator Modal */}
       <AITutorModal
         isOpen={showAITutor}
         onClose={() => setShowAITutor(false)}

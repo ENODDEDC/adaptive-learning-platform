@@ -23,7 +23,7 @@ const FloatingDocumentToolbar = ({
   const [position, setPosition] = useState({ x: 20, y: 100 });
   const toolbarRef = useRef(null);
 
-  // Clean dragging functionality (same as AI Tutor Active panel)
+  // Clean dragging functionality (same as AI Narrator Active panel)
   const handleMouseDown = (e) => {
     if (e.target.closest('.toolbar-content')) return; // Don't drag when clicking on content
     
@@ -117,7 +117,7 @@ const FloatingDocumentToolbar = ({
       {/* Content */}
       {isExpanded && (
         <div className="toolbar-content p-3 space-y-3">
-          {/* AI Tutor Section */}
+          {/* AI Narrator Section */}
           <div className="space-y-2">
             <button
               onClick={onAITutorClick}
@@ -126,8 +126,8 @@ const FloatingDocumentToolbar = ({
               <div className="flex items-center gap-2 flex-1">
                 <SparklesIcon className="w-5 h-5" />
                 <div className="text-left">
-                  <div className="font-semibold text-sm">AI Tutor</div>
-                  <div className="text-xs opacity-90">Learn with AI assistance</div>
+                  <div className="font-semibold text-sm">AI Narrator</div>
+                  <div className="text-xs opacity-90">Listen with AI assistance</div>
                 </div>
               </div>
               <AcademicCapIcon className="w-5 h-5 opacity-80 group-hover:opacity-100" />

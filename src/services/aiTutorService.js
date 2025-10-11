@@ -90,7 +90,7 @@ class AITutorService {
   async generateTutorialContent(docxText, studentLevel = 'intermediate') {
     this.initializeModels();
     const prompt = `
-You are an AI tutor teaching Filipino students. Create an engaging tutorial based STRICTLY on the content provided in this document. DO NOT add information from your general knowledge - only use what is written in the document.
+You are an AI narrator teaching Filipino students. Create an engaging narration based STRICTLY on the content provided in this document. DO NOT add information from your general knowledge - only use what is written in the document.
 
 Document Content:
 ${docxText}
@@ -456,7 +456,7 @@ Keep it under 200 words. Remember: Stick STRICTLY to document content only.
   async generateQuickOverview(docxText, studentLevel = 'intermediate') {
     this.initializeModels();
     const prompt = `
-You are an AI tutor teaching Filipino students. Create a QUICK 5-minute overview based STRICTLY on the content provided in this document. DO NOT add information from your general knowledge - only use what is written in the document.
+You are an AI narrator teaching Filipino students. Create a QUICK 5-minute overview based STRICTLY on the content provided in this document. DO NOT add information from your general knowledge - only use what is written in the document.
 
 Document Content:
 ${docxText}
@@ -495,7 +495,7 @@ Keep it engaging but concise. Stick STRICTLY to the document content only.
   async generateKeyConcepts(docxText, studentLevel = 'intermediate') {
     this.initializeModels();
     const prompt = `
-You are an AI tutor teaching Filipino students. Focus ONLY on the key concepts based STRICTLY on the content provided in this document. DO NOT add information from your general knowledge - only use what is written in the document.
+You are an AI narrator teaching Filipino students. Focus ONLY on the key concepts based STRICTLY on the content provided in this document. DO NOT add information from your general knowledge - only use what is written in the document.
 
 Document Content:
 ${docxText}

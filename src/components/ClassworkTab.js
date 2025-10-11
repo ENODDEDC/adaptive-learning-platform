@@ -1130,7 +1130,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
             ) : Array.isArray(item.attachments) && item.attachments.length > 0 && (
               <div className="mb-4">
                 {item.attachments.slice(0, 1).map((attachment, index) => {
-                  // Enhanced DOCX thumbnail with AI tutor for DOCX files
+                  // Enhanced DOCX thumbnail with AI narrator for DOCX files
                   if (attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                       attachment.originalName?.toLowerCase().endsWith('.docx') ||
                       attachment.title?.toLowerCase().endsWith('.docx')) {
@@ -1508,7 +1508,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 ) : Array.isArray(item.attachments) && item.attachments.length > 0 ? (
                   <div className="space-y-2">
                     {item.attachments.slice(0, 3).map((attachment, index) => {
-                      // Enhanced DOCX thumbnail with AI tutor for DOCX files
+                      // Enhanced DOCX thumbnail with AI narrator for DOCX files
                       if (attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                           attachment.originalName?.toLowerCase().endsWith('.docx') ||
                           attachment.title?.toLowerCase().endsWith('.docx')) {
