@@ -12,19 +12,17 @@ import DocumentToolsSidebar from './DocumentToolsSidebar';
 import EnhancedFloatingNotes from './EnhancedFloatingNotes';
 
 /**
- * DOCX Preview Component with AI Narrator Integration
- * This component wraps the DOCX preview and adds AI Narrator functionality
+ * PDF Preview Component with AI Narrator Integration
+ * This component wraps the PDF preview and adds AI Narrator functionality
  */
-const DocxPreviewWithAI = ({
+const PdfPreviewWithAI = ({
   content,
-  htmlContent,
-  headings = [],
+  pdfUrl,
   notes = [],
-  headingsWithNotes = new Set(),
   injectOverrideStyles
 }) => {
   const [showAITutor, setShowAITutor] = useState(false);
-  const [docxContent, setDocxContent] = useState('');
+  const [pdfContent, setPdfContent] = useState('');
   const [isExtractingContent, setIsExtractingContent] = useState(false);
   const [extractionError, setExtractionError] = useState('');
   const [aiTutorActive, setAiTutorActive] = useState(false);
@@ -34,15 +32,14 @@ const DocxPreviewWithAI = ({
   const [audioProgress, setAudioProgress] = useState(0);
   const [currentConcept, setCurrentConcept] = useState('');
   const [tutorMode, setTutorMode] = useState('');
-  const [panelPosition, setPanelPosition] = useState({ x: 16, y: 16 }); // Initial position (top-left)
+  const [panelPosition, setPanelPosition] = useState({ x: 16, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Ref for floating notes
   const floatingNotesRef = useRef(null);
 
-  const extractDocxContent = async () => {
-    if (isExtractingContent || docxContent) return docxContent;
+  const extractPdfContent = async () => {
+    if (isExtractingContent || pdfContent) return pdfContent;
 
     setIsExtractingContent(true);
     setExtractionError('');
@@ -53,7 +50,7 @@ const DocxPreviewWithAI = ({
         filePath: content.filePath
       };
 
-      const response = await fetch('/api/docx-extract', {
+      const response = await fetch('/api/pdf-extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
@@ -62,17 +59,17 @@ const DocxPreviewWithAI = ({
       if (response.ok) {
         const result = await response.json();
         if (result.content && result.content.rawText) {
-          setDocxContent(result.content.rawText);
+          setPdfContent(result.content.rawText);
           return result.content.rawText;
         } else {
-          throw new Error('No text content found in document');
+          throw new Error('No text content found in PDF document');
         }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to extract content');
       }
     } catch (error) {
-      console.error('❌ Error extracting DOCX content:', error);
+      console.error('❌ Error extracting PDF content:', error);
       setExtractionError(error.message);
       throw error;
     } finally {
@@ -88,12 +85,12 @@ const DocxPreviewWithAI = ({
       setCurrentConcept('Analyzing document...');
 
       // Extract content if not already done
-      const content = docxContent || await extractDocxContent();
+      const content = pdfContent || await extractPdfContent();
 
       // Generate tutorial content based on mode
       let apiEndpoint = '/api/ai-tutor/generate-tutorial';
       let requestBody = {
-        docxText: content,
+        docxText: content, // Using same field name for compatibility
         studentLevel: 'intermediate'
       };
 
@@ -112,7 +109,7 @@ const DocxPreviewWithAI = ({
       });
 
       if (!tutorialResponse.ok) {
-        throw new Error('Failed to generate tutorial content');
+        throw new Error('Failed to generate narration content');
       }
 
       const tutorialData = await tutorialResponse.json();
@@ -120,14 +117,14 @@ const DocxPreviewWithAI = ({
 
       setCurrentConcept('Converting to speech...');
 
-      // Generate audio directly with full content (no truncation)
+      // Generate audio directly with full content
       console.log('🔊 Generating audio for full content, length:', tutorialContent.length);
 
       const audioResponse = await fetch('/api/ai-tutor/generate-audio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: tutorialContent, // Send FULL content - let the service handle chunking
+          text: tutorialContent,
           voiceName: 'Kore'
         })
       });
@@ -164,7 +161,7 @@ const DocxPreviewWithAI = ({
       audio.addEventListener('ended', () => {
         setIsPlaying(false);
         setAudioProgress(100);
-        setCurrentConcept('Tutorial completed!');
+        setCurrentConcept('Narration completed!');
         setTimeout(() => {
           setAiTutorActive(false);
           setCurrentConcept('');
@@ -194,7 +191,7 @@ const DocxPreviewWithAI = ({
     }
   };
 
-  // Browser TTS fallback function for complete text when Google TTS quota is exceeded
+  // Browser TTS fallback function
   const generateBrowserTTSForCompleteText = (text) => {
     console.log('🔊 Using browser TTS as fallback for complete text...');
     console.log('📝 Full text length:', text.length);
@@ -207,7 +204,7 @@ const DocxPreviewWithAI = ({
     window.speechSynthesis.cancel();
 
     // Split long text into chunks for better browser TTS handling
-    const maxChunkLength = 200; // Browser TTS works better with shorter chunks
+    const maxChunkLength = 200;
     const chunks = [];
 
     // Split by sentences first
@@ -255,7 +252,7 @@ const DocxPreviewWithAI = ({
       if (currentChunkIndex >= chunks.length) {
         console.log('🔊 Browser TTS completed all chunks');
         setIsPlaying(false);
-        setCurrentConcept('Tutorial completed!');
+        setCurrentConcept('Narration completed!');
         setTimeout(() => {
           setAiTutorActive(false);
           setCurrentConcept('');
@@ -274,7 +271,7 @@ const DocxPreviewWithAI = ({
       }
 
       // Configure speech settings
-      utterance.rate = 0.9; // Slightly slower for better comprehension
+      utterance.rate = 0.9;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
 
@@ -314,13 +311,11 @@ const DocxPreviewWithAI = ({
 
   // Clean dragging functionality
   const handleMouseDown = (e) => {
-    // Only handle left mouse button
     if (e.button !== 0) return;
 
     e.preventDefault();
     e.stopPropagation();
 
-    // Capture starting positions
     const startX = panelPosition.x;
     const startY = panelPosition.y;
     const startMouseX = e.clientX;
@@ -328,12 +323,10 @@ const DocxPreviewWithAI = ({
 
     setIsDragging(true);
 
-    // Mouse move handler
     const handleMove = (moveEvent) => {
       const newX = startX + (moveEvent.clientX - startMouseX);
       const newY = startY + (moveEvent.clientY - startMouseY);
 
-      // Boundary check
       const maxX = window.innerWidth - 320;
       const maxY = window.innerHeight - 250;
 
@@ -343,21 +336,18 @@ const DocxPreviewWithAI = ({
       setPanelPosition({ x: finalX, y: finalY });
     };
 
-    // Mouse up handler
     const handleUp = () => {
       setIsDragging(false);
       document.removeEventListener('mousemove', handleMove);
       document.removeEventListener('mouseup', handleUp);
     };
 
-    // Add event listeners
     document.addEventListener('mousemove', handleMove);
     document.addEventListener('mouseup', handleUp);
   };
 
-  // Cleanup effect - simple and safe
+  // Cleanup effect
   useEffect(() => {
-    // Cleanup on component unmount
     return () => {
       setIsDragging(false);
     };
@@ -413,17 +403,17 @@ const DocxPreviewWithAI = ({
     // First, extract and analyze content
     try {
       setIsExtractingContent(true);
-      const extractedContent = docxContent || await extractDocxContent();
+      const extractedContent = pdfContent || await extractPdfContent();
 
       // Analyze if content is educational using AI
-      console.log('🔍 DOCX Content Analysis Debug:');
+      console.log('🔍 PDF Content Analysis Debug:');
       console.log('📝 Content length:', extractedContent.length);
       console.log('📄 First 200 chars:', extractedContent.substring(0, 200));
       console.log('📊 Word count:', extractedContent.split(/\s+/).length);
-
+      
       const analysisResult = await analyzeContentForEducational(extractedContent);
-
-      console.log('🤖 AI Analysis Result for DOCX:', {
+      
+      console.log('🤖 AI Analysis Result for PDF:', {
         isEducational: analysisResult.isEducational,
         confidence: analysisResult.confidence,
         reasoning: analysisResult.reasoning,
@@ -437,11 +427,15 @@ AI Analysis: ${analysisResult.reasoning}
 Content Type: ${analysisResult.contentType}
 Confidence: ${Math.round(analysisResult.confidence * 100)}%
 
-AI Narrator works best with instructional content, lessons, or study materials.`;
+AI Narrator works best with instructional content, lessons, or study materials.
+
+DEBUG INFO:
+- Content Length: ${extractedContent.length} characters
+- Word Count: ${extractedContent.split(/\s+/).length} words
+- First 100 chars: "${extractedContent.substring(0, 100)}..."`;
 
         setExtractionError(errorMessage);
         setIsExtractingContent(false);
-        // Make sure mode selection modal is NOT shown
         setShowModeSelection(false);
         return;
       }
@@ -467,13 +461,11 @@ AI Narrator works best with instructional content, lessons, or study materials.`
     }
   };
 
-  const fileName = content.title || content.originalName || 'Document.docx';
+  const fileName = content.title || content.originalName || 'Document.pdf';
 
   return (
     <>
       <div className="w-full h-full flex relative">
-
-
         {/* Enhanced Error/Info Message - Professional Design */}
         {extractionError && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
@@ -522,10 +514,10 @@ AI Narrator works best with instructional content, lessons, or study materials.`
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900 mb-2">
-                          This document doesn't contain educational content suitable for AI narration.
+                          This PDF doesn't contain educational content suitable for AI narration.
                         </p>
                         <p className="text-xs text-gray-600 leading-relaxed">
-                          Our AI analyzed the document and determined it's not instructional material.
+                          Our AI analyzed the document and determined it's not instructional material. 
                           AI Narrator works best with lessons, tutorials, study guides, and educational content.
                         </p>
                       </div>
@@ -534,7 +526,7 @@ AI Narrator works best with instructional content, lessons, or study materials.`
                     {/* Analysis Details */}
                     <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                       <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Analysis Results</h4>
-
+                      
                       {/* AI Analysis Summary */}
                       <div className="bg-white rounded-lg p-3 border border-gray-200">
                         <div className="flex items-start gap-2 mb-2">
@@ -546,7 +538,7 @@ AI Narrator works best with instructional content, lessons, or study materials.`
                           <div>
                             <p className="text-xs font-medium text-gray-700 mb-1">AI Analysis</p>
                             <p className="text-xs text-gray-600 leading-relaxed">
-                              The document appears to be a personal study log or development schedule rather than instructional content suitable for educational narration.
+                              The PDF appears to be a personal document rather than instructional content suitable for educational narration.
                             </p>
                           </div>
                         </div>
@@ -556,14 +548,14 @@ AI Narrator works best with instructional content, lessons, or study materials.`
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-white rounded-lg p-3 border border-gray-200">
                           <div className="flex items-center gap-2 mb-1">
-                            <div className="w-3 h-3 bg-purple-100 rounded-full flex items-center justify-center">
-                              <svg className="w-2 h-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                            <div className="w-3 h-3 bg-red-100 rounded-full flex items-center justify-center">
+                              <svg className="w-2 h-2 text-red-600" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
                               </svg>
                             </div>
                             <span className="text-xs font-medium text-gray-700">Content Type</span>
                           </div>
-                          <p className="text-xs text-gray-900 font-medium">Personal Study Log</p>
+                          <p className="text-xs text-gray-900 font-medium">Personal Document</p>
                         </div>
 
                         <div className="bg-white rounded-lg p-3 border border-gray-200">
@@ -589,10 +581,10 @@ AI Narrator works best with instructional content, lessons, or study materials.`
                         Try AI Narrator with:
                       </h4>
                       <ul className="text-xs text-blue-800 space-y-1">
-                        <li>• Lesson plans and study materials</li>
-                        <li>• Educational articles and tutorials</li>
-                        <li>• Course content and learning guides</li>
-                        <li>• Research papers and academic content</li>
+                        <li>• Educational PDF documents and textbooks</li>
+                        <li>• Research papers and academic articles</li>
+                        <li>• Course materials and study guides</li>
+                        <li>• Tutorial documents and how-to guides</li>
                       </ul>
                     </div>
                   </div>
@@ -604,7 +596,7 @@ AI Narrator works best with instructional content, lessons, or study materials.`
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900 mb-2">
-                          Unable to process document for AI narration
+                          Unable to process PDF for AI narration
                         </p>
                         <p className="text-xs text-gray-600 leading-relaxed">
                           {extractionError}
@@ -650,89 +642,37 @@ AI Narrator works best with instructional content, lessons, or study materials.`
                 <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                 <div className="flex-1">
                   <p className="text-sm text-blue-800 font-medium">Analyzing Content</p>
-                  <p className="text-xs text-blue-600 mt-1">Checking if document contains educational material...</p>
+                  <p className="text-xs text-blue-600 mt-1">Extracting text from PDF and checking educational content...</p>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Sidebar with headings */}
-        {headings.length > 0 && (
-          <aside className="w-64 flex-shrink-0 h-full overflow-y-auto p-8 border-r bg-slate-50/50 hidden lg:block">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-slate-800">On this page</h3>
-            </div>
-            <ul className="space-y-2">
-              {headings.map((heading) => (
-                <li key={heading.id} className={`text-sm ${heading.level === 2 ? 'pl-3' : ''} ${heading.level === 3 ? 'pl-6' : ''}`}>
-                  <a
-                    href={`#${heading.id}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const element = document.querySelector(`#${heading.id}`);
-                      if (element) {
-                        element.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }}
-                    className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors py-1"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                    <span className="truncate max-w-[11rem]" title={heading.text}>{heading.text}</span>
-                    {headingsWithNotes.has(heading.id) && (
-                      <span className="w-2 h-2 bg-blue-500 rounded-full" title="This section has notes"></span>
-                    )}
-                  </a>
-                </li>
-              ))}
-            </ul>
-
-            {/* AI Narrator Sidebar Button */}
-            <div className="mt-6 pt-4 border-t border-slate-200">
-              <button
-                onClick={handleAITutorClick}
-                disabled={isExtractingContent}
-                className="w-full flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-300 disabled:opacity-50 text-sm font-medium"
-              >
-                {isExtractingContent ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <AcademicCapIcon className="w-4 h-4" />
-                )}
-                <span>Listen with AI</span>
-              </button>
-              <p className="text-xs text-slate-500 mt-2 text-center">
-                Get tutorials, quizzes & audio in Taglish
-              </p>
-            </div>
-          </aside>
-        )}
-
         {/* Document Tools Sidebar */}
         <DocumentToolsSidebar
           onAITutorClick={handleAITutorClick}
           onNotesClick={() => {
-            // Toggle notes panel using the ref
             if (floatingNotesRef.current) {
               floatingNotesRef.current.toggleNotesPanel();
             }
           }}
         />
 
-        {/* Main content */}
+        {/* Main content - PDF Viewer */}
         <div className="flex-1 relative">
-          {htmlContent ? (
+          {pdfUrl ? (
             <iframe
               className="w-full h-full rounded-lg bg-white"
               title={content.title}
-              srcDoc={injectOverrideStyles(htmlContent)}
+              src={pdfUrl}
               style={{ border: 'none' }}
             />
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="w-8 h-8 border-4 border-sky-200 border-t-sky-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading document...</p>
+                <div className="w-8 h-8 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading PDF...</p>
               </div>
             </div>
           )}
@@ -773,7 +713,7 @@ AI Narrator works best with instructional content, lessons, or study materials.`
                   </div>
 
                   <div className="grid gap-4">
-                    {/* Complete Tutorial */}
+                    {/* Complete Narration */}
                     <button
                       onClick={() => startDirectAITeaching('complete')}
                       className="w-full group relative overflow-hidden bg-white border-2 border-gray-200 rounded-xl p-4 transition-all duration-300 hover:border-blue-300 hover:shadow-md"
@@ -866,22 +806,13 @@ AI Narrator works best with instructional content, lessons, or study materials.`
               style={{
                 left: `${panelPosition.x}px`,
                 top: `${panelPosition.y}px`,
-                userSelect: 'none', // Prevent text selection during drag
-                transition: isDragging ? 'none' : 'all 0.1s ease-out' // Smooth when not dragging
+                userSelect: 'none',
               }}
             >
-              <div className="bg-white border border-gray-200 rounded-xl shadow-lg min-w-80 max-w-sm select-none">
-                {/* Draggable Header */}
+              <div className="bg-white border border-gray-200 rounded-xl shadow-xl p-4 min-w-[300px] max-w-[400px]">
                 <div
-                  className={`flex items-center justify-between p-4 pb-2 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-t-xl border-b border-gray-100 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'
-                    }`}
+                  className="cursor-move"
                   onMouseDown={handleMouseDown}
-                  style={{
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
-                    MozUserSelect: 'none',
-                    msUserSelect: 'none'
-                  }}
                 >
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
@@ -890,91 +821,56 @@ AI Narrator works best with instructional content, lessons, or study materials.`
                       Drag to move
                     </div>
                   </div>
-                  <button
-                    onClick={handleAITutorClick}
-                    className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded"
-                  >
-                    <XMarkIcon className="w-4 h-4" />
-                  </button>
                 </div>
 
-                {/* Panel Content */}
-                <div className="p-4 pt-3 space-y-3">
-                  <div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Status:</span>
-                      <span className="font-medium text-purple-600">{currentConcept}</span>
-                    </div>
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">{currentConcept}</span>
+                    <button
+                      onClick={handleAITutorClick}
+                      className="text-red-500 hover:text-red-700 text-sm font-medium"
+                    >
+                      Stop
+                    </button>
                   </div>
 
                   {isPlaying && (
-                    <div>
-                      <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="text-gray-600">Progress:</span>
-                        <span className="font-medium text-gray-900">{Math.round(audioProgress)}%</span>
-                      </div>
+                    <div className="space-y-2">
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
-                          className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                          className="bg-purple-500 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${audioProgress}%` }}
                         ></div>
                       </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Playing narration...</span>
+                        <span>{Math.round(audioProgress)}%</span>
+                      </div>
                     </div>
                   )}
-
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <SparklesIcon className="w-4 h-4" />
-                    <span>Teaching mode: {tutorMode === 'complete' ? 'Complete Tutorial' : tutorMode === 'quick' ? 'Quick Overview' : 'Key Concepts'}</span>
-                  </div>
-
-                  {/* Visual indicator that panel is draggable */}
-                  <div className="flex items-center justify-center pt-2 border-t border-gray-100">
-                    <div className="flex gap-1">
-                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                      <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
           )}
-
-
         </div>
-
-        {/* Document Tools Sidebar */}
-        <DocumentToolsSidebar
-          onAITutorClick={handleAITutorClick}
-          onNotesClick={() => {
-            // Toggle notes panel using the ref
-            if (floatingNotesRef.current) {
-              floatingNotesRef.current.toggleNotesPanel();
-            }
-          }}
-        />
       </div>
 
-      {/* Enhanced FloatingNotes component */}
+      {/* Floating Notes */}
       <EnhancedFloatingNotes
         ref={floatingNotesRef}
-        contentId={content?._id || content?.id || 'docx-content'}
-        courseId={content?.courseId || 'default-course'}
-        userId="current-user"
-        isVisible={true}
+        notes={notes}
+        fileName={fileName}
       />
 
       {/* AI Narrator Modal */}
       <AITutorModal
         isOpen={showAITutor}
         onClose={() => setShowAITutor(false)}
-        docxContent={docxContent}
         fileName={fileName}
+        docxContent={pdfContent}
       />
     </>
   );
 };
 
-export default DocxPreviewWithAI;
+export default PdfPreviewWithAI;

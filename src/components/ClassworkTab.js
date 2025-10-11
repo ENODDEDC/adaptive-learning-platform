@@ -761,7 +761,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-[60]">
+          <div className="absolute right-0 bottom-full mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-[60]">
             <div className="py-1">
               {isForm && (
                 <button

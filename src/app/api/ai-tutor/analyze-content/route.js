@@ -96,7 +96,9 @@ Be strict in your analysis - only classify content as educational if it genuinel
       confidence: analysisResult.confidence,
       reasoning: analysisResult.reasoning,
       contentType: analysisResult.contentType,
-      contentLength: content.length
+      contentLength: content.length,
+      firstChars: content.substring(0, 100) + '...',
+      wordCount: content.split(/\s+/).length
     });
 
     return NextResponse.json({
