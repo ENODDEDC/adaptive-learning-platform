@@ -636,7 +636,7 @@ const CourseDetailPage = ({
         <div className="flex flex-1 gap-4">
           {/* Feed Sidebar - Shows when document panel is open */}
           {documentPanelOpen && (
-            <div className="w-[45%] bg-white border border-gray-200/60 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-md">
+            <div className="w-[60%] bg-white border border-gray-200/60 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-md">
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-4">
                   <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
