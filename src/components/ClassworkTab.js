@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import CreateClassworkModal from '@/components/CreateClassworkModal';
 // Removed FormBuilderModal - now using full-page editor
@@ -8,6 +8,100 @@ import SubmitAssignmentModal from '@/components/SubmitAssignmentModal';
 import ContentViewer from '@/components/ContentViewer.client';
 import AttachmentPreview from '@/components/AttachmentPreview';
 import EnhancedDocxThumbnail from '@/components/EnhancedDocxThumbnail';
+
+// Completely Isolated Context Menu System (No React State)
+let globalContextMenu = null;
+
+const createContextMenu = (x, y, options) => {
+  // Remove existing menu
+  removeContextMenu();
+  
+  // Create menu element
+  const menu = document.createElement('div');
+  menu.id = 'isolated-context-menu';
+  menu.className = 'fixed bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-[100] min-w-[160px]';
+  menu.style.left = `${x}px`;
+  menu.style.top = `${y}px`;
+  menu.style.transform = 'translate(0, 0)';
+  
+  // Add options
+  options.forEach((option, index) => {
+    const button = document.createElement('button');
+    button.className = `w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-gray-50 transition-colors duration-150 ${
+      option.disabled 
+        ? 'text-gray-400 cursor-not-allowed' 
+        : option.danger 
+          ? 'text-red-600 hover:bg-red-50' 
+          : 'text-gray-700'
+    }`;
+    
+    if (option.icon) {
+      const svg = document.createElement('div');
+      svg.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">${option.icon}</svg>`;
+      button.appendChild(svg.firstChild);
+    }
+    
+    const label = document.createElement('span');
+    label.textContent = option.label;
+    button.appendChild(label);
+    
+    if (!option.disabled) {
+      button.onclick = () => {
+        option.action();
+        removeContextMenu();
+      };
+    }
+    
+    menu.appendChild(button);
+  });
+  
+  // Add to document
+  document.body.appendChild(menu);
+  globalContextMenu = menu;
+  
+  // Add event listeners
+  const handleClickOutside = (event) => {
+    if (!menu.contains(event.target)) {
+      removeContextMenu();
+    }
+  };
+  
+  const handleEscape = (event) => {
+    if (event.key === 'Escape') {
+      removeContextMenu();
+    }
+  };
+  
+  const handleContextMenu = (event) => {
+    event.preventDefault();
+    removeContextMenu();
+  };
+  
+  setTimeout(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('contextmenu', handleContextMenu);
+  }, 0);
+  
+  // Store cleanup function
+  menu._cleanup = () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+    document.removeEventListener('keydown', handleEscape);
+    document.removeEventListener('contextmenu', handleContextMenu);
+  };
+};
+
+const removeContextMenu = () => {
+  if (globalContextMenu) {
+    if (globalContextMenu._cleanup) {
+      globalContextMenu._cleanup();
+    }
+    if (globalContextMenu.parentNode) {
+      globalContextMenu.parentNode.removeChild(globalContextMenu);
+    }
+    globalContextMenu = null;
+  }
+};
 
 // Form Thumbnail Component for Clean Grid View
 const FormThumbnail = ({ form, onPreview }) => {
@@ -69,8 +163,8 @@ const FormThumbnail = ({ form, onPreview }) => {
   );
 };
 
-// Modern PDF/DOCX Thumbnail Component for Clean Grid View
-const ModernPDFFileThumbnail = ({ attachment, onPreview }) => {
+// Stable Thumbnail Component that prevents re-renders from parent state changes
+const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
 
@@ -277,10 +371,16 @@ const ModernPDFFileThumbnail = ({ attachment, onPreview }) => {
       </div>
     </button>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if attachment ID or thumbnailUrl changes
+  return (
+    prevProps.attachment._id === nextProps.attachment._id &&
+    prevProps.attachment.thumbnailUrl === nextProps.attachment.thumbnailUrl
+  );
+});
 
-// Enhanced PDF/DOCX Thumbnail Component for Grid View
-const EnhancedPDFFileThumbnail = ({ attachment, onPreview }) => {
+// Enhanced PDF/DOCX Thumbnail Component for Grid View (Stable)
+const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
 
@@ -513,7 +613,13 @@ const EnhancedPDFFileThumbnail = ({ attachment, onPreview }) => {
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if attachment ID or thumbnailUrl changes
+  return (
+    prevProps.attachment._id === nextProps.attachment._id &&
+    prevProps.attachment.thumbnailUrl === nextProps.attachment.thumbnailUrl
+  );
+});
 
 const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkCreated }) => {
   const [assignments, setAssignments] = useState([]);
@@ -534,6 +640,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   const [selectedContent, setSelectedContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isDragLoading, setIsDragLoading] = useState(false);
+  const [isDragOperationInProgress, setIsDragOperationInProgress] = useState(false);
 
   // Enhanced filtering and view states
   const [searchQuery, setSearchQuery] = useState('');
@@ -545,8 +652,145 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   const [dateRange, setDateRange] = useState('all'); // all, thisWeek, thisMonth, overdue
   const [statusFilter, setStatusFilter] = useState('all'); // all, notStarted, inProgress, submitted, completed
   const [groupBy, setGroupBy] = useState('none'); // none, dueDate, type, status
-  const [openDropdownId, setOpenDropdownId] = useState(null); // Track which dropdown is open
-  const [isDragOperationInProgress, setIsDragOperationInProgress] = useState(false); // Track drag operations
+  
+  // Toast notification system
+  const [toasts, setToasts] = useState([]);
+  
+  // Toast notification functions
+  const showToast = (message, type = 'success', duration = 3000) => {
+    const id = Date.now();
+    const toast = { id, message, type, duration };
+    setToasts(prev => [...prev, toast]);
+    
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+  
+  // Note: Context menu now uses isolated DOM-based system (no React state)
+
+  // Handle right-click context menu (No React State - Completely Isolated)
+  const handleContextMenu = (event, item) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const x = event.clientX;
+    const y = event.clientY;
+    
+    // Adjust position if menu would go off-screen
+    const menuWidth = 160;
+    const menuHeight = 120;
+    const adjustedX = x + menuWidth > window.innerWidth ? x - menuWidth : x;
+    const adjustedY = y + menuHeight > window.innerHeight ? y - menuHeight : y;
+    
+    // Get context menu options
+    const options = getContextMenuOptions(item);
+    
+    // Create isolated context menu (no React state involved)
+    createContextMenu(adjustedX, adjustedY, options);
+  };
+
+  // Close context menu (now handled by isolated system)
+  const closeContextMenu = () => {
+    removeContextMenu();
+  };
+
+  // Get context menu options based on item type and user role
+  const getContextMenuOptions = (item) => {
+    const isForm = item?.itemType === 'form' || item?.type === 'form';
+    const options = [];
+
+    if (isForm) {
+      // Form options
+      options.push({
+        label: 'Preview Form',
+        icon: '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />',
+        action: () => {
+          if (item._id) {
+            window.open(`/forms/${item._id}`, '_blank');
+          }
+        }
+      });
+
+      if (isInstructor) {
+        options.push({
+          label: 'Edit Form',
+          icon: '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />',
+          action: () => handleEditForm(item)
+        });
+
+        options.push({
+          label: 'Delete Form',
+          icon: '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />',
+          action: () => handleDeleteClasswork(item._id),
+          danger: true
+        });
+      }
+    } else {
+      // Assignment options
+      options.push({
+        label: 'View Details',
+        icon: '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />',
+        action: () => {
+          if (onOpenContent) {
+            if (item.attachments && item.attachments.length > 0) {
+              if (item.attachments.length === 1) {
+                onOpenContent(item.attachments[0]);
+              } else {
+                const multiAttachmentContent = {
+                  title: item.title,
+                  contentType: 'multi-attachment',
+                  attachments: item.attachments,
+                  currentIndex: 0
+                };
+                onOpenContent(multiAttachmentContent);
+              }
+            } else {
+              const mockContent = {
+                title: item.title,
+                filePath: null,
+                mimeType: 'text/plain',
+                fileSize: 0,
+                contentType: item.itemType || 'assignment'
+              };
+              onOpenContent(mockContent);
+            }
+          }
+        }
+      });
+
+      if (isInstructor) {
+        options.push({
+          label: 'Edit Assignment',
+          icon: '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />',
+          action: () => handleEditClasswork(item)
+        });
+
+        options.push({
+          label: 'Delete Assignment',
+          icon: '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />',
+          action: () => handleDeleteClasswork(item._id),
+          danger: true
+        });
+      } else {
+        // Student options
+        const submission = submissions.find(s => String(s.assignment) === String(item._id));
+        if (!submission || submission.status !== 'submitted') {
+          options.push({
+            label: 'Submit Assignment',
+            icon: '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />',
+            action: () => handleSubmitAssignment(item._id)
+          });
+        }
+      }
+    }
+
+    return options;
+  };
 
   // Form builder modal removed - now using full-page editor
 
@@ -584,22 +828,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     }, 150);
   };
 
-  // Handle dropdown menu toggle
-  const toggleDropdown = (assignmentId) => {
-    setOpenDropdownId(openDropdownId === assignmentId ? null : assignmentId);
-  };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.dropdown-container')) {
-        setOpenDropdownId(null);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
 
   // Enhanced filtering and sorting logic
   const getFilteredAndSortedAssignments = useCallback(() => {
@@ -704,109 +933,9 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     return filtered;
   }, [assignments, submissions, searchQuery, filter, dateRange, statusFilter, sortBy]);
 
-  // Dropdown Menu Component
-  const DropdownMenu = ({ assignment, onEdit, onDelete, onOpenContent, onSubmit, isOpen, onToggle }) => {
-    const item = assignment;
-    const isForm = item?.itemType === 'form' || item?.type === 'form';
+  // Note: Dropdown menu replaced with right-click context menu
 
-    const handleViewDetails = () => {
-      if (onOpenContent) {
-        if (item.attachments && item.attachments.length > 0) {
-          if (item.attachments.length === 1) {
-            onOpenContent(item.attachments[0]);
-          } else {
-            const multiAttachmentContent = {
-              title: item.title,
-              contentType: 'multi-attachment',
-              attachments: item.attachments,
-              currentIndex: 0
-            };
-            onOpenContent(multiAttachmentContent);
-          }
-        } else {
-          const mockContent = {
-            title: item.title,
-            filePath: null,
-            mimeType: 'text/plain',
-            fileSize: 0,
-            contentType: item.itemType || 'assignment'
-          };
-          onOpenContent(mockContent);
-        }
-      }
-      onToggle();
-    };
 
-    const handlePreviewForm = () => {
-      if (isForm && item._id) {
-        // Open form preview in new tab
-        window.open(`/forms/${item._id}`, '_blank');
-      }
-      onToggle();
-    };
-
-    return (
-      <div className="relative dropdown-container">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
-          className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:scale-110"
-          title="More options"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-          </svg>
-        </button>
-
-        {isOpen && (
-          <div className="absolute right-0 bottom-full mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-[60]">
-            <div className="py-1">
-              {isForm && (
-                <button
-                  onClick={handlePreviewForm}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 hover:text-purple-700 transition-colors duration-150"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  Preview Form
-                </button>
-              )}
-
-              <button
-                onClick={() => {
-                  onEdit();
-                  onToggle();
-                }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                Edit
-              </button>
-
-              <button
-                onClick={() => {
-                  onDelete();
-                  onToggle();
-                }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-150"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Delete
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // Enhanced Activity Card Component
   const EnhancedActivityCard = ({ assignment, form, submission, isInstructor, onEdit, onDelete, onSubmit, onOpenContent, viewMode }) => {
@@ -1087,7 +1216,25 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     // Render different layouts based on view mode
     if (viewMode === 'grid') {
       return (
-        <div className="group relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px]">
+        <div 
+          className="group relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px] cursor-pointer"
+          onContextMenu={(e) => handleContextMenu(e, item)}
+          onClick={() => {
+            if (item.attachments && item.attachments.length > 0) {
+              if (item.attachments.length === 1) {
+                onOpenContent(item.attachments[0]);
+              } else {
+                const multiAttachmentContent = {
+                  title: item.title,
+                  contentType: 'multi-attachment',
+                  attachments: item.attachments,
+                  currentIndex: 0
+                };
+                onOpenContent(multiAttachmentContent);
+              }
+            }
+          }}
+        >
           {/* Clean Header */}
           <div className="p-6 pb-4">
             {/* Header with Type and Date */}
@@ -1147,7 +1294,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                   if (attachment.mimeType === 'application/pdf' ||
                       attachment.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
                     return (
-                      <ModernPDFFileThumbnail
+                      <StableThumbnailComponent
                         key={attachment._id || index}
                         attachment={attachment}
                         onPreview={onOpenContent}
@@ -1194,15 +1341,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
             <div className="text-xs text-gray-500">
               {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
             </div>
-            <DropdownMenu
-              assignment={assignment}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onOpenContent={onOpenContent}
-              onSubmit={onSubmit}
-              isOpen={openDropdownId === item._id}
-              onToggle={() => toggleDropdown(item._id)}
-            />
+            {/* Right-click context menu replaces dropdown */}
           </div>
         </div>
       );
@@ -1211,7 +1350,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     // List view (compact)
     if (viewMode === 'list') {
       return (
-        <div className="bg-white border border-gray-200/60 rounded-xl hover:shadow-lg transition-all duration-300 hover:border-gray-300/60 overflow-hidden">
+        <div 
+          className="bg-white border border-gray-200/60 rounded-xl hover:shadow-lg transition-all duration-300 hover:border-gray-300/60 overflow-hidden cursor-pointer"
+          onContextMenu={(e) => handleContextMenu(e, item)}
+        >
           <div className="p-6">
             <div className="flex items-center justify-between gap-6">
               {/* Left Section - Main Content */}
@@ -1331,15 +1473,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 {/* Compact Action Menu */}
                 <div className="flex items-center gap-2">
                   {isInstructor ? (
-                    <DropdownMenu
-                      assignment={assignment}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      onOpenContent={onOpenContent}
-                      onSubmit={onSubmit}
-                      isOpen={openDropdownId === item._id}
-                      onToggle={() => toggleDropdown(item._id)}
-                    />
+                    {/* Right-click context menu replaces dropdown */}
                   ) : (
                     <>
                       {isCompleted ? (
@@ -1576,15 +1710,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
               <div className="flex items-center gap-2">
                 {isInstructor ? (
-                  <DropdownMenu
-                    assignment={assignment}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    onOpenContent={onOpenContent}
-                    onSubmit={onSubmit}
-                    isOpen={openDropdownId === item._id}
-                    onToggle={() => toggleDropdown(item._id)}
-                  />
+                  {/* Right-click context menu replaces dropdown */}
                 ) : (
                   <>
                     {!isCompleted && (
@@ -1701,15 +1827,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
             <div className="flex items-center gap-2">
               {isInstructor ? (
-                <DropdownMenu
-                  assignment={item}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onOpenContent={onOpenContent}
-                  onSubmit={onSubmit}
-                  isOpen={openDropdownId === item._id}
-                  onToggle={() => toggleDropdown(item._id)}
-                />
+                {/* Right-click context menu replaces dropdown */}
               ) : (
                 <>
                   {!isCompleted && (
@@ -1967,11 +2085,13 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   }, [courseDetails, fetchAssignments, fetchForms, sortBy]);
 
   const handleDeleteClasswork = useCallback(async (classworkId) => {
-    if (!window.confirm('Are you sure you want to delete this classwork?')) {
+    if (!window.confirm('Are you sure you want to delete this classwork? This action cannot be undone.')) {
       return;
     }
 
     try {
+      showToast('Deleting classwork...', 'info', 2000);
+      
       const res = await fetch(`/api/classwork/${classworkId}`, {
         method: 'DELETE',
         credentials: 'include' // Use cookie-based authentication
@@ -1983,13 +2103,16 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
       }
 
       console.log('🔍 CLASSWORK: Classwork deleted successfully, refreshing data');
+      showToast('Classwork deleted successfully!', 'success');
+      
       fetchAssignments(); // Refresh assignments list
       fetchForms(); // Also refresh forms list
     } catch (err) {
       setError(err.message);
+      showToast('Failed to delete classwork. Please try again.', 'error');
       console.error('🔍 CLASSWORK: Failed to delete classwork:', err);
     }
-  }, [fetchAssignments, fetchForms]);
+  }, [fetchAssignments, fetchForms, showToast]);
 
   // Drag and Drop Handlers
   const handleDragStart = useCallback((e, assignmentId) => {
@@ -2197,6 +2320,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
   return (
     <div className="space-y-8">
+      {/* Context Menu now uses isolated DOM-based system */}
       {/* Enhanced Professional classwork management section */}
       <>
         {isInstructor && (
@@ -2320,11 +2444,21 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                     </div>
                     <input
                       type="text"
-                      placeholder="Search..."
+                      placeholder="Search assignments, forms, and materials..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 border border-gray-300 rounded-md text-sm w-48 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm w-64 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400"
                     />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
 
                   {/* View Mode Toggle */}
@@ -2474,17 +2608,86 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
               if (filtered.length === 0) {
                 return (
-                  <div className="py-20 text-center group">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl group-hover:from-amber-400/30 group-hover:to-orange-400/30 transition-all duration-500"></div>
-                      <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                        <svg className="w-12 h-12 text-amber-500 group-hover:text-amber-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+                  <div className="py-24 text-center group">
+                    <div className="relative max-w-md mx-auto">
+                      {/* Animated Background Elements */}
+                      <div className="absolute inset-0 -z-10">
+                        <div className="w-32 h-32 mx-auto mb-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-full opacity-60 animate-pulse"></div>
+                        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full opacity-40 animate-bounce" style={{ animationDelay: '1s', animationDuration: '3s' }}></div>
+                      </div>
+                      
+                      {/* Main Icon */}
+                      <div className="relative w-28 h-28 mx-auto mb-8 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 rounded-full flex items-center justify-center group-hover:from-blue-200 group-hover:via-indigo-200 group-hover:to-purple-200 transition-all duration-700 shadow-lg group-hover:shadow-xl transform group-hover:scale-110">
+                        <div className="absolute inset-2 bg-white rounded-full shadow-inner"></div>
+                        {searchQuery ? (
+                          <svg className="relative w-12 h-12 text-amber-500 group-hover:text-amber-600 transition-colors duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        ) : (
+                          <svg className="relative w-12 h-12 text-indigo-500 group-hover:text-indigo-600 transition-colors duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        )}
+                        
+                        {/* Floating Elements */}
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-200 rounded-full animate-ping opacity-75"></div>
+                        <div className="absolute -bottom-1 -left-1 w-4 h-4 bg-green-200 rounded-full animate-pulse"></div>
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="space-y-4">
+                        <h3 className="text-2xl font-bold text-gray-800 group-hover:text-gray-900 transition-colors duration-300">
+                          {searchQuery ? 'No Results Found' : 'Ready to Get Started?'}
+                        </h3>
+                        <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors duration-300">
+                          {searchQuery 
+                            ? `No classwork matches "${searchQuery}". Try adjusting your search terms or filters.`
+                            : isInstructor 
+                              ? 'Create your first assignment or form to engage with your students.'
+                              : 'No assignments or forms have been posted yet. Check back later!'
+                          }
+                        </p>
+                        
+                        {/* Action Buttons */}
+                        {isInstructor && !searchQuery && (
+                          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-6">
+                            <button
+                              onClick={() => setIsCreateClassworkModalOpen(true)}
+                              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-semibold rounded-2xl hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-2xl group/btn"
+                            >
+                              <svg className="w-5 h-5 group-hover/btn:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                              </svg>
+                              Create Assignment
+                            </button>
+                            <button
+                              onClick={handleCreateForm}
+                              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-2xl hover:from-emerald-600 hover:to-teal-600 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-2xl group/btn"
+                            >
+                              <svg className="w-5 h-5 group-hover/btn:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Create Form
+                            </button>
+                          </div>
+                        )}
+                        
+                        {/* Search Suggestions */}
+                        {searchQuery && (
+                          <div className="pt-4 space-y-2">
+                            <button
+                              onClick={() => setSearchQuery('')}
+                              className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors duration-200 hover:underline"
+                            >
+                              Clear search and show all classwork
+                            </button>
+                            <div className="text-xs text-gray-500">
+                              Try searching for: assignments, forms, quizzes, or materials
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <h4 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-gray-800 transition-colors duration-300">No matching activities</h4>
-                    <p className="text-gray-600 max-w-md mx-auto leading-relaxed group-hover:text-gray-700 transition-colors duration-300">Try adjusting your filters to see more activities, or check back later for new content.</p>
                   </div>
                 );
               }
@@ -2891,6 +3094,63 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
           }
         }
       `}</style>
+
+      {/* Toast Notification System */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg backdrop-blur-sm border transform transition-all duration-300 animate-in slide-in-from-right-5 ${
+              toast.type === 'success'
+                ? 'bg-emerald-50/90 border-emerald-200 text-emerald-800'
+                : toast.type === 'error'
+                ? 'bg-red-50/90 border-red-200 text-red-800'
+                : toast.type === 'warning'
+                ? 'bg-amber-50/90 border-amber-200 text-amber-800'
+                : 'bg-blue-50/90 border-blue-200 text-blue-800'
+            }`}
+          >
+            {/* Toast Icon */}
+            <div className="flex-shrink-0">
+              {toast.type === 'success' && (
+                <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {toast.type === 'error' && (
+                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+              {toast.type === 'warning' && (
+                <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              )}
+              {toast.type === 'info' && (
+                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+            </div>
+            
+            {/* Toast Message */}
+            <div className="flex-1 font-medium text-sm">
+              {toast.message}
+            </div>
+            
+            {/* Close Button */}
+            <button
+              onClick={() => removeToast(toast.id)}
+              className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
