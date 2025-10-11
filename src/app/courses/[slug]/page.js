@@ -52,6 +52,16 @@ const CourseDetailPage = ({
   const upcomingTasksExpanded = propUpcomingTasksExpanded !== undefined ? propUpcomingTasksExpanded : true;
   const setUpcomingTasksExpanded = propSetUpcomingTasksExpanded || (() => {});
 
+  // Document preview panel state
+  const [documentPanelOpen, setDocumentPanelOpen] = useState(false);
+
+  // Auto-collapse sidebar when document panel opens
+  useEffect(() => {
+    if (documentPanelOpen) {
+      setSidebarCollapsed(true);
+    }
+  }, [documentPanelOpen]);
+
   // Invite modal states
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [inviteRole, setInviteRole] = useState(''); // 'student' or 'coTeacher'
@@ -609,10 +619,11 @@ const CourseDetailPage = ({
 
         {/* Main Content Layout - Optimized Proportions */}
         <div className="flex flex-1 gap-8">
-          {/* Left Sidebar - Course Code */}
-          <div className={`bg-white border border-gray-200/60 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-md ${
-            sidebarCollapsed ? 'w-16' : 'w-80'
-          }`}>
+          {/* Left Sidebar - Course Code - Hidden when document panel is open */}
+          {!documentPanelOpen && (
+            <div className={`bg-white border border-gray-200/60 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-md ${
+              sidebarCollapsed ? 'w-16' : 'w-80'
+            }`}>
             {!sidebarCollapsed ? (
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -727,14 +738,16 @@ const CourseDetailPage = ({
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          )}
 
           {/* Main Content Area - Enhanced Layout */}
           <div className="flex-1 space-y-8">
             {/* Hidden button to open content viewer from custom events */}
             <button id="__openContentViewerBtn" type="button" className="hidden" />
-            {/* Enhanced Navigation Tabs - Improved Spacing */}
-            <div className="flex justify-between mb-10 overflow-hidden bg-white border border-gray-200/60 shadow-sm rounded-xl hover:shadow-md transition-shadow duration-200">
+            {/* Enhanced Navigation Tabs - Hidden when document panel is open */}
+            {!documentPanelOpen && (
+              <div className="flex justify-between mb-10 overflow-hidden bg-white border border-gray-200/60 shadow-sm rounded-xl hover:shadow-md transition-shadow duration-200">
               <button
                 className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${
                   activeTab === 'stream'
@@ -807,10 +820,11 @@ const CourseDetailPage = ({
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/30 rounded-full"></div>
                 )}
               </button>
-            </div>
+              </div>
+            )}
 
             {/* Conditional Rendering based on activeTab */}
-            {activeTab === 'stream' && (
+            {(activeTab === 'stream' || documentPanelOpen) && (
               <StreamTab
                 courseDetails={courseDetails}
                 isInstructor={isInstructor}
@@ -822,6 +836,8 @@ const CourseDetailPage = ({
                 newCommentContent={newCommentContent}
                 setNewCommentContent={setNewCommentContent}
                 handlePostComment={handlePostComment}
+                documentPanelOpen={documentPanelOpen}
+                setDocumentPanelOpen={setDocumentPanelOpen}
                 onOpenContent={(content) => {
                   try {
                     console.log('🔍 WINDOW: Dispatching collapseSidebar event');
