@@ -103,44 +103,76 @@ const removeContextMenu = () => {
   }
 };
 
-// Form Thumbnail Component for Clean Grid View
+// Form Thumbnail Component with Live Preview
 const FormThumbnail = ({ form, onPreview }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  const handleIframeLoad = () => {
+    setIsLoading(false);
+  };
+
+  const handleIframeError = () => {
+    setIsLoading(false);
+    setHasError(true);
+  };
+
   return (
     <button
       onClick={() => onPreview ? onPreview(form) : null}
       className="w-full group"
     >
       {/* Form Thumbnail Container */}
-      <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 mb-3">
-        {/* Form Preview Content */}
-        <div className="w-full h-full flex flex-col items-center justify-center p-4">
-          {/* Form Icon */}
-          <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
-            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+      <div className="relative w-full aspect-[4/3] bg-white border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 mb-3">
+        {/* Loading State */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 flex flex-col items-center justify-center z-10">
+            <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+            <span className="text-xs text-purple-600">Loading preview...</span>
           </div>
-          
-          {/* Form Title */}
-          <h4 className="text-sm font-semibold text-gray-800 text-center mb-2 line-clamp-2">
-            {form.title || 'Untitled Form'}
-          </h4>
-          
-          {/* Form Fields Preview */}
-          <div className="w-full space-y-1">
-            <div className="h-2 bg-purple-200 rounded-full w-3/4 mx-auto"></div>
-            <div className="h-2 bg-purple-200 rounded-full w-1/2 mx-auto"></div>
-            <div className="h-2 bg-purple-200 rounded-full w-2/3 mx-auto"></div>
+        )}
+
+        {/* Error State */}
+        {hasError && !isLoading && (
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 flex flex-col items-center justify-center z-10">
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h4 className="text-sm font-semibold text-gray-800 text-center mb-2 line-clamp-2">
+              {form.title || 'Untitled Form'}
+            </h4>
+            <div className="w-full space-y-1 px-4">
+              <div className="h-2 bg-purple-200 rounded-full w-3/4 mx-auto"></div>
+              <div className="h-2 bg-purple-200 rounded-full w-1/2 mx-auto"></div>
+              <div className="h-2 bg-purple-200 rounded-full w-2/3 mx-auto"></div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Live Form Preview */}
+        <iframe
+          src={`/forms/${form._id}`}
+          className="w-full h-full pointer-events-none border-0"
+          title={`${form.title || 'Form'} preview`}
+          onLoad={handleIframeLoad}
+          onError={handleIframeError}
+          style={{
+            transform: 'scale(0.25)',
+            transformOrigin: 'top left',
+            width: '400%',
+            height: '400%'
+          }}
+        />
 
         {/* File Type Badge */}
-        <div className="absolute top-2 right-2 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm bg-purple-500">
+        <div className="absolute top-2 right-2 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm bg-purple-500 z-20">
           FORM
         </div>
         
         {/* Hover Overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 z-20">
           <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg">
             <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
