@@ -644,7 +644,7 @@ const CourseDetailPage = ({
                   </svg>
                   <h2 className="text-lg font-semibold text-gray-900">Feed</h2>
                 </div>
-                <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+                <div className="max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden">
                   <StreamTab
                     courseDetails={courseDetails}
                     isInstructor={isInstructor}
