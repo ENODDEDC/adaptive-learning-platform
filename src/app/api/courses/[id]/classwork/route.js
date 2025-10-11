@@ -45,11 +45,27 @@ export async function POST(request, { params }) {
     
     // Handle Backblaze B2 attachments
     if (attachments && attachments.length > 0) {
+      console.log('🔍 Processing attachments:', attachments.length);
+
       for (const attachment of attachments) {
+        console.log('🔍 Processing attachment:', {
+          hasId: !!attachment._id,
+          hasUrl: !!attachment.url,
+          hasKey: !!attachment.key,
+          fileName: attachment.fileName,
+          originalName: attachment.originalName
+        });
+
         // If it's already a saved Content document (has _id), just use it
         if (attachment._id) {
           attachmentIds.push(attachment._id);
           continue;
+        }
+
+        // Validate required fields for new Backblaze upload
+        if (!attachment.url || !attachment.key) {
+          console.error('❌ Invalid attachment data:', attachment);
+          throw new Error(`Invalid attachment data: missing url or key`);
         }
 
         // If it's a new Backblaze upload, create a Content document
@@ -68,13 +84,13 @@ export async function POST(request, { params }) {
 
           const newContent = new Content({
             courseId: id,
-            title: attachment.fileName || attachment.originalName,
-            originalName: attachment.originalName,
-            filename: attachment.fileName,
+            title: attachment.originalName || attachment.fileName || 'Untitled',
+            originalName: attachment.originalName || attachment.fileName,
+            filename: attachment.fileName || attachment.originalName,
             filePath: attachment.url, // Backblaze B2 URL
             contentType: contentType,
-            fileSize: attachment.size,
-            mimeType: attachment.contentType,
+            fileSize: attachment.size || 0,
+            mimeType: attachment.contentType || 'application/octet-stream',
             uploadedBy: userId,
             // Store Backblaze-specific metadata
             cloudStorage: {
@@ -86,9 +102,16 @@ export async function POST(request, { params }) {
           });
 
           console.log('New Content object created for Backblaze file:', newContent);
-          await newContent.save();
-          console.log('Content saved, ID:', newContent._id);
-          attachmentIds.push(newContent._id);
+
+          try {
+            await newContent.save();
+            console.log('✅ Content saved successfully, ID:', newContent._id);
+            attachmentIds.push(newContent._id);
+          } catch (contentError) {
+            console.error('❌ Failed to save Content document:', contentError);
+            console.error('Content data that failed:', newContent);
+            throw new Error(`Failed to save attachment: ${contentError.message}`);
+          }
         }
       }
     }
@@ -96,26 +119,31 @@ export async function POST(request, { params }) {
     console.log('Attachment IDs:', attachmentIds);
 
     console.log('Creating new Assignment...');
-    const newClasswork = await Assignment.create({
-      courseId: id,
-      title,
-      description,
-      dueDate: dueDate || null,
-      postedBy: userId,
-      type,
-      attachments: attachmentIds,
-    });
-    console.log('Assignment created, ID:', newClasswork._id);
+    try {
+      const newClasswork = await Assignment.create({
+        courseId: id,
+        title,
+        description,
+        dueDate: dueDate || null,
+        postedBy: userId,
+        type,
+        attachments: attachmentIds,
+      });
+      console.log('✅ Assignment created successfully, ID:', newClasswork._id);
 
-    const populatedClasswork = await Assignment.findById(newClasswork._id).populate('attachments');
-    console.log('🔍 API: Created classwork successfully:', {
-      id: populatedClasswork._id,
-      title: populatedClasswork.title,
-      type: populatedClasswork.type,
-      createdAt: populatedClasswork.createdAt,
-      attachmentsCount: populatedClasswork.attachments?.length || 0
-    });
-    return NextResponse.json(populatedClasswork, { status: 201 });
+      const populatedClasswork = await Assignment.findById(newClasswork._id).populate('attachments');
+      console.log('🔍 API: Created classwork successfully:', {
+        id: populatedClasswork._id,
+        title: populatedClasswork.title,
+        type: populatedClasswork.type,
+        createdAt: populatedClasswork.createdAt,
+        attachmentsCount: populatedClasswork.attachments?.length || 0
+      });
+      return NextResponse.json(populatedClasswork, { status: 201 });
+    } catch (assignmentError) {
+      console.error('❌ Failed to create Assignment:', assignmentError);
+      throw new Error(`Failed to create classwork: ${assignmentError.message}`);
+    }
   } catch (error) {
     console.error('Create Classwork Error:', error);
     return NextResponse.json({ message: 'Internal server error', details: error.message }, { status: 500 });

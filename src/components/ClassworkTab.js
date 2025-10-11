@@ -301,7 +301,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   };
 
   // Enhanced Activity Card Component
-  const EnhancedActivityCard = ({ assignment, form, submission, isInstructor, onEdit, onDelete, onSubmit, onOpenContent, viewMode }) => {
+  const EnhancedActivityCard = ({ assignment, form, submission, isInstructor, onEdit, onDelete, onSubmit, onOpenContent, viewMode, currentUser }) => {
     // Handle both assignments and forms
     const item = assignment || form;
     const itemType = form ? 'form' : 'assignment';
@@ -1450,6 +1450,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
       fetchForms();
     }
   }, [courseDetails, fetchAssignments, fetchForms, sortBy]);
+
 
   const handleDeleteClasswork = useCallback(async (classworkId) => {
     if (!window.confirm('Are you sure you want to delete this classwork?')) {

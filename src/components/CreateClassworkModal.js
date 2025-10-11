@@ -68,8 +68,20 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
         title,
         type,
         attachmentCount: uploadedFiles.length,
-        attachments: uploadedFiles.map(f => ({ name: f.originalName || f.fileName, url: f.url }))
+        attachments: uploadedFiles.map(f => ({
+          name: f.originalName || f.fileName,
+          url: f.url,
+          key: f.key,
+          size: f.size
+        }))
       });
+
+      // Validate uploaded files have required properties
+      for (const file of uploadedFiles) {
+        if (!file.url || !file.key) {
+          throw new Error(`Invalid file data: ${file.originalName || file.fileName} is missing url or key`);
+        }
+      }
 
       const method = initialData ? 'PUT' : 'POST';
       const url = initialData ? `/api/classwork/${initialData._id}` : `/api/courses/${courseId}/classwork`;

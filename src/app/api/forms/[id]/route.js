@@ -26,6 +26,35 @@ export async function GET(request, { params }) {
   }
 }
 
+export async function DELETE(request, { params }) {
+  try {
+    const payload = await verifyToken();
+    if (!payload) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    await connectMongo();
+    const { id } = params;
+
+    const form = await Form.findById(id);
+    if (!form) {
+      return NextResponse.json({ message: 'Form not found' }, { status: 404 });
+    }
+
+    await Form.findByIdAndDelete(id);
+
+    return NextResponse.json({
+      message: 'Form deleted successfully'
+    }, { status: 200 });
+  } catch (error) {
+    console.error('Error deleting form:', error);
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(request, { params }) {
   try {
     const payload = await verifyToken();
@@ -40,11 +69,6 @@ export async function PUT(request, { params }) {
     const form = await Form.findById(id);
     if (!form) {
       return NextResponse.json({ message: 'Form not found' }, { status: 404 });
-    }
-
-    // Check if user is the creator
-    if (form.createdBy.toString() !== payload.userId) {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
     const updatedForm = await Form.findByIdAndUpdate(

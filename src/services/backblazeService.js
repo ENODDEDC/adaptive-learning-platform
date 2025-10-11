@@ -58,6 +58,17 @@ class BackblazeService {
       const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
       const fileKey = `${folder}/${timestamp}_${sanitizedFileName}`;
 
+      // Validate file buffer
+      if (!fileBuffer || fileBuffer.length === 0) {
+        throw new Error('File buffer is empty or invalid');
+      }
+
+      // Validate file size (limit to 50MB)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (fileBuffer.length > maxSize) {
+        throw new Error(`File size exceeds limit of ${maxSize / (1024 * 1024)}MB`);
+      }
+
       console.log('Upload details:', {
         bucketName: this.bucketName,
         fileKey,

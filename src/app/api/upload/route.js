@@ -32,23 +32,40 @@ export async function POST(request) {
 
     for (const file of files) {
       if (file instanceof File) {
-        // Convert file to buffer
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        try {
+          console.log('📁 Processing file:', {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            folder
+          });
 
-        // Upload to Backblaze B2
-        const result = await backblazeService.uploadFile(
-          buffer,
-          file.name,
-          file.type,
-          folder
-        );
+          // Convert file to buffer
+          const arrayBuffer = await file.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
 
-        uploadResults.push({
-          ...result,
-          uploadedAt: new Date().toISOString(),
-          uploadedBy: payload.userId,
-        });
+          // Upload to Backblaze B2
+          const result = await backblazeService.uploadFile(
+            buffer,
+            file.name,
+            file.type,
+            folder
+          );
+
+          uploadResults.push({
+            ...result,
+            uploadedAt: new Date().toISOString(),
+            uploadedBy: payload.userId,
+          });
+
+          console.log('✅ File uploaded successfully:', result.fileName);
+        } catch (fileError) {
+          console.error('❌ Failed to upload file:', file.name, fileError);
+          throw new Error(`Failed to upload file ${file.name}: ${fileError.message}`);
+        }
+      } else {
+        console.error('❌ Invalid file object:', file);
+        throw new Error(`Invalid file object: ${file}`);
       }
     }
 

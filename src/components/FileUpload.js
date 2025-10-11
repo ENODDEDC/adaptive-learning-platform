@@ -110,11 +110,13 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork' }) =
 
       // Move uploaded files to uploadedFiles array
       setUploadedFiles(prev => [...prev, ...result.files]);
-      
+
       // Remove uploaded files from pending files
-      setFiles(prev => prev.filter(file => 
+      setFiles(prev => prev.filter(file =>
         !filesToUpload.some(uploaded => uploaded.name === file.name)
       ));
+
+      console.log('✅ Files uploaded successfully:', result.files.length);
 
       // Clear progress after a short delay
       setTimeout(() => {
