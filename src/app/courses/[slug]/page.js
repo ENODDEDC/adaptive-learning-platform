@@ -7,6 +7,7 @@ import StreamTab from '@/components/StreamTab';
 import ClassworkTab from '@/components/ClassworkTab';
 import ContentViewer from '@/components/ContentViewer.client';
 import InviteModal from '@/components/InviteModal';
+import SidePanelDocumentViewer from '@/components/SidePanelDocumentViewer';
 
 const CourseDetailPage = ({
   params,
@@ -54,11 +55,24 @@ const CourseDetailPage = ({
 
   // Document preview panel state
   const [documentPanelOpen, setDocumentPanelOpen] = useState(false);
+  const [sidePanelDocument, setSidePanelDocument] = useState(null);
 
-  // Auto-collapse sidebar when document panel opens
+  // Auto-collapse course sidebar when document panel opens
   useEffect(() => {
     if (documentPanelOpen) {
       setSidebarCollapsed(true);
+    }
+  }, [documentPanelOpen]);
+
+  // Auto-collapse main platform sidebar when document panel opens
+  useEffect(() => {
+    if (documentPanelOpen) {
+      // Dispatch event to collapse main platform sidebar
+      if (typeof window !== 'undefined') {
+        console.log('🔍 SIDEBAR: Dispatching collapseMainSidebar event');
+        window.dispatchEvent(new CustomEvent('collapseMainSidebar'));
+        console.log('🔍 SIDEBAR: Event dispatched successfully');
+      }
     }
   }, [documentPanelOpen]);
 
@@ -618,7 +632,39 @@ const CourseDetailPage = ({
         </div>
 
         {/* Main Content Layout - Optimized Proportions */}
-        <div className="flex flex-1 gap-8">
+        <div className="flex flex-1 gap-4">
+          {/* Feed Sidebar - Shows when document panel is open */}
+          {documentPanelOpen && (
+            <div className="w-[30%] bg-white border border-gray-200/60 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-md">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <h2 className="text-lg font-semibold text-gray-900">Feed</h2>
+                </div>
+                <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+                  <StreamTab
+                    courseDetails={courseDetails}
+                    isInstructor={isInstructor}
+                    streamItems={streamItems}
+                    newAnnouncementContent={newAnnouncementContent}
+                    setNewAnnouncementContent={setNewAnnouncementContent}
+                    handlePostAnnouncement={handlePostAnnouncement}
+                    handleDeleteAnnouncement={handleDeleteAnnouncement}
+                    newCommentContent={newCommentContent}
+                    setNewCommentContent={setNewCommentContent}
+                    handlePostComment={handlePostComment}
+                    documentPanelOpen={documentPanelOpen}
+                    setDocumentPanelOpen={setDocumentPanelOpen}
+                    setSidePanelDocument={setSidePanelDocument}
+                    compactMode={true}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Left Sidebar - Course Code - Hidden when document panel is open */}
           {!documentPanelOpen && (
             <div className={`bg-white border border-gray-200/60 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-md ${
@@ -741,8 +787,9 @@ const CourseDetailPage = ({
             </div>
           )}
 
-          {/* Main Content Area - Enhanced Layout */}
-          <div className="flex-1 space-y-8">
+          {/* Main Content Area - Enhanced Layout - Hidden when document panel is open */}
+          {!documentPanelOpen && (
+            <div className="flex-1 space-y-8">
             {/* Hidden button to open content viewer from custom events */}
             <button id="__openContentViewerBtn" type="button" className="hidden" />
             {/* Enhanced Navigation Tabs - Hidden when document panel is open */}
@@ -838,6 +885,7 @@ const CourseDetailPage = ({
                 handlePostComment={handlePostComment}
                 documentPanelOpen={documentPanelOpen}
                 setDocumentPanelOpen={setDocumentPanelOpen}
+                setSidePanelDocument={setSidePanelDocument}
                 onOpenContent={(content) => {
                   try {
                     console.log('🔍 WINDOW: Dispatching collapseSidebar event');
@@ -1033,6 +1081,7 @@ const CourseDetailPage = ({
               </div>
             )}
           </div>
+          )}
 
           {/* Right Sidebar - Upcoming Tasks */}
           <div className={`bg-white border border-gray-200/60 rounded-xl shadow-sm min-w-[280px] max-w-[320px] w-full h-fit sticky top-6 overflow-hidden transition-all duration-300 hover:shadow-md ${
@@ -1450,6 +1499,16 @@ const CourseDetailPage = ({
         onInvite={handleInviteUser}
         role={inviteRole}
         courseName={courseDetails?.subject || 'this course'}
+      />
+
+      {/* Side Panel Document Viewer */}
+      <SidePanelDocumentViewer
+        isOpen={documentPanelOpen}
+        onClose={() => {
+          setDocumentPanelOpen(false);
+          setSidePanelDocument(null);
+        }}
+        document={sidePanelDocument}
       />
 
     </>

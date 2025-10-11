@@ -82,12 +82,20 @@ const Layout = ({ children }) => {
   // Collapse sidebar when other components request it
   useEffect(() => {
     const handleCollapseRequest = () => setIsSidebarCollapsed(true);
+    const handleCollapseMainSidebar = () => {
+      console.log('🔍 LAYOUT: Received collapseMainSidebar event - collapsing sidebar');
+      setIsSidebarCollapsed(true);
+    };
+    
     if (typeof window !== 'undefined') {
       window.addEventListener('collapseSidebar', handleCollapseRequest);
+      window.addEventListener('collapseMainSidebar', handleCollapseMainSidebar);
+      console.log('🔍 LAYOUT: Event listeners added for sidebar collapse');
     }
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('collapseSidebar', handleCollapseRequest);
+        window.removeEventListener('collapseMainSidebar', handleCollapseMainSidebar);
       }
     };
   }, []);

@@ -7,7 +7,7 @@ import RichTextEditor from '@/components/RichTextEditor';
 import SidePanelDocumentViewer from '@/components/SidePanelDocumentViewer';
 import '@/styles/sidePanelStyles.css';
 
-const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, newAnnouncementContent, setNewAnnouncementContent, handlePostAnnouncement, handleDeleteAnnouncement, newCommentContent, setNewCommentContent, handlePostComment, onOpenContent }) => {
+const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, newAnnouncementContent, setNewAnnouncementContent, handlePostAnnouncement, handleDeleteAnnouncement, newCommentContent, setNewCommentContent, handlePostComment, onOpenContent, compactMode = false, documentPanelOpen, setDocumentPanelOpen, setSidePanelDocument: setParentSidePanelDocument }) => {
   const [pinnedItems, setPinnedItems] = useState([]);
   const [itemComments, setItemComments] = useState({});
   const [error, setError] = useState('');
@@ -17,9 +17,21 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
   const [visibleComments, setVisibleComments] = useState({});
   const [isClient, setIsClient] = useState(false);
   
-  // Side Panel Document Viewer State
+  // Side Panel Document Viewer State - Use parent state when available
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [sidePanelDocument, setSidePanelDocument] = useState(null);
+  
+  // Use parent's document panel state if provided
+  const isDocumentPanelOpen = documentPanelOpen !== undefined ? documentPanelOpen : sidePanelOpen;
+  const setIsDocumentPanelOpen = setDocumentPanelOpen || setSidePanelOpen;
+  
+  // Handle document setting - use parent's setter if available
+  const handleSetDocument = (document) => {
+    setSidePanelDocument(document);
+    if (setParentSidePanelDocument) {
+      setParentSidePanelDocument(document);
+    }
+  };
 
   const fetchComments = useCallback(async (itemId, itemType) => {
     try {
@@ -239,8 +251,8 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                           attachment={attachment}
                           onPreview={(att) => {
                             // Open document in side panel instead of full page
-                            setSidePanelDocument(att);
-                            setSidePanelOpen(true);
+                            handleSetDocument(att);
+                            setIsDocumentPanelOpen(true);
                           }}
                         />
                       ))}
@@ -508,8 +520,8 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                           attachment={attachment}
                           onPreview={(att) => {
                             // Open document in side panel instead of full page
-                            setSidePanelDocument(att);
-                            setSidePanelOpen(true);
+                            handleSetDocument(att);
+                            setIsDocumentPanelOpen(true);
                           }}
                         />
                       ))}
@@ -618,15 +630,17 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
         )}
       </div>
 
-      {/* Side Panel Document Viewer */}
-      <SidePanelDocumentViewer
-        isOpen={sidePanelOpen}
-        onClose={() => {
-          setSidePanelOpen(false);
-          setSidePanelDocument(null);
-        }}
-        document={sidePanelDocument}
-      />
+      {/* Side Panel Document Viewer - Only render if no parent control */}
+      {documentPanelOpen === undefined && (
+        <SidePanelDocumentViewer
+          isOpen={isDocumentPanelOpen}
+          onClose={() => {
+            setIsDocumentPanelOpen(false);
+            setSidePanelDocument(null);
+          }}
+          document={sidePanelDocument}
+        />
+      )}
     </div>
   );
 };
