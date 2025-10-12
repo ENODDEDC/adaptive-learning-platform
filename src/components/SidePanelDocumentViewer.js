@@ -17,6 +17,7 @@ const SidePanelDocumentViewer = ({
   const [isResizing, setIsResizing] = useState(false);
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(35);
+  
 
 
   useEffect(() => {
@@ -175,27 +176,94 @@ const SidePanelDocumentViewer = ({
             <div className="h-full w-full">
               {/* PDF Documents - Use Enhanced PDF Viewer */}
               {(document.fileType === 'pdf' || document.mimeType === 'application/pdf') && (
-                <PdfPreviewWithAI
-                  content={document}
-                  pdfUrl={document.filePath}
-                  notes={[]}
-                  injectOverrideStyles={true}
-                />
+                <div className="h-full w-full relative">
+                  {/* Quick Preview Message */}
+                  <div className="absolute top-4 left-4 right-4 z-10">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-red-800">
+                            <span className="font-medium">Quick Preview Mode</span> - 
+                            <button 
+                              onClick={() => {
+                                // Close side panel and open full preview
+                                handleClose();
+                                // Open in full modal after a short delay
+                                setTimeout(() => {
+                                  // Trigger full preview
+                                  const event = new CustomEvent('openFullPreview', { detail: document });
+                                  window.dispatchEvent(event);
+                                }, 300);
+                              }}
+                              className="ml-1 text-red-700 hover:text-red-900 underline font-medium"
+                            >
+                              Open Full Preview
+                            </button>
+                            <span className="ml-1">to access AI tools, annotations, and more features.</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <PdfPreviewWithAI
+                    content={document}
+                    pdfUrl={document.filePath}
+                    notes={[]}
+                    injectOverrideStyles={true}
+                    disableTools={true} // Disable advanced tools in preview mode
+                  />
+                </div>
               )}
               
-              {/* DOCX Documents - Use Enhanced DOCX Viewer */}
+              {/* DOCX Documents - Use ContentViewer (same as activities tab) */}
               {(document.fileType === 'docx' || 
                 document.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                 document.originalName?.toLowerCase().endsWith('.docx') ||
                 document.title?.toLowerCase().endsWith('.docx')) && (
-                <DocxPreviewWithAI
-                  content={document}
-                  htmlContent=""
-                  headings={[]}
-                  notes={[]}
-                  headingsWithNotes={new Set()}
-                  injectOverrideStyles={true}
-                />
+                <div className="h-full w-full relative">
+                  {/* Quick Preview Message */}
+                  <div className="absolute top-4 left-4 right-4 z-10">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-blue-800">
+                            <span className="font-medium">Quick Preview Mode</span> - 
+                            <button 
+                              onClick={() => {
+                                // Close side panel and open full preview
+                                handleClose();
+                                // Open in full modal after a short delay
+                                setTimeout(() => {
+                                  // Trigger full preview (you can customize this)
+                                  const event = new CustomEvent('openFullPreview', { detail: document });
+                                  window.dispatchEvent(event);
+                                }, 300);
+                              }}
+                              className="ml-1 text-blue-700 hover:text-blue-900 underline font-medium"
+                            >
+                              Open Full Preview
+                            </button>
+                            <span className="ml-1">to access AI tools, annotations, and more features.</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <ContentViewer
+                    content={document}
+                    onClose={() => {}} // Don't close the side panel
+                    isModal={false} // Embed in side panel, not as modal
+                    disableTools={true} // Disable advanced tools in preview mode
+                  />
+                </div>
               )}
               
               {/* PPTX Documents - Use Enhanced PowerPoint Viewer */}
@@ -203,13 +271,48 @@ const SidePanelDocumentViewer = ({
                 document.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
                 document.originalName?.toLowerCase().endsWith('.pptx') ||
                 document.title?.toLowerCase().endsWith('.pptx')) && (
-                <CanvasBasedPowerPointViewer
-                  filePath={document.filePath}
-                  fileName={document.originalName || document.title}
-                  contentId={document._id}
-                  onClose={() => {}} // Don't close the side panel when PowerPoint viewer closes
-                  isModal={false} // Embed in side panel, not as modal
-                />
+                <div className="h-full w-full relative">
+                  {/* Quick Preview Message */}
+                  <div className="absolute top-4 left-4 right-4 z-10">
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-orange-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-orange-800">
+                            <span className="font-medium">Quick Preview Mode</span> - 
+                            <button 
+                              onClick={() => {
+                                // Close side panel and open full preview
+                                handleClose();
+                                // Open in full modal after a short delay
+                                setTimeout(() => {
+                                  // Trigger full preview
+                                  const event = new CustomEvent('openFullPreview', { detail: document });
+                                  window.dispatchEvent(event);
+                                }, 300);
+                              }}
+                              className="ml-1 text-orange-700 hover:text-orange-900 underline font-medium"
+                            >
+                              Open Full Preview
+                            </button>
+                            <span className="ml-1">to access AI tools, annotations, and more features.</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <CanvasBasedPowerPointViewer
+                    filePath={document.filePath}
+                    fileName={document.originalName || document.title}
+                    contentId={document._id}
+                    onClose={() => {}} // Don't close the side panel when PowerPoint viewer closes
+                    isModal={false} // Embed in side panel, not as modal
+                    disableTools={true} // Disable advanced tools in preview mode
+                  />
+                </div>
               )}
               
               {/* Other file types - Fallback */}
@@ -280,19 +383,25 @@ const SidePanelDocumentViewer = ({
                 </a>
               )}
               
-              {/* Full Screen Button */}
+              {/* Full Preview Button */}
               <button
                 onClick={() => {
-                  // Open in full modal
+                  // Close side panel and open full preview
                   handleClose();
-                  // You can add logic here to open in full modal if needed
+                  // Open in full modal after a short delay
+                  setTimeout(() => {
+                    // Trigger full preview
+                    const event = new CustomEvent('openFullPreview', { detail: document });
+                    window.dispatchEvent(event);
+                  }, 300);
                 }}
                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200"
+                title="Open full preview with AI tools and advanced features"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                 </svg>
-                Full Screen
+                Full Preview
               </button>
             </div>
           </div>
