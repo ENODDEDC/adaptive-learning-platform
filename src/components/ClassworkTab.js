@@ -104,7 +104,7 @@ const removeContextMenu = () => {
 };
 
 // Form Thumbnail Component with Live Preview
-const FormThumbnail = ({ form, onPreview }) => {
+const FormThumbnail = ({ form, onPreview, isInstructor, onEdit }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
@@ -117,9 +117,17 @@ const FormThumbnail = ({ form, onPreview }) => {
     setHasError(true);
   };
 
+  const handleClick = () => {
+    if (isInstructor && onEdit) {
+      onEdit(form);
+    } else if (onPreview) {
+      onPreview(form);
+    }
+  };
+
   return (
     <button
-      onClick={() => onPreview ? onPreview(form) : null}
+      onClick={handleClick}
       className="w-full group"
     >
       {/* Form Thumbnail Container */}
@@ -174,10 +182,18 @@ const FormThumbnail = ({ form, onPreview }) => {
         {/* Hover Overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 z-20">
           <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg">
-            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
+            {isInstructor ? (
+              // Edit icon for instructors
+              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            ) : (
+              // Eye icon for students
+              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            )}
           </div>
         </div>
       </div>
@@ -1304,6 +1320,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 <FormThumbnail
                   form={item}
                   onPreview={onOpenContent}
+                  isInstructor={isInstructor}
+                  onEdit={onEdit}
                 />
               </div>
             ) : Array.isArray(item.attachments) && item.attachments.length > 0 && (
@@ -1669,6 +1687,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                     <FormThumbnail
                       form={item}
                       onPreview={onOpenContent}
+                      isInstructor={isInstructor}
+                      onEdit={onEdit}
                     />
                   </div>
                 ) : Array.isArray(item.attachments) && item.attachments.length > 0 ? (
