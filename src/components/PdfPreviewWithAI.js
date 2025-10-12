@@ -19,7 +19,8 @@ const PdfPreviewWithAI = ({
   content,
   pdfUrl,
   notes = [],
-  injectOverrideStyles
+  injectOverrideStyles,
+  disableTools = false
 }) => {
   const [showAITutor, setShowAITutor] = useState(false);
   const [pdfContent, setPdfContent] = useState('');
@@ -649,15 +650,17 @@ DEBUG INFO:
           </div>
         )}
 
-        {/* Document Tools Sidebar */}
-        <DocumentToolsSidebar
-          onAITutorClick={handleAITutorClick}
-          onNotesClick={() => {
-            if (floatingNotesRef.current) {
-              floatingNotesRef.current.toggleNotesPanel();
-            }
-          }}
-        />
+        {/* Document Tools Sidebar - Only show if tools are not disabled */}
+        {!disableTools && (
+          <DocumentToolsSidebar
+            onAITutorClick={handleAITutorClick}
+            onNotesClick={() => {
+              if (floatingNotesRef.current) {
+                floatingNotesRef.current.toggleNotesPanel();
+              }
+            }}
+          />
+        )}
 
         {/* Main content - PDF Viewer */}
         <div className="flex-1 relative">

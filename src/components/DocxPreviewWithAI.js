@@ -21,7 +21,8 @@ const DocxPreviewWithAI = ({
   headings = [],
   notes = [],
   headingsWithNotes = new Set(),
-  injectOverrideStyles
+  injectOverrideStyles,
+  disableTools = false
 }) => {
   const [showAITutor, setShowAITutor] = useState(false);
   const [docxContent, setDocxContent] = useState('');
@@ -708,16 +709,18 @@ AI Narrator works best with instructional content, lessons, or study materials.`
           </aside>
         )}
 
-        {/* Document Tools Sidebar */}
-        <DocumentToolsSidebar
-          onAITutorClick={handleAITutorClick}
-          onNotesClick={() => {
-            // Toggle notes panel using the ref
-            if (floatingNotesRef.current) {
-              floatingNotesRef.current.toggleNotesPanel();
-            }
-          }}
-        />
+        {/* Document Tools Sidebar - Only show if tools are not disabled */}
+        {!disableTools && (
+          <DocumentToolsSidebar
+            onAITutorClick={handleAITutorClick}
+            onNotesClick={() => {
+              // Toggle notes panel using the ref
+              if (floatingNotesRef.current) {
+                floatingNotesRef.current.toggleNotesPanel();
+              }
+            }}
+          />
+        )}
 
         {/* Main content */}
         <div className="flex-1 relative">
@@ -945,16 +948,18 @@ AI Narrator works best with instructional content, lessons, or study materials.`
 
         </div>
 
-        {/* Document Tools Sidebar */}
-        <DocumentToolsSidebar
-          onAITutorClick={handleAITutorClick}
-          onNotesClick={() => {
-            // Toggle notes panel using the ref
-            if (floatingNotesRef.current) {
-              floatingNotesRef.current.toggleNotesPanel();
-            }
-          }}
-        />
+        {/* Document Tools Sidebar - Only show if tools are not disabled */}
+        {!disableTools && (
+          <DocumentToolsSidebar
+            onAITutorClick={handleAITutorClick}
+            onNotesClick={() => {
+              // Toggle notes panel using the ref
+              if (floatingNotesRef.current) {
+                floatingNotesRef.current.toggleNotesPanel();
+              }
+            }}
+          />
+        )}
       </div>
 
       {/* Enhanced FloatingNotes component */}
