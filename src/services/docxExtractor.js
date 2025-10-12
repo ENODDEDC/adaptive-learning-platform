@@ -15,16 +15,113 @@ class DocxExtractor {
   }
 
   /**
-   * Extract text with basic formatting (HTML)
+   * Extract text with enhanced formatting (HTML)
    */
   async extractHTML(docxBuffer) {
     try {
-      const result = await mammoth.convertToHtml({ buffer: docxBuffer });
-      return result.value;
+      // Enhanced style mapping for better formatting preservation
+      const styleMap = [
+        // Paragraph styles
+        "p[style-name='Title'] => h1:fresh",
+        "p[style-name='Heading 1'] => h1:fresh",
+        "p[style-name='Heading 2'] => h2:fresh", 
+        "p[style-name='Heading 3'] => h3:fresh",
+        "p[style-name='Heading 4'] => h4:fresh",
+        "p[style-name='Heading 5'] => h5:fresh",
+        "p[style-name='Heading 6'] => h6:fresh",
+        "p[style-name='Subtitle'] => p.subtitle:fresh",
+        "p[style-name='Quote'] => blockquote:fresh",
+        "p[style-name='Intense Quote'] => blockquote.intense:fresh",
+        
+        // Character styles
+        "r[style-name='Strong'] => strong",
+        "r[style-name='Emphasis'] => em",
+        "r[style-name='Subtle Emphasis'] => em.subtle",
+        "r[style-name='Intense Emphasis'] => strong.intense",
+        
+        // List styles
+        "p[style-name='List Paragraph'] => p.list-paragraph",
+        
+        // Default paragraph with better spacing
+        "p => p:fresh"
+      ];
+
+      const options = {
+        buffer: docxBuffer,
+        styleMap: styleMap,
+        
+        // Transform functions for better formatting
+        transformDocument: mammoth.transforms.paragraph(function(paragraph) {
+          // Add proper spacing classes based on paragraph type
+          if (paragraph.styleId) {
+            switch (paragraph.styleId) {
+              case 'Title':
+              case 'Heading1':
+                return { ...paragraph, styleName: 'document-title' };
+              case 'Heading2':
+                return { ...paragraph, styleName: 'section-heading' };
+              case 'Heading3':
+                return { ...paragraph, styleName: 'subsection-heading' };
+              default:
+                return paragraph;
+            }
+          }
+          return paragraph;
+        }),
+        
+        // Better image handling
+        convertImage: mammoth.images.imgElement(function(image) {
+          return image.read("base64").then(function(imageBuffer) {
+            return {
+              src: "data:" + image.contentType + ";base64," + imageBuffer,
+              alt: image.altText || "Document image",
+              class: "document-image"
+            };
+          });
+        })
+      };
+
+      const result = await mammoth.convertToHtml(options);
+      
+      // Post-process HTML for better formatting
+      let html = result.value;
+      
+      // Add semantic classes and improve structure
+      html = this.enhanceHtmlStructure(html);
+      
+      return html;
     } catch (error) {
       console.error('Error extracting HTML from DOCX:', error);
       throw new Error('Failed to extract HTML from DOCX file');
     }
+  }
+
+  /**
+   * Enhance HTML structure for better formatting
+   */
+  enhanceHtmlStructure(html) {
+    // Add proper paragraph spacing and classes
+    html = html.replace(/<p><\/p>/g, '<p class="empty-paragraph">&nbsp;</p>');
+    
+    // Enhance headings with proper hierarchy
+    html = html.replace(/<h1>/g, '<h1 class="document-title">');
+    html = html.replace(/<h2>/g, '<h2 class="section-heading">');
+    html = html.replace(/<h3>/g, '<h3 class="subsection-heading">');
+    
+    // Add classes to paragraphs for better styling
+    html = html.replace(/<p>(?!<\/p>)/g, '<p class="document-paragraph">');
+    
+    // Enhance lists
+    html = html.replace(/<ul>/g, '<ul class="document-list">');
+    html = html.replace(/<ol>/g, '<ol class="document-list numbered">');
+    
+    // Enhance tables
+    html = html.replace(/<table>/g, '<table class="document-table">');
+    
+    // Add wrapper for better document structure
+    html = `<div class="document-content">${html}</div>`;
+    
+    return html;
   }
 
   /**

@@ -34,9 +34,17 @@ export async function POST(request) {
       throw new Error('DOCX buffer is empty');
     }
 
-    // Extract structured content
-    const extractedContent = await docxExtractor.extractStructuredContent(docxBuffer);
-    const stats = docxExtractor.getDocumentStats(extractedContent.rawText);
+    // Extract enhanced content with better formatting
+    const rawText = await docxExtractor.extractText(docxBuffer);
+    const enhancedHtml = await docxExtractor.extractHTML(docxBuffer);
+    const structuredContent = await docxExtractor.extractStructuredContent(docxBuffer);
+    const stats = docxExtractor.getDocumentStats(rawText);
+
+    const extractedContent = {
+      rawText: rawText,
+      html: enhancedHtml, // Use enhanced HTML with better formatting
+      sections: structuredContent.sections
+    };
 
     console.log('✅ DOCX content extracted successfully');
     console.log('📊 Document stats:', stats);
