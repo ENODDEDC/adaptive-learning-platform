@@ -119,9 +119,13 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit }) => {
 
   const handleClick = () => {
     if (isInstructor && onEdit) {
+      // For instructors: open form editor
       onEdit(form);
-    } else if (onPreview) {
-      onPreview(form);
+    } else {
+      // For students: open form preview in new tab (same as "Preview Form" context menu)
+      if (form._id) {
+        window.open(`/forms/${form._id}`, '_blank');
+      }
     }
   };
 
