@@ -111,7 +111,7 @@ const injectOverrideStyles = (rawHtml) => {
 };
 
 // --- Attachment Preview Component ---
-const AttachmentPreviewContent = ({ attachment }) => {
+const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [htmlContent, setHtmlContent] = useState('');
   const [error, setError] = useState(null);
@@ -453,6 +453,7 @@ const AttachmentPreviewContent = ({ attachment }) => {
           pdfUrl={attachment.url || attachment.filePath}
           notes={notes}
           injectOverrideStyles={injectOverrideStyles}
+          disableTools={disableTools}
         />
       );
 
@@ -465,6 +466,7 @@ const AttachmentPreviewContent = ({ attachment }) => {
           notes={notes}
           headingsWithNotes={headingsWithNotes}
           injectOverrideStyles={injectOverrideStyles}
+          disableTools={disableTools}
         />
       );
 
@@ -521,7 +523,7 @@ const AttachmentPreviewContent = ({ attachment }) => {
 };
 
 // --- Main Component ---
-const ContentViewer = ({ content, onClose, isModal = true }) => {
+const ContentViewer = ({ content, onClose, isModal = true, disableTools = false }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [htmlContent, setHtmlContent] = useState('');
   const [error, setError] = useState(null);
@@ -1114,6 +1116,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
               notes={notes}
               headingsWithNotes={headingsWithNotes}
               injectOverrideStyles={injectOverrideStyles}
+              disableTools={disableTools}
             />
           );
 
@@ -1224,7 +1227,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
               
               {/* Current attachment preview - reuse full viewer for parity */}
               <div className="flex-1 min-h-0">
-                <ContentViewer content={currentAttachment} onClose={onClose} isModal={false} />
+                <ContentViewer content={currentAttachment} onClose={onClose} isModal={false} disableTools={disableTools} />
               </div>
               
               {/* Attachment list removed (pagination arrows are sufficient) */}

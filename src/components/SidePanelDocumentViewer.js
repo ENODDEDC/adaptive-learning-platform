@@ -259,6 +259,7 @@ const SidePanelDocumentViewer = ({
                       content={document}
                       onClose={() => { }} // Don't close the side panel
                       isModal={false} // Embed in side panel, not as modal
+                      disableTools={true} // Disable document tools in preview mode
                     />
                   </div>
                 )}
