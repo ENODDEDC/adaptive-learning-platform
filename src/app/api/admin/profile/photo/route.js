@@ -4,7 +4,7 @@ import User from '@/models/User';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '@/config/firebaseConfig'; // Ensure this is correctly imported
-import { verifyAdminToken } from '@/utils/auth';
+import { verifyAdmin } from '@/utils/auth';
 
 // Initialize Firebase if not already initialized
 let firebaseApp;
@@ -16,11 +16,9 @@ if (!initializeApp.length) { // Check if any app is already initialized
 
 const storage = getStorage(firebaseApp);
 
-// Helper function to verify admin token
-
 export async function POST(req) {
   await connectMongoDB();
-  const adminInfo = await verifyAdminToken();
+  const adminInfo = await verifyAdmin(req);
   if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }

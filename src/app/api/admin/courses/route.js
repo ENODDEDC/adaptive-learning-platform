@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectMongoDB from '@/config/mongoConfig';
 import Course from '@/models/Course';
 import { verifyAdminToken } from '@/utils/auth';
+import ActivityLogger from '@/utils/activityLogger';
 
 export async function GET(req) {
   await connectMongoDB();
@@ -52,6 +53,15 @@ export async function POST(req) {
       uniqueKey,
       createdBy: adminId,
     });
+
+    // Log the course creation activity
+    try {
+      await ActivityLogger.logCourseCreated(adminId, newCourse);
+    } catch (activityError) {
+      console.error('Error logging course creation activity:', activityError);
+      // Don't fail the course creation if activity logging fails
+    }
+
     return NextResponse.json({ message: 'Course created successfully', course: newCourse }, { status: 201 });
   } catch (error) {
     console.error('Error creating course:', error);
@@ -79,12 +89,30 @@ export async function PUT(req) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
     }
 
+    const oldData = {
+      subject: course.subject,
+      section: course.section,
+      teacherName: course.teacherName,
+      coverColor: course.coverColor,
+      uniqueKey: course.uniqueKey
+    };
+
     course.subject = subject;
     course.section = section;
     course.teacherName = teacherName;
     course.coverColor = coverColor;
     course.uniqueKey = uniqueKey;
     await course.save();
+
+    // Log the course update activity
+    try {
+      await ActivityLogger.logCourseUpdated(adminId, id, course.subject, oldData, {
+        subject, section, teacherName, coverColor, uniqueKey
+      });
+    } catch (activityError) {
+      console.error('Error logging course update activity:', activityError);
+      // Don't fail the course update if activity logging fails
+    }
 
     return NextResponse.json({ message: 'Course updated successfully', course });
   } catch (error) {
@@ -113,6 +141,15 @@ export async function DELETE(req) {
     if (!course) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
     }
+
+    // Log the course deletion activity
+    try {
+      await ActivityLogger.logCourseDeleted(adminId, id, course.subject);
+    } catch (activityError) {
+      console.error('Error logging course deletion activity:', activityError);
+      // Don't fail the course deletion if activity logging fails
+    }
+
     return NextResponse.json({ message: 'Course deleted successfully' });
   } catch (error) {
     console.error('Error deleting course:', error);

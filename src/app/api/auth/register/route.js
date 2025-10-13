@@ -4,6 +4,7 @@ import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
 import { otpEmailTemplate } from '@/emails/OtpEmail';
+import ActivityLogger from '@/utils/activityLogger';
 
 export async function POST(req) {
   try {
@@ -33,6 +34,18 @@ export async function POST(req) {
     });
 
     await newUser.save();
+
+    // Log the user registration activity
+    try {
+      await ActivityLogger.logUserRegistration(newUser._id, {
+        name,
+        surname,
+        email
+      });
+    } catch (activityError) {
+      console.error('Error logging user registration activity:', activityError);
+      // Don't fail registration if activity logging fails
+    }
 
     // Skip email sending if SMTP is not configured
     if (process.env.SMTP_HOST && process.env.SMTP_USER) {

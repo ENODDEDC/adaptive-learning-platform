@@ -9,15 +9,15 @@ body {
 }
 @layer components {
   .input-field {
-    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm;
+    @apply block w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm;
   }
 
   .btn-primary {
-    @apply w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+    @apply flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
   }
 
   .card {
-    @apply bg-white shadow-md rounded-lg;
+    @apply bg-white rounded-lg shadow-md;
   }
 
   /* PowerPoint Viewer - Complete scrollbar elimination */
@@ -1125,6 +1125,268 @@ body {
     transform: rotate(45deg);
     box-shadow: -3px -3px 6px rgba(0, 0, 0, 0.1);
     z-index: 9998;
+  }
+
+  /* Admin Panel Specific Animations */
+  @keyframes admin-card-entrance {
+    0% {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes admin-sidebar-slide {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes admin-navbar-fade {
+    0% {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-button-glow {
+    0%, 100% {
+      box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+    }
+  }
+
+  @keyframes admin-table-row-hover {
+    0% {
+      background-color: transparent;
+      transform: scale(1);
+    }
+    100% {
+      background-color: rgba(139, 92, 246, 0.05);
+      transform: scale(1.01);
+    }
+  }
+
+  @keyframes admin-loading-pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.05);
+    }
+  }
+
+  @keyframes admin-success-checkmark {
+    0% {
+      stroke-dasharray: 0, 100;
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      stroke-dasharray: 100, 0;
+      opacity: 1;
+    }
+  }
+
+  @keyframes admin-modal-backdrop-fade {
+    0% {
+      opacity: 0;
+      backdrop-filter: blur(0px);
+    }
+    100% {
+      opacity: 1;
+      backdrop-filter: blur(8px);
+    }
+  }
+
+  .animate-admin-card-entrance {
+    animation: admin-card-entrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .animate-admin-sidebar-slide {
+    animation: admin-sidebar-slide 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .animate-admin-navbar-fade {
+    animation: admin-navbar-fade 0.5s ease-out forwards;
+  }
+
+  .animate-admin-button-glow:hover {
+    animation: admin-button-glow 2s ease-in-out infinite;
+  }
+
+  .animate-admin-table-row-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-admin-table-row-hover:hover {
+    animation: admin-table-row-hover 0.3s ease-out forwards;
+  }
+
+  .animate-admin-loading-pulse {
+    animation: admin-loading-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Enhanced pulse animation for stats */
+  @keyframes pulse-gentle {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  .animate-pulse-gentle {
+    animation: pulse-gentle 2s ease-in-out infinite;
+  }
+
+  .animate-admin-success-checkmark {
+    stroke-dasharray: 0, 100;
+    animation: admin-success-checkmark 0.8s ease-out forwards;
+  }
+
+  .animate-admin-modal-backdrop-fade {
+    animation: admin-modal-backdrop-fade 0.3s ease-out forwards;
+  }
+
+  /* Staggered animations for admin cards */
+  .admin-card:nth-child(1) { animation-delay: 0.1s; }
+  .admin-card:nth-child(2) { animation-delay: 0.2s; }
+  .admin-card:nth-child(3) { animation-delay: 0.3s; }
+  .admin-card:nth-child(4) { animation-delay: 0.4s; }
+  .admin-card:nth-child(n+5) { animation-delay: 0.5s; }
+
+  /* Enhanced admin button interactions */
+  .admin-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .admin-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  .admin-btn:active::before {
+    width: 300px;
+    height: 300px;
+  }
+
+  /* Admin table enhancements */
+  .admin-table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .admin-table th {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    backdrop-filter: blur(8px);
+    z-index: 10;
+  }
+
+  .admin-table tbody tr {
+    transition: all 0.2s ease;
+  }
+
+  .admin-table tbody tr:hover {
+    transform: translateX(4px);
+    box-shadow: 4px 0 0 -2px rgba(139, 92, 246, 0.3);
+  }
+
+  /* Admin form enhancements */
+  .admin-form-input {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .admin-form-input:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  }
+
+  /* Admin notification badges */
+  .admin-notification-badge {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .admin-notification-badge::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%);
+    animation: admin-notification-pulse 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes admin-notification-pulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    50% {
+      transform: scale(1.2);
+      opacity: 0.3;
+    }
+  }
+
+  /* Admin sidebar enhancements */
+  .admin-sidebar-link {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .admin-sidebar-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+    transition: width 0.3s ease;
+    z-index: -1;
+  }
+
+  .admin-sidebar-link:hover::before,
+  .admin-sidebar-link.active::before {
+    width: 100%;
+  }
+
+  .admin-sidebar-link.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-right: 3px solid #8b5cf6;
   }
 
   /* Ultra-Subtle Scrollbar for Sidebar Navigation - Modern UX Approach */

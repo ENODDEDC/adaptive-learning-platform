@@ -55,3 +55,29 @@ export async function isAuthenticated() {
     return false;
   }
 }
+
+export async function verifyAdmin(req) {
+  // 1. Try cookie-based auth
+  let adminInfo = await verifyAdminToken();
+  if (adminInfo) {
+    return adminInfo;
+  }
+
+  // 2. Try header-based auth
+  const authHeader = req.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+      const { payload } = await jose.jwtVerify(token, secret);
+      if (payload.role === 'admin') {
+        return payload;
+      }
+    } catch (error) {
+      console.error('Header token verification failed:', error);
+      return null;
+    }
+  }
+
+  return null;
+}

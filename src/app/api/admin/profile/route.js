@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/config/mongoConfig';
 import User from '@/models/User';
-import { verifyAdminToken } from '@/utils/auth';
+import { verifyAdmin } from '@/utils/auth';
 
 export async function GET(req) {
   await connectMongoDB();
-  const adminInfo = await verifyAdminToken();
+  const adminInfo = await verifyAdmin(req);
+
   if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
-  const adminId = adminInfo.userId;
 
   try {
-    const admin = await User.findById(adminId, '-password'); // Exclude password
+    const admin = await User.findById(adminInfo.userId, '-password');
     if (!admin) {
       return NextResponse.json({ message: 'Admin not found' }, { status: 404 });
     }
@@ -25,11 +25,11 @@ export async function GET(req) {
 
 export async function PUT(req) {
   await connectMongoDB();
-  const adminInfo = await verifyAdminToken();
+  const adminInfo = await verifyAdmin(req);
+
   if (!adminInfo) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
-  const adminId = adminInfo.userId;
 
   const { name, surname, email, photoURL } = await req.json();
 
