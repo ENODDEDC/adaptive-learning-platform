@@ -141,15 +141,15 @@ const ProfessionalCourseCard = ({
             {/* Course stats row */}
             <div className="grid grid-cols-3 gap-3">
               <div className="stat-item text-center p-3 bg-blue-50/80 rounded-xl border border-blue-100 transition-all duration-300 hover:bg-blue-100/90 animate-stat-lift">
-                <div className="text-lg font-bold text-blue-600 mb-0.5">24</div>
+                <div className="text-lg font-bold text-blue-600 mb-0.5">{course.studentCount || 0}</div>
                 <div className="text-xs font-medium text-blue-700 uppercase tracking-wide">Students</div>
               </div>
               <div className="stat-item text-center p-3 bg-purple-50/80 rounded-xl border border-purple-100 transition-all duration-300 hover:bg-purple-100/90 animate-stat-lift">
-                <div className="text-lg font-bold text-purple-600 mb-0.5">12</div>
+                <div className="text-lg font-bold text-purple-600 mb-0.5">{course.moduleCount || 0}</div>
                 <div className="text-xs font-medium text-purple-700 uppercase tracking-wide">Modules</div>
               </div>
               <div className="stat-item text-center p-3 bg-emerald-50/80 rounded-xl border border-emerald-100 transition-all duration-300 hover:bg-emerald-100/90 animate-stat-lift">
-                <div className="text-lg font-bold text-emerald-600 mb-0.5">8</div>
+                <div className="text-lg font-bold text-emerald-600 mb-0.5">-</div>
                 <div className="text-xs font-medium text-emerald-700 uppercase tracking-wide">Weeks</div>
               </div>
             </div>

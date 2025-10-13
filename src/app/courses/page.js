@@ -265,6 +265,8 @@ const CourseContent = () => {
         progress: 0, // Start with 0% progress - will increase as users engage
         color: course.coverColor || '#60a5fa',
         progressColor: course.coverColor || '#60a5fa',
+        studentCount: course.enrolledUsers?.length || 0, // Use actual enrolled students only (no +1 for creator)
+        moduleCount: course.moduleCount || 0,   // Use real module count from API
       };
     });
 

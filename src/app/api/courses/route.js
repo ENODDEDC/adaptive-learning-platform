@@ -1,5 +1,6 @@
 import connectMongoDB from '@/config/mongoConfig';
 import Course from '@/models/Course';
+import Content from '@/models/Content';
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/utils/auth';
 import { withPerformanceMonitoring } from '@/utils/performanceMonitor';
@@ -88,7 +89,25 @@ const monitoredGET = withPerformanceMonitoring(async (request) => {
     ]
   }).lean();
 
-  const responseData = { courses };
+  // Get student count and module count for each course
+  const coursesWithStats = await Promise.all(courses.map(async (course) => {
+    // Count enrolled students (including the creator)
+    const studentCount = (course.enrolledUsers?.length || 0) + 1; // +1 for the creator
+    
+    // Count modules (content files) for this course
+    const moduleCount = await Content.countDocuments({ 
+      courseId: course._id,
+      isActive: true 
+    });
+
+    return {
+      ...course,
+      studentCount,
+      moduleCount
+    };
+  }));
+
+  const responseData = { courses: coursesWithStats };
 
   // Cache the result
   setCachedCourses(cacheKey, responseData);
