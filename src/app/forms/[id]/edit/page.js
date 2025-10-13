@@ -100,7 +100,7 @@ const FormEditPage = ({ params }) => {
 
       const userData = await authRes.json();
 
-      // Get the form to find which course it belongs to
+      // Get the form to check who created it
       const formRes = await fetch(`/api/forms/${id}`, {
         credentials: 'include'
       });
@@ -113,21 +113,15 @@ const FormEditPage = ({ params }) => {
       }
 
       const formData = await formRes.json();
-      const courseId = formData.form.courseId;
 
-      // Check if user has access to this course
-      // If they can see the course card, they can edit forms
-      const courseRes = await fetch(`/api/courses/${courseId}`, {
-        credentials: 'include'
-      });
-
-      if (courseRes.ok) {
-        // User has access to the course, allow form editing
+      // Check if current user is the creator of this form
+      if (formData.form.createdBy._id === userData._id) {
+        // User is the creator, allow form editing
         setIsAuthorized(true);
         fetchForm();
       } else {
-        // User doesn't have access to the course
-        setError('Access denied. You do not have access to this course.');
+        // User is not the creator, deny access
+        setError('Access denied. Only the form creator can edit this form.');
         setIsAuthorized(false);
       }
     } catch (err) {
