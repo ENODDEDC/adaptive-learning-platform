@@ -5,6 +5,11 @@ export async function middleware(request) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('token')?.value;
 
+  // Skip middleware for API routes except those explicitly listed
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/schedule') && !pathname.startsWith('/api/courses') && !pathname.startsWith('/api/notifications')) {
+    return NextResponse.next();
+  }
+
   const protectedRoutes = ['/home', '/courses', '/ask', '/text-to-docs', '/admin'];
   const authRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
 

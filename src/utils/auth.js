@@ -3,8 +3,9 @@ import * as jose from 'jose';
 
 export async function verifyToken() {
   try {
-    // First try to get token from cookies (server-side)
-    const token = (await cookies()).get('token')?.value;
+    // Check both 'token' and 'adminToken' cookies
+    const cookieStore = await cookies();
+    const token = cookieStore.get('adminToken')?.value || cookieStore.get('token')?.value;
 
     if (!token) {
       return null;
