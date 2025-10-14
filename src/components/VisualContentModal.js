@@ -194,6 +194,46 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
     }
   };
 
+  const getVisualConfig = (type) => {
+    switch (type) {
+      case 'diagram':
+        return {
+          color: 'from-blue-500 to-blue-600',
+          hoverColor: 'from-blue-600 to-blue-700',
+          activeColor: 'bg-blue-600',
+          icon: DocumentTextIcon
+        };
+      case 'infographic':
+        return {
+          color: 'from-emerald-500 to-emerald-600',
+          hoverColor: 'from-emerald-600 to-emerald-700',
+          activeColor: 'bg-emerald-600',
+          icon: ChartBarIcon
+        };
+      case 'mindmap':
+        return {
+          color: 'from-purple-500 to-purple-600',
+          hoverColor: 'from-purple-600 to-purple-700',
+          activeColor: 'bg-purple-600',
+          icon: MapIcon
+        };
+      case 'flowchart':
+        return {
+          color: 'from-orange-500 to-orange-600',
+          hoverColor: 'from-orange-600 to-orange-700',
+          activeColor: 'bg-orange-600',
+          icon: ArrowPathIcon
+        };
+      default:
+        return {
+          color: 'from-gray-500 to-gray-600',
+          hoverColor: 'from-gray-600 to-gray-700',
+          activeColor: 'bg-gray-600',
+          icon: PhotoIcon
+        };
+    }
+  };
+
   const renderVisualContent = (type) => {
     const visual = visuals[type];
     
@@ -356,74 +396,98 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
 
-        <div className="inline-block w-full max-w-6xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-500 to-indigo-600">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <PhotoIcon className="w-6 h-6 text-white" />
+        <div className="inline-block w-full max-w-7xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-2xl">
+          {/* Enhanced Header */}
+          <div className="flex items-center justify-between p-8 border-b border-gray-200 bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 relative overflow-hidden">
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl shadow-2xl">
+                <PhotoIcon className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-white">Visual Learning Content</h2>
-                <p className="text-purple-100 text-sm">{fileName}</p>
-                <p className="text-purple-200 text-xs mt-1">AI-generated visual representations</p>
+                <h2 className="text-2xl font-bold text-white mb-1">Visual Learning Content</h2>
+                <p className="text-purple-100 text-base font-medium">{fileName}</p>
+                <p className="text-purple-200 text-sm mt-1">AI-powered visual representations</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+              className="p-3 text-white hover:bg-white/20 rounded-2xl transition-all duration-200 backdrop-blur-sm relative z-10"
             >
-              <XMarkIcon className="w-6 h-6" />
+              <XMarkIcon className="w-7 h-7" />
             </button>
           </div>
 
-          {/* Tabs */}
-          <div className="flex border-b border-gray-200 bg-gray-50">
+          {/* Enhanced Tabs */}
+          <div className="flex border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
             {[
-              { id: 'diagram', label: 'Diagram', icon: DocumentTextIcon },
-              { id: 'infographic', label: 'Infographic', icon: ChartBarIcon },
-              { id: 'mindmap', label: 'Mind Map', icon: MapIcon },
-              { id: 'flowchart', label: 'Flowchart', icon: ArrowPathIcon }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? 'text-purple-600 border-b-2 border-purple-600 bg-white'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
+              { id: 'diagram', label: 'Diagram', icon: DocumentTextIcon, config: getVisualConfig('diagram') },
+              { id: 'infographic', label: 'Infographic', icon: ChartBarIcon, config: getVisualConfig('infographic') },
+              { id: 'mindmap', label: 'Mind Map', icon: MapIcon, config: getVisualConfig('mindmap') },
+              { id: 'flowchart', label: 'Flowchart', icon: ArrowPathIcon, config: getVisualConfig('flowchart') }
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-3 px-6 py-4 font-semibold transition-all duration-300 border-b-4 ${
+                    isActive
+                      ? `${tab.config.activeColor} text-white border-current shadow-lg transform scale-105`
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/50 border-transparent hover:border-gray-300'
+                  }`}
+                  title={`${tab.label}: ${getVisualDescription(tab.id)}`}
+                >
+                  <div className={`p-1.5 rounded-lg ${isActive ? 'bg-white/20' : 'bg-gray-200'}`}>
+                    <tab.icon className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-bold">{tab.label}</div>
+                    <div className={`text-xs ${isActive ? 'text-white/90' : 'text-gray-500'}`}>
+                      {getVisualDescription(tab.id).split(' ').slice(0, 3).join(' ')}...
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Content */}
-          <div className="p-6 max-h-[70vh] overflow-y-auto">
+          {/* Enhanced Content */}
+          <div className="p-8 max-h-[75vh] overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
             {generatingAll && (
-              <div className="flex items-center justify-center py-12">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-gray-600">Generating visual content...</span>
+              <div className="flex items-center justify-center py-16">
+                <div className="flex items-center gap-4 bg-white p-6 rounded-2xl shadow-xl border border-gray-200">
+                  <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-lg font-medium text-gray-700">Generating visual content...</span>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 p-4 rounded-lg mb-6">
-                <p className="text-red-800">{error}</p>
+              <div className="bg-red-50 border-2 border-red-200 p-6 rounded-2xl mb-8 shadow-lg">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <XMarkIcon className="w-5 h-5 text-red-600" />
+                  </div>
+                  <p className="text-red-800 font-semibold">Generation Failed</p>
+                </div>
+                <p className="text-red-700 mb-4">{error}</p>
                 <button
                   onClick={generateAllVisuals}
-                  className="mt-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
+                  className="px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   Try Again
                 </button>
               </div>
             )}
 
-            {!generatingAll && !error && getTabContent()}
+            {!generatingAll && !error && (
+              <div className="max-w-7xl mx-auto">
+                <div className="w-full">
+                  {getTabContent()}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer */}

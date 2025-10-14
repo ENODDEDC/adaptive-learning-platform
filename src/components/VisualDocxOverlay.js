@@ -25,10 +25,46 @@ const VisualDocxOverlay = ({
   const [concepts, setConcepts] = useState(null);
 
   const visualTypes = [
-    { key: 'diagram', name: 'Diagram', icon: PhotoIcon, description: 'Structured concept diagram' },
-    { key: 'infographic', name: 'Infographic', icon: DocumentTextIcon, description: 'Visual information display' },
-    { key: 'mindmap', name: 'Mind Map', icon: PhotoIcon, description: 'Radial concept map' },
-    { key: 'flowchart', name: 'Flowchart', icon: DocumentTextIcon, description: 'Process flow diagram' }
+    {
+      key: 'diagram',
+      name: 'Diagram',
+      icon: PhotoIcon,
+      description: 'Concept relationships & structures',
+      tooltip: 'Creates visual concept maps showing relationships between ideas',
+      color: 'from-blue-500 to-blue-600',
+      hoverColor: 'from-blue-600 to-blue-700',
+      activeColor: 'bg-blue-600'
+    },
+    {
+      key: 'infographic',
+      name: 'Infographic',
+      icon: DocumentTextIcon,
+      description: 'Summary with visual elements & icons',
+      tooltip: 'Creates engaging summaries with icons, charts, and visual elements',
+      color: 'from-emerald-500 to-emerald-600',
+      hoverColor: 'from-emerald-600 to-emerald-700',
+      activeColor: 'bg-emerald-600'
+    },
+    {
+      key: 'mindmap',
+      name: 'Mind Map',
+      icon: PhotoIcon,
+      description: 'Radial concept hierarchy & connections',
+      tooltip: 'Creates radial maps showing concept hierarchy and connections',
+      color: 'from-purple-500 to-purple-600',
+      hoverColor: 'from-purple-600 to-purple-700',
+      activeColor: 'bg-purple-600'
+    },
+    {
+      key: 'flowchart',
+      name: 'Flowchart',
+      icon: DocumentTextIcon,
+      description: 'Step-by-step process visualization',
+      tooltip: 'Creates process flows with decision points and step sequences',
+      color: 'from-orange-500 to-orange-600',
+      hoverColor: 'from-orange-600 to-orange-700',
+      activeColor: 'bg-orange-600'
+    }
   ];
 
   const currentVisualType = visualTypes.find(v => v.key === activeVisualType) || visualTypes[0];
@@ -208,13 +244,14 @@ const VisualDocxOverlay = ({
 
     // Handle normal image content
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {visual.imageData && (
-          <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-lg">
             <img
               src={`data:image/png;base64,${visual.imageData}`}
               alt={`${currentVisualType.name} for ${fileName}`}
-              className="w-full h-auto max-h-96 object-contain"
+              className="w-full h-auto object-contain"
+              style={{ maxHeight: '500px' }}
             />
           </div>
         )}
@@ -247,66 +284,102 @@ const VisualDocxOverlay = ({
   return (
     <div className="absolute inset-0 bg-white z-50 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+      <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50">
         <div className="flex items-center space-x-4">
           <button
             onClick={onClose}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
             title="Back to document"
           >
             <ChevronLeftIcon className="w-6 h-6" />
           </button>
-          
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Visual Learning Mode</h2>
-            <p className="text-sm text-gray-600">{fileName}</p>
+
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg">
+              <PhotoIcon className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Visual Learning Mode</h2>
+              <p className="text-sm text-gray-600 font-medium">{fileName}</p>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <button
             onClick={generateAllVisuals}
             disabled={loading}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 shadow-lg hover:shadow-xl font-medium"
             title="Regenerate all visuals"
           >
-            <ArrowPathIcon className="w-5 h-5" />
+            {loading ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Generating...</span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <ArrowPathIcon className="w-4 h-4" />
+                <span>Generate All</span>
+              </div>
+            )}
           </button>
         </div>
       </div>
 
       {/* Visual Type Selector */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <div className="flex items-center space-x-2 overflow-x-auto">
+      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+        <div className="flex items-center justify-center space-x-3 overflow-x-auto pb-2">
           {visualTypes.map((type) => {
             const Icon = type.icon;
             const isActive = type.key === activeVisualType;
             const hasVisual = visuals[type.key];
-            
+
             return (
-              <button
-                key={type.key}
-                onClick={() => handleVisualTypeChange(type.key)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 whitespace-nowrap ${
-                  isActive 
-                    ? 'bg-purple-600 text-white shadow-lg' 
-                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{type.name}</span>
-                {hasVisual && (
-                  <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-green-500'}`} />
+              <div key={type.key} className="relative group">
+                <button
+                  onClick={() => handleVisualTypeChange(type.key)}
+                  className={`flex items-center space-x-3 px-5 py-3 rounded-xl transition-all duration-300 whitespace-nowrap shadow-sm border-2 ${
+                    isActive
+                      ? `${type.activeColor} text-white shadow-xl border-transparent transform scale-105`
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200 hover:border-gray-300 hover:shadow-md'
+                  }`}
+                  title={type.tooltip}
+                >
+                  <div className={`p-1.5 rounded-lg ${isActive ? 'bg-white/20' : 'bg-gray-100'}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-semibold">{type.name}</div>
+                    <div className={`text-xs ${isActive ? 'text-white/90' : 'text-gray-500'}`}>
+                      {type.description}
+                    </div>
+                  </div>
+                  {hasVisual && (
+                    <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-white' : 'bg-green-500'} animate-pulse`} />
+                  )}
+                </button>
+
+                {/* Tooltip */}
+                {!isActive && (
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                    {type.tooltip}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                  </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {renderVisualContent()}
+      <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto p-8">
+          <div className="w-full">
+            {renderVisualContent()}
+          </div>
+        </div>
       </div>
     </div>
   );
