@@ -176,12 +176,8 @@ const VisualDocxOverlay = ({
     if (visual.isWireframe && visual.wireframeData) {
       return (
         <div className="space-y-4">
-          <div className="text-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{currentVisualType.name}</h3>
-          </div>
-          
-          <VisualWireframe 
-            wireframeData={visual.wireframeData} 
+          <VisualWireframe
+            wireframeData={visual.wireframeData}
             contentType={activeVisualType}
           />
         </div>
@@ -192,12 +188,6 @@ const VisualDocxOverlay = ({
     if (visual.isFallback && visual.textDescription) {
       return (
         <div className="space-y-4">
-          <div className="text-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{currentVisualType.name}</h3>
-            <div className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium inline-block">
-              📝 Text Description
-            </div>
-          </div>
           
           <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-6 border border-yellow-200">
             <div className="flex items-start gap-3">
@@ -219,14 +209,10 @@ const VisualDocxOverlay = ({
     // Handle normal image content
     return (
       <div className="space-y-4">
-        <div className="text-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{currentVisualType.name}</h3>
-        </div>
-        
         {visual.imageData && (
           <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden">
-            <img 
-              src={`data:image/png;base64,${visual.imageData}`} 
+            <img
+              src={`data:image/png;base64,${visual.imageData}`}
               alt={`${currentVisualType.name} for ${fileName}`}
               className="w-full h-auto max-h-96 object-contain"
             />
