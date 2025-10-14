@@ -74,6 +74,13 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
       if (response.ok) {
         const data = await response.json();
         console.log('🔍 Course content data:', data);
+        console.log('🔍 Materials count:', data.content?.length || 0);
+        console.log('🔍 Materials list:', data.content?.map(c => ({
+          id: c.id,
+          title: c.title,
+          contentType: c.contentType,
+          mimeType: c.mimeType
+        })) || []);
         setCourseContent(data.content || []);
       } else {
         const errorText = await response.text();
@@ -322,7 +329,7 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                       </div>
                     ) : (
                       <div className="space-y-3 max-h-80 overflow-y-auto">
-                        {courseContent.slice(0, 6).map((content) => {
+                        {courseContent.map((content) => {
                           // Helper function to detect file types (same as Activities tab)
                           const isPdfFile = (content) => {
                             return content?.mimeType === 'application/pdf' ||

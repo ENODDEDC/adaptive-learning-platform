@@ -94,33 +94,31 @@ const monitoredGET = withPerformanceMonitoring(async (request) => {
     // Count enrolled students (excluding the creator)
     const studentCount = course.enrolledUsers?.length || 0; // Only actual enrolled students
     
-    // Count modules (ONLY original uploaded files, not conversion artifacts)
-    const moduleCount = await Content.countDocuments({
+    // Get the EXACT data that Materials tab gets and count it
+    // Materials tab does: courseContent.map() - shows ALL items (no slice limit)
+
+    const allMaterialsData = await Content.find({
       courseId: course._id,
-      isActive: true,
-      // Exclude conversion artifacts, thumbnails, and temp files by filtering filename patterns
-      $and: [
-        {
-          filename: {
-            $not: {
-              $regex: '(thumb|thumbnail|slide_|converted_|temp|tmp|pptx_|docx_|pdf_|_pdf).*',
-              $options: 'i'
-            }
-          }
-        },
-        // Also exclude files in temp folders (conversion artifacts)
-        {
-          'cloudStorage.key': {
-            $not: {
-              $regex: '(temp/|thumbnails/|conversion/).*',
-              $options: 'i'
-            }
-          }
-        }
-      ],
-      // Only count actual document types that users upload
-      contentType: { $in: ['document', 'video', 'audio', 'material'] }
-    });
+      isActive: true
+    })
+    .populate('uploadedBy', 'name email')
+    .sort({ createdAt: -1 })
+    .select('_id courseId title description filename originalName filePath contentType fileSize mimeType createdAt uploadedBy');
+
+    // Materials tab shows ALL items (no slice limit anymore)
+    const moduleCount = allMaterialsData.length; // EXACT count Materials tab shows
+
+    console.log(`Course ${course._id} - Module count: ${moduleCount}`);
+    console.log(`Course ${course._id} - Student count: ${studentCount}`);
+    console.log(`Course ${course._id} - Total materials in DB: ${allMaterialsData.length}`);
+    console.log(`Course ${course._id} - Materials tab shows: ${moduleCount} items (ALL)`);
+    console.log(`Course ${course._id} - Materials list:`, allMaterialsData.map(m => ({
+      id: m._id,
+      title: m.title,
+      type: m.contentType,
+      mimeType: m.mimeType,
+      filename: m.filename
+    })));
 
     return {
       ...course,
