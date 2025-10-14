@@ -14,7 +14,7 @@ export async function POST(request, { params }) {
     const studentId = payload.userId;
 
     await connectMongoDB();
-    const { id } = params; // courseId
+    const { id } = await params; // courseId
     const { assignmentId, content, attachments, status, progress, workSessionTime } = await request.json();
 
     if (!assignmentId) {
@@ -92,7 +92,7 @@ export async function GET(request, { params }) {
     const currentUserId = payload.userId;
 
     await connectMongoDB();
-    const { id } = params; // courseId
+    const { id } = await params; // courseId
     const { searchParams } = new URL(request.url);
     const assignmentId = searchParams.get('assignmentId');
     const studentId = searchParams.get('studentId');

@@ -78,11 +78,26 @@ export async function POST(request) {
     } else {
       // Download from Backblaze B2
       console.log('📥 Downloading DOCX from Backblaze...');
+      console.log('🔑 Using file key:', finalFileKey);
+      
       try {
         docxBuffer = await backblazeService.getFileBuffer(finalFileKey);
         console.log('✅ DOCX downloaded successfully, size:', docxBuffer.length, 'bytes');
       } catch (downloadError) {
-        console.error('❌ Failed to download DOCX:', downloadError);
+        console.error('❌ Failed to download DOCX:', downloadError.message);
+        
+        // If file not found in Backblaze, return a graceful error instead of crashing
+        if (downloadError.message.includes('File not found in storage') || downloadError.message.includes('NoSuchKey')) {
+          console.warn('⚠️ File not found in Backblaze B2, skipping thumbnail generation');
+          return NextResponse.json({
+            success: false,
+            error: 'File not found in cloud storage',
+            message: 'The file may have been deleted or never uploaded to cloud storage',
+            fileKey: finalFileKey,
+            suggestion: 'Please re-upload the file or check if it exists in local storage'
+          }, { status: 404 });
+        }
+        
         throw new Error(`Failed to download DOCX: ${downloadError.message}`);
       }
     }

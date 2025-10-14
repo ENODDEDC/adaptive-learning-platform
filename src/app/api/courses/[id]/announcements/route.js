@@ -4,7 +4,7 @@ import Course from '@/models/Course';
 import Notification from '@/models/Notification';
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/utils/auth';
-import { getUserIdFromToken } from '@/services/authService';
+import { getUserIdFromToken, getUserFromToken } from '@/services/authService';
 import mongoose from 'mongoose';
 
 export async function POST(request, { params }) {
@@ -148,14 +148,15 @@ export async function GET(request, { params }) {
   console.log('=== GET ANNOUNCEMENTS REQUEST START ===');
   try {
     console.log('Verifying token...');
-    const payload = await verifyToken();
-    console.log('Token verification result:', payload ? 'success' : 'failed');
-    if (!payload) {
-      console.log('No payload, returning 401');
+    const user = await getUserFromToken(request);
+    console.log('Token verification result:', user ? 'success' : 'failed');
+    if (!user || !user.userId) {
+      console.log('No user info, returning 401');
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
-    const userId = payload.userId;
-    console.log('User ID from token:', userId);
+    const userId = user.userId;
+    const userRole = user.role;
+    console.log('User info from token:', { userId, role: userRole });
 
     const { id: courseId } = await params;
     console.log('Course ID from params:', courseId);
@@ -176,12 +177,15 @@ export async function GET(request, { params }) {
     }
     console.log('Course details:', { id: course._id, subject: course.subject, createdBy: course.createdBy });
 
-    // Check if the user is either the creator or enrolled in the course
+    // Check if the user is admin, course creator, or enrolled in the course
+    const isAdmin = userRole === 'admin' || userRole === 'super admin';
     const isCreator = course.createdBy.toString() === userId;
     const isEnrolled = course.enrolledUsers.includes(userId);
-    console.log('Authorization check - isCreator:', isCreator, 'isEnrolled:', isEnrolled);
+    const hasAccess = isAdmin || isCreator || isEnrolled;
+    
+    console.log('Authorization check - isAdmin:', isAdmin, 'isCreator:', isCreator, 'isEnrolled:', isEnrolled, 'hasAccess:', hasAccess);
 
-    if (!isCreator && !isEnrolled) {
+    if (!hasAccess) {
       console.log('Authorization failed, returning 403');
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }

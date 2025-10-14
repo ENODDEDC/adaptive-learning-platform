@@ -14,7 +14,7 @@ export async function PUT(request, { params }) {
     const currentUserId = payload.userId;
 
     await connectMongoDB();
-    const { id } = params;
+    const { id } = await params;
     const { grade, feedback, status, progress, workSessionTime, content, attachments } = await request.json();
 
     const submission = await Submission.findById(id);
@@ -110,7 +110,7 @@ export async function GET(request, { params }) {
     const currentUserId = payload.userId;
 
     await connectMongoDB();
-    const { id } = params;
+    const { id } = await params;
 
     const submission = await Submission.findById(id)
       .populate('assignmentId', 'title type courseId')
@@ -154,7 +154,7 @@ export async function DELETE(request, { params }) {
     const currentUserId = payload.userId;
 
     await connectMongoDB();
-    const { id } = params;
+    const { id } = await params;
 
     const submission = await Submission.findById(id);
     if (!submission) {

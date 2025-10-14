@@ -3,7 +3,7 @@ import connectMongoDB from '@/config/mongoConfig';
 import Course from '@/models/Course';
 import { verifyAdminToken } from '@/utils/auth';
 
-export async function GET(req, { params }) {
+export async function GET(req, context) {
   await connectMongoDB();
   const adminInfo = await verifyAdminToken();
   if (!adminInfo) {
@@ -11,6 +11,8 @@ export async function GET(req, { params }) {
   }
   const adminId = adminInfo.userId;
 
+  // Await params in Next.js 15
+  const params = await context.params;
   const { id } = params;
 
   try {

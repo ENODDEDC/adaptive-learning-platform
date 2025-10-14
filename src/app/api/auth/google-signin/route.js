@@ -51,8 +51,10 @@ export async function POST(req) {
     // Generate JWT token for your app
     const token = jwt.sign(
       { 
-        userId: user._id, 
+        userId: user._id,
+        id: user._id, // Keep for backward compatibility
         email: user.email,
+        role: user.role, // Add role to JWT
         provider: 'google'
       },
       process.env.JWT_SECRET,

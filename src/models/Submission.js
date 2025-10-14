@@ -17,9 +17,9 @@ const submissionSchema = new Schema(
     },
     attachments: [
       {
-        fileName: String,
-        fileUrl: String,
-      },
+        type: Schema.Types.ObjectId,
+        ref: 'Content'
+      }
     ],
     status: {
       type: String,
