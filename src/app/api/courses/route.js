@@ -91,13 +91,35 @@ const monitoredGET = withPerformanceMonitoring(async (request) => {
 
   // Get student count and module count for each course
   const coursesWithStats = await Promise.all(courses.map(async (course) => {
-    // Count enrolled students (including the creator)
-    const studentCount = (course.enrolledUsers?.length || 0) + 1; // +1 for the creator
+    // Count enrolled students (excluding the creator)
+    const studentCount = course.enrolledUsers?.length || 0; // Only actual enrolled students
     
-    // Count modules (content files) for this course
-    const moduleCount = await Content.countDocuments({ 
+    // Count modules (ONLY original uploaded files, not conversion artifacts)
+    const moduleCount = await Content.countDocuments({
       courseId: course._id,
-      isActive: true 
+      isActive: true,
+      // Exclude conversion artifacts, thumbnails, and temp files by filtering filename patterns
+      $and: [
+        {
+          filename: {
+            $not: {
+              $regex: '(thumb|thumbnail|slide_|converted_|temp|tmp|pptx_|docx_|pdf_|_pdf).*',
+              $options: 'i'
+            }
+          }
+        },
+        // Also exclude files in temp folders (conversion artifacts)
+        {
+          'cloudStorage.key': {
+            $not: {
+              $regex: '(temp/|thumbnails/|conversion/).*',
+              $options: 'i'
+            }
+          }
+        }
+      ],
+      // Only count actual document types that users upload
+      contentType: { $in: ['document', 'video', 'audio', 'material'] }
     });
 
     return {
