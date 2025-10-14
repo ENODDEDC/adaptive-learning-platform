@@ -18,17 +18,19 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
   const [refreshKey, setRefreshKey] = useState(Date.now());
   const [showThumbnails, setShowThumbnails] = useState(true);
   const [loadedThumbnails, setLoadedThumbnails] = useState(new Set([1]));
+  const [conversionMethod, setConversionMethod] = useState('');
+  const [viewerType, setViewerType] = useState('PDFPowerPointViewer');
 
   const viewerRef = useRef(null);
   const iframeRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Step 1: Convert PowerPoint to PDF
+  // Step 1: Check if PDF already exists or convert PowerPoint to PDF
   useEffect(() => {
     let isMounted = true;
-    console.log('Processing PowerPoint file...', filePath);
+    console.log('🎯 PDFPowerPointViewer: Processing PowerPoint file...', filePath);
 
-    const convertPptToPdf = async () => {
+    const loadOrConvertPdf = async () => {
       try {
         setIsLoading(true);
         setError(null);
@@ -46,15 +48,25 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
           throw new Error('Invalid file path provided');
         }
 
-        console.log('Converting file path:', filePathString);
+        console.log('🔍 File path:', filePathString);
 
-        // Call API to convert
+        // Check if this is already a PDF file
+        if (filePathString.toLowerCase().includes('.pdf')) {
+          console.log('✅ File is already a PDF, using PDF.js directly');
+          setPdfUrl(filePathString);
+          setConversionMethod('Direct PDF.js (No Conversion Needed)');
+          setIsLoading(false);
+          return;
+        }
+
+        // For PowerPoint files, convert to PDF
+        console.log('🔄 Converting PowerPoint to PDF...');
         let apiUrl = `/api/convert-ppt-to-pdf?filePath=${encodeURIComponent(filePathString)}`;
         if (contentId) {
           apiUrl += `&contentId=${encodeURIComponent(contentId)}`;
         }
 
-        console.log('Fetching from API:', apiUrl);
+        console.log('📡 Calling conversion API:', apiUrl);
         const response = await fetch(apiUrl);
 
         if (!response.ok) {
@@ -63,7 +75,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
         }
 
         const data = await response.json();
-        console.log('API Response:', data);
+        console.log('✅ Conversion API Response:', data);
 
         if (!isMounted) return;
 
@@ -71,8 +83,13 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
           throw new Error('No PDF URL returned from the conversion API');
         }
 
-        console.log('PowerPoint conversion successful, PDF URL:', data.pdfUrl);
+        console.log('✅ PowerPoint conversion successful, PDF URL:', data.pdfUrl);
         setPdfUrl(data.pdfUrl);
+        
+        // Capture conversion method for debugging
+        if (data.conversionMethod) {
+          setConversionMethod(data.conversionMethod);
+        }
 
         // Set the page count from API response if available
         if (data.pageCount && data.pageCount > 0) {
@@ -89,7 +106,7 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
       }
     };
 
-    convertPptToPdf();
+    loadOrConvertPdf();
 
     return () => {
       isMounted = false;
@@ -390,6 +407,21 @@ const PDFPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal =
               <p className="text-xs text-gray-400">
                 Slide {currentPage} of {totalPages}
               </p>
+              {/* Debug Information */}
+              <div className="text-xs mt-1">
+                <span className="text-blue-400 bg-blue-900/30 px-2 py-1 rounded mr-2">
+                  Viewer: {viewerType}
+                </span>
+                {conversionMethod && (
+                  <span className={`px-2 py-1 rounded ${
+                    conversionMethod.includes('LibreOffice') 
+                      ? 'text-green-400 bg-green-900/30' 
+                      : 'text-orange-400 bg-orange-900/30'
+                  }`}>
+                    {conversionMethod.includes('LibreOffice') ? '✅ Real PPT' : '⚠️ Text Only'}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

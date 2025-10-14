@@ -8,13 +8,9 @@ import EmptyState from '@/components/EmptyState';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import CoursePreviewModal from '@/components/CoursePreviewModal';
 import Tooltip from '@/components/Tooltip';
-import HelpIndicator from '@/components/HelpIndicator';
 import AdaptiveLayout from '@/components/AdaptiveLayout';
-import AdaptiveBehaviorDashboard from '@/components/AdaptiveBehaviorDashboard';
-import AdaptiveSyncIndicator from '@/components/AdaptiveSyncIndicator';
 import CourseFilterSort from '@/components/CourseFilterSort';
-import UserPreferenceManager from '@/components/UserPreferenceManager';
-import PerformanceMonitor from '@/components/PerformanceMonitor';
+import ProfessionalCourseCard from '@/components/ProfessionalCourseCard';
 import preferenceLearningService from '@/services/preferenceLearningService';
 import cacheService from '@/services/cacheService';
 import predictiveLoadingService from '@/services/predictiveLoadingService';
@@ -59,13 +55,10 @@ const CourseContent = () => {
   const [selectedCourseForPreview, setSelectedCourseForPreview] = useState(null);
   const [draggedCourse, setDraggedCourse] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
-  const [adaptiveDashboardOpen, setAdaptiveDashboardOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [dragFeedback, setDragFeedback] = useState('');
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [sortBy, setSortBy] = useState('name-asc');
-  const [preferenceManagerOpen, setPreferenceManagerOpen] = useState(false);
-  const [performanceMonitorOpen, setPerformanceMonitorOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilters, setActiveFilters] = useState({
     instructor: [],
@@ -272,6 +265,8 @@ const CourseContent = () => {
         progress: 0, // Start with 0% progress - will increase as users engage
         color: course.coverColor || '#60a5fa',
         progressColor: course.coverColor || '#60a5fa',
+        studentCount: course.enrolledUsers?.length || 0, // Use actual enrolled students only (no +1 for creator)
+        moduleCount: course.moduleCount || 0,   // Use real module count from API
       };
     });
 
@@ -577,7 +572,7 @@ const CourseContent = () => {
   return (
     <div className="flex-1 h-screen p-2 sm:p-4 lg:p-6 bg-gray-50 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
       {/* Enhanced Header */}
-      <div className="relative mx-4 mt-4 mb-8 overflow-hidden bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl">
+      <div className="relative mx-4 mt-4 mb-8 bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl">
         {/* Animated background gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-indigo-50/30 to-purple-50/50 animate-pulse"></div>
 
@@ -633,141 +628,68 @@ const CourseContent = () => {
                 </button>
               </Tooltip>
 
-              <Tooltip
-                content={
-                  <div>
-                    <div className="font-semibold mb-1">Adaptive Settings</div>
-                    <div className="text-sm opacity-90">
-                      View how the system adapts to your behavior patterns
-                    </div>
-                  </div>
-                }
-                type="info"
-                position="left"
-              >
-                <button
-                  onClick={() => setAdaptiveDashboardOpen(true)}
-                  className="group relative flex items-center justify-center w-12 h-12 text-white transition-all duration-300 bg-gradient-to-r from-purple-500 to-indigo-600 shadow-xl rounded-2xl hover:shadow-2xl hover:scale-110 active:scale-95 overflow-hidden"
-                  data-action="adaptive_dashboard"
-                  data-feature="behavior_tracking"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <svg className="relative w-6 h-6 transition-transform duration-300 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </button>
-              </Tooltip>
 
-              <Tooltip
-                content={
-                  <div>
-                    <div className="font-semibold mb-1">Preference Learning</div>
-                    <div className="text-sm opacity-90">
-                      Customize layout and view learning insights
-                    </div>
-                  </div>
-                }
-                type="info"
-                position="left"
-              >
-                <button
-                  onClick={() => setPreferenceManagerOpen(true)}
-                  className="group relative flex items-center justify-center w-12 h-12 text-white transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-600 shadow-xl rounded-2xl hover:shadow-2xl hover:scale-110 active:scale-95 overflow-hidden"
-                  data-action="preference_manager"
-                  data-feature="preference_learning"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <svg className="relative w-6 h-6 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </button>
-              </Tooltip>
-
-              <Tooltip
-                content={
-                  <div>
-                    <div className="font-semibold mb-1">Performance Monitor</div>
-                    <div className="text-sm opacity-90">
-                      View cache statistics and predictive loading metrics
-                    </div>
-                  </div>
-                }
-                type="info"
-                position="top"
-              >
-                <button
-                  onClick={() => setPerformanceMonitorOpen(true)}
-                  className="group relative flex items-center justify-center w-12 h-12 text-white transition-all duration-300 bg-gradient-to-r from-cyan-500 to-blue-600 shadow-xl rounded-2xl hover:shadow-2xl hover:scale-110 active:scale-95 overflow-hidden"
-                  data-action="performance_monitor"
-                  data-feature="performance_monitoring"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <svg className="relative w-6 h-6 transition-transform duration-300 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </button>
-              </Tooltip>
               {isCourseMenuOpen && (
-                <div className="absolute right-0 z-20 w-56 mt-3 overflow-hidden bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl animate-fade-in-down">
+                <div className="absolute right-16 top-0 z-[99999] w-64 bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl animate-fade-in-left dropdown-menu">
                   <div className="p-2">
-                    <button
-                      onClick={() => {
-                        openCreateCourseModal();
-                        setIsCourseMenuOpen(false);
-                      }}
-                      className="group flex items-center w-full gap-3 px-4 py-3 text-sm font-medium text-left text-gray-700 transition-all duration-200 rounded-xl hover:bg-green-50 hover:text-green-700"
-                    >
-                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors duration-200">
-                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                      </div>
-                      <span>Create Course</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        openJoinCourseModal();
-                        setIsCourseMenuOpen(false);
-                      }}
-                      className="group flex items-center w-full gap-3 px-4 py-3 text-sm font-medium text-left text-gray-700 transition-all duration-200 rounded-xl hover:bg-blue-50 hover:text-blue-700"
-                    >
-                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-200">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                      </div>
-                      <span>Join Course</span>
-                    </button>
-                    <div className="my-2 border-t border-gray-200"></div>
-                    <button
-                      onClick={() => {
-                        openCreateClusterModal();
-                        setIsCourseMenuOpen(false);
-                      }}
-                      className="group flex items-center w-full gap-3 px-4 py-3 text-sm font-medium text-left text-gray-700 transition-all duration-200 rounded-xl hover:bg-purple-50 hover:text-purple-700"
-                    >
-                      <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors duration-200">
-                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                      </div>
-                      <span>Create Cluster</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        openJoinClusterModal();
-                        setIsCourseMenuOpen(false);
-                      }}
-                      className="group flex items-center w-full gap-3 px-4 py-3 text-sm font-medium text-left text-gray-700 transition-all duration-200 rounded-xl hover:bg-indigo-50 hover:text-indigo-700"
-                    >
-                      <div className="flex items-center justify-center w-8 h-8 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors duration-200">
-                        <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                      </div>
-                      <span>Join Cluster</span>
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => {
+                          openCreateCourseModal();
+                          setIsCourseMenuOpen(false);
+                        }}
+                        className="group flex flex-col items-center gap-1 px-2 py-3 text-xs font-medium text-gray-700 transition-all duration-200 rounded-lg hover:bg-green-50 hover:text-green-700"
+                      >
+                        <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors duration-200">
+                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        </div>
+                        <span className="text-center">Create Course</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          openJoinCourseModal();
+                          setIsCourseMenuOpen(false);
+                        }}
+                        className="group flex flex-col items-center gap-1 px-2 py-3 text-xs font-medium text-gray-700 transition-all duration-200 rounded-lg hover:bg-blue-50 hover:text-blue-700"
+                      >
+                        <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-200">
+                          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                          </svg>
+                        </div>
+                        <span className="text-center">Join Course</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          openCreateClusterModal();
+                          setIsCourseMenuOpen(false);
+                        }}
+                        className="group flex flex-col items-center gap-1 px-2 py-3 text-xs font-medium text-gray-700 transition-all duration-200 rounded-lg hover:bg-purple-50 hover:text-purple-700"
+                      >
+                        <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors duration-200">
+                          <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                        </div>
+                        <span className="text-center">Create Cluster</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          openJoinClusterModal();
+                          setIsCourseMenuOpen(false);
+                        }}
+                        className="group flex flex-col items-center gap-1 px-2 py-3 text-xs font-medium text-gray-700 transition-all duration-200 rounded-lg hover:bg-indigo-50 hover:text-indigo-700"
+                      >
+                        <div className="flex items-center justify-center w-8 h-8 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors duration-200">
+                          <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                        </div>
+                        <span className="text-center">Join Cluster</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -777,7 +699,7 @@ const CourseContent = () => {
       </div>
 
       {/* Enhanced Navigation Tabs */}
-      <div className="relative mx-4 mb-8 overflow-hidden bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl">
+      <div className="relative mx-4 mb-8 bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl z-10">
         {/* Animated background gradient */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-50/30 via-indigo-50/20 to-purple-50/30 animate-pulse"></div>
 
@@ -934,54 +856,7 @@ const CourseContent = () => {
         initialSort={sortBy}
       />
 
-      {/* Adaptive Status Bar */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full animate-pulse ${
-              userBehavior.interactionPatterns.mostClickedCourses.length > 5
-                ? 'bg-green-500' : userBehavior.interactionPatterns.mostClickedCourses.length > 2
-                ? 'bg-yellow-500' : 'bg-blue-500'
-            }`}></div>
-            <div>
-              <div className="text-sm font-semibold text-gray-800">
-                {userBehavior.interactionPatterns.mostClickedCourses.length > 5
-                  ? '🎯 Personalized Layout Active' : userBehavior.interactionPatterns.mostClickedCourses.length > 2
-                  ? '📊 Learning Your Patterns' : '🔄 Analyzing Your Behavior'}
-              </div>
-              <div className="text-xs text-gray-600">
-                {userBehavior.interactionPatterns.mostClickedCourses.length > 5
-                  ? 'System has adapted to your preferences' : userBehavior.interactionPatterns.mostClickedCourses.length > 2
-                  ? 'Keep using courses to see adaptations' : 'Start interacting to see the system learn'}
-              </div>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-4 text-xs text-gray-600">
-              <span>Cards: <strong>{userBehavior.layoutPreferences.cardSize}</strong></span>
-              <span>Grid: <strong>{userBehavior.layoutPreferences.gridColumns}</strong></span>
-              <span>Interactions: <strong>{behaviorHistory.length}</strong></span>
-            </div>
-            <button
-              onClick={() => setAdaptiveDashboardOpen(true)}
-              className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
-            >
-              View Analytics
-            </button>
-          </div>
-        </div>
-
-        {/* Progress bar showing learning progress */}
-        <div className="mt-3 w-full bg-gray-200 rounded-full h-1.5">
-          <div
-            className="bg-gradient-to-r from-blue-500 to-green-500 h-1.5 rounded-full transition-all duration-500"
-            style={{
-              width: `${Math.min(100, (behaviorHistory.length / 20) * 100)}%`
-            }}
-          ></div>
-        </div>
-      </div>
 
       {/* Smart Recommendations */}
       {(() => {
@@ -1079,412 +954,23 @@ const CourseContent = () => {
               </div>
             </div>
           ) : (
-            filteredCourses.map((course, index) => {
-              // Calculate dynamic card size based on course properties and content
-              const getCardSize = () => {
-                // Base dimensions
-                const sizes = {
-                  small: { width: '320px', height: '420px', priority: 'low' },
-                  medium: { width: '320px', height: '480px', priority: 'normal' },
-                  large: { width: '320px', height: '540px', priority: 'high' },
-                  featured: { width: '320px', height: '600px', priority: 'featured' }
-                };
-
-                // Calculate content-based height adjustments
-                const getContentHeight = () => {
-                  const baseHeight = 420;
-                  const titleLength = course.title?.length || 0;
-                  const instructorLength = course.instructor?.length || 0;
-                  const hasMedia = course.color && course.color !== '#default';
-
-                  // Adjust height based on content length
-                  let contentBonus = 0;
-                  if (titleLength > 50) contentBonus += 40; // Long titles need more space
-                  if (instructorLength > 20) contentBonus += 20; // Long instructor names
-                  if (hasMedia) contentBonus += 30; // Media content needs space
-
-                  return baseHeight + contentBonus;
-                };
-
-                // Determine size based on course properties and content
-                const enrollment = 24; // This would come from course data
-                const activity = course.progress || 0;
-                const isRecent = index < 2; // First 2 courses are considered recent
-                const contentHeight = getContentHeight();
-
-                // Dynamic sizing logic
-                if (isRecent && activity > 50) {
-                  return {
-                    ...sizes.featured,
-                    height: `${Math.max(600, contentHeight + 120)}px`
-                  };
-                } else if (enrollment > 30 || activity > 70) {
-                  return {
-                    ...sizes.large,
-                    height: `${Math.max(540, contentHeight + 60)}px`
-                  };
-                } else if (enrollment > 15 || activity > 30) {
-                  return {
-                    ...sizes.medium,
-                    height: `${Math.max(480, contentHeight + 20)}px`
-                  };
-                } else {
-                  return {
-                    ...sizes.small,
-                    height: `${Math.max(420, contentHeight)}px`
-                  };
-                }
-              };
-
-              const cardConfig = getCardSize();
-
-              return (
-                <div
-                  key={course.id}
-                  className={`block group masonry-item cursor-pointer transition-all duration-200 ${
-                    draggedCourse?.index === index ? 'opacity-50 rotate-[5deg] scale-105' : ''
-                  } ${
-                    dragOverIndex === index ? 'ring-2 ring-blue-400 ring-opacity-50 scale-105' : ''
-                  }`}
-                  draggable
-                  data-course-id={course.id}
-                  data-course-name={course.title}
-                  data-course-title={course.title}
-                  data-course-subject={course.title}
-                  data-track-hover="course_card"
-                  onClick={(e) => {
-                    // Only open preview if not dragging
-                    if (!draggedCourse) {
-                      handleCoursePreview(course);
-                      // Track course click interaction
-                      trackUserInteraction('course_click', course.id, {
-                        cardPriority: cardConfig.priority,
-                        progress: course.progress,
-                        position: index,
-                        courseName: course.title,
-                        courseSubject: course.title,
-                        courseCode: course.code,
-                        courseInstructor: course.instructor
-                      });
-                    }
-                  }}
-                  onDragStart={(e) => {
-                    handleDragStart(e, course, index);
-                    // Track drag start
-                    trackUserInteraction('drag_start', course.id, {
-                      position: index,
-                      cardPriority: cardConfig.priority
-                    });
-                  }}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragEnter={(e) => handleDragEnter(e, index)}
-                  onDragLeave={handleDragLeave}
-                  onDragEnd={handleDragEnd}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onMouseEnter={(e) => {
-                    // Only apply hover effects if not dragging
-                    if (!draggedCourse) {
-                      const card = e.currentTarget;
-                      const header = card.querySelector('.course-card-header');
-                      const progressBar = card.querySelector('.progress-fill');
-                      const stats = card.querySelectorAll('.stat-item');
-                      const actionButton = card.querySelector('.action-button');
-
-                      if (header) {
-                        header.style.transform = 'scale(1.05) rotate(1deg)';
-                        header.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                      }
-
-                      if (progressBar) {
-                        progressBar.style.transform = 'scaleX(1.1)';
-                        progressBar.style.transition = 'transform 0.3s ease-out';
-                      }
-
-                      // Staggered animation for stats
-                      stats.forEach((stat, index) => {
-                        setTimeout(() => {
-                          stat.style.transform = 'translateY(-2px) scale(1.05)';
-                          stat.style.transition = 'transform 0.3s ease-out';
-                        }, index * 50);
-                      });
-
-                      if (actionButton) {
-                        actionButton.style.transform = 'translateX(4px) scale(1.1)';
-                        actionButton.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                      }
-
-                      // Track hover interaction
-                      trackUserInteraction('course_hover', course.id, {
-                        hoverDuration: 0, // Will be updated on mouse leave
-                        cardPriority: cardConfig.priority,
-                        position: index
-                      });
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    // Only reset hover effects if not dragging
-                    if (!draggedCourse) {
-                      const card = e.currentTarget;
-                      const header = card.querySelector('.course-card-header');
-                      const progressBar = card.querySelector('.progress-fill');
-                      const stats = card.querySelectorAll('.stat-item');
-                      const actionButton = card.querySelector('.action-button');
-
-                      if (header) {
-                        header.style.transform = 'scale(1) rotate(0deg)';
-                      }
-
-                      if (progressBar) {
-                        progressBar.style.transform = 'scaleX(1)';
-                      }
-
-                      stats.forEach((stat) => {
-                        stat.style.transform = 'translateY(0) scale(1)';
-                      });
-
-                      if (actionButton) {
-                        actionButton.style.transform = 'translateX(0) scale(1)';
-                      }
-                    }
-                  }}
-                >
-                  <div
-                    className={`drag-item relative flex flex-col bg-white border rounded-3xl transition-all duration-700 ease-out transform hover:-translate-y-3 hover:rotate-1 hover:shadow-2xl hover:scale-[1.02] animate-shadow-enhance ${
-                      cardConfig.priority === 'featured' ? 'ring-2 ring-blue-200 shadow-xl' : ''
-                    } ${
-                      draggedCourse?.index === index ? 'dragging' : ''
-                    } ${
-                      dragOverIndex === index ? 'drag-over' : ''
-                    }`}
-                    style={{
-                      height: cardConfig.height,
-                      width: cardConfig.width,
-                      animationDelay: `${index * 0.1}s`,
-                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {/* Content density indicator */}
-                    <div className="absolute top-2 right-2 z-20">
-                      <div className={`w-2 h-2 rounded-full ${
-                        parseInt(cardConfig.height) > 550 ? 'bg-green-400' :
-                        parseInt(cardConfig.height) > 480 ? 'bg-blue-400' : 'bg-gray-400'
-                      }`} title={`Content density: ${parseInt(cardConfig.height) > 550 ? 'High' : parseInt(cardConfig.height) > 480 ? 'Medium' : 'Low'}`}></div>
-                    </div>
-                  {/* Enhanced gradient header with multiple layers */}
-                  <div className={`course-card-header relative h-56 p-4 pr-6 flex flex-col justify-between overflow-hidden ${course.color} bg-gradient-to-br from-current via-current to-current transition-all duration-500 group-hover:shadow-inner animate-header-transform`}>
-                    {/* Animated background pattern */}
-                    <div className="absolute inset-0 opacity-10">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
-                      <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12"></div>
-                    </div>
-
-                    {/* Enhanced glass-morphism overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/5 transition-opacity duration-300 group-hover:opacity-75 rounded-3xl" style={{paddingRight: '2rem'}}></div>
-
-                    {/* Top section with icon, drag handle and menu */}
-                    <div className="relative z-10 flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="flex items-center justify-center w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl transition-all duration-300 group-hover:bg-white/30 group-hover:scale-110 group-hover:rotate-6 shadow-lg">
-                            <svg className="w-5 h-5 text-white drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                          </div>
-                          {/* Status indicator */}
-                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full animate-pulse shadow-sm"></div>
-                        </div>
-
-                        {/* Drag handle indicator */}
-                        <Tooltip
-                          content={
-                            <div>
-                              <div className="font-semibold mb-1">Drag to Reorder</div>
-                              <div className="text-sm opacity-90">
-                                Click and drag this course card to change its position
-                              </div>
-                            </div>
-                          }
-                          type="tip"
-                          position="left"
-                        >
-                          <div className="flex flex-col gap-1 text-white/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-grab active:cursor-grabbing">
-                            <div className="w-1 h-1 bg-white/40 rounded-full"></div>
-                            <div className="w-1 h-1 bg-white/40 rounded-full"></div>
-                            <div className="w-1 h-1 bg-white/40 rounded-full"></div>
-                            <div className="w-1 h-1 bg-white/40 rounded-full"></div>
-                            <div className="w-1 h-1 bg-white/40 rounded-full"></div>
-                            <div className="w-1 h-1 bg-white/40 rounded-full"></div>
-                          </div>
-                        </Tooltip>
-                      </div>
-
-                      {/* Enhanced menu button */}
-                      <button className="relative z-10 p-2 text-white/80 transition-all duration-300 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-white/20 hover:rotate-90 backdrop-blur-sm">
-                        <svg className="w-4 h-4 drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    {/* Bottom section with enhanced status and action */}
-                    <div className="relative z-10 flex items-end justify-between gap-2">
-                      <div className="text-white flex-1 min-w-0 pr-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-3 h-3 bg-white/40 rounded-full animate-status-glow flex-shrink-0"></div>
-                          <div className="text-sm font-bold opacity-95 tracking-wider">ACTIVE</div>
-                        </div>
-                        {/* <div className="text-xs opacity-85 mb-2">Active</div> */}
-                      </div>
-
-                      {/* Enhanced action button */}
-                      <div className="flex flex-col items-end gap-3 flex-shrink-0 ml-4 mr-2">
-                        <div className="action-button flex items-center justify-center w-14 h-14 bg-white/15 backdrop-blur-md rounded-2xl transition-all duration-300 group-hover:bg-white/25 group-hover:scale-110 shadow-lg border border-white/20 overflow-hidden animate-action-slide">
-                          <svg className="w-7 h-7 text-white transition-transform duration-300 group-hover:translate-x-1 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Floating elements for depth */}
-                    <div className="absolute top-4 right-4 w-2 h-2 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                    <div className="absolute bottom-6 left-6 w-1 h-1 bg-white/20 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
-                  </div>
-
-                  {/* Enhanced content section */}
-                  <div className="relative flex flex-col flex-grow p-6 bg-gradient-to-b from-white to-gray-50/50">
-                    {/* Course title with improved typography hierarchy */}
-                    <div className="mb-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-xl font-bold text-gray-900 transition-colors duration-300 group-hover:text-blue-600 leading-tight line-clamp-2 flex-1 mr-2">
-                          {course.title}
-                        </h3>
-                        {/* Course type indicator */}
-                        <div className="flex-shrink-0 flex items-center gap-2">
-                          <div className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full border border-blue-200">
-                            Course
-                          </div>
-                          {cardConfig.priority === 'featured' && (
-                            <div className="px-2 py-1 text-xs font-semibold text-yellow-700 bg-yellow-100 rounded-full border border-yellow-200 animate-pulse">
-                              ⭐ Featured
-                            </div>
-                          )}
-                          {cardConfig.priority === 'high' && (
-                            <div className="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full border border-green-200">
-                              🔥 Popular
-                            </div>
-                          )}
-                        </div>
-
-                      </div>
-
-                      {/* Clean metadata layout */}
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 text-sm">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
-                          </svg>
-                          <span className="font-semibold">{course.code}</span>
-                        </span>
-                        <span className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 text-sm">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span className="font-medium">{course.instructor}</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Enhanced progress and stats section */}
-                    <div className="mt-auto space-y-4">
-                      {/* Progress section with enhanced layout */}
-                      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-gray-100 shadow-sm">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl transition-all duration-300 group-hover:from-orange-500 group-hover:to-orange-600 group-hover:scale-110 shadow-lg">
-                                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                              {/* Progress pulse effect */}
-                              <div className="absolute inset-0 w-10 h-10 bg-orange-400 rounded-xl animate-ping opacity-20"></div>
-                            </div>
-                            <div>
-                              <div className="text-xl font-bold text-orange-600 mb-0.5">{course.progress}%</div>
-                              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Complete</div>
-                            </div>
-                          </div>
-
-                          {/* Activity indicator - Hidden to reduce clutter */}
-                          {/* <div className="text-right">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                              <span className="text-xs font-medium text-gray-600">Active</span>
-                            </div>
-                          </div> */}
-                        </div>
-
-                        {/* Enhanced progress bar with labels */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-xs">
-                            <span className="font-medium text-gray-600">Progress</span>
-                            <span className="font-semibold text-gray-700">{course.progress}%</span>
-                          </div>
-                          <Tooltip
-                            content={
-                              <div>
-                                <div className="font-semibold mb-1">Course Progress</div>
-                                <div className="text-sm opacity-90">
-                                  You&rsquo;ve completed {course.progress}% of this course. Keep up the great work!
-                                </div>
-                              </div>
-                            }
-                            type="info"
-                            position="top"
-                          >
-                            <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner cursor-help">
-                              <div
-                                className="progress-fill h-full bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 rounded-full transition-all duration-1000 ease-out shadow-sm relative animate-progress-expand"
-                                style={{ width: `${course.progress}%` }}
-                              >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-progress-shine"></div>
-                              </div>
-                              {/* Progress milestones */}
-                              <div className="absolute top-0 left-1/3 w-0.5 h-3 bg-white/50"></div>
-                              <div className="absolute top-0 left-2/3 w-0.5 h-3 bg-white/50"></div>
-                            </div>
-                          </Tooltip>
-                        </div>
-                      </div>
-
-                      {/* Course stats row */}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="stat-item text-center p-3 bg-blue-50/80 rounded-xl border border-blue-100 transition-all duration-300 hover:bg-blue-100/90 animate-stat-lift">
-                          <div className="text-lg font-bold text-blue-600 mb-0.5">24</div>
-                          <div className="text-xs font-medium text-blue-700 uppercase tracking-wide">Students</div>
-                        </div>
-                        <div className="stat-item text-center p-3 bg-purple-50/80 rounded-xl border border-purple-100 transition-all duration-300 hover:bg-purple-100/90 animate-stat-lift">
-                          <div className="text-lg font-bold text-purple-600 mb-0.5">12</div>
-                          <div className="text-xs font-medium text-purple-700 uppercase tracking-wide">Modules</div>
-                        </div>
-                        <div className="stat-item text-center p-3 bg-emerald-50/80 rounded-xl border border-emerald-100 transition-all duration-300 hover:bg-emerald-100/90 animate-stat-lift">
-                          <div className="text-lg font-bold text-emerald-600 mb-0.5">8</div>
-                          <div className="text-xs font-medium text-emerald-700 uppercase tracking-wide">Weeks</div>
-                        </div>
-                      </div>
-
-                    </div>
-
-
-                    {/* Subtle bottom accent */}
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-b-3xl"></div>
-                  </div>
-                  </div>
-                </div>
-              );
-            })
+            filteredCourses.map((course, index) => (
+              <ProfessionalCourseCard
+                key={course.id}
+                course={course}
+                index={index}
+                onPreview={handleCoursePreview}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragEnd={handleDragEnd}
+                onDrop={handleDrop}
+                draggedCourse={draggedCourse}
+                dragOverIndex={dragOverIndex}
+                trackUserInteraction={trackUserInteraction}
+              />
+            ))
           )
         ) : (
           clusters.length === 0 ? (
@@ -1596,13 +1082,7 @@ const CourseContent = () => {
         </div>
       )}
 
-      {/* Help Indicator */}
-      <HelpIndicator
-        variant="floating"
-        position="bottom-right"
-        context="courses"
-        showTips={true}
-      />
+
 
       {/* Real-time Notifications */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
@@ -1636,23 +1116,7 @@ const CourseContent = () => {
         </div>
       )}
 
-      {/* Adaptive Behavior Dashboard */}
-      <AdaptiveBehaviorDashboard
-        isOpen={adaptiveDashboardOpen}
-        onClose={() => setAdaptiveDashboardOpen(false)}
-      />
 
-      {/* User Preference Manager */}
-      <UserPreferenceManager
-        isOpen={preferenceManagerOpen}
-        onClose={() => setPreferenceManagerOpen(false)}
-      />
-
-      {/* Performance Monitor */}
-      <PerformanceMonitor
-        isOpen={performanceMonitorOpen}
-        onClose={() => setPerformanceMonitorOpen(false)}
-      />
 
       {/* Adaptive Sync Indicator - Hidden to reduce clutter */}
       {/* <AdaptiveSyncIndicator

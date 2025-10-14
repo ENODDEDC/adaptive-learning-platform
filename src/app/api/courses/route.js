@@ -1,5 +1,6 @@
 import connectMongoDB from '@/config/mongoConfig';
 import Course from '@/models/Course';
+import Content from '@/models/Content';
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/utils/auth';
 import { withPerformanceMonitoring } from '@/utils/performanceMonitor';
@@ -88,7 +89,45 @@ const monitoredGET = withPerformanceMonitoring(async (request) => {
     ]
   }).lean();
 
-  const responseData = { courses };
+  // Get student count and module count for each course
+  const coursesWithStats = await Promise.all(courses.map(async (course) => {
+    // Count enrolled students (excluding the creator)
+    const studentCount = course.enrolledUsers?.length || 0; // Only actual enrolled students
+    
+    // Get the EXACT data that Materials tab gets and count it
+    // Materials tab does: courseContent.map() - shows ALL items (no slice limit)
+
+    const allMaterialsData = await Content.find({
+      courseId: course._id,
+      isActive: true
+    })
+    .populate('uploadedBy', 'name email')
+    .sort({ createdAt: -1 })
+    .select('_id courseId title description filename originalName filePath contentType fileSize mimeType createdAt uploadedBy');
+
+    // Materials tab shows ALL items (no slice limit anymore)
+    const moduleCount = allMaterialsData.length; // EXACT count Materials tab shows
+
+    console.log(`Course ${course._id} - Module count: ${moduleCount}`);
+    console.log(`Course ${course._id} - Student count: ${studentCount}`);
+    console.log(`Course ${course._id} - Total materials in DB: ${allMaterialsData.length}`);
+    console.log(`Course ${course._id} - Materials tab shows: ${moduleCount} items (ALL)`);
+    console.log(`Course ${course._id} - Materials list:`, allMaterialsData.map(m => ({
+      id: m._id,
+      title: m.title,
+      type: m.contentType,
+      mimeType: m.mimeType,
+      filename: m.filename
+    })));
+
+    return {
+      ...course,
+      studentCount,
+      moduleCount
+    };
+  }));
+
+  const responseData = { courses: coursesWithStats };
 
   // Cache the result
   setCachedCourses(cacheKey, responseData);

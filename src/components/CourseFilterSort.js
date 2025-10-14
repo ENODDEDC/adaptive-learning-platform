@@ -114,9 +114,6 @@ const CourseFilterSort = ({
         case 'name':
           comparison = (a.title || '').localeCompare(b.title || '');
           break;
-        case 'progress':
-          comparison = (a.progress || 0) - (b.progress || 0);
-          break;
         case 'instructor':
           comparison = (a.instructor || '').localeCompare(b.instructor || '');
           break;
@@ -125,9 +122,6 @@ const CourseFilterSort = ({
           break;
         case 'enrollment':
           comparison = (24) - (24); // This would use actual enrollment data
-          break;
-        case 'created':
-          comparison = new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
           break;
         case 'accessed':
           comparison = new Date(a.lastAccessed || 0) - new Date(b.lastAccessed || 0);
@@ -364,11 +358,7 @@ const CourseFilterSort = ({
         {[
           { value: 'name-asc', label: 'Name A-Z', icon: ArrowUpIcon },
           { value: 'name-desc', label: 'Name Z-A', icon: ArrowDownIcon },
-          { value: 'progress-desc', label: 'Progress High-Low', icon: ArrowDownIcon },
-          { value: 'progress-asc', label: 'Progress Low-High', icon: ArrowUpIcon },
-          { value: 'instructor-asc', label: 'Instructor A-Z', icon: ArrowUpIcon },
-          { value: 'created-desc', label: 'Newest First', icon: ArrowDownIcon },
-          { value: 'created-asc', label: 'Oldest First', icon: ArrowUpIcon }
+          { value: 'instructor-asc', label: 'Instructor A-Z', icon: ArrowUpIcon }
         ].map(option => {
           const Icon = option.icon;
           const isActive = sortBy === option.value;

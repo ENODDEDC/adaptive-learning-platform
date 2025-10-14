@@ -4,8 +4,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import AttachmentPreview from '@/components/AttachmentPreview';
 import RichTextEditor from '@/components/RichTextEditor';
+import SidePanelDocumentViewer from '@/components/SidePanelDocumentViewer';
+import '@/styles/sidePanelStyles.css';
 
-const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, newAnnouncementContent, setNewAnnouncementContent, handlePostAnnouncement, handleDeleteAnnouncement, newCommentContent, setNewCommentContent, handlePostComment, onOpenContent }) => {
+const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, newAnnouncementContent, setNewAnnouncementContent, handlePostAnnouncement, handleDeleteAnnouncement, newCommentContent, setNewCommentContent, handlePostComment, onOpenContent, compactMode = false, documentPanelOpen, setDocumentPanelOpen, setSidePanelDocument: setParentSidePanelDocument }) => {
   const [pinnedItems, setPinnedItems] = useState([]);
   const [itemComments, setItemComments] = useState({});
   const [error, setError] = useState('');
@@ -14,6 +16,22 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
   const [sortBy, setSortBy] = useState('newest');
   const [visibleComments, setVisibleComments] = useState({});
   const [isClient, setIsClient] = useState(false);
+  
+  // Side Panel Document Viewer State - Use parent state when available
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [sidePanelDocument, setSidePanelDocument] = useState(null);
+  
+  // Use parent's document panel state if provided
+  const isDocumentPanelOpen = documentPanelOpen !== undefined ? documentPanelOpen : sidePanelOpen;
+  const setIsDocumentPanelOpen = setDocumentPanelOpen || setSidePanelOpen;
+  
+  // Handle document setting - use parent's setter if available
+  const handleSetDocument = (document) => {
+    setSidePanelDocument(document);
+    if (setParentSidePanelDocument) {
+      setParentSidePanelDocument(document);
+    }
+  };
 
   const fetchComments = useCallback(async (itemId, itemType) => {
     try {
@@ -94,7 +112,9 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      
+
       {isInstructor && (
         <div className="group p-6 sm:p-8 bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-300/60 transition-all duration-300 hover:scale-[1.01]">
           <div className="flex items-center justify-between mb-6">
@@ -230,21 +250,9 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                           key={index}
                           attachment={attachment}
                           onPreview={(att) => {
-                            try {
-                              console.log('🔍 WINDOW: Dispatching collapseSidebar event for attachment preview');
-                              console.log('🔍 WINDOW: Window available:', typeof window !== 'undefined');
-                              if (typeof window !== 'undefined') {
-                                window.dispatchEvent(new Event('collapseSidebar'));
-                                console.log('🔍 WINDOW: Event dispatched successfully');
-                              } else {
-                                console.log('🔍 WINDOW: Cannot dispatch event - not on client');
-                              }
-                            } catch (error) {
-                              console.log('🔍 WINDOW: Error dispatching event:', error);
-                            }
-                            if (typeof onOpenContent === 'function') {
-                              onOpenContent(att);
-                            }
+                            // Open document in side panel instead of full page
+                            handleSetDocument(att);
+                            setIsDocumentPanelOpen(true);
                           }}
                         />
                       ))}
@@ -332,27 +340,27 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
             <p className="text-sm text-gray-600">Latest announcements and course updates</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            {['all','announcement','assignment'].map((key) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-300 hover:scale-105 active:scale-95 ${
-                  filter === key
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white border-blue-600 shadow-lg shadow-blue-500/25'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:border-gray-300 hover:shadow-md'
-                }`}
+              {['all','announcement','assignment'].map((key) => (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-300 hover:scale-105 active:scale-95 ${
+                    filter === key
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white border-blue-600 shadow-lg shadow-blue-500/25'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:border-gray-300 hover:shadow-md'
+                  }`}
+                >
+                  {key === 'all' ? 'All Items' : key.charAt(0).toUpperCase() + key.slice(1) + (key==='assignment'?'s':'')}
+                </button>
+              ))}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-4 py-2 text-sm font-medium border border-gray-200 rounded-lg bg-white hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
               >
-                {key === 'all' ? 'All Items' : key.charAt(0).toUpperCase() + key.slice(1) + (key==='assignment'?'s':'')}
-              </button>
-            ))}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 text-sm font-medium border border-gray-200 rounded-lg bg-white hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-            </select>
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+              </select>
           </div>
         </div>
         {loading ? (
@@ -507,7 +515,15 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                     </div>
                     <div className="space-y-3">
                       {item.attachments.map((attachment, index) => (
-                        <AttachmentPreview key={index} attachment={attachment} />
+                        <AttachmentPreview 
+                          key={index} 
+                          attachment={attachment}
+                          onPreview={(att) => {
+                            // Open document in side panel instead of full page
+                            handleSetDocument(att);
+                            setIsDocumentPanelOpen(true);
+                          }}
+                        />
                       ))}
                     </div>
                   </div>
@@ -613,6 +629,18 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
           </div>
         )}
       </div>
+
+      {/* Side Panel Document Viewer - Only render if no parent control */}
+      {documentPanelOpen === undefined && (
+        <SidePanelDocumentViewer
+          isOpen={isDocumentPanelOpen}
+          onClose={() => {
+            setIsDocumentPanelOpen(false);
+            setSidePanelDocument(null);
+          }}
+          document={sidePanelDocument}
+        />
+      )}
     </div>
   );
 };

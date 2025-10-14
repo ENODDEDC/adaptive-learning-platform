@@ -210,6 +210,40 @@ class BackblazeService {
   }
 
   /**
+   * Get file as buffer for processing (e.g., PowerPoint conversion)
+   * @param {string} fileKey - The file key
+   * @returns {Promise<Buffer>}
+   */
+  async getFileBuffer(fileKey) {
+    try {
+      console.log('🔍 Getting file buffer for key:', fileKey);
+      console.log('📊 This will count as 1 Class B (Download) operation');
+      
+      const command = new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: fileKey,
+      });
+
+      const response = await this.client.send(command);
+      
+      // Convert stream to buffer
+      const chunks = [];
+      for await (const chunk of response.Body) {
+        chunks.push(chunk);
+      }
+      
+      const buffer = Buffer.concat(chunks);
+      console.log('✅ File buffer retrieved, size:', buffer.length, 'bytes');
+      console.log('💰 Class B operation completed - this counts toward your daily quota');
+      
+      return buffer;
+    } catch (error) {
+      console.error('❌ Error getting file buffer:', error);
+      throw new Error(`Failed to get file buffer: ${error.message}`);
+    }
+  }
+
+  /**
    * Upload multiple files
    * @param {Array} files - Array of file objects with {buffer, name, contentType}
    * @param {string} folder - Optional folder path

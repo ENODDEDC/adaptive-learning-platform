@@ -12,6 +12,10 @@ import {
 } from '@heroicons/react/24/outline';
 import PowerPointViewer from './PowerPointViewer';
 import EnhancedFloatingNotes from './EnhancedFloatingNotes';
+import EnhancedPDFViewer from './EnhancedPDFViewer';
+import AITutorModal from './AITutorModal';
+import DocxPreviewWithAI from './DocxPreviewWithAI';
+import PdfPreviewWithAI from './PdfPreviewWithAI';
 
 // --- Helper Functions ---
 const formatFileSize = (bytes) => {
@@ -36,42 +40,520 @@ const generateHeadingId = (text, index) => {
   return `heading-${index}-${safeText}`;
 };
 
-// Inject CSS overrides into Pandoc HTML so it renders cleanly and left-aligned
+// Enhanced CSS overrides for better DOCX formatting and readability
 const injectOverrideStyles = (rawHtml) => {
   const overrideCss = `
-    :root { color-scheme: light; }
-    html, body { margin: 0 !important; padding: 0 !important; background: #f7f8fb; width: 100% !important; max-width: 100% !important; overflow-x: hidden !important; height: 100% !important; min-height: 100% !important; }
-    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; line-height: 1.75; color: #0f172a; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; width: 100% !important; max-width: 100% !important; overflow-x: hidden !important; height: 100% !important; min-height: 100% !important; }
-    .reader-container { max-width: 100% !important; margin: 0 !important; padding: 32px 40px 20px 40px; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06); width: 100% !important; min-width: 100% !important; overflow-x: hidden !important; box-sizing: border-box !important; min-height: calc(100vh - 200px) !important; }
-    .reader-container p { margin: 1.1em 0; font-size: 1rem; color: #0b1324; }
-    .reader-container h1 { font-family: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif; font-size: 2.25rem; line-height: 1.2; margin: 0.6em 0 0.4em; color: #0b1324; letter-spacing: -0.01em; }
-    .reader-container h2 { font-family: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif; font-size: 1.75rem; line-height: 1.25; margin: 1.4em 0 0.5em; color: #0b1324; letter-spacing: -0.01em; }
-    .reader-container h3 { font-size: 1.35rem; line-height: 1.3; margin: 1.2em 0 0.5em; color: #111827; }
-    .reader-container h4, .reader-container h5, .reader-container h6 { margin: 1em 0 0.4em; color: #111827; }
-    .reader-container ul, .reader-container ol { margin: 0.8em 0 0.8em 1.25em; padding: 0; }
-    .reader-container li { margin: 0.35em 0; }
-    .reader-container blockquote { margin: 1.2em 0; padding: 0.75em 1em; background: #f0f6ff; border-left: 4px solid #3b82f6; color: #0b1324; border-radius: 6px; }
-    .reader-container img, .reader-container video, .reader-container canvas, .reader-container svg { max-width: 100%; height: auto; border-radius: 10px; }
-    .reader-container table { width: 100%; border-collapse: collapse; margin: 1em 0; }
-    .reader-container table th, .reader-container table td { padding: 10px 12px; border: 1px solid #e5e7eb; }
-    .reader-container pre, .reader-container code { white-space: pre-wrap; word-break: break-word; background: #0b1220; color: #e2e8f0; padding: 10px 12px; border-radius: 8px; }
-    .reader-container a { color: #1d4ed8; text-decoration: none; }
-    .reader-container a:hover { text-decoration: underline; }
-    /* Responsive layout - use more space on larger screens */
+    :root { 
+      color-scheme: light; 
+      --text-primary: #1a202c;
+      --text-secondary: #2d3748;
+      --text-muted: #4a5568;
+      --bg-primary: #ffffff;
+      --bg-secondary: #f7fafc;
+      --border-light: #e2e8f0;
+      --accent-blue: #3182ce;
+      --accent-blue-light: #ebf8ff;
+    }
+    
+    html, body { 
+      margin: 0 !important; 
+      padding: 0 !important; 
+      background: var(--bg-secondary); 
+      width: 100% !important; 
+      max-width: 100% !important; 
+      overflow-x: hidden !important; 
+      height: 100% !important; 
+      min-height: 100% !important; 
+    }
+    
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.7; 
+      color: var(--text-primary); 
+      -webkit-font-smoothing: antialiased; 
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility; 
+      width: 100% !important; 
+      max-width: 100% !important; 
+      overflow-x: hidden !important; 
+      height: 100% !important; 
+      min-height: 100% !important; 
+      font-size: 16px;
+    }
+    
+    .reader-container { 
+      max-width: 100% !important; 
+      margin: 0 !important; 
+      padding: 48px 56px 40px 56px; 
+      background: var(--bg-primary); 
+      border-radius: 16px; 
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+      width: 100% !important; 
+      min-width: 100% !important; 
+      overflow-x: hidden !important; 
+      box-sizing: border-box !important; 
+      min-height: calc(100vh - 200px) !important; 
+    }
+    
+    /* Enhanced Typography */
+    .reader-container p { 
+      margin: 1.25em 0; 
+      font-size: 1.05rem; 
+      color: var(--text-secondary); 
+      line-height: 1.75;
+      text-align: justify;
+      hyphens: auto;
+      word-spacing: 0.05em;
+    }
+    
+    .reader-container p:first-of-type {
+      margin-top: 0;
+    }
+    
+    .reader-container p:last-of-type {
+      margin-bottom: 0;
+    }
+    
+    /* Enhanced Headings with Better Hierarchy */
+    .reader-container h1 { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 2.5rem; 
+      font-weight: 700;
+      line-height: 1.2; 
+      margin: 2em 0 1em 0; 
+      color: var(--text-primary); 
+      letter-spacing: -0.025em;
+      border-bottom: 3px solid var(--accent-blue);
+      padding-bottom: 0.5em;
+    }
+    
+    .reader-container h1:first-child {
+      margin-top: 0;
+    }
+    
+    .reader-container h2 { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 2rem; 
+      font-weight: 600;
+      line-height: 1.3; 
+      margin: 2.5em 0 1em 0; 
+      color: var(--text-primary); 
+      letter-spacing: -0.02em;
+      border-bottom: 2px solid var(--border-light);
+      padding-bottom: 0.3em;
+    }
+    
+    .reader-container h3 { 
+      font-size: 1.5rem; 
+      font-weight: 600;
+      line-height: 1.4; 
+      margin: 2em 0 0.75em 0; 
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+    
+    .reader-container h4 { 
+      font-size: 1.25rem; 
+      font-weight: 600;
+      line-height: 1.4; 
+      margin: 1.75em 0 0.5em 0; 
+      color: var(--text-secondary);
+    }
+    
+    .reader-container h5, .reader-container h6 { 
+      font-size: 1.1rem; 
+      font-weight: 600;
+      line-height: 1.4; 
+      margin: 1.5em 0 0.5em 0; 
+      color: var(--text-secondary);
+    }
+    
+    /* Enhanced Lists */
+    .reader-container ul, .reader-container ol { 
+      margin: 1.25em 0; 
+      padding-left: 2em; 
+      line-height: 1.7;
+    }
+    
+    .reader-container li { 
+      margin: 0.75em 0; 
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+    
+    .reader-container li p {
+      margin: 0.5em 0;
+    }
+    
+    .reader-container ul li {
+      list-style-type: disc;
+    }
+    
+    .reader-container ul ul li {
+      list-style-type: circle;
+    }
+    
+    .reader-container ul ul ul li {
+      list-style-type: square;
+    }
+    
+    /* Enhanced Blockquotes */
+    .reader-container blockquote { 
+      margin: 2em 0; 
+      padding: 1.25em 1.5em; 
+      background: var(--accent-blue-light); 
+      border-left: 4px solid var(--accent-blue); 
+      color: var(--text-secondary); 
+      border-radius: 8px;
+      font-style: italic;
+      position: relative;
+    }
+    
+    .reader-container blockquote::before {
+      content: '"';
+      font-size: 4em;
+      color: var(--accent-blue);
+      position: absolute;
+      top: -0.2em;
+      left: 0.2em;
+      opacity: 0.3;
+      font-family: Georgia, serif;
+    }
+    
+    .reader-container blockquote p {
+      margin: 0.5em 0;
+      padding-left: 1em;
+    }
+    
+    /* Enhanced Tables */
+    .reader-container table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin: 2em 0;
+      background: var(--bg-primary);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .reader-container table th { 
+      padding: 1em 1.25em; 
+      background: var(--bg-secondary);
+      border-bottom: 2px solid var(--border-light);
+      font-weight: 600;
+      color: var(--text-primary);
+      text-align: left;
+    }
+    
+    .reader-container table td { 
+      padding: 0.875em 1.25em; 
+      border-bottom: 1px solid var(--border-light);
+      color: var(--text-secondary);
+    }
+    
+    .reader-container table tr:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+    
+    /* Enhanced Code Blocks */
+    .reader-container pre { 
+      background: #1a202c; 
+      color: #e2e8f0; 
+      padding: 1.5em; 
+      border-radius: 12px;
+      overflow-x: auto;
+      margin: 1.5em 0;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+      font-size: 0.9em;
+      line-height: 1.6;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .reader-container code { 
+      background: #f1f5f9; 
+      color: #475569; 
+      padding: 0.25em 0.5em; 
+      border-radius: 4px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+    
+    .reader-container pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+    
+    /* Enhanced Links */
+    .reader-container a { 
+      color: var(--accent-blue); 
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+    
+    .reader-container a:hover { 
+      border-bottom-color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.1);
+      padding: 0.1em 0.2em;
+      border-radius: 3px;
+    }
+    
+    /* Enhanced Images and Media */
+    .reader-container img, .reader-container video, .reader-container canvas, .reader-container svg { 
+      max-width: 100%; 
+      height: auto; 
+      border-radius: 12px;
+      margin: 1.5em 0;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Enhanced Emphasis */
+    .reader-container strong, .reader-container b {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .reader-container em, .reader-container i {
+      font-style: italic;
+      color: var(--text-secondary);
+    }
+    
+    /* Enhanced Horizontal Rules */
+    .reader-container hr {
+      border: none;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--border-light), transparent);
+      margin: 3em 0;
+    }
+    
+    /* Better Paragraph Spacing for Different Content Types */
+    .reader-container p + h1,
+    .reader-container p + h2,
+    .reader-container p + h3 {
+      margin-top: 2.5em;
+    }
+    
+    .reader-container h1 + p,
+    .reader-container h2 + p,
+    .reader-container h3 + p {
+      margin-top: 0.75em;
+    }
+    
+    /* Enhanced Focus and Selection */
+    .reader-container *:focus {
+      outline: 2px solid var(--accent-blue);
+      outline-offset: 2px;
+    }
+    
+    .reader-container ::selection {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--text-primary);
+    }
+    
+    /* Responsive Typography */
+    @media (max-width: 768px) {
+      .reader-container {
+        padding: 32px 24px;
+      }
+      
+      .reader-container h1 {
+        font-size: 2rem;
+      }
+      
+      .reader-container h2 {
+        font-size: 1.75rem;
+      }
+      
+      .reader-container h3 {
+        font-size: 1.375rem;
+      }
+      
+      .reader-container p {
+        font-size: 1rem;
+        text-align: left;
+      }
+    }
+    
     @media (min-width: 1200px) {
-      .reader-container { max-width: 100% !important; margin: 0 !important; width: 100% !important; overflow-x: hidden !important; }
+      .reader-container { 
+        max-width: 100% !important; 
+        margin: 0 !important; 
+        width: 100% !important; 
+        overflow-x: hidden !important; 
+      }
     }
+    
     @media (min-width: 1600px) {
-      .reader-container { max-width: 100% !important; margin: 0 !important; width: 100% !important; overflow-x: hidden !important; }
+      .reader-container { 
+        max-width: 100% !important; 
+        margin: 0 !important; 
+        width: 100% !important; 
+        overflow-x: hidden !important; 
+      }
     }
+    
     /* Ensure everything is left-aligned by default */
     .reader-container h1, .reader-container h2, .reader-container h3, .reader-container h4, .reader-container h5, .reader-container h6,
-    .reader-container p, .reader-container li, .reader-container td, .reader-container th, .reader-container blockquote, .reader-container figure, .reader-container figcaption { text-align: left !important; }
+    .reader-container p, .reader-container li, .reader-container td, .reader-container th, .reader-container blockquote, 
+    .reader-container figure, .reader-container figcaption { 
+      text-align: left !important; 
+    }
     
     /* Force full width on all elements and prevent overflow */
-    * { max-width: 100% !important; box-sizing: border-box !important; }
-    .reader-container, .reader-container * { max-width: 100% !important; width: auto !important; overflow-x: hidden !important; }
-    .reader-container { width: 100% !important; min-width: 100% !important; overflow-x: hidden !important; }
+    * { 
+      max-width: 100% !important; 
+      box-sizing: border-box !important; 
+    }
+    
+    .reader-container, .reader-container * { 
+      max-width: 100% !important; 
+      width: auto !important; 
+      overflow-x: hidden !important; 
+    }
+    
+    .reader-container { 
+      width: 100% !important; 
+      min-width: 100% !important; 
+      overflow-x: hidden !important; 
+    }
+    
+    /* Enhanced Document-Specific Styles */
+    .reader-container .document-content {
+      line-height: 1.8;
+    }
+    
+    .reader-container .document-title {
+      text-align: center;
+      margin: 0 0 2em 0;
+      padding: 1em 0;
+      border-bottom: 3px solid var(--accent-blue);
+      font-size: 2.75rem;
+      font-weight: 700;
+    }
+    
+    .reader-container .section-heading {
+      margin-top: 3em;
+      margin-bottom: 1.25em;
+      padding-bottom: 0.5em;
+      border-bottom: 2px solid var(--border-light);
+      color: var(--text-primary);
+    }
+    
+    .reader-container .subsection-heading {
+      margin-top: 2.5em;
+      margin-bottom: 1em;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    
+    .reader-container .document-paragraph {
+      margin: 1.5em 0;
+      text-indent: 0;
+      line-height: 1.8;
+    }
+    
+    .reader-container .document-paragraph:first-of-type {
+      margin-top: 0;
+    }
+    
+    .reader-container .empty-paragraph {
+      margin: 0.75em 0;
+      height: 0.75em;
+    }
+    
+    .reader-container .document-list {
+      margin: 1.5em 0;
+      padding-left: 2.5em;
+    }
+    
+    .reader-container .document-list.numbered {
+      list-style-type: decimal;
+    }
+    
+    .reader-container .document-list li {
+      margin: 0.75em 0;
+      line-height: 1.7;
+    }
+    
+    .reader-container .document-table {
+      margin: 2.5em 0;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .reader-container .document-image {
+      display: block;
+      margin: 2em auto;
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .reader-container .subtitle {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      margin: 1em 0 2em 0;
+    }
+    
+    .reader-container .intense {
+      background: linear-gradient(120deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+      padding: 1.5em 2em;
+      border-radius: 12px;
+      border-left: 4px solid var(--accent-blue);
+      margin: 2em 0;
+    }
+    
+    .reader-container .list-paragraph {
+      margin: 0.5em 0;
+    }
+    
+    /* Better spacing between different content types */
+    .reader-container .document-paragraph + .section-heading,
+    .reader-container .document-list + .section-heading,
+    .reader-container .document-table + .section-heading {
+      margin-top: 3.5em;
+    }
+    
+    .reader-container .section-heading + .document-paragraph,
+    .reader-container .subsection-heading + .document-paragraph {
+      margin-top: 1em;
+    }
+    
+    .reader-container .document-paragraph + .document-list,
+    .reader-container .document-paragraph + .document-table {
+      margin-top: 2em;
+    }
+    
+    /* Enhanced readability for long documents */
+    .reader-container .document-content > .document-paragraph:nth-child(4n) {
+      margin-bottom: 2em;
+    }
+    
+    /* Print Styles */
+    @media print {
+      .reader-container {
+        box-shadow: none;
+        padding: 0;
+        background: white;
+      }
+      
+      .reader-container h1, .reader-container h2 {
+        border-bottom: none;
+      }
+      
+      .reader-container .document-title {
+        border-bottom: 2px solid #000;
+      }
+      
+      .reader-container .section-heading {
+        border-bottom: 1px solid #000;
+      }
+    }
   `;
 
   const wrapScript = `
@@ -107,7 +589,7 @@ const injectOverrideStyles = (rawHtml) => {
 };
 
 // --- Attachment Preview Component ---
-const AttachmentPreviewContent = ({ attachment }) => {
+const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [htmlContent, setHtmlContent] = useState('');
   const [error, setError] = useState(null);
@@ -185,37 +667,143 @@ const AttachmentPreviewContent = ({ attachment }) => {
       
       if (isWordDocument) {
         try {
-          const conversionApiUrl = `/api/convert-docx?filePath=${encodeURIComponent(attachment.filePath.replace(window.location.origin, ''))}`;
-          const response = await fetch(conversionApiUrl);
-          if (!response.ok) {
-            let errorDetails = `Server error: ${response.statusText}`;
-            try {
-              const errData = await response.json();
-              errorDetails = errData.details || errData.error || errorDetails;
-            } catch (jsonError) {
-              // Ignore if the error response is not JSON
+          console.log('🔍 Processing Word document:', attachment);
+          
+          // Check if this is a Backblaze B2 file (URL contains /api/files/)
+          console.log('🔍 Attachment object:', attachment);
+          console.log('🔍 Attachment URL:', attachment.url);
+          console.log('🔍 Attachment filePath:', attachment.filePath);
+          
+          // Check both url and filePath for Backblaze B2 files
+          const fileUrl = attachment.url || attachment.filePath;
+          const isBackblazeFile = fileUrl && fileUrl.includes('/api/files/');
+          console.log('🔍 File URL to check:', fileUrl);
+          console.log('🔍 Is Backblaze file:', isBackblazeFile);
+          
+          let response;
+          
+          if (isBackblazeFile) {
+            // Extract file key from URL for Backblaze B2 files
+            const urlParts = fileUrl.split('/api/files/');
+            console.log('🔍 URL parts:', urlParts);
+            const fileKey = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
+            console.log('🔍 Extracted file key:', fileKey);
+            
+            if (!fileKey) {
+              throw new Error('Could not extract file key from URL');
             }
-            throw new Error(errorDetails);
-          }
-          const html = await response.text();
-          if (html) {
-            // Create a temporary element to extract headings from the HTML
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
-            const extractedHeadings = Array.from(headingElements).map((heading, index) => {
-              const id = `heading-${index}`;
-              heading.id = id;
-              return {
-                id,
-                text: cleanHeadingText(heading.textContent),
-                level: parseInt(heading.tagName.substring(1)),
-              };
+            
+            console.log('🔍 Converting Backblaze B2 Word document with key:', fileKey);
+            
+            response = await fetch('/api/files/convert', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ fileKey }),
             });
-            setHeadings(extractedHeadings);
-            setHtmlContent(html);
+            
+            if (!response.ok) {
+              let errorDetails = `Server error: ${response.statusText}`;
+              try {
+                const responseText = await response.text();
+                console.error('🔍 Raw error response (attachment):', responseText);
+                
+                if (responseText) {
+                  try {
+                    const errData = JSON.parse(responseText);
+                    console.error('🔍 Parsed error response (attachment):', errData);
+                    errorDetails = errData.message || errData.error || errorDetails;
+                    
+                    // Add more context to the error
+                    if (errData.fileKey) {
+                      errorDetails += ` (File key: ${errData.fileKey})`;
+                    }
+                  } catch (parseError) {
+                    console.error('🔍 Could not parse error response as JSON (attachment):', parseError);
+                    errorDetails = responseText || errorDetails;
+                  }
+                } else {
+                  errorDetails = 'Empty error response from server';
+                }
+              } catch (textError) {
+                console.error('🔍 Could not read error response as text (attachment):', textError);
+              }
+              throw new Error(errorDetails);
+            }
+            
+            let result;
+            try {
+              const responseText = await response.text();
+              console.log('🔍 Raw success response (attachment):', responseText);
+              
+              if (!responseText) {
+                throw new Error('Empty response from conversion API');
+              }
+              
+              result = JSON.parse(responseText);
+              console.log('🔍 Parsed success response (attachment):', result);
+            } catch (jsonError) {
+              console.error('🔍 Could not parse success response as JSON (attachment):', jsonError);
+              throw new Error('Invalid JSON response from conversion API');
+            }
+            const html = result.html;
+            
+            if (html) {
+              // Create a temporary element to extract headings from the HTML
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = html;
+              const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
+              const extractedHeadings = Array.from(headingElements).map((heading, index) => {
+                const id = `heading-${index}`;
+                heading.id = id;
+                return {
+                  id,
+                  text: cleanHeadingText(heading.textContent),
+                  level: parseInt(heading.tagName.substring(1)),
+                };
+              });
+              setHeadings(extractedHeadings);
+              setHtmlContent(html);
+            } else {
+              throw new Error('Conversion returned empty HTML.');
+            }
           } else {
-            throw new Error('Conversion returned empty HTML.');
+            // Legacy local file conversion
+            const conversionApiUrl = `/api/convert-docx?filePath=${encodeURIComponent(attachment.filePath.replace(window.location.origin, ''))}`;
+            response = await fetch(conversionApiUrl);
+            
+            if (!response.ok) {
+              let errorDetails = `Server error: ${response.statusText}`;
+              try {
+                const errData = await response.json();
+                errorDetails = errData.details || errData.error || errorDetails;
+              } catch (jsonError) {
+                // Ignore if the error response is not JSON
+              }
+              throw new Error(errorDetails);
+            }
+            
+            const html = await response.text();
+            if (html) {
+              // Create a temporary element to extract headings from the HTML
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = html;
+              const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
+              const extractedHeadings = Array.from(headingElements).map((heading, index) => {
+                const id = `heading-${index}`;
+                heading.id = id;
+                return {
+                  id,
+                  text: cleanHeadingText(heading.textContent),
+                  level: parseInt(heading.tagName.substring(1)),
+                };
+              });
+              setHeadings(extractedHeadings);
+              setHtmlContent(html);
+            } else {
+              throw new Error('Conversion returned empty HTML.');
+            }
           }
         } catch (err) {
           console.error('Error fetching or converting docx:', err);
@@ -338,78 +926,26 @@ const AttachmentPreviewContent = ({ attachment }) => {
 
     case 'pdf':
       return (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center p-8">
-            <div className="text-6xl mb-4">📄</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">{attachment.title || 'PDF Document'}</h3>
-            <p className="text-gray-600 mb-6">Click the button below to open the PDF in a new tab</p>
-            <a
-              href={attachment.url || attachment.filePath}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-              Open PDF in New Tab
-            </a>
-          </div>
-        </div>
+        <PdfPreviewWithAI
+          content={attachment}
+          pdfUrl={attachment.url || attachment.filePath}
+          notes={notes}
+          injectOverrideStyles={injectOverrideStyles}
+          disableTools={disableTools}
+        />
       );
 
     case 'docx':
       return (
-        <div className="w-full h-full flex">
-          {/* Sidebar with headings */}
-          {headings.length > 0 && (
-            <aside className="w-64 flex-shrink-0 h-full overflow-y-auto p-8 border-r bg-slate-50/50 hidden lg:block">
-              <h3 className="text-sm font-semibold text-slate-800 mb-4">On this page</h3>
-              <ul className="space-y-2">
-                {headings.map((heading) => (
-                  <li key={heading.id} className={`text-sm ${heading.level === 2 ? 'pl-3' : ''} ${heading.level === 3 ? 'pl-6' : ''}`}>
-                    <a
-                      href={`#${heading.id}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        const element = document.querySelector(`#${heading.id}`);
-                        if (element) {
-                          element.scrollIntoView({ behavior: 'smooth' });
-                        }
-                      }}
-                      className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors py-1"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                      <span className="truncate max-w-[11rem]" title={heading.text}>{heading.text}</span>
-                      {headingsWithNotes.has(heading.id) && (
-                        <span className="w-2 h-2 bg-blue-500 rounded-full" title="This section has notes"></span>
-                      )}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </aside>
-          )}
-          
-          {/* Main content */}
-          <div className="flex-1">
-            {htmlContent ? (
-              <iframe
-                className="w-full h-full rounded-lg bg-white"
-                title={attachment.title}
-                srcDoc={injectOverrideStyles(htmlContent)}
-                style={{ border: 'none' }}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="w-8 h-8 border-4 border-sky-200 border-t-sky-600 rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading document...</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <DocxPreviewWithAI
+          content={attachment}
+          htmlContent={htmlContent}
+          headings={headings}
+          notes={notes}
+          headingsWithNotes={headingsWithNotes}
+          injectOverrideStyles={injectOverrideStyles}
+          disableTools={disableTools}
+        />
       );
 
     case 'text':
@@ -465,7 +1001,7 @@ const AttachmentPreviewContent = ({ attachment }) => {
 };
 
 // --- Main Component ---
-const ContentViewer = ({ content, onClose, isModal = true }) => {
+const ContentViewer = ({ content, onClose, isModal = true, disableTools = false }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [htmlContent, setHtmlContent] = useState('');
   const [error, setError] = useState(null);
@@ -524,41 +1060,142 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
 
       if (isWordDocument) {
         try {
-          const conversionApiUrl = `/api/convert-docx?filePath=${encodeURIComponent(content.filePath.replace(window.location.origin, ''))}`;
-          const response = await fetch(conversionApiUrl);
-          if (!response.ok) {
-            // Try to get error details from JSON, otherwise use status text
-            let errorDetails = `Server error: ${response.statusText}`;
-            try {
-              const errData = await response.json();
-              errorDetails = errData.details || errData.error || errorDetails;
-            } catch (jsonError) {
-              // Ignore if the error response is not JSON
-            }
-            throw new Error(errorDetails);
-          }
+          console.log('🔍 Processing Word document (content):', content);
           
-          const html = await response.text(); // The API returns full HTML (may contain <head> with styles)
-
-          if (html) {
-            // Create a temporary element to extract headings from the HTML
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
-            const extractedHeadings = Array.from(headingElements).map((heading, index) => {
-              const id = generateHeadingId(heading.textContent, index);
-              heading.id = id; // Add ID to the element itself for scrolling
-              return {
-                id,
-                text: cleanHeadingText(heading.textContent),
-                level: parseInt(heading.tagName.substring(1)),
-              };
+          // Check if this is a Backblaze B2 file (URL contains /api/files/)
+          const fileUrl = content.url || content.filePath;
+          const isBackblazeFile = fileUrl && fileUrl.includes('/api/files/');
+          console.log('🔍 File URL to check (content):', fileUrl);
+          console.log('🔍 Is Backblaze file (content):', isBackblazeFile);
+          
+          let response;
+          
+          if (isBackblazeFile) {
+            // Extract file key from URL for Backblaze B2 files
+            const urlParts = fileUrl.split('/api/files/');
+            console.log('🔍 URL parts (content):', urlParts);
+            const fileKey = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
+            console.log('🔍 Extracted file key (content):', fileKey);
+            
+            if (!fileKey) {
+              throw new Error('Could not extract file key from URL');
+            }
+            
+            console.log('🔍 Converting Backblaze B2 Word document with key (content):', fileKey);
+            
+            response = await fetch('/api/files/convert', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ fileKey }),
             });
-            setHeadings(extractedHeadings);
-            // Keep the raw HTML intact so we can render it inside an isolated iframe via srcDoc
-            setHtmlContent(html);
+            
+            if (!response.ok) {
+              let errorDetails = `Server error: ${response.statusText}`;
+              try {
+                const responseText = await response.text();
+                console.error('🔍 Raw error response:', responseText);
+                
+                if (responseText) {
+                  try {
+                    const errData = JSON.parse(responseText);
+                    console.error('🔍 Parsed error response:', errData);
+                    errorDetails = errData.message || errData.error || errorDetails;
+                    
+                    // Add more context to the error
+                    if (errData.fileKey) {
+                      errorDetails += ` (File key: ${errData.fileKey})`;
+                    }
+                  } catch (parseError) {
+                    console.error('🔍 Could not parse error response as JSON:', parseError);
+                    errorDetails = responseText || errorDetails;
+                  }
+                } else {
+                  errorDetails = 'Empty error response from server';
+                }
+              } catch (textError) {
+                console.error('🔍 Could not read error response as text:', textError);
+              }
+              throw new Error(errorDetails);
+            }
+            
+            let result;
+            try {
+              const responseText = await response.text();
+              console.log('🔍 Raw success response:', responseText);
+              
+              if (!responseText) {
+                throw new Error('Empty response from conversion API');
+              }
+              
+              result = JSON.parse(responseText);
+              console.log('🔍 Parsed success response:', result);
+            } catch (jsonError) {
+              console.error('🔍 Could not parse success response as JSON:', jsonError);
+              throw new Error('Invalid JSON response from conversion API');
+            }
+            const html = result.html;
+            
+            if (html) {
+              // Create a temporary element to extract headings from the HTML
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = html;
+              const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
+              const extractedHeadings = Array.from(headingElements).map((heading, index) => {
+                const id = generateHeadingId(heading.textContent, index);
+                heading.id = id; // Add ID to the element itself for scrolling
+                return {
+                  id,
+                  text: cleanHeadingText(heading.textContent),
+                  level: parseInt(heading.tagName.substring(1)),
+                };
+              });
+              setHeadings(extractedHeadings);
+              // Keep the raw HTML intact so we can render it inside an isolated iframe via srcDoc
+              setHtmlContent(html);
+            } else {
+              throw new Error('Conversion returned empty HTML.');
+            }
           } else {
-            throw new Error('Conversion returned empty HTML.');
+            // Legacy local file conversion
+            const conversionApiUrl = `/api/convert-docx?filePath=${encodeURIComponent(content.filePath.replace(window.location.origin, ''))}`;
+            response = await fetch(conversionApiUrl);
+            
+            if (!response.ok) {
+              // Try to get error details from JSON, otherwise use status text
+              let errorDetails = `Server error: ${response.statusText}`;
+              try {
+                const errData = await response.json();
+                errorDetails = errData.details || errData.error || errorDetails;
+              } catch (jsonError) {
+                // Ignore if the error response is not JSON
+              }
+              throw new Error(errorDetails);
+            }
+            
+            const html = await response.text(); // The API returns full HTML (may contain <head> with styles)
+
+            if (html) {
+              // Create a temporary element to extract headings from the HTML
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = html;
+              const headingElements = tempDiv.querySelectorAll('h1, h2, h3');
+              const extractedHeadings = Array.from(headingElements).map((heading, index) => {
+                const id = generateHeadingId(heading.textContent, index);
+                heading.id = id; // Add ID to the element itself for scrolling
+                return {
+                  id,
+                  text: cleanHeadingText(heading.textContent),
+                  level: parseInt(heading.tagName.substring(1)),
+                };
+              });
+              setHeadings(extractedHeadings);
+              // Keep the raw HTML intact so we can render it inside an isolated iframe via srcDoc
+              setHtmlContent(html);
+            } else {
+              throw new Error('Conversion returned empty HTML.');
+            }
           }
         } catch (err) {
           console.error('Error fetching or converting docx:', err);
@@ -939,16 +1576,25 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
         );
 
       case 'pdf':
-          return <iframe src={content.filePath} className="w-full h-[75vh] rounded-lg border" title={content.title} />;
+          return (
+            <PdfPreviewWithAI
+              content={content}
+              pdfUrl={content.url || content.filePath}
+              notes={notes}
+              injectOverrideStyles={injectOverrideStyles}
+            />
+          );
 
       case 'docx':
           return (
-            <iframe
-              className="w-full rounded-lg bg-white"
-              title={content.title}
-              srcDoc={iframeSrcDoc}
-              style={{ width: '100%', minWidth: '100%', height: 'calc(100vh - 200px)', minHeight: '600px', border: 'none' }}
-              ref={iframeRef} // Add ref to iframe
+            <DocxPreviewWithAI
+              content={content}
+              htmlContent={htmlContent}
+              headings={headings}
+              notes={notes}
+              headingsWithNotes={headingsWithNotes}
+              injectOverrideStyles={injectOverrideStyles}
+              disableTools={disableTools}
             />
           );
 
@@ -1059,7 +1705,7 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
               
               {/* Current attachment preview - reuse full viewer for parity */}
               <div className="flex-1 min-h-0">
-                <ContentViewer content={currentAttachment} onClose={onClose} isModal={false} />
+                <ContentViewer content={currentAttachment} onClose={onClose} isModal={false} disableTools={disableTools} />
               </div>
               
               {/* Attachment list removed (pagination arrows are sufficient) */}
@@ -1208,7 +1854,14 @@ const ContentViewer = ({ content, onClose, isModal = true }) => {
             </div>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full flex-shrink-0 ml-4"><XMarkIcon className="w-6 h-6" /></button>
+        <button 
+          onClick={onClose} 
+          className="p-2 text-slate-500 hover:bg-slate-100 rounded-full flex-shrink-0 ml-4 relative hover:text-slate-700 transition-colors"
+          style={{ zIndex: 10000 }}
+          title="Close viewer"
+        >
+          <XMarkIcon className="w-6 h-6" />
+        </button>
       </div>
       )}
 

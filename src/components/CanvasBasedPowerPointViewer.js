@@ -7,6 +7,7 @@ import {
   ChevronRightIcon,
   ArrowsPointingOutIcon,
   XMarkIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 
 const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal = true }) => {
@@ -23,6 +24,7 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
   const [useFallback, setUseFallback] = useState(false);
   const [thumbnails, setThumbnails] = useState({});
   const [loadingThumbnails, setLoadingThumbnails] = useState({});
+  const [showAINotification, setShowAINotification] = useState(false);
 
   const canvasRef = useRef(null);
   const viewerRef = useRef(null);
@@ -151,7 +153,18 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
         }
 
         console.log('✅ PowerPoint converted successfully:', data.pdfUrl);
-        const fullPdfUrl = `${window.location.origin}${data.pdfUrl}`;
+        
+        // Handle both relative and absolute URLs
+        let fullPdfUrl;
+        if (data.pdfUrl.startsWith('http://') || data.pdfUrl.startsWith('https://')) {
+          // Already a full URL
+          fullPdfUrl = data.pdfUrl;
+        } else {
+          // Relative URL, prepend origin
+          fullPdfUrl = `${window.location.origin}${data.pdfUrl}`;
+        }
+        
+        console.log('🔗 Full PDF URL:', fullPdfUrl);
         setPdfUrl(fullPdfUrl);
         setTotalPages(data.pageCount || 1);
 
@@ -430,6 +443,15 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
     }
   };
 
+  // AI Narrator handler - show under development message
+  const handleAINarrator = () => {
+    setShowAINotification(true);
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      setShowAINotification(false);
+    }, 5000);
+  };
+
   // Handle canvas resize
   useEffect(() => {
     const handleResize = () => {
@@ -653,6 +675,14 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
             </div>
             
             <button
+              onClick={handleAINarrator}
+              className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+              title="AI Narrator (Under Development)"
+            >
+              <SparklesIcon className="w-4 h-4" />
+            </button>
+            
+            <button
               onClick={toggleFullscreen}
               className="p-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
               title="Toggle fullscreen"
@@ -720,6 +750,90 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
           </div>
         </div>
       </div>
+
+      {/* AI Narrator Under Development Notification */}
+      {showAINotification && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 bg-gradient-to-r from-purple-500 to-indigo-600">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
+                  <SparklesIcon className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">AI Narrator</h3>
+                  <p className="text-sm text-white text-opacity-90">PowerPoint Support</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="flex items-center justify-center w-8 h-8 bg-amber-100 rounded-lg flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900 mb-2">
+                    AI Narrator for PowerPoint presentations is currently under development.
+                  </p>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    We're working hard to bring AI-powered narration to your PPTX files. This feature will provide 
+                    intelligent audio explanations of your presentation content, similar to our DOCX and PDF support.
+                  </p>
+                </div>
+              </div>
+
+              {/* Development Status */}
+              <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-4">
+                <h4 className="text-sm font-semibold text-purple-900 mb-2 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Coming Soon Features:
+                </h4>
+                <ul className="text-xs text-purple-800 space-y-1">
+                  <li>• Slide-by-slide AI narration</li>
+                  <li>• Content analysis and explanation</li>
+                  <li>• Multiple narration modes (Quick, Detailed, Key Points)</li>
+                  <li>• Voice synthesis with natural speech</li>
+                </ul>
+              </div>
+
+              {/* Alternative Options */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  Available Now:
+                </h4>
+                <p className="text-xs text-blue-800">
+                  AI Narrator is fully available for <strong>DOCX</strong> and <strong>PDF</strong> documents. 
+                  Try converting your presentation to PDF format to use AI narration today!
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                <span>In active development</span>
+              </div>
+              <button
+                onClick={() => setShowAINotification(false)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
