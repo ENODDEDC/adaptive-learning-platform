@@ -148,6 +148,12 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-8">
               <Link
+                href="/visual-mockups"
+                className="text-white/70 hover:text-white transition-colors text-sm font-medium"
+              >
+                View Mockups
+              </Link>
+              <Link
                 href="/login"
                 className="text-white/70 hover:text-white transition-colors text-sm font-medium"
               >

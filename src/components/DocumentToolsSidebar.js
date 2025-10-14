@@ -7,12 +7,15 @@ import {
   SparklesIcon,
   DocumentTextIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  PhotoIcon
 } from '@heroicons/react/24/outline';
 
 const DocumentToolsSidebar = ({ 
   onAITutorClick, 
   onNotesClick,
+  onVisualContentClick,
+  isExtractingContent = false,
   className = "" 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -66,6 +69,28 @@ const DocumentToolsSidebar = ({
                 </button>
               </div>
 
+              {/* Visual Content */}
+              <div className="group">
+                <button
+                  onClick={onVisualContentClick}
+                  disabled={isExtractingContent}
+                  className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50"
+                  title="Visual Content - Generate diagrams and infographics"
+                >
+                  {isExtractingContent ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                  ) : (
+                    <PhotoIcon className="w-5 h-5 flex-shrink-0" />
+                  )}
+                  <div className="text-left flex-1">
+                    <div className="font-semibold text-sm">Visual Content</div>
+                    <div className="text-xs opacity-90">
+                      {isExtractingContent ? 'Extracting content...' : 'Generate diagrams and infographics'}
+                    </div>
+                  </div>
+                </button>
+              </div>
+
               {/* Notes */}
               <div className="group">
                 <button
@@ -90,6 +115,20 @@ const DocumentToolsSidebar = ({
                 title="AI Narrator - Listen with AI assistance"
               >
                 <SparklesIcon className="w-5 h-5" />
+              </button>
+
+              {/* Visual Content Icon */}
+              <button
+                onClick={onVisualContentClick}
+                disabled={isExtractingContent}
+                className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50"
+                title={isExtractingContent ? "Extracting content..." : "Visual Content - Generate diagrams and infographics"}
+              >
+                {isExtractingContent ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <PhotoIcon className="w-5 h-5" />
+                )}
               </button>
 
               {/* Notes Icon */}

@@ -10,6 +10,8 @@ import {
 import AITutorModal from './AITutorModal';
 import DocumentToolsSidebar from './DocumentToolsSidebar';
 import EnhancedFloatingNotes from './EnhancedFloatingNotes';
+import VisualContentModal from './VisualContentModal';
+import VisualDocxOverlay from './VisualDocxOverlay';
 
 /**
  * DOCX Preview Component with AI Narrator Integration
@@ -25,6 +27,9 @@ const DocxPreviewWithAI = ({
   disableTools = false
 }) => {
   const [showAITutor, setShowAITutor] = useState(false);
+  const [showVisualContent, setShowVisualContent] = useState(false);
+  const [showVisualOverlay, setShowVisualOverlay] = useState(false);
+  const [activeVisualType, setActiveVisualType] = useState('diagram');
   const [docxContent, setDocxContent] = useState('');
   const [isExtractingContent, setIsExtractingContent] = useState(false);
   const [extractionError, setExtractionError] = useState('');
@@ -468,11 +473,54 @@ AI Narrator works best with instructional content, lessons, or study materials.`
     }
   };
 
+  const handleVisualContentClick = async () => {
+    // Ensure content is extracted before opening visual overlay
+    if (!docxContent || !docxContent.trim()) {
+      try {
+        setIsExtractingContent(true);
+        const extractedContent = await extractDocxContent();
+        if (extractedContent && extractedContent.trim()) {
+          setDocxContent(extractedContent);
+          setShowVisualOverlay(true);
+        } else {
+          setExtractionError('Failed to extract document content for visual generation.');
+        }
+      } catch (error) {
+        console.error('Error extracting content for visual generation:', error);
+        setExtractionError('Failed to extract document content for visual generation.');
+      } finally {
+        setIsExtractingContent(false);
+      }
+    } else {
+      setShowVisualOverlay(true);
+    }
+  };
+
+  const handleVisualTypeChange = (newType) => {
+    setActiveVisualType(newType);
+  };
+
+  const handleCloseVisualOverlay = () => {
+    setShowVisualOverlay(false);
+    setActiveVisualType('diagram');
+  };
+
   const fileName = content.title || content.originalName || 'Document.docx';
 
   return (
     <>
       <div className="w-full h-full flex relative">
+        {/* Visual Overlay - replaces the entire document view */}
+        {showVisualOverlay && (
+          <VisualDocxOverlay
+            isActive={showVisualOverlay}
+            onClose={handleCloseVisualOverlay}
+            docxContent={docxContent}
+            fileName={fileName}
+            onVisualTypeChange={handleVisualTypeChange}
+            activeVisualType={activeVisualType}
+          />
+        )}
 
 
         {/* Enhanced Error/Info Message - Professional Design */}
@@ -713,12 +761,14 @@ AI Narrator works best with instructional content, lessons, or study materials.`
         {!disableTools && (
           <DocumentToolsSidebar
             onAITutorClick={handleAITutorClick}
+            onVisualContentClick={handleVisualContentClick}
             onNotesClick={() => {
               // Toggle notes panel using the ref
               if (floatingNotesRef.current) {
                 floatingNotesRef.current.toggleNotesPanel();
               }
             }}
+            isExtractingContent={isExtractingContent}
           />
         )}
 
@@ -948,33 +998,45 @@ AI Narrator works best with instructional content, lessons, or study materials.`
 
         </div>
 
-        {/* Document Tools Sidebar - Only show if tools are not disabled */}
-        {!disableTools && (
+        {/* Document Tools Sidebar - Only show if tools are not disabled and overlay is not active */}
+        {!disableTools && !showVisualOverlay && (
           <DocumentToolsSidebar
             onAITutorClick={handleAITutorClick}
+            onVisualContentClick={handleVisualContentClick}
             onNotesClick={() => {
               // Toggle notes panel using the ref
               if (floatingNotesRef.current) {
                 floatingNotesRef.current.toggleNotesPanel();
               }
             }}
+            isExtractingContent={isExtractingContent}
           />
         )}
       </div>
 
-      {/* Enhanced FloatingNotes component */}
-      <EnhancedFloatingNotes
-        ref={floatingNotesRef}
-        contentId={content?._id || content?.id || 'docx-content'}
-        courseId={content?.courseId || 'default-course'}
-        userId="current-user"
-        isVisible={true}
-      />
+      {/* Enhanced FloatingNotes component - Hide when visual overlay is active */}
+      {!showVisualOverlay && (
+        <EnhancedFloatingNotes
+          ref={floatingNotesRef}
+          contentId={content?._id || content?.id || 'docx-content'}
+          courseId={content?.courseId || 'default-course'}
+          userId="current-user"
+          isVisible={true}
+        />
+      )}
 
       {/* AI Narrator Modal */}
       <AITutorModal
         isOpen={showAITutor}
         onClose={() => setShowAITutor(false)}
+        docxContent={docxContent}
+        fileName={fileName}
+      />
+
+      {/* Visual Content Modal */}
+      <VisualContentModal
+        isOpen={showVisualContent}
+        onClose={() => setShowVisualContent(false)}
         docxContent={docxContent}
         fileName={fileName}
       />
