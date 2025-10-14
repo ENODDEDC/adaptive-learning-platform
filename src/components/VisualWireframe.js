@@ -164,118 +164,104 @@ const VisualWireframe = ({ wireframeData, contentType }) => {
   };
 
   const renderStackLayout = () => {
-    // Create a beautiful process timeline instead of flowchart
+    // Create a PROFESSIONAL HORIZONTAL timeline with refined animations
     return (
       <div className="w-full">
-        {/* Process Timeline */}
-        <div className="relative">
-          {/* Timeline line */}
-          <div className="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-purple-500 to-green-500 rounded-full"></div>
-          
-          {/* Process steps */}
-          <div className="space-y-8">
-            {/* Start step */}
-            <div className="relative flex items-center gap-6">
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
-                  <span className="text-2xl">🚀</span>
+        {/* Professional Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl">
+          <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-transparent to-white/60"></div>
+        </div>
+
+        {/* Main Timeline Container */}
+        <div className="relative z-10 p-8">
+          {/* Professional Timeline Line */}
+          <div className="absolute top-16 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 rounded-full shadow-sm"></div>
+
+          {/* Process steps - Clean Horizontal Layout */}
+          <div className="grid grid-cols-5 gap-6 items-start justify-items-center pt-24">
+            {/* Start step - Professional */}
+            <div className="text-center group">
+              <div className="relative mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg mx-auto border-4 border-white">
+                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
+                  </svg>
                 </div>
               </div>
-              <div className={`${styles.sectionClass} rounded-2xl p-6 flex-1 group hover:scale-105 transition-all duration-300`}>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-xl font-bold text-gray-900 mb-2">Start: Crypto Idea</h4>
-                    <p className="text-gray-600">User initiates a transaction request</p>
-                  </div>
-                </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md group-hover:shadow-lg transition-all duration-300">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">Initiate</h4>
+                <p className="text-sm text-gray-600">Transaction request</p>
               </div>
             </div>
 
-            {/* Process steps */}
+            {/* Process steps - Professional */}
             {sections.map((section, index) => (
-              <div key={section.id || index} className="relative flex items-center gap-6">
-                <div className="relative z-10">
-                  <div className={`w-16 h-16 ${styles.accentClass} rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <span className="text-xl font-bold text-white">{index + 1}</span>
+              <div key={section.id || index} className="text-center group relative">
+                {/* Professional connection arrow */}
+                {index < sections.length - 1 && (
+                  <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-10">
+                    <div className="w-16 h-1 bg-gradient-to-r from-purple-400 to-purple-600 rounded-full"></div>
+                    <div className="absolute -right-1 top-0 w-0 h-0 border-t-2 border-b-2 border-l-4 border-t-transparent border-b-transparent border-l-purple-600"></div>
+                  </div>
+                )}
+
+                <div className="relative mb-6">
+                  <div className={`w-18 h-18 ${styles.accentClass} rounded-full flex items-center justify-center shadow-lg mx-auto border-4 border-white`}>
+                    <span className="text-lg font-bold text-white">{index + 1}</span>
                   </div>
                 </div>
-                <div className={`${styles.sectionClass} rounded-2xl p-6 flex-1 group hover:scale-105 transition-all duration-300`}>
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 ${styles.accentClass} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className={`${styles.titleClass} text-xl font-bold mb-3 group-hover:text-opacity-80 transition-colors duration-300`}>
-                        {section.title}
-                      </h4>
-                      <div className="space-y-2">
-                        {section.content?.map((item, i) => (
-                          <div key={i} className="flex items-start gap-3">
-                            <div className={`w-2 h-2 ${styles.accentClass} rounded-full mt-2 flex-shrink-0`}></div>
-                            <span className="text-gray-700 group-hover:text-gray-900 transition-colors duration-300 leading-relaxed">
-                              {item}
-                            </span>
-                          </div>
-                        ))}
+                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md group-hover:shadow-lg transition-all duration-300 max-w-xs">
+                  <h4 className={`${styles.titleClass} text-lg font-semibold mb-2`}>
+                    {section.title}
+                  </h4>
+                  <div className="space-y-1">
+                    {section.content?.slice(0, 2).map((item, i) => (
+                      <div key={i} className="text-sm text-gray-600 leading-relaxed">
+                        {item.length > 35 ? `${item.substring(0, 35)}...` : item}
                       </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
             ))}
 
-            {/* End step */}
-            <div className="relative flex items-center gap-6">
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-                  <span className="text-2xl">✅</span>
+            {/* Completion step - Professional */}
+            <div className="text-center group">
+              <div className="relative mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg mx-auto border-4 border-white">
+                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
                 </div>
               </div>
-              <div className={`${styles.sectionClass} rounded-2xl p-6 flex-1 group hover:scale-105 transition-all duration-300`}>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-xl font-bold text-gray-900 mb-2">Process Complete</h4>
-                    <p className="text-gray-600">Transaction successfully added to blockchain</p>
-                  </div>
-                </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md group-hover:shadow-lg transition-all duration-300">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">Complete</h4>
+                <p className="text-sm text-gray-600">Transaction verified</p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Process summary */}
-        <div className="mt-8 text-center">
-          <div className="inline-flex items-center gap-2 text-sm text-gray-500 bg-gray-100 rounded-full px-4 py-2">
-            <div className="flex gap-1">
-              {[...Array(3)].map((_, i) => (
-                <div 
-                  key={i}
-                  className={`w-2 h-2 ${styles.accentClass} rounded-full opacity-60`}
-                  style={{ animationDelay: `${i * 0.2}s` }}
-                />
-              ))}
-            </div>
-            <span>Step-by-step process visualization</span>
-            <div className="flex gap-1">
-              {[...Array(3)].map((_, i) => (
-                <div 
-                  key={i}
-                  className={`w-2 h-2 ${styles.accentClass} rounded-full opacity-60`}
-                  style={{ animationDelay: `${i * 0.2}s` }}
-                />
-              ))}
+          {/* Professional Summary */}
+          <div className="mt-16 text-center">
+            <div className="inline-flex items-center gap-6 text-sm bg-white rounded-full px-8 py-4 shadow-lg border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <span className="font-semibold text-gray-800">Process Timeline</span>
+              </div>
+              <div className="flex gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 ${styles.accentClass} rounded-full opacity-60`}
+                    style={{ animationDelay: `${i * 0.1}s` }}
+                  />
+                ))}
+              </div>
+              <span className="text-gray-600">Sequential workflow visualization</span>
             </div>
           </div>
         </div>
@@ -534,6 +520,53 @@ const VisualWireframe = ({ wireframeData, contentType }) => {
       {/* Corner decorations */}
       <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-white/30 rounded-tr-2xl"></div>
       <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-white/30 rounded-bl-2xl"></div>
+
+      {/* Custom styles for better arrows */}
+      <style jsx>{`
+        @keyframes arrowPulse {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        .arrow-animation {
+          animation: arrowPulse 2s ease-in-out infinite;
+        }
+
+        .timeline-arrow {
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+
+        .step-connector {
+          position: relative;
+          overflow: visible;
+        }
+
+        .step-connector::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          right: -20px;
+          transform: translateY(-50%);
+          width: 16px;
+          height: 2px;
+          background: linear-gradient(to right, #f97316, #9333ea);
+          border-radius: 1px;
+        }
+
+        .step-connector::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          right: -24px;
+          transform: translateY(-50%);
+          width: 0;
+          height: 0;
+          border-top: 4px solid transparent;
+          border-bottom: 4px solid transparent;
+          border-left: 6px solid #9333ea;
+          animation: arrowPulse 2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 };
