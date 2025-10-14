@@ -29,8 +29,10 @@ export async function POST(req) {
 
     const token = jwt.sign(
       { 
-        userId: user._id, 
+        userId: user._id,
+        id: user._id, // Keep for backward compatibility 
         email: user.email,
+        role: user.role, // Add role to JWT
         provider: user.authProvider || 'email'
       }, 
       process.env.JWT_SECRET, 

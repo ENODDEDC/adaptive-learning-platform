@@ -4,6 +4,7 @@ import Course from '@/models/Course';
 import Content from '@/models/Content';
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/utils/auth';
+import { getUserFromToken } from '@/services/authService';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -179,11 +180,12 @@ export async function POST(request, { params }) {
 
 export async function GET(request, { params }) {
   try {
-    const payload = await verifyToken();
-    if (!payload) {
+    const user = await getUserFromToken(request);
+    if (!user || !user.userId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
-    const userId = payload.userId;
+    const userId = user.userId;
+    const userRole = user.role;
 
     await connectMongoDB();
     const { id } = await params;
@@ -192,15 +194,31 @@ export async function GET(request, { params }) {
       return NextResponse.json({ message: 'Course ID is required' }, { status: 400 });
     }
 
-    // Verify user has access to the course (enrolled or creator/co-teacher)
+    // Verify user has access to the course
     const course = await Course.findById(id);
     if (!course) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
     }
 
-    // TODO: Implement co-teacher check once coTeachers field is added to Course model
+    // Check if user is admin, course creator, enrolled, or co-teacher
+    const isAdmin = userRole === 'admin' || userRole === 'super admin';
+    const isCreator = course.createdBy.toString() === userId;
     const isEnrolled = course.enrolledUsers.some(id => id.toString() === userId);
-    if (course.createdBy.toString() !== userId && !isEnrolled) {
+    const isCoTeacher = course.coTeachers?.includes(userId);
+    const hasAccess = isAdmin || isCreator || isEnrolled || isCoTeacher;
+
+    console.log('🔍 Classwork GET Access check:', {
+      userId,
+      userRole,
+      courseId: id,
+      isAdmin,
+      isCreator,
+      isEnrolled,
+      isCoTeacher,
+      hasAccess
+    });
+
+    if (!hasAccess) {
       return NextResponse.json({ message: 'Forbidden: User not authorized to view this course\'s classwork' }, { status: 403 });
     }
 
@@ -222,5 +240,130 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error('Get Classwork Error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const { id: courseId } = await params;
+    const { searchParams } = new URL(request.url);
+    const classworkId = searchParams.get('classworkId');
+
+    console.log('🗑️ DELETE Classwork API called');
+    console.log('Course ID:', courseId);
+    console.log('Classwork ID:', classworkId);
+
+    if (!classworkId) {
+      return NextResponse.json({ error: 'Classwork ID required' }, { status: 400 });
+    }
+
+    // Get user info from token for authentication
+    const user = await getUserFromToken(request);
+    if (!user || !user.userId) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = user.userId;
+    const userRole = user.role;
+
+    console.log('✅ User authenticated:', { userId, role: userRole });
+
+    // Connect to database
+    await connectMongoDB();
+    
+    // Find the classwork item
+    const classwork = await Assignment.findById(classworkId);
+    if (!classwork) {
+      return NextResponse.json({ error: 'Classwork not found' }, { status: 404 });
+    }
+    
+    // Verify user has access to this course
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    }
+    
+    // Check if user is admin, course creator, classwork creator, or co-teacher
+    const isAdmin = userRole === 'admin';
+    const isCreator = course.createdBy.toString() === userId;
+    const isPoster = classwork.postedBy.toString() === userId;
+    const isCoTeacher = course.coTeachers?.includes(userId);
+    const hasAccess = isAdmin || isCreator || isPoster || isCoTeacher;
+    
+    console.log('🔒 Access check:', {
+      isAdmin,
+      isCreator,
+      isPoster,
+      isCoTeacher,
+      hasAccess
+    });
+    
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    console.log('🗑️ Deleting classwork:', {
+      classworkId,
+      title: classwork.title,
+      type: classwork.type,
+      attachmentsCount: classwork.attachments?.length || 0
+    });
+
+    // Delete associated attachments from Content collection
+    if (classwork.attachments && classwork.attachments.length > 0) {
+      console.log('🗑️ Deleting', classwork.attachments.length, 'associated attachments...');
+      
+      for (const attachmentId of classwork.attachments) {
+        try {
+          const content = await Content.findById(attachmentId);
+          if (content) {
+            // Delete from cloud storage if applicable
+            if (content.cloudStorage && content.cloudStorage.provider === 'backblaze-b2') {
+              console.log('🗑️ Deleting from Backblaze B2:', content.cloudStorage.key);
+              try {
+                const backblazeService = (await import('@/services/backblazeService')).default;
+                await backblazeService.deleteFile(content.cloudStorage.key);
+                console.log('✅ File deleted from Backblaze B2');
+              } catch (b2Error) {
+                console.error('⚠️ Backblaze B2 deletion failed:', b2Error.message);
+              }
+            } else if (content.filePath && content.filePath.startsWith('/uploads/')) {
+              // Delete local file
+              console.log('🗑️ Deleting local file:', content.filePath);
+              try {
+                const fsPromises = await import('fs/promises');
+                const localPath = path.join(process.cwd(), 'public', content.filePath);
+                await fsPromises.unlink(localPath);
+                console.log('✅ Local file deleted');
+              } catch (fileError) {
+                console.warn('⚠️ Local file deletion failed:', fileError.message);
+              }
+            }
+            
+            // Delete Content document
+            await Content.findByIdAndDelete(attachmentId);
+            console.log('✅ Content document deleted:', attachmentId);
+          }
+        } catch (attachmentError) {
+          console.error('⚠️ Error deleting attachment:', attachmentError);
+          // Continue with other attachments even if one fails
+        }
+      }
+    }
+
+    // Delete the classwork/assignment document
+    await Assignment.findByIdAndDelete(classworkId);
+    console.log('✅ Classwork deleted from database');
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Classwork and associated files deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Delete classwork error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete classwork' },
+      { status: 500 }
+    );
   }
 }

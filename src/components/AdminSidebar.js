@@ -11,6 +11,8 @@ import {
   ChartBarIcon,
   ArrowLeftOnRectangleIcon,
   XMarkIcon,
+  MegaphoneIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -18,12 +20,16 @@ import {
   AcademicCapIcon as AcademicCapIconSolid,
   Cog6ToothIcon as Cog6ToothIconSolid,
   ChartBarIcon as ChartBarIconSolid,
+  MegaphoneIcon as MegaphoneIconSolid,
+  UserGroupIcon as UserGroupIconSolid,
 } from '@heroicons/react/24/solid';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: HomeIcon, iconSolid: HomeIconSolid },
   { name: 'Users', href: '/admin/users', icon: UsersIcon, iconSolid: UsersIconSolid },
   { name: 'Courses', href: '/admin/courses', icon: AcademicCapIcon, iconSolid: AcademicCapIconSolid },
+  { name: 'Feed Management', href: '/admin/feed-management', icon: MegaphoneIcon, iconSolid: MegaphoneIconSolid },
+  { name: 'Member Management', href: '/admin/member-management', icon: UserGroupIcon, iconSolid: UserGroupIconSolid },
   { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon, iconSolid: ChartBarIconSolid },
   { name: 'Settings', href: '/admin/settings', icon: Cog6ToothIcon, iconSolid: Cog6ToothIconSolid },
 ];
