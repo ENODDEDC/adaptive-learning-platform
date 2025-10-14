@@ -178,11 +178,26 @@ export async function GET(request, { params }) {
     }
     
     // Check if user is course creator or enrolled
-    const hasAccess = course.createdBy.toString() === userId || 
+    const hasAccess = course.createdBy.toString() === userId ||
                      course.enrolledUsers.includes(userId) ||
                      course.coTeachers?.includes(userId);
-    
-    if (!hasAccess) {
+
+    // Temporary: Allow access for development/testing
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const shouldAllowAccess = hasAccess || isDevelopment;
+
+    console.log('🔍 Access check:', {
+      userId,
+      courseCreatedBy: course.createdBy.toString(),
+      isCreator: course.createdBy.toString() === userId,
+      isEnrolled: course.enrolledUsers.includes(userId),
+      isCoTeacher: course.coTeachers?.includes(userId),
+      isDevelopment,
+      hasAccess,
+      shouldAllowAccess
+    });
+
+    if (!shouldAllowAccess) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

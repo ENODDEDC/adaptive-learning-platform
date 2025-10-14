@@ -39,16 +39,62 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
   const fetchCourseContent = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/courses/${course.id}/content`);
+      console.log('🔍 Fetching course content for course ID:', course.id);
+
+      // Get token from localStorage for client-side requests
+      const token = localStorage.getItem('token');
+      console.log('🔍 Token found:', !!token);
+
+      // First, let's check if we can access the course itself
+      console.log('🔍 Testing course access first...');
+      const courseResponse = await fetch(`/api/courses/${course.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('🔍 Course access status:', courseResponse.status);
+
+      if (courseResponse.ok) {
+        const courseData = await courseResponse.json();
+        console.log('🔍 Course data:', courseData);
+      }
+
+      // Now try to fetch content
+      const response = await fetch(`/api/courses/${course.id}/content`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('🔍 Content API response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 Course content data:', data);
         setCourseContent(data.content || []);
+      } else {
+        const errorText = await response.text();
+        console.error('🔍 API response not ok:', response.status, response.statusText);
+        console.error('🔍 Error response:', errorText);
+
+        // If access denied, show helpful message
+        if (response.status === 403) {
+          console.log('🔍 Access denied - user may not be enrolled in this course');
+          console.log('🔍 Course ID:', course.id);
+          console.log('🔍 User may need to join/enroll in the course first');
+        }
+
+        setCourseContent([]);
       }
     } catch (error) {
-      console.error('Failed to fetch course content:', error);
+      console.error('🔍 Failed to fetch course content:', error);
+      setCourseContent([]);
     } finally {
       setLoading(false);
-    }
+   }
   };
 
   const formatFileSize = (bytes) => {
@@ -206,7 +252,7 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                             <UserIcon className="w-5 h-5 text-blue-600" />
                           </div>
                           <div>
-                            <div className="text-2xl font-bold text-blue-600">24</div>
+                            <div className="text-2xl font-bold text-blue-600">{course.studentCount || 0}</div>
                             <div className="text-sm text-blue-700">Students</div>
                           </div>
                         </div>
@@ -218,7 +264,7 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                             <FolderIcon className="w-5 h-5 text-purple-600" />
                           </div>
                           <div>
-                            <div className="text-2xl font-bold text-purple-600">12</div>
+                            <div className="text-2xl font-bold text-purple-600">{course.moduleCount || 0}</div>
                             <div className="text-sm text-purple-700">Modules</div>
                           </div>
                         </div>
@@ -230,7 +276,7 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                             <ClockIcon className="w-5 h-5 text-emerald-600" />
                           </div>
                           <div>
-                            <div className="text-2xl font-bold text-emerald-600">8</div>
+                            <div className="text-2xl font-bold text-emerald-600">-</div>
                             <div className="text-sm text-emerald-700">Weeks</div>
                           </div>
                         </div>
@@ -275,31 +321,152 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                         <p className="text-gray-500">No materials available yet</p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto">
-                        {courseContent.slice(0, 6).map((content) => (
-                          <div
-                            key={content.id}
-                            className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 cursor-pointer group"
-                            onClick={() => handlePreviewContent(content)}
-                          >
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getContentColor(content.contentType)}`}>
-                              {getContentIcon(content.contentType)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
-                                {content.title}
-                              </h4>
-                              <div className="flex items-center gap-2 text-xs text-gray-500">
-                                <span>{formatFileSize(content.fileSize)}</span>
-                                <span>•</span>
-                                <span>{new Date(content.uploadedAt).toLocaleDateString()}</span>
+                      <div className="space-y-3 max-h-80 overflow-y-auto">
+                        {courseContent.slice(0, 6).map((content) => {
+                          // Helper function to detect file types (same as Activities tab)
+                          const isPdfFile = (content) => {
+                            return content?.mimeType === 'application/pdf' ||
+                                   content?.originalName?.toLowerCase().endsWith('.pdf') ||
+                                   content?.title?.toLowerCase().endsWith('.pdf');
+                          };
+
+                          const isDocxFile = (content) => {
+                            return content?.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                                   content?.originalName?.toLowerCase().endsWith('.docx') ||
+                                   content?.title?.toLowerCase().endsWith('.docx');
+                          };
+
+                          const isPptxFile = (content) => {
+                            return content?.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+                                   content?.originalName?.toLowerCase().endsWith('.pptx') ||
+                                   content?.title?.toLowerCase().endsWith('.pptx');
+                          };
+
+                          // Render different components based on file type - List Layout
+                          if (isPdfFile(content) || isPptxFile(content)) {
+                            return (
+                              <div
+                                key={content.id}
+                                className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 cursor-pointer group"
+                                onClick={() => handlePreviewContent(content)}
+                              >
+                                {/* Thumbnail */}
+                                <div className="relative w-16 h-16 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex-shrink-0">
+                                  <iframe
+                                    src={`${window.location.origin}/api/generate-thumbnail?contentId=${content.id}&fileKey=${content.cloudStorage?.key || content.filePath}`}
+                                    className="w-full h-full pointer-events-none border-0"
+                                    title={`${content.title} thumbnail`}
+                                    style={{
+                                      transform: 'scale(0.25)',
+                                      transformOrigin: 'top left',
+                                      width: '400%',
+                                      height: '400%'
+                                    }}
+                                  />
+                                  {/* File Type Badge */}
+                                  <div className={`absolute -top-1 -right-1 text-white px-1.5 py-0.5 rounded text-xs font-semibold ${
+                                    isPdfFile(content) ? 'bg-red-500' : 'bg-orange-500'
+                                  }`}>
+                                    {isPdfFile(content) ? 'PDF' : 'PPTX'}
+                                  </div>
+                                </div>
+
+                                {/* Content Info */}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                                    {content.title}
+                                  </h4>
+                                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                                    <span>{content.fileSize ? `${Math.round(content.fileSize / 1024)} KB` : 'Document'}</span>
+                                    <span>•</span>
+                                    <span>{new Date(content.uploadedAt).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
+
+                                {/* Action */}
+                                <div className="flex items-center gap-1 text-gray-400 group-hover:text-blue-500 transition-colors">
+                                  <EyeIcon className="w-4 h-4" />
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          if (isDocxFile(content)) {
+                            return (
+                              <div
+                                key={content.id}
+                                className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 cursor-pointer group"
+                                onClick={() => handlePreviewContent(content)}
+                              >
+                                {/* Thumbnail */}
+                                <div className="relative w-16 h-16 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex-shrink-0">
+                                  <iframe
+                                    src={`${window.location.origin}/api/docx-thumbnail?contentId=${content.id}&fileKey=${content.cloudStorage?.key || content.filePath}`}
+                                    className="w-full h-full pointer-events-none border-0"
+                                    title={`${content.title} thumbnail`}
+                                    style={{
+                                      transform: 'scale(0.25)',
+                                      transformOrigin: 'top left',
+                                      width: '400%',
+                                      height: '400%'
+                                    }}
+                                  />
+                                  {/* File Type Badge */}
+                                  <div className="absolute -top-1 -right-1 text-white px-1.5 py-0.5 rounded text-xs font-semibold bg-blue-500">
+                                    DOCX
+                                  </div>
+                                </div>
+
+                                {/* Content Info */}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                                    {content.title}
+                                  </h4>
+                                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                                    <span>{content.fileSize ? `${Math.round(content.fileSize / 1024)} KB` : 'Word Document'}</span>
+                                    <span>•</span>
+                                    <span>{new Date(content.uploadedAt).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
+
+                                {/* Action */}
+                                <div className="flex items-center gap-1 text-gray-400 group-hover:text-blue-500 transition-colors">
+                                  <EyeIcon className="w-4 h-4" />
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // Default display for other file types - List Layout
+                          const fileName = content.originalName || content.title || 'Document';
+                          const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+                          return (
+                            <div
+                              key={content.id}
+                              className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 cursor-pointer group"
+                              onClick={() => handlePreviewContent(content)}
+                            >
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getContentColor(content.contentType)}`}>
+                                {getContentIcon(content.contentType)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                                  {content.title}
+                                </h4>
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                  <span>{extension}</span>
+                                  <span>•</span>
+                                  <span>{content.fileSize ? `${Math.round(content.fileSize / 1024)} KB` : 'Document'}</span>
+                                  <span>•</span>
+                                  <span>{new Date(content.uploadedAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 text-gray-400 group-hover:text-blue-500 transition-colors">
+                                <EyeIcon className="w-4 h-4" />
                               </div>
                             </div>
-                            <div className="flex items-center gap-1 text-gray-400 group-hover:text-blue-500 transition-colors">
-                              <EyeIcon className="w-4 h-4" />
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
