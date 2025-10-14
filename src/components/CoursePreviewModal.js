@@ -32,6 +32,10 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
   const [previewContent, setPreviewContent] = useState(null);
   const [isOwner, setIsOwner] = useState(false);
   const [selectedContentIds, setSelectedContentIds] = useState(new Set());
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [confirmDeleteIds, setConfirmDeleteIds] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [toast, setToast] = useState(null); // { type: 'success'|'error', message }
 
   useEffect(() => {
     if (isOpen && course?.id) {
@@ -172,34 +176,10 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
     setActiveTab('overview');
   };
 
-  const handleDeleteContent = async (content) => {
+  const handleDeleteContent = (content) => {
     if (!content?.id) return;
-    const confirmDelete = window.confirm('Delete this material? This cannot be undone.');
-    if (!confirmDelete) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/courses/${course.id}/content?contentId=${encodeURIComponent(content.id)}`, {
-        method: 'DELETE',
-        headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        credentials: 'include'
-      });
-      if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg || 'Failed to delete content');
-      }
-      setCourseContent(prev => prev.filter(c => c.id !== content.id));
-      setSelectedContentIds(prev => {
-        const next = new Set(prev);
-        next.delete(content.id);
-        return next;
-      });
-    } catch (err) {
-      console.error('Failed to delete content:', err);
-      alert('Failed to delete. You may not have permission or a server error occurred.');
-    }
+    setConfirmDeleteIds([content.id]);
+    setConfirmDeleteOpen(true);
   };
 
   const handleToggleSelect = (e, contentId) => {
@@ -224,43 +204,63 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
     }
   };
 
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (!isOwner || selectedContentIds.size === 0) return;
-    const confirmDelete = window.confirm(`Delete ${selectedContentIds.size} selected item(s)? This cannot be undone.`);
-    if (!confirmDelete) return;
+    setConfirmDeleteIds(Array.from(selectedContentIds));
+    setConfirmDeleteOpen(true);
+  };
 
-    const token = localStorage.getItem('token');
-    const ids = Array.from(selectedContentIds);
-    const results = await Promise.allSettled(ids.map(id =>
-      fetch(`/api/courses/${course.id}/content?contentId=${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-        headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        credentials: 'include'
-      })
-    ));
+  const executeDeletion = async () => {
+    if (!confirmDeleteIds || confirmDeleteIds.length === 0) return;
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const ids = [...confirmDeleteIds];
+      const results = await Promise.allSettled(ids.map(id =>
+        fetch(`/api/courses/${course.id}/content?contentId=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          credentials: 'include'
+        })
+      ));
 
-    const succeeded = new Set();
-    for (let i = 0; i < results.length; i++) {
-      const r = results[i];
-      if (r.status === 'fulfilled' && r.value.ok) {
-        succeeded.add(ids[i]);
+      const succeeded = new Set();
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        if (r.status === 'fulfilled' && r.value.ok) {
+          succeeded.add(ids[i]);
+        }
       }
-    }
 
-    if (succeeded.size > 0) {
-      setCourseContent(prev => prev.filter(c => !succeeded.has(c.id)));
-      setSelectedContentIds(prev => {
-        const next = new Set(prev);
-        succeeded.forEach(id => next.delete(id));
-        return next;
-      });
-    }
+      if (succeeded.size > 0) {
+        setCourseContent(prev => prev.filter(c => !succeeded.has(c.id)));
+        setSelectedContentIds(prev => {
+          const next = new Set(prev);
+          succeeded.forEach(id => next.delete(id));
+          return next;
+        });
+        setToast({ type: 'success', message: `${succeeded.size} item(s) deleted` });
+      }
 
-    const failed = ids.length - succeeded.size;
-    if (failed > 0) {
-      alert(`${failed} item(s) failed to delete.`);
+      const failed = ids.length - succeeded.size;
+      if (failed > 0) {
+        setToast({ type: 'error', message: `${failed} item(s) failed to delete` });
+      }
+    } catch (err) {
+      setToast({ type: 'error', message: 'Deletion failed due to a server error' });
+    } finally {
+      setIsDeleting(false);
+      setConfirmDeleteOpen(false);
+      setConfirmDeleteIds([]);
+      // Auto-hide toast
+      if (toast == null) {
+        setTimeout(() => setToast(null), 2500);
+      } else {
+        // reset timer for new toast
+        setTimeout(() => setToast(null), 2500);
+      }
     }
   };
 
@@ -428,6 +428,12 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
 
                 {activeTab === 'content' && (
                   <div className="space-y-4">
+                    {/* Toast */}
+                    {toast && (
+                      <div className={`fixed top-6 right-6 z-[70] px-4 py-3 rounded-lg shadow-lg border text-sm ${toast.type === 'success' ? 'bg-white border-green-200 text-green-700' : 'bg-white border-red-200 text-red-700'}`}>
+                        {toast.message}
+                      </div>
+                    )}
                     {isOwner && courseContent.length > 0 && (
                       <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white sticky top-0 z-10">
                         <div className="flex items-center gap-3">
@@ -489,8 +495,7 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                             return (
                               <div
                                 key={content.id}
-                                className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 cursor-pointer group"
-                                onClick={() => handlePreviewContent(content)}
+                                className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 group"
                               >
                                 {isOwner && (
                                   <input
@@ -563,8 +568,7 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                             return (
                               <div
                                 key={content.id}
-                                className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 cursor-pointer group"
-                                onClick={() => handlePreviewContent(content)}
+                                className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 group"
                               >
                                 {isOwner && (
                                   <input
@@ -637,8 +641,7 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                           return (
                             <div
                               key={content.id}
-                              className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 cursor-pointer group"
-                              onClick={() => handlePreviewContent(content)}
+                              className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 group"
                             >
                               {isOwner && (
                                 <input
@@ -754,6 +757,42 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
           </div>
         </div>
       </div>
+
+      {/* Confirm Delete Modal */}
+      {confirmDeleteOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => !isDeleting && setConfirmDeleteOpen(false)}></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
+                <TrashIcon className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1">Delete {confirmDeleteIds.length} item{confirmDeleteIds.length > 1 ? 's' : ''}?</h3>
+                <p className="text-sm text-gray-600">This action cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+                onClick={() => !isDeleting && setConfirmDeleteOpen(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`px-4 py-2 rounded-lg text-white ${isDeleting ? 'bg-red-400' : 'bg-red-600 hover:bg-red-700'}`}
+                onClick={executeDeletion}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content Preview Modal */}
       {previewContent && (
