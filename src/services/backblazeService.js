@@ -219,6 +219,11 @@ class BackblazeService {
       console.log('🔍 Getting file buffer for key:', fileKey);
       console.log('📊 This will count as 1 Class B (Download) operation');
       
+      // Validate fileKey
+      if (!fileKey) {
+        throw new Error('File key is required');
+      }
+      
       const command = new GetObjectCommand({
         Bucket: this.bucketName,
         Key: fileKey,
@@ -239,6 +244,13 @@ class BackblazeService {
       return buffer;
     } catch (error) {
       console.error('❌ Error getting file buffer:', error);
+      console.error('❌ File key attempted:', fileKey);
+      console.error('❌ Error code:', error.Code || error.name);
+      
+      if (error.Code === 'NoSuchKey' || error.name === 'NoSuchKey') {
+        throw new Error(`File not found in storage: ${fileKey}`);
+      }
+      
       throw new Error(`Failed to get file buffer: ${error.message}`);
     }
   }

@@ -155,7 +155,16 @@ const SmartThumbnail = ({ attachment, onPreview, className = "" }) => {
           setThumbnailUrl(result.thumbnailUrl);
           thumbnailCache.markCompleted(fileKey, result.thumbnailUrl);
           console.log('✅ DOCX thumbnail cached permanently!');
+        } else if (result.success === false) {
+          // File not found in cloud storage, skip thumbnail
+          console.warn('⚠️ File not found in cloud storage, skipping thumbnail');
+          thumbnailCache.markFailed(fileKey);
         }
+      } else if (response.status === 404) {
+        // File not found in cloud storage
+        const errorData = await response.json();
+        console.warn('⚠️', errorData.message || 'File not found in cloud storage');
+        thumbnailCache.markFailed(fileKey);
       } else {
         thumbnailCache.markFailed(fileKey);
       }
@@ -194,7 +203,16 @@ const SmartThumbnail = ({ attachment, onPreview, className = "" }) => {
           setThumbnailUrl(result.thumbnailUrl);
           thumbnailCache.markCompleted(fileKey, result.thumbnailUrl);
           console.log('✅ PPTX thumbnail cached permanently!');
+        } else if (result.success === false) {
+          // File not found in cloud storage, skip thumbnail
+          console.warn('⚠️ File not found in cloud storage, skipping thumbnail');
+          thumbnailCache.markFailed(fileKey);
         }
+      } else if (response.status === 404) {
+        // File not found in cloud storage
+        const errorData = await response.json();
+        console.warn('⚠️', errorData.message || 'File not found in cloud storage');
+        thumbnailCache.markFailed(fileKey);
       } else {
         thumbnailCache.markFailed(fileKey);
       }
