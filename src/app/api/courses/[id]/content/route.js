@@ -163,7 +163,7 @@ export async function GET(request, { params }) {
     const contentType = searchParams.get('type'); // filter by type
 
     // Get user ID from token for authentication
-    const userId = getUserIdFromToken(request);
+    const userId = await getUserIdFromToken(request);
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
@@ -253,7 +253,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Get user ID from token for authentication
-    const userId = getUserIdFromToken(request);
+    const userId = await getUserIdFromToken(request);
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }

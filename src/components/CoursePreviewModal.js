@@ -17,6 +17,7 @@ import {
   PlayIcon,
   PauseIcon
 } from '@heroicons/react/24/outline';
+import { TrashIcon } from '@heroicons/react/24/outline';
 import {
   DocumentIcon as DocumentIconSolid,
   VideoCameraIcon as VideoCameraIconSolid,
@@ -29,6 +30,8 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
   const [courseContent, setCourseContent] = useState([]);
   const [loading, setLoading] = useState(false);
   const [previewContent, setPreviewContent] = useState(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [selectedContentIds, setSelectedContentIds] = useState(new Set());
 
   useEffect(() => {
     if (isOpen && course?.id) {
@@ -45,6 +48,18 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
       const token = localStorage.getItem('token');
       console.log('🔍 Token found:', !!token);
 
+      // Fetch current user profile to determine ownership
+      let currentUserId = null;
+      try {
+        const profileRes = await fetch('/api/auth/profile');
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          currentUserId = profile?._id || profile?.id || profile?.userId || null;
+        }
+      } catch (_) {
+        // ignore profile fetch error; ownership will remain false
+      }
+
       // First, let's check if we can access the course itself
       console.log('🔍 Testing course access first...');
       const courseResponse = await fetch(`/api/courses/${course.id}`, {
@@ -59,6 +74,12 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
       if (courseResponse.ok) {
         const courseData = await courseResponse.json();
         console.log('🔍 Course data:', courseData);
+        const creatorId = courseData?.course?.createdBy?.toString?.() || courseData?.course?.createdBy || null;
+        if (creatorId && currentUserId) {
+          setIsOwner(creatorId === currentUserId);
+        } else {
+          setIsOwner(false);
+        }
       }
 
       // Now try to fetch content
@@ -149,6 +170,98 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
   const handleClosePreview = () => {
     setPreviewContent(null);
     setActiveTab('overview');
+  };
+
+  const handleDeleteContent = async (content) => {
+    if (!content?.id) return;
+    const confirmDelete = window.confirm('Delete this material? This cannot be undone.');
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/courses/${course.id}/content?contentId=${encodeURIComponent(content.id)}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || 'Failed to delete content');
+      }
+      setCourseContent(prev => prev.filter(c => c.id !== content.id));
+      setSelectedContentIds(prev => {
+        const next = new Set(prev);
+        next.delete(content.id);
+        return next;
+      });
+    } catch (err) {
+      console.error('Failed to delete content:', err);
+      alert('Failed to delete. You may not have permission or a server error occurred.');
+    }
+  };
+
+  const handleToggleSelect = (e, contentId) => {
+    e.stopPropagation();
+    setSelectedContentIds(prev => {
+      const next = new Set(prev);
+      if (next.has(contentId)) {
+        next.delete(contentId);
+      } else {
+        next.add(contentId);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = (e) => {
+    e.stopPropagation();
+    if (selectedContentIds.size === courseContent.length) {
+      setSelectedContentIds(new Set());
+    } else {
+      setSelectedContentIds(new Set(courseContent.map(c => c.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!isOwner || selectedContentIds.size === 0) return;
+    const confirmDelete = window.confirm(`Delete ${selectedContentIds.size} selected item(s)? This cannot be undone.`);
+    if (!confirmDelete) return;
+
+    const token = localStorage.getItem('token');
+    const ids = Array.from(selectedContentIds);
+    const results = await Promise.allSettled(ids.map(id =>
+      fetch(`/api/courses/${course.id}/content?contentId=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        credentials: 'include'
+      })
+    ));
+
+    const succeeded = new Set();
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      if (r.status === 'fulfilled' && r.value.ok) {
+        succeeded.add(ids[i]);
+      }
+    }
+
+    if (succeeded.size > 0) {
+      setCourseContent(prev => prev.filter(c => !succeeded.has(c.id)));
+      setSelectedContentIds(prev => {
+        const next = new Set(prev);
+        succeeded.forEach(id => next.delete(id));
+        return next;
+      });
+    }
+
+    const failed = ids.length - succeeded.size;
+    if (failed > 0) {
+      alert(`${failed} item(s) failed to delete.`);
+    }
   };
 
   if (!isOpen || !course) return null;
@@ -315,6 +428,28 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
 
                 {activeTab === 'content' && (
                   <div className="space-y-4">
+                    {isOwner && courseContent.length > 0 && (
+                      <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white sticky top-0 z-10">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedContentIds.size === courseContent.length}
+                            onChange={handleToggleSelectAll}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span className="text-sm text-gray-700">Select all</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteSelected(); }}
+                          disabled={selectedContentIds.size === 0}
+                          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm border transition-colors ${selectedContentIds.size === 0 ? 'text-gray-400 border-gray-200 cursor-not-allowed' : 'text-red-600 border-red-200 hover:bg-red-50'}`}
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                          Delete selected ({selectedContentIds.size})
+                        </button>
+                      </div>
+                    )}
                     {loading ? (
                       <div className="flex items-center justify-center py-8">
                         <div className="flex items-center gap-3">
@@ -357,6 +492,15 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                                 className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 cursor-pointer group"
                                 onClick={() => handlePreviewContent(content)}
                               >
+                                {isOwner && (
+                                  <input
+                                    type="checkbox"
+                                    className="mt-1"
+                                    checked={selectedContentIds.has(content.id)}
+                                    onChange={(e) => handleToggleSelect(e, content.id)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                )}
                                 {/* Thumbnail */}
                                 <div className="relative w-16 h-16 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex-shrink-0">
                                   <iframe
@@ -391,8 +535,25 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                                 </div>
 
                                 {/* Action */}
-                                <div className="flex items-center gap-1 text-gray-400 group-hover:text-blue-500 transition-colors">
-                                  <EyeIcon className="w-4 h-4" />
+                                <div className="flex items-center gap-2 text-gray-400">
+                                  <button
+                                    type="button"
+                                    className="hover:text-blue-500 transition-colors"
+                                    onClick={(e) => { e.stopPropagation(); /* Eye disabled */ }}
+                                    aria-label="Preview"
+                                  >
+                                    <EyeIcon className="w-4 h-4" />
+                                  </button>
+                                  {isOwner && (
+                                    <button
+                                      type="button"
+                                      className="hover:text-red-600 transition-colors"
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteContent(content); }}
+                                      aria-label="Delete"
+                                    >
+                                      <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -405,6 +566,15 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                                 className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 cursor-pointer group"
                                 onClick={() => handlePreviewContent(content)}
                               >
+                                {isOwner && (
+                                  <input
+                                    type="checkbox"
+                                    className="mt-1"
+                                    checked={selectedContentIds.has(content.id)}
+                                    onChange={(e) => handleToggleSelect(e, content.id)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                )}
                                 {/* Thumbnail */}
                                 <div className="relative w-16 h-16 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex-shrink-0">
                                   <iframe
@@ -437,8 +607,25 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                                 </div>
 
                                 {/* Action */}
-                                <div className="flex items-center gap-1 text-gray-400 group-hover:text-blue-500 transition-colors">
-                                  <EyeIcon className="w-4 h-4" />
+                                <div className="flex items-center gap-2 text-gray-400">
+                                  <button
+                                    type="button"
+                                    className="hover:text-blue-500 transition-colors"
+                                    onClick={(e) => { e.stopPropagation(); /* Eye disabled */ }}
+                                    aria-label="Preview"
+                                  >
+                                    <EyeIcon className="w-4 h-4" />
+                                  </button>
+                                  {isOwner && (
+                                    <button
+                                      type="button"
+                                      className="hover:text-red-600 transition-colors"
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteContent(content); }}
+                                      aria-label="Delete"
+                                    >
+                                      <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -453,6 +640,15 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                               className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors duration-200 cursor-pointer group"
                               onClick={() => handlePreviewContent(content)}
                             >
+                              {isOwner && (
+                                <input
+                                  type="checkbox"
+                                  className="mt-1"
+                                  checked={selectedContentIds.has(content.id)}
+                                  onChange={(e) => handleToggleSelect(e, content.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              )}
                               <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getContentColor(content.contentType)}`}>
                                 {getContentIcon(content.contentType)}
                               </div>
@@ -468,8 +664,25 @@ const CoursePreviewModal = ({ course, isOpen, onClose, onViewCourse }) => {
                                   <span>{new Date(content.uploadedAt).toLocaleDateString()}</span>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-1 text-gray-400 group-hover:text-blue-500 transition-colors">
-                                <EyeIcon className="w-4 h-4" />
+                              <div className="flex items-center gap-2 text-gray-400">
+                                <button
+                                  type="button"
+                                  className="hover:text-blue-500 transition-colors"
+                                  onClick={(e) => { e.stopPropagation(); /* Eye disabled */ }}
+                                  aria-label="Preview"
+                                >
+                                  <EyeIcon className="w-4 h-4" />
+                                </button>
+                                {isOwner && (
+                                  <button
+                                    type="button"
+                                    className="hover:text-red-600 transition-colors"
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteContent(content); }}
+                                    aria-label="Delete"
+                                  >
+                                    <TrashIcon className="w-4 h-4" />
+                                  </button>
+                                )}
                               </div>
                             </div>
                           );
