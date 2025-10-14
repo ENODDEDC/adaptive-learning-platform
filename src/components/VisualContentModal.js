@@ -418,8 +418,8 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
             </button>
           </div>
 
-          {/* Enhanced Tabs */}
-          <div className="flex border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+          {/* Compact Tabs */}
+          <div className="flex border-b border-gray-200 bg-gray-50">
             {[
               { id: 'diagram', label: 'Diagram', icon: DocumentTextIcon, config: getVisualConfig('diagram') },
               { id: 'infographic', label: 'Infographic', icon: ChartBarIcon, config: getVisualConfig('infographic') },
@@ -431,22 +431,15 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-6 py-4 font-semibold transition-all duration-300 border-b-4 ${
+                  className={`flex items-center gap-2 px-4 py-3 font-medium transition-all duration-200 border-b-2 ${
                     isActive
-                      ? `${tab.config.activeColor} text-white border-current shadow-lg transform scale-105`
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/50 border-transparent hover:border-gray-300'
+                      ? `${tab.config.activeColor} text-white border-current`
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/50 border-transparent'
                   }`}
                   title={`${tab.label}: ${getVisualDescription(tab.id)}`}
                 >
-                  <div className={`p-1.5 rounded-lg ${isActive ? 'bg-white/20' : 'bg-gray-200'}`}>
-                    <tab.icon className="w-4 h-4" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-sm font-bold">{tab.label}</div>
-                    <div className={`text-xs ${isActive ? 'text-white/90' : 'text-gray-500'}`}>
-                      {getVisualDescription(tab.id).split(' ').slice(0, 3).join(' ')}...
-                    </div>
-                  </div>
+                  <tab.icon className="w-4 h-4" />
+                  <span className="text-sm">{tab.label}</span>
                 </button>
               );
             })}
