@@ -5,6 +5,8 @@ import { format } from 'date-fns';
 import CreateClassworkModal from '@/components/CreateClassworkModal';
 // Removed FormBuilderModal - now using full-page editor
 import SubmitAssignmentModal from '@/components/SubmitAssignmentModal';
+import TeacherAssignmentModal from '@/components/TeacherAssignmentModal';
+import StudentAssignmentModal from '@/components/StudentAssignmentModal';
 import ContentViewer from '@/components/ContentViewer.client';
 import AttachmentPreview from '@/components/AttachmentPreview';
 import EnhancedDocxThumbnail from '@/components/EnhancedDocxThumbnail';
@@ -219,6 +221,8 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit }) => {
 const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const [hasFailed, setHasFailed] = useState(false);
+  const hasAttemptedRef = useRef(false);
 
   // Helper function to detect file types
   const isPdfFile = (attachment) => {
@@ -240,8 +244,9 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
   };
 
   useEffect(() => {
-    // Auto-generate thumbnail if it doesn't exist
-    if (!thumbnailUrl && !isGeneratingThumbnail) {
+    // Only attempt once per attachment, and skip if already failed or has thumbnail
+    if (!thumbnailUrl && !isGeneratingThumbnail && !hasFailed && !hasAttemptedRef.current) {
+      hasAttemptedRef.current = true;
       if (isPdfFile(attachment)) {
         generatePdfThumbnail();
       } else if (isDocxFile(attachment)) {
@@ -250,10 +255,10 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
         generatePptxThumbnail();
       }
     }
-  }, [thumbnailUrl, attachment]);
+  }, []);
 
   const generatePdfThumbnail = async () => {
-    if (isGeneratingThumbnail) return;
+    if (isGeneratingThumbnail || hasFailed) return;
     
     setIsGeneratingThumbnail(true);
     
@@ -274,17 +279,24 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+        } else {
+          setHasFailed(true);
         }
+      } else if (response.status === 404) {
+        // File not found, mark as failed and don't retry
+        setHasFailed(true);
+      } else {
+        setHasFailed(true);
       }
     } catch (error) {
-      console.error('❌ Error generating PDF thumbnail:', error);
+      setHasFailed(true);
     } finally {
       setIsGeneratingThumbnail(false);
     }
   };
 
   const generateDocxThumbnail = async () => {
-    if (isGeneratingThumbnail) return;
+    if (isGeneratingThumbnail || hasFailed) return;
 
     setIsGeneratingThumbnail(true);
 
@@ -305,17 +317,24 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+        } else {
+          setHasFailed(true);
         }
+      } else if (response.status === 404) {
+        // File not found, mark as failed and don't retry
+        setHasFailed(true);
+      } else {
+        setHasFailed(true);
       }
     } catch (error) {
-      console.error('❌ Error generating DOCX thumbnail:', error);
+      setHasFailed(true);
     } finally {
       setIsGeneratingThumbnail(false);
     }
   };
 
   const generatePptxThumbnail = async () => {
-    if (isGeneratingThumbnail) return;
+    if (isGeneratingThumbnail || hasFailed) return;
 
     setIsGeneratingThumbnail(true);
 
@@ -336,10 +355,17 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+        } else {
+          setHasFailed(true);
         }
+      } else if (response.status === 404) {
+        // File not found, mark as failed and don't retry
+        setHasFailed(true);
+      } else {
+        setHasFailed(true);
       }
     } catch (error) {
-      console.error('❌ Error generating PPTX thumbnail:', error);
+      setHasFailed(true);
     } finally {
       setIsGeneratingThumbnail(false);
     }
@@ -435,6 +461,8 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
 const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const [hasFailed, setHasFailed] = useState(false);
+  const hasAttemptedRef = useRef(false);
 
   // Helper function to detect file types
   const isPdfFile = (attachment) => {
@@ -456,8 +484,9 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
   };
 
   useEffect(() => {
-    // Auto-generate thumbnail if it doesn't exist
-    if (!thumbnailUrl && !isGeneratingThumbnail) {
+    // Only attempt once per attachment, and skip if already failed or has thumbnail
+    if (!thumbnailUrl && !isGeneratingThumbnail && !hasFailed && !hasAttemptedRef.current) {
+      hasAttemptedRef.current = true;
       if (isPdfFile(attachment)) {
         generatePdfThumbnail();
       } else if (isDocxFile(attachment)) {
@@ -466,10 +495,10 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
         generatePptxThumbnail();
       }
     }
-  }, [thumbnailUrl, attachment]);
+  }, []);
 
   const generatePdfThumbnail = async () => {
-    if (isGeneratingThumbnail) return;
+    if (isGeneratingThumbnail || hasFailed) return;
     
     setIsGeneratingThumbnail(true);
     
@@ -490,17 +519,23 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+        } else {
+          setHasFailed(true);
         }
+      } else if (response.status === 404) {
+        setHasFailed(true);
+      } else {
+        setHasFailed(true);
       }
     } catch (error) {
-      console.error('❌ Error generating PDF thumbnail:', error);
+      setHasFailed(true);
     } finally {
       setIsGeneratingThumbnail(false);
     }
   };
 
   const generateDocxThumbnail = async () => {
-    if (isGeneratingThumbnail) return;
+    if (isGeneratingThumbnail || hasFailed) return;
 
     setIsGeneratingThumbnail(true);
 
@@ -521,17 +556,23 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+        } else {
+          setHasFailed(true);
         }
+      } else if (response.status === 404) {
+        setHasFailed(true);
+      } else {
+        setHasFailed(true);
       }
     } catch (error) {
-      console.error('❌ Error generating DOCX thumbnail:', error);
+      setHasFailed(true);
     } finally {
       setIsGeneratingThumbnail(false);
     }
   };
 
   const generatePptxThumbnail = async () => {
-    if (isGeneratingThumbnail) return;
+    if (isGeneratingThumbnail || hasFailed) return;
 
     setIsGeneratingThumbnail(true);
 
@@ -552,10 +593,16 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+        } else {
+          setHasFailed(true);
         }
+      } else if (response.status === 404) {
+        setHasFailed(true);
+      } else {
+        setHasFailed(true);
       }
     } catch (error) {
-      console.error('❌ Error generating PPTX thumbnail:', error);
+      setHasFailed(true);
     } finally {
       setIsGeneratingThumbnail(false);
     }
@@ -693,6 +740,11 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   const [loading, setLoading] = useState(true);
   const [isDragLoading, setIsDragLoading] = useState(false);
   const [isDragOperationInProgress, setIsDragOperationInProgress] = useState(false);
+  
+  // New states for assignment modals
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [isTeacherAssignmentModalOpen, setIsTeacherAssignmentModalOpen] = useState(false);
+  const [isStudentAssignmentModalOpen, setIsStudentAssignmentModalOpen] = useState(false);
 
   // Enhanced filtering and view states
   const [searchQuery, setSearchQuery] = useState('');
@@ -857,6 +909,17 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
     // Redirect to full-page form editor for consistency
     window.location.href = `/forms/new?courseId=${courseDetails._id}`;
+  };
+
+  // Handle assignment click - open appropriate modal based on user role
+  const handleAssignmentClick = (assignment) => {
+    if (isInstructor) {
+      setSelectedAssignment(assignment);
+      setIsTeacherAssignmentModalOpen(true);
+    } else {
+      setSelectedAssignment(assignment);
+      setIsStudentAssignmentModalOpen(true);
+    }
   };
 
 
@@ -1272,17 +1335,30 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
           className="group relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px] cursor-pointer"
           onContextMenu={(e) => handleContextMenu(e, item)}
           onClick={() => {
-            if (item.attachments && item.attachments.length > 0) {
-              if (item.attachments.length === 1) {
-                onOpenContent(item.attachments[0]);
+            // Handle assignment clicks with modal
+            if (item.itemType === 'assignment') {
+              handleAssignmentClick(item);
+            } else if (item.itemType === 'form') {
+              // Forms open in new tab or edit mode
+              if (isInstructor) {
+                handleEditForm(item);
               } else {
-                const multiAttachmentContent = {
-                  title: item.title,
-                  contentType: 'multi-attachment',
-                  attachments: item.attachments,
-                  currentIndex: 0
-                };
-                onOpenContent(multiAttachmentContent);
+                window.open(`/forms/${item._id}`, '_blank');
+              }
+            } else {
+              // Fallback to opening attachments
+              if (item.attachments && item.attachments.length > 0) {
+                if (item.attachments.length === 1) {
+                  onOpenContent(item.attachments[0]);
+                } else {
+                  const multiAttachmentContent = {
+                    title: item.title,
+                    contentType: 'multi-attachment',
+                    attachments: item.attachments,
+                    currentIndex: 0
+                  };
+                  onOpenContent(multiAttachmentContent);
+                }
               }
             }
           }}
@@ -2980,6 +3056,34 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         courseId={courseDetails?._id}
         onSubmissionSuccess={fetchAssignments}
       />
+
+      {/* Teacher Assignment Detail Modal */}
+      {isTeacherAssignmentModalOpen && selectedAssignment && (
+        <TeacherAssignmentModal
+          isOpen={isTeacherAssignmentModalOpen}
+          onClose={() => {
+            setIsTeacherAssignmentModalOpen(false);
+            setSelectedAssignment(null);
+          }}
+          assignment={selectedAssignment}
+          courseId={courseDetails?._id}
+          onUpdate={fetchAssignments}
+        />
+      )}
+
+      {/* Student Assignment View Modal */}
+      {isStudentAssignmentModalOpen && selectedAssignment && (
+        <StudentAssignmentModal
+          isOpen={isStudentAssignmentModalOpen}
+          onClose={() => {
+            setIsStudentAssignmentModalOpen(false);
+            setSelectedAssignment(null);
+          }}
+          assignment={selectedAssignment}
+          courseId={courseDetails?._id}
+          onSubmissionSuccess={fetchAssignments}
+        />
+      )}
 
 
 

@@ -160,7 +160,7 @@ export async function GET(request, { params }) {
 
     await connectMongo();
 
-    const { id: courseId } = params;
+    const { id: courseId } = await params;
 
     // Verify the course exists and user has access
     const course = await Course.findById(courseId);

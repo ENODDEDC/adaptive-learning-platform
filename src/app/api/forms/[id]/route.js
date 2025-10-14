@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
 import connectMongo from '@/config/mongoConfig';
 import { Form } from '@/models/Form';
 import { verifyToken } from '@/utils/auth';
+import { NextResponse } from 'next/server';
 
 export async function GET(request, { params }) {
   try {
     await connectMongo();
-    const { id } = params;
+    const { id } = await params;
 
     const form = await Form.findById(id)
       .populate('createdBy', 'name email')
@@ -52,7 +52,7 @@ export async function PUT(request, { params }) {
     console.log('=== FORM UPDATE DB CONNECTION ===');
     console.log('Database connected for form update');
 
-    const { id } = params;
+    const { id } = await params;
     const { title, description, questions, settings } = await request.json();
 
     console.log('=== FORM UPDATE API DEBUG ===');
