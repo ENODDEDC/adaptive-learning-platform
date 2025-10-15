@@ -128,7 +128,7 @@ const VisualWireframe = ({ wireframeData, contentType }) => {
               <div className="mt-4 pt-3 border-t border-gray-100">
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <div className={`w-2 h-2 ${styles.accentClass} rounded-full`}></div>
-                  <span>Connected to main concept</span>
+                  <span>Core topic category</span>
                 </div>
               </div>
             </div>
@@ -140,7 +140,7 @@ const VisualWireframe = ({ wireframeData, contentType }) => {
           <div className="inline-flex items-center gap-4 text-sm bg-white rounded-full px-6 py-3 shadow-md border border-gray-200">
             <div className="flex items-center gap-2">
               <div className={`w-3 h-3 ${styles.accentClass} rounded-full`}></div>
-              <span className="font-medium text-gray-700">Radial Concept Map</span>
+              <span className="font-medium text-gray-700">Topic Categories</span>
             </div>
             <div className="flex gap-1">
               {[...Array(4)].map((_, i) => (
@@ -151,7 +151,7 @@ const VisualWireframe = ({ wireframeData, contentType }) => {
                 />
               ))}
             </div>
-            <span className="text-gray-600">Hierarchical relationship visualization</span>
+            <span className="text-gray-600">Organized concept categories</span>
           </div>
         </div>
       </div>
@@ -460,23 +460,6 @@ const VisualWireframe = ({ wireframeData, contentType }) => {
         {renderLayout()}
       </div>
 
-      {/* Enhanced Legend */}
-      <div className="mt-8 pt-6 border-t border-white/20 relative z-10">
-        <div className="flex flex-wrap justify-center gap-6 text-sm">
-          <div className="flex items-center gap-3 bg-white/50 rounded-full px-4 py-2 backdrop-blur-sm">
-            <div className={`w-3 h-3 ${styles.accentClass} rounded-full shadow-sm`}></div>
-            <span className="font-medium text-gray-700">Main Concepts</span>
-          </div>
-          <div className="flex items-center gap-3 bg-white/50 rounded-full px-4 py-2 backdrop-blur-sm">
-            <div className="w-3 h-3 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full shadow-sm"></div>
-            <span className="font-medium text-gray-700">Processes</span>
-          </div>
-          <div className="flex items-center gap-3 bg-white/50 rounded-full px-4 py-2 backdrop-blur-sm">
-            <div className="w-3 h-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full shadow-sm"></div>
-            <span className="font-medium text-gray-700">Steps</span>
-          </div>
-        </div>
-      </div>
 
       {/* Corner decorations */}
       <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-white/30 rounded-tr-2xl"></div>

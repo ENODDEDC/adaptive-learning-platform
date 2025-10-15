@@ -178,17 +178,19 @@ class VisualContentService {
   }
 
   /**
-   * Generate a mind map based on concepts
+   * Generate a concept network based on concepts
    */
   async generateMindMap(concepts, docxText) {
     const prompt = `
-    Create a mind map that shows the relationships and hierarchy of concepts from this document.
+    Create a concept network that shows the relationships and connections between concepts from this document.
 
     Main Topic: ${concepts.mainTopic}
     Key Concepts: ${concepts.keyConcepts.join(', ')}
     Categories: ${concepts.categories.join(', ')}
 
-    Design a mind map that:
+    IMPORTANT: This is a CONCEPT NETWORK, NOT a mind map. Do not use the word "mind map" anywhere in the image.
+
+    Design a concept network that:
     - Has the main topic in the center
     - Shows branches to major concepts
     - Uses different colors for different branches
@@ -198,6 +200,8 @@ class VisualContentService {
     - Has a clean, modern design
     - Uses curved lines for organic feel
     - Has good contrast and visibility
+    - Title should be: "${concepts.mainTopic} - Concept Network"
+    - Subtitle should describe it as a "concept relationship network" or "interconnected concept visualization"
 
     Make it easy to follow the thought process and connections.
     `;
@@ -206,28 +210,32 @@ class VisualContentService {
   }
 
   /**
-   * Generate a flowchart based on processes
+   * Generate a process timeline based on processes
    */
   async generateFlowchart(concepts, docxText) {
     const prompt = `
-    Create a flowchart that shows the processes and steps described in this document.
+    Create a process timeline that shows the sequential steps and workflow described in this document.
 
     Main Topic: ${concepts.mainTopic}
     Processes: ${concepts.processes.join(', ')}
     Key Concepts: ${concepts.keyConcepts.join(', ')}
 
-    Design a flowchart that:
-    - Shows clear step-by-step process
-    - Uses standard flowchart symbols (rectangles, diamonds, circles)
-    - Has clear arrows showing flow direction
+    IMPORTANT: This is a PROCESS TIMELINE, NOT a flowchart. Do not use the word "flowchart" anywhere in the image.
+
+    Design a process timeline that:
+    - Shows clear chronological step-by-step progression
+    - Uses a horizontal timeline layout with connected stages
+    - Has clear arrows showing progression direction
     - Uses consistent styling and colors
-    - Has readable text in each box
-    - Shows decision points and branches
-    - Uses a logical top-to-bottom or left-to-right flow
+    - Has readable text in each stage box
+    - Shows sequential workflow from start to completion
+    - Uses a logical left-to-right chronological flow
     - Has good spacing and alignment
     - Uses a professional color scheme
+    - Title should be: "${concepts.mainTopic} - Process Timeline"
+    - Subtitle should describe it as a "sequential process visualization" or "step-by-step timeline"
 
-    Make it easy to follow the process from start to finish.
+    Make it easy to follow the process from initiation to completion.
     `;
 
     return await this.generateImage(prompt);
@@ -334,7 +342,7 @@ class VisualContentService {
       
       For each visual type, create content that's optimized for beautiful display:
       
-      MIND MAP:
+      CONCEPT NETWORK:
       - Keep main title under 25 characters (short and impactful)
       - Keep section titles under 15 characters (clear and concise)
       - Keep content items under 30 characters each (perfect fit in fixed cards)
@@ -342,12 +350,16 @@ class VisualContentService {
       - Focus on key concepts that connect logically
       - Use bullet points that are brief and clear
       - Avoid long sentences or complex phrases
+      - Title should be: "Concept Network" (never "Mind Map")
+      - Describe as "concept network" or "relationship network"
       
-      FLOWCHART:
-      - Create 3-5 clear sequential steps
+      PROCESS TIMELINE:
+      - Create 3-5 clear sequential steps in chronological order
       - Use action-oriented titles (e.g., "Analyze Data", "Generate Report")
       - Keep each step description under 50 characters
-      - Ensure logical flow from start to finish
+      - Ensure logical chronological flow from start to finish
+      - Title should be: "Process Timeline" (never "Flowchart")
+      - Describe as "sequential process" or "timeline visualization"
       
       INFOGRAPHIC:
       - Create 2-4 visually distinct sections
@@ -531,13 +543,15 @@ class VisualContentService {
 
   getMindMapPrompt(concepts, docxText) {
     return `
-    Create a mind map that shows the relationships and hierarchy of concepts from this document.
+    Create a concept network that shows the relationships and connections between concepts from this document.
 
     Main Topic: ${concepts.mainTopic}
     Key Concepts: ${concepts.keyConcepts.join(', ')}
     Categories: ${concepts.categories.join(', ')}
 
-    Design a mind map that:
+    IMPORTANT: This is a CONCEPT NETWORK, NOT a mind map. Do not use the word "mind map" anywhere.
+
+    Design a concept network that:
     - Has the main topic in the center
     - Shows branches to major concepts
     - Uses different colors for different branches
@@ -547,6 +561,8 @@ class VisualContentService {
     - Has a clean, modern design
     - Uses curved lines for organic feel
     - Has good contrast and visibility
+    - Title should be: "${concepts.mainTopic} - Concept Network"
+    - Subtitle should describe it as a "concept relationship network" or "interconnected concept visualization"
 
     Make it easy to follow the thought process and connections.
     `;
@@ -554,24 +570,28 @@ class VisualContentService {
 
   getFlowchartPrompt(concepts, docxText) {
     return `
-    Create a flowchart that shows the processes and steps described in this document.
+    Create a process timeline that shows the sequential steps and workflow described in this document.
 
     Main Topic: ${concepts.mainTopic}
     Processes: ${concepts.processes.join(', ')}
     Key Concepts: ${concepts.keyConcepts.join(', ')}
 
-    Design a flowchart that:
-    - Shows clear step-by-step process
-    - Uses standard flowchart symbols (rectangles, diamonds, circles)
-    - Has clear arrows showing flow direction
+    IMPORTANT: This is a PROCESS TIMELINE, NOT a flowchart. Do not use the word "flowchart" anywhere.
+
+    Design a process timeline that:
+    - Shows clear chronological step-by-step progression
+    - Uses a horizontal timeline layout with connected stages
+    - Has clear arrows showing progression direction
     - Uses consistent styling and colors
-    - Has readable text in each box
-    - Shows decision points and branches
-    - Uses a logical top-to-bottom or left-to-right flow
+    - Has readable text in each stage box
+    - Shows sequential workflow from start to completion
+    - Uses a logical left-to-right chronological flow
     - Has good spacing and alignment
     - Uses a professional color scheme
+    - Title should be: "${concepts.mainTopic} - Process Timeline"
+    - Describe it as a "sequential process visualization" or "step-by-step timeline"
 
-    Make it easy to follow the process from start to finish.
+    Make it easy to follow the process from initiation to completion.
     `;
   }
 }
