@@ -27,40 +27,40 @@ const VisualDocxOverlay = ({
   const visualTypes = [
     {
       key: 'diagram',
-      name: 'Diagram',
+      name: 'Concept Overview',
       icon: PhotoIcon,
-      description: 'Concept relationships & structures',
-      tooltip: 'Creates visual concept maps showing relationships between ideas',
+      description: 'Key concepts in organized cards',
+      tooltip: 'Displays main concepts in a structured grid layout',
       color: 'from-blue-500 to-blue-600',
       hoverColor: 'from-blue-600 to-blue-700',
       activeColor: 'bg-blue-600'
     },
     {
       key: 'infographic',
-      name: 'Infographic',
+      name: 'Summary Dashboard',
       icon: DocumentTextIcon,
-      description: 'Summary with visual elements & icons',
-      tooltip: 'Creates engaging summaries with icons, charts, and visual elements',
+      description: 'Key metrics and data points',
+      tooltip: 'Shows important statistics and insights in dashboard format',
       color: 'from-emerald-500 to-emerald-600',
       hoverColor: 'from-emerald-600 to-emerald-700',
       activeColor: 'bg-emerald-600'
     },
     {
       key: 'mindmap',
-      name: 'Mind Map',
+      name: 'Concept Network',
       icon: PhotoIcon,
-      description: 'Radial concept hierarchy & connections',
-      tooltip: 'Creates radial maps showing concept hierarchy and connections',
+      description: 'Interconnected concept relationships',
+      tooltip: 'Shows how concepts connect and relate to each other',
       color: 'from-purple-500 to-purple-600',
       hoverColor: 'from-purple-600 to-purple-700',
       activeColor: 'bg-purple-600'
     },
     {
       key: 'flowchart',
-      name: 'Flowchart',
+      name: 'Process Timeline',
       icon: DocumentTextIcon,
-      description: 'Step-by-step process visualization',
-      tooltip: 'Creates process flows with decision points and step sequences',
+      description: 'Step-by-step process sequence',
+      tooltip: 'Displays processes in chronological timeline format',
       color: 'from-orange-500 to-orange-600',
       hoverColor: 'from-orange-600 to-orange-700',
       activeColor: 'bg-orange-600'
