@@ -75,7 +75,7 @@ const DocumentToolsSidebar = ({
                   onClick={onVisualContentClick}
                   disabled={isExtractingContent}
                   className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50"
-                  title="Visual Content - Generate diagrams and infographics"
+                  title="Visual Learning - Transform documents into visual formats"
                 >
                   {isExtractingContent ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
@@ -83,9 +83,9 @@ const DocumentToolsSidebar = ({
                     <PhotoIcon className="w-5 h-5 flex-shrink-0" />
                   )}
                   <div className="text-left flex-1">
-                    <div className="font-semibold text-sm">Visual Content</div>
+                    <div className="font-semibold text-sm">Visual Learning</div>
                     <div className="text-xs opacity-90">
-                      {isExtractingContent ? 'Extracting content...' : 'Generate diagrams and infographics'}
+                      {isExtractingContent ? 'Processing document...' : 'Transform into visual formats'}
                     </div>
                   </div>
                 </button>
@@ -122,7 +122,7 @@ const DocumentToolsSidebar = ({
                 onClick={onVisualContentClick}
                 disabled={isExtractingContent}
                 className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50"
-                title={isExtractingContent ? "Extracting content..." : "Visual Content - Generate diagrams and infographics"}
+                title={isExtractingContent ? "Processing document..." : "Visual Learning - Transform into visual formats"}
               >
                 {isExtractingContent ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

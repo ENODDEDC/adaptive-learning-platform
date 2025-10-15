@@ -299,7 +299,7 @@ const VisualDocxOverlay = ({
               <PhotoIcon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Visual Learning Mode</h2>
+              <h2 className="text-xl font-bold text-gray-900">Visual Learning</h2>
               <p className="text-sm text-gray-600 font-medium">{fileName}</p>
             </div>
           </div>
@@ -309,18 +309,23 @@ const VisualDocxOverlay = ({
           <button
             onClick={generateAllVisuals}
             disabled={loading}
-            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 shadow-lg hover:shadow-xl font-medium"
-            title="Regenerate all visuals"
+            className="group relative px-6 py-3 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-800 text-white rounded-2xl hover:from-purple-700 hover:via-purple-800 hover:to-indigo-900 transition-all duration-300 disabled:opacity-50 shadow-lg hover:shadow-2xl font-semibold text-sm tracking-wide overflow-hidden"
+            title="Generate all visual learning formats"
           >
+            {/* Animated background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
+
             {loading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Generating...</span>
+              <div className="flex items-center space-x-3 relative z-10">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span className="font-medium">Generating...</span>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
-                <ArrowPathIcon className="w-4 h-4" />
-                <span>Generate All</span>
+              <div className="flex items-center space-x-3 relative z-10">
+                <div className="p-1 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors duration-300">
+                  <ArrowPathIcon className="w-4 h-4" />
+                </div>
+                <span className="font-semibold tracking-wide">Generate All</span>
               </div>
             )}
           </button>
