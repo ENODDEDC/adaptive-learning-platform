@@ -450,7 +450,7 @@ const SequentialLearning = ({
   if (!isActive) return null;
 
   return (
-    <div className="absolute inset-0 bg-white z-50 flex flex-col">
+    <div className="fixed inset-0 bg-white z-[10001] flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50">
         <div className="flex items-center space-x-4">

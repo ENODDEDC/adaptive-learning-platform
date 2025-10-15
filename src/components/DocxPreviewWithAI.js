@@ -532,8 +532,33 @@ AI Narrator works best with instructional content, lessons, or study materials.`
 
   const fileName = content.title || content.originalName || 'Document.docx';
 
+  // Hide document header when overlays are active
+  const hideDocumentHeader = showVisualOverlay || showSequentialLearning;
+
   return (
     <>
+      {/* Document Header - Hide when overlays are active */}
+      {!showVisualOverlay && !showSequentialLearning && (
+        <div className="w-full bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">{fileName}</h1>
+                <p className="text-sm text-gray-600">Document Viewer</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <span className="px-3 py-1 text-sm text-gray-600 bg-gray-100 rounded-full">DOCX</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full h-full flex relative">
         {/* Visual Overlay - replaces the entire document view */}
         {showVisualOverlay && (
@@ -741,8 +766,8 @@ AI Narrator works best with instructional content, lessons, or study materials.`
           </div>
         )}
 
-        {/* Sidebar with headings */}
-        {headings.length > 0 && (
+        {/* Sidebar with headings - Hide when Sequential Learning is active */}
+        {headings.length > 0 && !showSequentialLearning && (
           <aside className="w-64 flex-shrink-0 h-full overflow-y-auto p-8 border-r bg-slate-50/50 hidden lg:block">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-slate-800">On this page</h3>
@@ -807,8 +832,8 @@ AI Narrator works best with instructional content, lessons, or study materials.`
           />
         )}
 
-        {/* Main content */}
-        <div className="flex-1 relative">
+        {/* Main content - Hide when Sequential Learning is active */}
+        <div className={`flex-1 relative ${showSequentialLearning ? 'hidden' : ''}`}>
           {htmlContent ? (
             <iframe
               className="w-full h-full rounded-lg bg-white"
@@ -1033,7 +1058,7 @@ AI Narrator works best with instructional content, lessons, or study materials.`
 
         </div>
 
-        {/* Document Tools Sidebar - Only show if tools are not disabled and overlay is not active */}
+        {/* Document Tools Sidebar - Only show if tools are not disabled and no overlay is active */}
         {!disableTools && !showVisualOverlay && !showSequentialLearning && (
           <DocumentToolsSidebar
             onAITutorClick={handleAITutorClick}
@@ -1050,8 +1075,8 @@ AI Narrator works best with instructional content, lessons, or study materials.`
         )}
       </div>
 
-      {/* Enhanced FloatingNotes component - Hide when visual overlay is active */}
-      {!showVisualOverlay && (
+      {/* Enhanced FloatingNotes component - Hide when any overlay is active */}
+      {!showVisualOverlay && !showSequentialLearning && (
         <EnhancedFloatingNotes
           ref={floatingNotesRef}
           contentId={content?._id || content?.id || 'docx-content'}
