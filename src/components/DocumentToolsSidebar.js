@@ -11,12 +11,13 @@ import {
   PhotoIcon
 } from '@heroicons/react/24/outline';
 
-const DocumentToolsSidebar = ({ 
-  onAITutorClick, 
+const DocumentToolsSidebar = ({
+  onAITutorClick,
   onNotesClick,
   onVisualContentClick,
+  onSequentialLearningClick,
   isExtractingContent = false,
-  className = "" 
+  className = ""
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -69,7 +70,7 @@ const DocumentToolsSidebar = ({
                 </button>
               </div>
 
-              {/* Visual Content */}
+              {/* Visual Learning */}
               <div className="group">
                 <button
                   onClick={onVisualContentClick}
@@ -87,6 +88,23 @@ const DocumentToolsSidebar = ({
                     <div className="text-xs opacity-90">
                       {isExtractingContent ? 'Processing document...' : 'Transform into visual formats'}
                     </div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Sequential Learning */}
+              <div className="group">
+                <button
+                  onClick={onSequentialLearningClick}
+                  className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200"
+                  title="Sequential Learning - Step-by-step breakdown and concept progression"
+                >
+                  <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
+                  </svg>
+                  <div className="text-left flex-1">
+                    <div className="font-semibold text-sm">Sequential Learning</div>
+                    <div className="text-xs opacity-90">Step-by-step progression</div>
                   </div>
                 </button>
               </div>
@@ -117,7 +135,7 @@ const DocumentToolsSidebar = ({
                 <SparklesIcon className="w-5 h-5" />
               </button>
 
-              {/* Visual Content Icon */}
+              {/* Visual Learning Icon */}
               <button
                 onClick={onVisualContentClick}
                 disabled={isExtractingContent}
@@ -129,6 +147,16 @@ const DocumentToolsSidebar = ({
                 ) : (
                   <PhotoIcon className="w-5 h-5" />
                 )}
+              </button>
+
+              {/* Sequential Learning Icon */}
+              <button
+                className="p-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200"
+                title="Sequential Learning - Step-by-step progression"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
+                </svg>
               </button>
 
               {/* Notes Icon */}

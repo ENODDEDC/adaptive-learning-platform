@@ -12,6 +12,7 @@ import DocumentToolsSidebar from './DocumentToolsSidebar';
 import EnhancedFloatingNotes from './EnhancedFloatingNotes';
 import VisualContentModal from './VisualContentModal';
 import VisualDocxOverlay from './VisualDocxOverlay';
+import SequentialLearning from './SequentialLearning';
 
 /**
  * DOCX Preview Component with AI Narrator Integration
@@ -29,6 +30,7 @@ const DocxPreviewWithAI = ({
   const [showAITutor, setShowAITutor] = useState(false);
   const [showVisualContent, setShowVisualContent] = useState(false);
   const [showVisualOverlay, setShowVisualOverlay] = useState(false);
+  const [showSequentialLearning, setShowSequentialLearning] = useState(false);
   const [activeVisualType, setActiveVisualType] = useState('diagram');
   const [docxContent, setDocxContent] = useState('');
   const [isExtractingContent, setIsExtractingContent] = useState(false);
@@ -496,6 +498,29 @@ AI Narrator works best with instructional content, lessons, or study materials.`
     }
   };
 
+  const handleSequentialLearningClick = async () => {
+    // Ensure content is extracted before opening sequential learning overlay
+    if (!docxContent || !docxContent.trim()) {
+      try {
+        setIsExtractingContent(true);
+        const extractedContent = await extractDocxContent();
+        if (extractedContent && extractedContent.trim()) {
+          setDocxContent(extractedContent);
+          setShowSequentialLearning(true);
+        } else {
+          setExtractionError('Failed to extract document content for sequential learning.');
+        }
+      } catch (error) {
+        console.error('Error extracting content for sequential learning:', error);
+        setExtractionError('Failed to extract document content for sequential learning.');
+      } finally {
+        setIsExtractingContent(false);
+      }
+    } else {
+      setShowSequentialLearning(true);
+    }
+  };
+
   const handleVisualTypeChange = (newType) => {
     setActiveVisualType(newType);
   };
@@ -519,6 +544,16 @@ AI Narrator works best with instructional content, lessons, or study materials.`
             fileName={fileName}
             onVisualTypeChange={handleVisualTypeChange}
             activeVisualType={activeVisualType}
+          />
+        )}
+
+        {/* Sequential Learning Overlay - replaces the entire document view */}
+        {showSequentialLearning && (
+          <SequentialLearning
+            isActive={showSequentialLearning}
+            onClose={() => setShowSequentialLearning(false)}
+            docxContent={docxContent}
+            fileName={fileName}
           />
         )}
 
@@ -999,10 +1034,11 @@ AI Narrator works best with instructional content, lessons, or study materials.`
         </div>
 
         {/* Document Tools Sidebar - Only show if tools are not disabled and overlay is not active */}
-        {!disableTools && !showVisualOverlay && (
+        {!disableTools && !showVisualOverlay && !showSequentialLearning && (
           <DocumentToolsSidebar
             onAITutorClick={handleAITutorClick}
             onVisualContentClick={handleVisualContentClick}
+            onSequentialLearningClick={handleSequentialLearningClick}
             onNotesClick={() => {
               // Toggle notes panel using the ref
               if (floatingNotesRef.current) {

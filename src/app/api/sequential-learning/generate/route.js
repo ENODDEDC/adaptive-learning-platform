@@ -1,0 +1,79 @@
+import { NextResponse } from 'next/server';
+import sequentialLearningService from '@/services/sequentialLearningService';
+
+export async function POST(request) {
+  console.log('🎯 =================================');
+  console.log('🎯 SEQUENTIAL LEARNING API ENDPOINT CALLED');
+  console.log('🎯 =================================');
+
+  try {
+    console.log('📥 Parsing request body...');
+    const { docxText } = await request.json();
+
+    console.log('📝 Request data received:');
+    console.log('  - Text length:', docxText?.length);
+    console.log('  - Text preview:', docxText?.substring(0, 100) + '...');
+
+    if (!docxText) {
+      console.error('❌ VALIDATION ERROR: No text provided in request');
+      return NextResponse.json(
+        { error: 'Document text content is required' },
+        { status: 400 }
+      );
+    }
+
+    console.log('🎯 Calling sequentialLearningService.generateSequentialContent...');
+    console.log('🎯 About to call generateSequentialContent with params:', {
+      textLength: docxText.length,
+      textPreview: docxText.substring(0, 150) + '...'
+    });
+
+    const result = await sequentialLearningService.generateSequentialContent(docxText);
+
+    console.log('✅ Sequential learning content generated successfully!');
+    console.log('📊 Generated steps:', result.steps?.length || 0);
+    console.log('📊 Generated concept flow stages:', result.conceptFlow?.length || 0);
+
+    const response = {
+      success: true,
+      ...result
+    };
+
+    console.log('📤 Sending successful response to client');
+    return NextResponse.json(response);
+
+  } catch (error) {
+    console.error('❌ =====================================');
+    console.error('❌ ERROR IN SEQUENTIAL LEARNING GENERATION');
+    console.error('❌ =====================================');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Full error object:', error);
+
+    let errorMessage = 'Failed to generate sequential learning content';
+    let statusCode = 500;
+
+    if (error.message.includes('not available')) {
+      errorMessage = 'Sequential learning service is temporarily unavailable';
+      statusCode = 503;
+    } else if (error.message.includes('quota')) {
+      errorMessage = 'Sequential learning generation quota exceeded';
+      statusCode = 429;
+    } else if (error.message.includes('API key')) {
+      errorMessage = 'Sequential learning service configuration error';
+      statusCode = 500;
+    }
+
+    console.error('🔥 Final error response:', { errorMessage, statusCode });
+
+    return NextResponse.json(
+      {
+        error: errorMessage,
+        details: error.message,
+        type: 'SEQUENTIAL_LEARNING_GENERATION_ERROR'
+      },
+      { status: statusCode }
+    );
+  }
+}
