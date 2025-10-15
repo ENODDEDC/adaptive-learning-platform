@@ -34,6 +34,8 @@ const DocxPreviewWithAI = ({
   const [activeVisualType, setActiveVisualType] = useState('diagram');
   const [docxContent, setDocxContent] = useState('');
   const [isExtractingContent, setIsExtractingContent] = useState(false);
+  const [isAINarratorLoading, setIsAINarratorLoading] = useState(false);
+  const [isSequentialLearningLoading, setIsSequentialLearningLoading] = useState(false);
   const [extractionError, setExtractionError] = useState('');
   const [aiTutorActive, setAiTutorActive] = useState(false);
   const [showModeSelection, setShowModeSelection] = useState(false);
@@ -49,10 +51,20 @@ const DocxPreviewWithAI = ({
   // Ref for floating notes
   const floatingNotesRef = useRef(null);
 
-  const extractDocxContent = async () => {
-    if (isExtractingContent || docxContent) return docxContent;
+  const extractDocxContent = async (toolType = 'general') => {
+    if (docxContent) return docxContent;
 
-    setIsExtractingContent(true);
+    if (toolType === 'ai-narrator' && isAINarratorLoading) return docxContent;
+    if (toolType === 'visual' && isExtractingContent) return docxContent;
+    if (toolType === 'sequential' && isSequentialLearningLoading) return docxContent;
+
+    if (toolType === 'visual') {
+      setIsExtractingContent(true);
+    } else if (toolType === 'ai-narrator') {
+      setIsAINarratorLoading(true);
+    } else if (toolType === 'sequential') {
+      setIsSequentialLearningLoading(true);
+    }
     setExtractionError('');
 
     try {
@@ -84,7 +96,13 @@ const DocxPreviewWithAI = ({
       setExtractionError(error.message);
       throw error;
     } finally {
-      setIsExtractingContent(false);
+      if (toolType === 'visual') {
+        setIsExtractingContent(false);
+      } else if (toolType === 'ai-narrator') {
+        setIsAINarratorLoading(false);
+      } else if (toolType === 'sequential') {
+        setIsSequentialLearningLoading(false);
+      }
     }
   };
 
@@ -96,7 +114,7 @@ const DocxPreviewWithAI = ({
       setCurrentConcept('Analyzing document...');
 
       // Extract content if not already done
-      const content = docxContent || await extractDocxContent();
+      const content = docxContent || await extractDocxContent('ai-narrator');
 
       // Generate tutorial content based on mode
       let apiEndpoint = '/api/ai-tutor/generate-tutorial';
@@ -420,7 +438,7 @@ const DocxPreviewWithAI = ({
 
     // First, extract and analyze content
     try {
-      setIsExtractingContent(true);
+      setIsAINarratorLoading(true);
       const extractedContent = docxContent || await extractDocxContent();
 
       // Analyze if content is educational using AI
@@ -448,7 +466,7 @@ Confidence: ${Math.round(analysisResult.confidence * 100)}%
 AI Narrator works best with instructional content, lessons, or study materials.`;
 
         setExtractionError(errorMessage);
-        setIsExtractingContent(false);
+        setIsAINarratorLoading(false);
         // Make sure mode selection modal is NOT shown
         setShowModeSelection(false);
         return;
@@ -471,7 +489,7 @@ AI Narrator works best with instructional content, lessons, or study materials.`
     } catch (error) {
       setExtractionError(`Error analyzing document: ${error.message}`);
     } finally {
-      setIsExtractingContent(false);
+      setIsAINarratorLoading(false);
     }
   };
 
@@ -480,7 +498,7 @@ AI Narrator works best with instructional content, lessons, or study materials.`
     if (!docxContent || !docxContent.trim()) {
       try {
         setIsExtractingContent(true);
-        const extractedContent = await extractDocxContent();
+        const extractedContent = await extractDocxContent('visual');
         if (extractedContent && extractedContent.trim()) {
           setDocxContent(extractedContent);
           setShowVisualOverlay(true);
@@ -502,8 +520,8 @@ AI Narrator works best with instructional content, lessons, or study materials.`
     // Ensure content is extracted before opening sequential learning overlay
     if (!docxContent || !docxContent.trim()) {
       try {
-        setIsExtractingContent(true);
-        const extractedContent = await extractDocxContent();
+        setIsSequentialLearningLoading(true);
+        const extractedContent = await extractDocxContent('sequential');
         if (extractedContent && extractedContent.trim()) {
           setDocxContent(extractedContent);
           setShowSequentialLearning(true);
@@ -514,7 +532,7 @@ AI Narrator works best with instructional content, lessons, or study materials.`
         console.error('Error extracting content for sequential learning:', error);
         setExtractionError('Failed to extract document content for sequential learning.');
       } finally {
-        setIsExtractingContent(false);
+        setIsSequentialLearningLoading(false);
       }
     } else {
       setShowSequentialLearning(true);
@@ -829,6 +847,8 @@ AI Narrator works best with instructional content, lessons, or study materials.`
               }
             }}
             isExtractingContent={isExtractingContent}
+            isAINarratorLoading={isAINarratorLoading}
+            isSequentialLearningLoading={isSequentialLearningLoading}
           />
         )}
 
@@ -1071,6 +1091,7 @@ AI Narrator works best with instructional content, lessons, or study materials.`
               }
             }}
             isExtractingContent={isExtractingContent}
+            isAINarratorLoading={isAINarratorLoading}
           />
         )}
       </div>
