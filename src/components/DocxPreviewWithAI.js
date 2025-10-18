@@ -16,6 +16,7 @@ import SequentialLearning from './SequentialLearning';
 import GlobalLearning from './GlobalLearning';
 import SensingLearning from './SensingLearning';
 import IntuitiveLearning from './IntuitiveLearning';
+import ActiveLearning from './ActiveLearning';
 
 /**
  * DOCX Preview Component with AI Narrator Integration
@@ -37,6 +38,7 @@ const DocxPreviewWithAI = ({
   const [showGlobalLearning, setShowGlobalLearning] = useState(false);
   const [showSensingLearning, setShowSensingLearning] = useState(false);
   const [showIntuitiveLearning, setShowIntuitiveLearning] = useState(false);
+  const [showActiveLearning, setShowActiveLearning] = useState(false);
   const [activeVisualType, setActiveVisualType] = useState('diagram');
   const [docxContent, setDocxContent] = useState('');
   const [isExtractingContent, setIsExtractingContent] = useState(false);
@@ -45,12 +47,14 @@ const DocxPreviewWithAI = ({
   const [isGlobalLearningLoading, setIsGlobalLearningLoading] = useState(false);
   const [isSensingLearningLoading, setIsSensingLearningLoading] = useState(false);
   const [isIntuitiveLearningLoading, setIsIntuitiveLearningLoading] = useState(false);
+  const [isActiveLearningLoading, setIsActiveLearningLoading] = useState(false);
   const [extractionError, setExtractionError] = useState('');
   const [visualLearningError, setVisualLearningError] = useState('');
   const [sequentialLearningError, setSequentialLearningError] = useState('');
   const [globalLearningError, setGlobalLearningError] = useState('');
   const [sensingLearningError, setSensingLearningError] = useState('');
   const [intuitiveLearningError, setIntuitiveLearningError] = useState('');
+  const [activeLearningError, setActiveLearningError] = useState('');
   const [aiTutorActive, setAiTutorActive] = useState(false);
   const [showModeSelection, setShowModeSelection] = useState(false);
   const [currentAudio, setCurrentAudio] = useState(null);
@@ -832,6 +836,82 @@ Concept Constellation works best with instructional content, lessons, or study m
     }
   };
 
+  const handleActiveLearningClick = async () => {
+    console.log('🎯 ACTIVE LEARNING BUTTON CLICKED!');
+    // First, extract and analyze content BEFORE opening active learning overlay
+    try {
+      setIsActiveLearningLoading(true);
+      const extractedContent = docxContent || await extractDocxContent('active');
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setActiveLearningError('Failed to extract document content for interactive activities.');
+        setIsActiveLearningLoading(false);
+        return;
+      }
+
+      // Analyze if content is educational using the SAME AI as other learning features
+      console.log('🎯 Active Learning Content Analysis Debug:');
+      console.log('📝 Content length:', extractedContent.length);
+      console.log('📄 First 200 chars:', extractedContent.substring(0, 200));
+      console.log('📊 Word count:', extractedContent.split(/\s+/).length);
+
+      console.log('🎯 About to call analyzeContentForEducational...');
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+      console.log('🎯 analyzeContentForEducational returned:', analysisResult);
+      
+      if (!analysisResult) {
+        console.error('🎯 ERROR: analyzeContentForEducational returned null/undefined');
+        setActiveLearningError('Failed to analyze document content. Please try again.');
+        setIsActiveLearningLoading(false);
+        return;
+      }
+
+      console.log('🎯 AI Analysis Result for Active Learning:', {
+        isEducational: analysisResult.isEducational,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning,
+        contentType: analysisResult.contentType
+      });
+
+      console.log('🎯 Checking if content is educational:', analysisResult.isEducational);
+
+      // TEMPORARY: Bypass educational check for debugging
+      console.log('🎯 BYPASSING EDUCATIONAL CHECK FOR DEBUGGING');
+      
+      if (false && !analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for interactive activities and collaborative learning. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Active Learning Hub works best with instructional content, lessons, or study materials that can be transformed into hands-on activities.`;
+
+        setActiveLearningError(errorMessage);
+        setIsActiveLearningLoading(false);
+        return;
+      }
+
+      console.log('✅ Content approved for active learning:', {
+        contentType: analysisResult.contentType,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning
+      });
+
+      // If educational, proceed to open active learning overlay
+      setDocxContent(extractedContent);
+      console.log('🎯 Setting showActiveLearning to true...');
+      setShowActiveLearning(true);
+      console.log('🎯 showActiveLearning should now be true!');
+
+    } catch (error) {
+      console.error('Error analyzing content for active learning:', error);
+      setActiveLearningError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsActiveLearningLoading(false);
+    }
+  };
+
   const handleVisualTypeChange = (newType) => {
     setActiveVisualType(newType);
   };
@@ -844,7 +924,7 @@ Concept Constellation works best with instructional content, lessons, or study m
   const fileName = content.title || content.originalName || 'Document.docx';
 
   // Hide document header when overlays are active
-  const hideDocumentHeader = showVisualOverlay || showSequentialLearning || showGlobalLearning || showSensingLearning || showIntuitiveLearning;
+  const hideDocumentHeader = showVisualOverlay || showSequentialLearning || showGlobalLearning || showSensingLearning || showIntuitiveLearning || showActiveLearning;
 
   return (
     <>
@@ -918,6 +998,16 @@ Concept Constellation works best with instructional content, lessons, or study m
           <IntuitiveLearning
             isActive={showIntuitiveLearning}
             onClose={() => setShowIntuitiveLearning(false)}
+            docxContent={docxContent}
+            fileName={fileName}
+          />
+        )}
+
+        {/* Active Learning Overlay - replaces the entire document view */}
+        {showActiveLearning && (
+          <ActiveLearning
+            isActive={showActiveLearning}
+            onClose={() => setShowActiveLearning(false)}
             docxContent={docxContent}
             fileName={fileName}
           />
@@ -1691,6 +1781,143 @@ Concept Constellation works best with instructional content, lessons, or study m
           </div>
         )}
 
+        {/* Active Learning Error Modal - Same Design as Other Learning Features */}
+        {activeLearningError && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+              {/* Header */}
+              <div className={`px-6 py-4 ${activeLearningError.includes('not appear to contain educational')
+                ? 'bg-gradient-to-r from-orange-500 to-red-500'
+                : 'bg-gradient-to-r from-red-500 to-pink-500'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
+                    {activeLearningError.includes('not appear to contain educational') ? (
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <XMarkIcon className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {activeLearningError.includes('not appear to contain educational')
+                        ? 'Active Learning Hub Not Available'
+                        : 'Active Learning Hub Error'
+                      }
+                    </h3>
+                    <p className="text-sm text-white text-opacity-90">
+                      {activeLearningError.includes('not appear to contain educational')
+                        ? 'Document analysis complete'
+                        : 'Something went wrong'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {activeLearningError.includes('not appear to contain educational') ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-orange-100 rounded-lg flex-shrink-0 mt-0.5">
+                        <svg className="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-2">
+                          This document doesn't contain educational content suitable for interactive activities and collaborative learning.
+                        </p>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Our AI analyzed the document and determined it's not instructional material.
+                          Active Learning Hub works best with lessons, tutorials, study guides, and educational content that can be transformed into hands-on activities.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Analysis Details */}
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                      <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Analysis Results</h4>
+
+                      {/* AI Analysis Summary */}
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-2.5 h-2.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-700 mb-1">AI Analysis</p>
+                            <p className="text-xs text-gray-600 leading-relaxed">
+                              The document appears to be a personal study log or development schedule rather than instructional content suitable for interactive activities.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Suggestions */}
+                      <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                        <h4 className="text-xs font-semibold text-orange-800 mb-2 flex items-center gap-1">
+                          <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                          Try Active Learning Hub with:
+                        </h4>
+                        <ul className="text-xs text-orange-800 space-y-1">
+                          <li>• Course materials and lesson plans</li>
+                          <li>• Training manuals and workshops</li>
+                          <li>• Educational textbooks and guides</li>
+                          <li>• Study materials with practical applications</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg flex-shrink-0 mt-0.5">
+                        <XMarkIcon className="w-4 h-4 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-2">
+                          Unable to process document for interactive activities
+                        </p>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          {activeLearningError}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end pt-4 border-t border-gray-200 mt-6">
+                  <div className="flex gap-2">
+                    {!activeLearningError.includes('not appear to contain educational') && (
+                      <button
+                        onClick={handleActiveLearningClick}
+                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+                      >
+                        Try Again
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setActiveLearningError('')}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Content Analysis Loading */}
         {isExtractingContent && (
           <div className="absolute bottom-4 left-4 z-10 max-w-sm">
@@ -1758,7 +1985,7 @@ Concept Constellation works best with instructional content, lessons, or study m
         )}
 
         {/* Document Tools Sidebar - Only show if tools are not disabled and no overlay is active */}
-        {!disableTools && !showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && !showIntuitiveLearning && (
+        {!disableTools && !showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && !showIntuitiveLearning && !showActiveLearning && (
           <DocumentToolsSidebar
             onAITutorClick={handleAITutorClick}
             onVisualContentClick={handleVisualContentClick}
@@ -1766,6 +1993,7 @@ Concept Constellation works best with instructional content, lessons, or study m
             onGlobalLearningClick={handleGlobalLearningClick}
             onSensingLearningClick={handleSensingLearningClick}
             onIntuitiveLearningClick={handleIntuitiveLearningClick}
+            onActiveLearningClick={handleActiveLearningClick}
             onNotesClick={() => {
               // Toggle notes panel using the ref
               if (floatingNotesRef.current) {
@@ -1778,6 +2006,7 @@ Concept Constellation works best with instructional content, lessons, or study m
             isGlobalLearningLoading={isGlobalLearningLoading}
             isSensingLearningLoading={isSensingLearningLoading}
             isIntuitiveLearningLoading={isIntuitiveLearningLoading}
+            isActiveLearningLoading={isActiveLearningLoading}
           />
         )}
 

@@ -11,7 +11,8 @@ import {
   PhotoIcon,
   GlobeAltIcon,
   BeakerIcon,
-  EyeIcon
+  EyeIcon,
+  HandRaisedIcon
 } from '@heroicons/react/24/outline';
 
 const DocumentToolsSidebar = ({
@@ -22,12 +23,14 @@ const DocumentToolsSidebar = ({
   onGlobalLearningClick,
   onSensingLearningClick,
   onIntuitiveLearningClick,
+  onActiveLearningClick,
   isExtractingContent = false,
   isAINarratorLoading = false,
   isSequentialLearningLoading = false,
   isGlobalLearningLoading = false,
   isSensingLearningLoading = false,
   isIntuitiveLearningLoading = false,
+  isActiveLearningLoading = false,
   className = ""
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -200,6 +203,28 @@ const DocumentToolsSidebar = ({
                 </button>
               </div>
 
+              {/* Active Learning */}
+              <div className="group">
+                <button
+                  onClick={onActiveLearningClick}
+                  disabled={isActiveLearningLoading}
+                  className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50"
+                  title="Active Learning Hub - Interactive challenges and collaborative activities"
+                >
+                  {isActiveLearningLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                  ) : (
+                    <HandRaisedIcon className="w-5 h-5 flex-shrink-0" />
+                  )}
+                  <div className="text-left flex-1">
+                    <div className="font-semibold text-sm">Active Learning Hub</div>
+                    <div className="text-xs opacity-90">
+                      {isActiveLearningLoading ? 'Processing document...' : 'Interactive challenges & activities'}
+                    </div>
+                  </div>
+                </button>
+              </div>
+
               {/* Notes */}
               <div className="group">
                 <button
@@ -300,6 +325,20 @@ const DocumentToolsSidebar = ({
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <EyeIcon className="w-5 h-5" />
+                )}
+              </button>
+
+              {/* Active Learning Icon */}
+              <button
+                onClick={onActiveLearningClick}
+                disabled={isActiveLearningLoading}
+                className="p-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50"
+                title={isActiveLearningLoading ? "Active Learning Hub - Processing document..." : "Active Learning Hub - Interactive challenges & activities"}
+              >
+                {isActiveLearningLoading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <HandRaisedIcon className="w-5 h-5" />
                 )}
               </button>
 
