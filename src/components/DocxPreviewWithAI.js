@@ -17,6 +17,7 @@ import GlobalLearning from './GlobalLearning';
 import SensingLearning from './SensingLearning';
 import IntuitiveLearning from './IntuitiveLearning';
 import ActiveLearning from './ActiveLearning';
+import ReflectiveLearning from './ReflectiveLearning';
 
 /**
  * DOCX Preview Component with AI Narrator Integration
@@ -39,6 +40,7 @@ const DocxPreviewWithAI = ({
   const [showSensingLearning, setShowSensingLearning] = useState(false);
   const [showIntuitiveLearning, setShowIntuitiveLearning] = useState(false);
   const [showActiveLearning, setShowActiveLearning] = useState(false);
+  const [showReflectiveLearning, setShowReflectiveLearning] = useState(false);
   const [activeVisualType, setActiveVisualType] = useState('diagram');
   const [docxContent, setDocxContent] = useState('');
   const [isExtractingContent, setIsExtractingContent] = useState(false);
@@ -48,6 +50,7 @@ const DocxPreviewWithAI = ({
   const [isSensingLearningLoading, setIsSensingLearningLoading] = useState(false);
   const [isIntuitiveLearningLoading, setIsIntuitiveLearningLoading] = useState(false);
   const [isActiveLearningLoading, setIsActiveLearningLoading] = useState(false);
+  const [isReflectiveLearningLoading, setIsReflectiveLearningLoading] = useState(false);
   const [extractionError, setExtractionError] = useState('');
   const [visualLearningError, setVisualLearningError] = useState('');
   const [sequentialLearningError, setSequentialLearningError] = useState('');
@@ -912,6 +915,41 @@ Active Learning Hub works best with instructional content, lessons, or study mat
     }
   };
 
+  const handleReflectiveLearningClick = async () => {
+    console.log('🤔 REFLECTIVE LEARNING BUTTON CLICKED!');
+    // Extract and analyze content for reflective learning
+    try {
+      setIsReflectiveLearningLoading(true);
+      const extractedContent = docxContent || await extractDocxContent('reflective');
+
+      if (!extractedContent || !extractedContent.trim()) {
+        console.error('Failed to extract document content for reflective learning.');
+        setIsReflectiveLearningLoading(false);
+        return;
+      }
+
+      console.log('🤔 Reflective Learning Content Analysis Debug:');
+      console.log('📝 Content length:', extractedContent.length);
+      console.log('📄 First 200 chars:', extractedContent.substring(0, 200));
+      console.log('📊 Word count:', extractedContent.split(/\s+/).length);
+
+      // Reflective learning works with any content that can be contemplated
+      // No need for strict educational validation - reflection can be applied to any material
+      console.log('✅ Content approved for reflective learning - all content is suitable for contemplation');
+
+      // Set content and open reflective learning overlay
+      setDocxContent(extractedContent);
+      console.log('🤔 Setting showReflectiveLearning to true...');
+      setShowReflectiveLearning(true);
+      console.log('🤔 showReflectiveLearning should now be true!');
+
+    } catch (error) {
+      console.error('Error preparing content for reflective learning:', error);
+    } finally {
+      setIsReflectiveLearningLoading(false);
+    }
+  };
+
   const handleVisualTypeChange = (newType) => {
     setActiveVisualType(newType);
   };
@@ -1013,6 +1051,15 @@ Active Learning Hub works best with instructional content, lessons, or study mat
           />
         )}
 
+        {/* Reflective Learning Overlay - replaces the entire document view */}
+        {showReflectiveLearning && (
+          <ReflectiveLearning
+            isActive={showReflectiveLearning}
+            onClose={() => setShowReflectiveLearning(false)}
+            docxContent={docxContent}
+            fileName={fileName}
+          />
+        )}
 
         {/* Enhanced Error/Info Message - Professional Design */}
         {extractionError && (
@@ -1985,7 +2032,7 @@ Active Learning Hub works best with instructional content, lessons, or study mat
         )}
 
         {/* Document Tools Sidebar - Only show if tools are not disabled and no overlay is active */}
-        {!disableTools && !showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && !showIntuitiveLearning && !showActiveLearning && (
+        {!disableTools && !showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && !showIntuitiveLearning && !showActiveLearning && !showReflectiveLearning && (
           <DocumentToolsSidebar
             onAITutorClick={handleAITutorClick}
             onVisualContentClick={handleVisualContentClick}
@@ -1994,6 +2041,7 @@ Active Learning Hub works best with instructional content, lessons, or study mat
             onSensingLearningClick={handleSensingLearningClick}
             onIntuitiveLearningClick={handleIntuitiveLearningClick}
             onActiveLearningClick={handleActiveLearningClick}
+            onReflectiveLearningClick={handleReflectiveLearningClick}
             onNotesClick={() => {
               // Toggle notes panel using the ref
               if (floatingNotesRef.current) {
@@ -2007,6 +2055,7 @@ Active Learning Hub works best with instructional content, lessons, or study mat
             isSensingLearningLoading={isSensingLearningLoading}
             isIntuitiveLearningLoading={isIntuitiveLearningLoading}
             isActiveLearningLoading={isActiveLearningLoading}
+            isReflectiveLearningLoading={isReflectiveLearningLoading}
           />
         )}
 

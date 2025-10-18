@@ -24,6 +24,7 @@ const DocumentToolsSidebar = ({
   onSensingLearningClick,
   onIntuitiveLearningClick,
   onActiveLearningClick,
+  onReflectiveLearningClick,
   isExtractingContent = false,
   isAINarratorLoading = false,
   isSequentialLearningLoading = false,
@@ -31,6 +32,7 @@ const DocumentToolsSidebar = ({
   isSensingLearningLoading = false,
   isIntuitiveLearningLoading = false,
   isActiveLearningLoading = false,
+  isReflectiveLearningLoading = false,
   className = ""
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -225,6 +227,28 @@ const DocumentToolsSidebar = ({
                 </button>
               </div>
 
+              {/* Reflective Learning */}
+              <div className="group">
+                <button
+                  onClick={onReflectiveLearningClick}
+                  disabled={isReflectiveLearningLoading}
+                  className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg hover:from-indigo-700 hover:to-purple-800 transition-all duration-200 disabled:opacity-50"
+                  title="Reflective Learning Processor - Contemplative learning for thoughtful learners"
+                >
+                  {isReflectiveLearningLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                  ) : (
+                    <EyeIcon className="w-5 h-5 flex-shrink-0" />
+                  )}
+                  <div className="text-left flex-1">
+                    <div className="font-semibold text-sm">Reflective Learning Processor</div>
+                    <div className="text-xs opacity-90">
+                      {isReflectiveLearningLoading ? 'Processing document...' : 'Contemplative & thoughtful learning'}
+                    </div>
+                  </div>
+                </button>
+              </div>
+
               {/* Notes */}
               <div className="group">
                 <button
@@ -339,6 +363,20 @@ const DocumentToolsSidebar = ({
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <HandRaisedIcon className="w-5 h-5" />
+                )}
+              </button>
+
+              {/* Reflective Learning Icon */}
+              <button
+                onClick={onReflectiveLearningClick}
+                disabled={isReflectiveLearningLoading}
+                className="p-2 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg hover:from-indigo-700 hover:to-purple-800 transition-all duration-200 disabled:opacity-50"
+                title={isReflectiveLearningLoading ? "Reflective Learning Processor - Processing document..." : "Reflective Learning Processor - Contemplative & thoughtful learning"}
+              >
+                {isReflectiveLearningLoading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <EyeIcon className="w-5 h-5" />
                 )}
               </button>
 
