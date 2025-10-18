@@ -37,6 +37,7 @@ const DocxPreviewWithAI = ({
   const [isAINarratorLoading, setIsAINarratorLoading] = useState(false);
   const [isSequentialLearningLoading, setIsSequentialLearningLoading] = useState(false);
   const [extractionError, setExtractionError] = useState('');
+  const [visualLearningError, setVisualLearningError] = useState('');
   const [aiTutorActive, setAiTutorActive] = useState(false);
   const [showModeSelection, setShowModeSelection] = useState(false);
   const [currentAudio, setCurrentAudio] = useState(null);
@@ -494,25 +495,61 @@ AI Narrator works best with instructional content, lessons, or study materials.`
   };
 
   const handleVisualContentClick = async () => {
-    // Ensure content is extracted before opening visual overlay
-    if (!docxContent || !docxContent.trim()) {
-      try {
-        setIsExtractingContent(true);
-        const extractedContent = await extractDocxContent('visual');
-        if (extractedContent && extractedContent.trim()) {
-          setDocxContent(extractedContent);
-          setShowVisualOverlay(true);
-        } else {
-          setExtractionError('Failed to extract document content for visual generation.');
-        }
-      } catch (error) {
-        console.error('Error extracting content for visual generation:', error);
-        setExtractionError('Failed to extract document content for visual generation.');
-      } finally {
+    // First, extract and analyze content BEFORE opening visual overlay
+    try {
+      setIsExtractingContent(true);
+      const extractedContent = docxContent || await extractDocxContent('visual');
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setVisualLearningError('Failed to extract document content for visual generation.');
         setIsExtractingContent(false);
+        return;
       }
-    } else {
+
+      // Analyze if content is educational using the SAME AI as AI Narrator
+      console.log('🎨 Visual Learning Content Analysis Debug:');
+      console.log('📝 Content length:', extractedContent.length);
+      console.log('📄 First 200 chars:', extractedContent.substring(0, 200));
+      console.log('📊 Word count:', extractedContent.split(/\s+/).length);
+
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+
+      console.log('🎨 AI Analysis Result for Visual Learning:', {
+        isEducational: analysisResult.isEducational,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning,
+        contentType: analysisResult.contentType
+      });
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for visual learning materials. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Visual Learning works best with instructional content, lessons, or study materials.`;
+
+        setVisualLearningError(errorMessage);
+        setIsExtractingContent(false);
+        return;
+      }
+
+      console.log('✅ Content approved for visual learning:', {
+        contentType: analysisResult.contentType,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning
+      });
+
+      // If educational, proceed to open visual overlay
+      setDocxContent(extractedContent);
       setShowVisualOverlay(true);
+
+    } catch (error) {
+      console.error('Error analyzing content for visual learning:', error);
+      setExtractionError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsExtractingContent(false);
     }
   };
 
@@ -759,6 +796,159 @@ AI Narrator works best with instructional content, lessons, or study materials.`
                   )}
                   <button
                     onClick={() => setExtractionError('')}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Visual Learning Error Modal */}
+        {visualLearningError && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+              {/* Header */}
+              <div className="px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">Visual Learning Not Available</h2>
+                    <p className="text-green-100 text-sm">Content analysis complete</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {visualLearningError.includes('not appear to contain educational') ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg flex-shrink-0 mt-0.5">
+                        <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-2">
+                          This document doesn't contain educational content suitable for visual learning.
+                        </p>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Our AI analyzed the document and determined it's not instructional material.
+                          Visual Learning works best with lessons, tutorials, study guides, and educational content.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Analysis Details */}
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                      <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Analysis Results</h4>
+
+                      {/* AI Analysis Summary */}
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-2.5 h-2.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-700 mb-1">AI Analysis</p>
+                            <p className="text-xs text-gray-600 leading-relaxed">
+                              The document appears to be a personal study log or development schedule rather than instructional content suitable for visual learning materials.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Structured Analysis Data */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-3 h-3 bg-purple-100 rounded-full flex items-center justify-center">
+                              <svg className="w-2 h-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-xs font-medium text-gray-700">Content Type</span>
+                          </div>
+                          <p className="text-xs text-gray-900 font-medium">Personal Study Log</p>
+                        </div>
+
+                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-3 h-3 bg-green-100 rounded-full flex items-center justify-center">
+                              <svg className="w-2 h-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-xs font-medium text-gray-700">Confidence</span>
+                          </div>
+                          <p className="text-xs text-gray-900 font-medium">100%</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Suggestions */}
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                      <h4 className="text-sm font-semibold text-green-900 mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        Try Visual Learning with:
+                      </h4>
+                      <ul className="text-xs text-green-800 space-y-1">
+                        <li>• Lesson plans and study materials</li>
+                        <li>• Educational articles and tutorials</li>
+                        <li>• Course content and learning guides</li>
+                        <li>• Research papers and academic content</li>
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg flex-shrink-0">
+                        <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-2">
+                          Unable to process document for visual learning
+                        </p>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          {visualLearningError}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Powered by AI content analysis</span>
+                </div>
+                <div className="flex gap-2">
+                  {!visualLearningError.includes('not appear to contain educational') && (
+                    <button
+                      onClick={handleVisualContentClick}
+                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                    >
+                      Try Again
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setVisualLearningError('')}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
                   >
                     Close
