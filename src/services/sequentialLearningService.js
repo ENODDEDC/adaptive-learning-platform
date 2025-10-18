@@ -21,7 +21,138 @@ class SequentialLearningService {
   }
 
   /**
-   * Generate sequential learning content from document text
+   * Analyze if content is educational using the SAME logic as AI Narrator
+   */
+  async analyzeContentForEducation(docxText) {
+    if (!docxText || docxText.trim().length < 50) {
+      return { 
+        isEducational: false, 
+        reasoning: 'Content too short to analyze',
+        confidence: 0,
+        contentType: 'Insufficient content'
+      };
+    }
+
+    try {
+      console.log('🎯 Sequential Learning: Using same AI analysis logic as AI Narrator...');
+      
+      // Use the same AI analysis logic as the AI Narrator API
+      this.initializeModels();
+      
+      if (!this.genAI) {
+        throw new Error('Google AI service not available');
+      }
+
+      // Truncate content if too long (same as AI Narrator)
+      const maxLength = 4000;
+      const truncatedContent = docxText.length > maxLength 
+        ? docxText.substring(0, maxLength) + "..."
+        : docxText;
+
+      const prompt = `
+You are an AI content analyzer. Your task is to determine if the given document content is educational/learning material that would be suitable for sequential learning.
+
+Educational content includes:
+- Lessons, tutorials, or instructional materials
+- Academic subjects (math, science, history, literature, etc.)
+- Study materials, textbooks, or course content
+- Explanatory content that teaches concepts
+- Research papers or academic articles
+- Training materials or how-to guides
+- Educational exercises or examples
+
+Non-educational content includes:
+- Administrative announcements or memos
+- Schedules, calendars, or event listings
+- Policy documents or procedures
+- Forms, applications, or certificates
+- Personal letters or informal communications
+- News updates or notifications
+- Business documents (invoices, receipts, etc.)
+- Meeting minutes or agendas
+
+Analyze the following document content and determine if it's educational material suitable for sequential learning:
+
+DOCUMENT CONTENT:
+${truncatedContent}
+
+Respond with ONLY a JSON object containing:
+{
+  "isEducational": boolean,
+  "confidence": number (0-1),
+  "reasoning": "Brief explanation of your decision",
+  "contentType": "Brief description of what type of content this is"
+}
+
+Be strict in your analysis - only classify content as educational if it genuinely contains learning material that students could benefit from sequential learning assistance.`;
+
+      const model = this.genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const aiResponse = response.text().trim();
+      
+      // Parse the AI response (same logic as AI Narrator API)
+      let analysisResult;
+      try {
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          analysisResult = JSON.parse(jsonMatch[0]);
+        } else {
+          analysisResult = JSON.parse(aiResponse);
+        }
+      } catch (parseError) {
+        console.error('❌ Error parsing AI response:', parseError);
+        
+        // Fallback analysis if AI response is malformed (same as AI Narrator)
+        const content_lower = docxText.toLowerCase();
+        const hasEducationalTerms = /\b(learn|study|understand|concept|theory|lesson|tutorial|chapter|example|exercise|definition|explanation)\b/i.test(content_lower);
+        const hasAdminTerms = /\b(announcement|memo|schedule|meeting|policy|form|application|notice|reminder)\b/i.test(content_lower);
+        
+        const fallbackResult = hasEducationalTerms && !hasAdminTerms;
+        
+        return {
+          isEducational: fallbackResult,
+          confidence: 0.3,
+          reasoning: 'Fallback analysis due to AI response parsing failure',
+          contentType: 'Unknown - analyzed with basic heuristics'
+        };
+      }
+
+      console.log('🎯 Sequential Learning AI Analysis Result:', {
+        isEducational: analysisResult.isEducational,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning,
+        contentType: analysisResult.contentType
+      });
+
+      return {
+        isEducational: analysisResult.isEducational || false,
+        confidence: analysisResult.confidence || 0.5,
+        reasoning: analysisResult.reasoning || 'Analysis completed',
+        contentType: analysisResult.contentType || 'Unknown'
+      };
+
+    } catch (error) {
+      console.error('❌ Error in AI content analysis:', error);
+      
+      // Fallback analysis if AI fails (same as AI Narrator)
+      const content_lower = docxText.toLowerCase();
+      const hasEducationalTerms = /\b(learn|study|understand|concept|theory|lesson|tutorial|chapter|example|exercise|definition|explanation)\b/i.test(content_lower);
+      const hasAdminTerms = /\b(announcement|memo|schedule|meeting|policy|form|application|notice|reminder)\b/i.test(content_lower);
+      
+      const fallbackResult = hasEducationalTerms && !hasAdminTerms;
+      
+      return {
+        isEducational: fallbackResult,
+        confidence: 0.3,
+        reasoning: 'Fallback analysis due to AI service unavailability',
+        contentType: 'Unknown - analyzed with basic heuristics'
+      };
+    }
+  }
+
+  /**
+   * Generate sequential learning content from document text (with educational analysis)
    */
   async generateSequentialContent(docxText) {
     this.initializeModels();
@@ -31,6 +162,15 @@ class SequentialLearningService {
     }
 
     try {
+      // First, analyze if content is educational
+      const analysis = await this.analyzeContentForEducation(docxText);
+      
+      if (!analysis.isEducational) {
+        throw new Error(`Content is not suitable for sequential learning. ${analysis.reasoning}`);
+      }
+
+      console.log('✅ Content approved for sequential learning generation');
+
       // Generate both steps and concept flow
       const [steps, conceptFlow] = await Promise.all([
         this.generateStepBreakdown(docxText),
@@ -40,7 +180,8 @@ class SequentialLearningService {
       return {
         success: true,
         steps,
-        conceptFlow
+        conceptFlow,
+        analysis
       };
     } catch (error) {
       console.error('Error generating sequential content:', error);

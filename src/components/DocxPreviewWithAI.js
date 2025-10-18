@@ -38,6 +38,7 @@ const DocxPreviewWithAI = ({
   const [isSequentialLearningLoading, setIsSequentialLearningLoading] = useState(false);
   const [extractionError, setExtractionError] = useState('');
   const [visualLearningError, setVisualLearningError] = useState('');
+  const [sequentialLearningError, setSequentialLearningError] = useState('');
   const [aiTutorActive, setAiTutorActive] = useState(false);
   const [showModeSelection, setShowModeSelection] = useState(false);
   const [currentAudio, setCurrentAudio] = useState(null);
@@ -554,25 +555,65 @@ Visual Learning works best with instructional content, lessons, or study materia
   };
 
   const handleSequentialLearningClick = async () => {
-    // Ensure content is extracted before opening sequential learning overlay
-    if (!docxContent || !docxContent.trim()) {
-      try {
-        setIsSequentialLearningLoading(true);
-        const extractedContent = await extractDocxContent('sequential');
-        if (extractedContent && extractedContent.trim()) {
-          setDocxContent(extractedContent);
-          setShowSequentialLearning(true);
-        } else {
-          setExtractionError('Failed to extract document content for sequential learning.');
-        }
-      } catch (error) {
-        console.error('Error extracting content for sequential learning:', error);
-        setExtractionError('Failed to extract document content for sequential learning.');
-      } finally {
+    // First, extract and analyze content BEFORE opening sequential learning overlay
+    try {
+      setIsSequentialLearningLoading(true);
+      const extractedContent = docxContent || await extractDocxContent('sequential');
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setSequentialLearningError('Failed to extract document content for sequential learning.');
         setIsSequentialLearningLoading(false);
+        return;
       }
-    } else {
+
+      // Analyze if content is educational using the SAME AI as AI Narrator
+      console.log('📚 Sequential Learning Content Analysis Debug:');
+      console.log('📝 Content length:', extractedContent.length);
+      console.log('📄 First 200 chars:', extractedContent.substring(0, 200));
+      console.log('📊 Word count:', extractedContent.split(/\s+/).length);
+
+      console.log('📚 About to call analyzeContentForEducational...');
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+      console.log('📚 analyzeContentForEducational returned:', analysisResult);
+
+      console.log('📚 AI Analysis Result for Sequential Learning:', {
+        isEducational: analysisResult.isEducational,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning,
+        contentType: analysisResult.contentType
+      });
+
+      console.log('📚 Checking if content is educational:', analysisResult.isEducational);
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for sequential learning. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Sequential Learning works best with instructional content, lessons, or study materials.`;
+
+        setSequentialLearningError(errorMessage);
+        setIsSequentialLearningLoading(false);
+        return;
+      }
+
+      console.log('✅ Content approved for sequential learning:', {
+        contentType: analysisResult.contentType,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning
+      });
+
+      // If educational, proceed to open sequential learning overlay
+      setDocxContent(extractedContent);
       setShowSequentialLearning(true);
+
+    } catch (error) {
+      console.error('Error analyzing content for sequential learning:', error);
+      setSequentialLearningError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsSequentialLearningLoading(false);
     }
   };
 
@@ -949,6 +990,178 @@ Visual Learning works best with instructional content, lessons, or study materia
                   )}
                   <button
                     onClick={() => setVisualLearningError('')}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sequential Learning Error Modal - Same Design as AI Narrator */}
+        {sequentialLearningError && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+              {/* Header */}
+              <div className={`px-6 py-4 ${sequentialLearningError.includes('not appear to contain educational')
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-500'
+                : 'bg-gradient-to-r from-red-500 to-pink-500'
+                }`}>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
+                    {sequentialLearningError.includes('not appear to contain educational') ? (
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {sequentialLearningError.includes('not appear to contain educational')
+                        ? 'Sequential Learning Not Available'
+                        : 'Sequential Learning Error'
+                      }
+                    </h3>
+                    <p className="text-sm text-white text-opacity-90">
+                      {sequentialLearningError.includes('not appear to contain educational')
+                        ? 'Document analysis complete'
+                        : 'Something went wrong'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {sequentialLearningError.includes('not appear to contain educational') ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg flex-shrink-0 mt-0.5">
+                        <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-2">
+                          This document doesn't contain educational content suitable for sequential learning.
+                        </p>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Our AI analyzed the document and determined it's not instructional material.
+                          Sequential Learning works best with lessons, tutorials, study guides, and educational content.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Analysis Details */}
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                      <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Analysis Results</h4>
+
+                      {/* AI Analysis Summary */}
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-2.5 h-2.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-700 mb-1">AI Analysis</p>
+                            <p className="text-xs text-gray-600 leading-relaxed">
+                              The document appears to be a personal study log or development schedule rather than instructional content suitable for sequential learning.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Structured Analysis Data */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-3 h-3 bg-purple-100 rounded-full flex items-center justify-center">
+                              <svg className="w-2 h-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-xs font-medium text-gray-700">Content Type</span>
+                          </div>
+                          <p className="text-xs text-gray-900 font-medium">Personal Study Log</p>
+                        </div>
+
+                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-3 h-3 bg-green-100 rounded-full flex items-center justify-center">
+                              <svg className="w-2 h-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-xs font-medium text-gray-700">Confidence</span>
+                          </div>
+                          <p className="text-xs text-gray-900 font-medium">100%</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Suggestions */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        Try Sequential Learning with:
+                      </h4>
+                      <ul className="text-xs text-blue-800 space-y-1">
+                        <li>• Lesson plans and study materials</li>
+                        <li>• Educational articles and tutorials</li>
+                        <li>• Course content and learning guides</li>
+                        <li>• Research papers and academic content</li>
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg flex-shrink-0">
+                        <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-2">
+                          Unable to process document for sequential learning
+                        </p>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          {sequentialLearningError}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>Powered by AI content analysis</span>
+                </div>
+                <div className="flex gap-2">
+                  {!sequentialLearningError.includes('not appear to contain educational') && (
+                    <button
+                      onClick={handleSequentialLearningClick}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                    >
+                      Try Again
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSequentialLearningError('')}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
                   >
                     Close

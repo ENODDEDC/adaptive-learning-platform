@@ -48,13 +48,31 @@ export async function POST(request) {
     console.error('❌ =====================================');
     console.error('Error name:', error.name);
     console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('Full error object:', error);
 
     let errorMessage = 'Failed to generate sequential learning content';
     let statusCode = 500;
 
-    if (error.message.includes('not available')) {
+    // Handle educational content analysis rejection
+    if (error.message.includes('not suitable for sequential learning')) {
+      console.log('🚫 Content rejected - not educational material');
+      errorMessage = 'This document does not appear to contain educational content suitable for sequential learning. Sequential Learning works best with lessons, tutorials, study materials, and academic content.';
+      statusCode = 400;
+      
+      return NextResponse.json(
+        { 
+          error: errorMessage,
+          isEducational: false,
+          type: 'NON_EDUCATIONAL_CONTENT',
+          suggestions: [
+            'Try with lesson plans or study materials',
+            'Use educational articles or tutorials', 
+            'Upload course content or learning guides',
+            'Use research papers or academic content'
+          ]
+        },
+        { status: statusCode }
+      );
+    } else if (error.message.includes('not available')) {
       errorMessage = 'Sequential learning service is temporarily unavailable';
       statusCode = 503;
     } else if (error.message.includes('quota')) {
@@ -65,10 +83,12 @@ export async function POST(request) {
       statusCode = 500;
     }
 
+    console.error('Error stack:', error.stack);
+    console.error('Full error object:', error);
     console.error('🔥 Final error response:', { errorMessage, statusCode });
-
+    
     return NextResponse.json(
-      {
+      { 
         error: errorMessage,
         details: error.message,
         type: 'SEQUENTIAL_LEARNING_GENERATION_ERROR'
