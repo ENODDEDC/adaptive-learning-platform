@@ -605,6 +605,37 @@ const CourseDetailPage = ({
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <span className="text-sm font-medium text-green-700">{students.length} Student{students.length === 1 ? '' : 's'}</span>
                   </div>
+                  
+                  {/* Course Access Code - Moved from sidebar */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+                    <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                    <span className="text-sm font-medium text-indigo-700">Class Code:</span>
+                    <span className="text-sm font-bold text-indigo-800 tracking-wider">{courseDetails.uniqueKey}</span>
+                    <button
+                      onClick={() => {
+                        console.log('🔍 CLIPBOARD: Attempting to copy code to clipboard');
+                        if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.clipboard) {
+                          console.log('🔍 CLIPBOARD: Cannot access clipboard - not on client or API not available');
+                          return;
+                        }
+                        try {
+                          const code = courseDetails.uniqueKey;
+                          navigator.clipboard.writeText(code);
+                          console.log('🔍 CLIPBOARD: Successfully copied to clipboard');
+                        } catch (error) {
+                          console.log('🔍 CLIPBOARD: Error copying to clipboard:', error);
+                        }
+                      }}
+                      className="ml-1 p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 rounded transition-all duration-200"
+                      title="Copy class code"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -666,126 +697,7 @@ const CourseDetailPage = ({
             </div>
           )}
 
-          {/* Left Sidebar - Course Code - Hidden when document panel is open */}
-          {!documentPanelOpen && (
-            <div className={`bg-white border border-gray-200/60 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-md ${sidebarCollapsed ? 'w-16' : 'w-80'
-              }`}>
-              {!sidebarCollapsed ? (
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center justify-center w-6 h-6 bg-blue-100 rounded-md">
-                        <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
-                        </svg>
-                      </div>
-                      <h2 className="text-lg font-semibold text-gray-900">Course Access</h2>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSidebarCollapsed(true);
-                        setUpcomingTasksExpanded(true);
-                      }}
-                      className="p-2 text-gray-400 transition-all duration-200 rounded-lg hover:text-gray-600 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 hover:shadow-sm hover:scale-105 active:scale-95"
-                      title="Collapse sidebar"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                  </div>
 
-                  <div className="space-y-4">
-                    {/* Course Code Section */}
-                    <div className="text-center">
-                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200/50 rounded-xl px-6 py-5 mb-4">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                          </svg>
-                          <span className="text-sm font-medium text-blue-700">Class Code</span>
-                        </div>
-                        <div className="bg-white border border-blue-200 rounded-lg px-4 py-3">
-                          <span className="block text-xl font-bold tracking-wider text-gray-800">
-                            {courseDetails.uniqueKey}
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          console.log('🔍 CLIPBOARD: Attempting to copy code to clipboard');
-                          console.log('🔍 CLIPBOARD: Navigator available:', typeof navigator !== 'undefined');
-                          console.log('🔍 CLIPBOARD: Clipboard API available:', navigator?.clipboard?.writeText ? 'yes' : 'no');
-                          console.log('🔍 CLIPBOARD: Window available:', typeof window !== 'undefined');
-                          if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.clipboard) {
-                            console.log('🔍 CLIPBOARD: Cannot access clipboard - not on client or API not available');
-                            return;
-                          }
-                          try {
-                            const code = courseDetails.uniqueKey;
-                            navigator.clipboard.writeText(code);
-                            console.log('🔍 CLIPBOARD: Successfully copied to clipboard');
-                            // Could add toast notification here
-                          } catch (error) {
-                            console.log('🔍 CLIPBOARD: Error copying to clipboard:', error);
-                          }
-                        }}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 border border-blue-600 rounded-lg bg-blue-600 hover:bg-blue-700 hover:border-blue-700 hover:shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        Copy Code
-                      </button>
-                    </div>
-
-                    {/* Quick Stats */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <div className="grid grid-cols-2 gap-3 text-center">
-                        <div className="p-3 bg-gray-50 rounded-lg">
-                          <div className="text-lg font-bold text-gray-900">{teachers.length}</div>
-                          <div className="text-xs text-gray-600">Teachers</div>
-                        </div>
-                        <div className="p-3 bg-gray-50 rounded-lg">
-                          <div className="text-lg font-bold text-gray-900">{students.length}</div>
-                          <div className="text-xs text-gray-600">Students</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4">
-                  <button
-                    onClick={() => {
-                      setSidebarCollapsed(false);
-                      setUpcomingTasksExpanded(false);
-                    }}
-                    className="flex items-center justify-center w-full p-2 text-gray-400 transition-all duration-200 rounded-lg hover:text-gray-600 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 hover:shadow-sm hover:scale-105 active:scale-95"
-                    title="Expand sidebar"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-center justify-center">
-                      <div className="bg-blue-100 border border-blue-200 rounded-lg px-3 py-2">
-                        <span className="text-xs font-bold text-blue-700 tracking-wider">
-                          {courseDetails.uniqueKey}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs font-semibold text-gray-600 mb-1">Course</div>
-                      <div className="text-xs text-gray-500">Access</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Main Content Area - Enhanced Layout - Hidden when document panel is open */}
           {!documentPanelOpen && (
