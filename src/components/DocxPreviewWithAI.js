@@ -9,7 +9,6 @@ import {
   EyeIcon
 } from '@heroicons/react/24/outline';
 import AITutorModal from './AITutorModal';
-import DocumentToolsSidebar from './DocumentToolsSidebar';
 import EnhancedFloatingNotes from './EnhancedFloatingNotes';
 import VisualContentModal from './VisualContentModal';
 import VisualDocxOverlay from './VisualDocxOverlay';
@@ -998,23 +997,145 @@ Reflective Learning Processor works best with instructional content, lessons, or
 
   return (
     <>
-      {/* Document Header - Hide when overlays are active */}
-      {!showVisualOverlay && !showSequentialLearning && !showGlobalLearning && (
-        <div className="w-full bg-white border-b border-gray-200 px-6 py-4">
+      {/* Learning Features Toolbar - Hide when overlays are active */}
+      {!showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && !showIntuitiveLearning && !showActiveLearning && !showReflectiveLearning && (
+        <div className="w-full bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-200 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">{fileName}</h1>
-                <p className="text-sm text-gray-600">Document Viewer</p>
-              </div>
+            <div className="flex items-center space-x-2">
+              <AcademicCapIcon className="w-6 h-6 text-indigo-600" />
+              <span className="text-sm font-medium text-indigo-800">AI Learning Modes</span>
             </div>
-            <div className="flex items-center space-x-3">
-              <span className="px-3 py-1 text-sm text-gray-600 bg-gray-100 rounded-full">DOCX</span>
+            
+            <div className="flex items-center space-x-2">
+              {/* AI Narrator */}
+              <button
+                onClick={handleAITutorClick}
+                disabled={isAINarratorLoading}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 text-sm"
+                title="AI Narrator"
+              >
+                {isAINarratorLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <SparklesIcon className="w-4 h-4" />
+                )}
+                <span className="hidden sm:inline">AI Narrator</span>
+              </button>
+
+              {/* Visual Learning */}
+              <button
+                onClick={handleVisualContentClick}
+                disabled={isExtractingContent}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm"
+                title="Visual Learning"
+              >
+                {isExtractingContent ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                  </svg>
+                )}
+                <span className="hidden sm:inline">Visual</span>
+              </button>
+
+              {/* Sequential Learning */}
+              <button
+                onClick={handleSequentialLearningClick}
+                disabled={isSequentialLearningLoading}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm"
+                title="Sequential Learning"
+              >
+                {isSequentialLearningLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
+                  </svg>
+                )}
+                <span className="hidden sm:inline">Sequential</span>
+              </button>
+
+              {/* Global Learning */}
+              <button
+                onClick={handleGlobalLearningClick}
+                disabled={isGlobalLearningLoading}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 text-sm"
+                title="Global Learning"
+              >
+                {isGlobalLearningLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
+                  </svg>
+                )}
+                <span className="hidden sm:inline">Global</span>
+              </button>
+
+              {/* Hands-On Lab */}
+              <button
+                onClick={handleSensingLearningClick}
+                disabled={isSensingLearningLoading}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm"
+                title="Hands-On Lab"
+              >
+                {isSensingLearningLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414v3.758a1 1 0 01-.293.707l-4 4C.817 14.769 2.156 18 4.828 18h10.343c2.673 0 4.012-3.231 2.122-5.121l-4-4A1 1 0 0113 8.172V4.414l.707-.707A1 1 0 0013 2H7zm2 6.172V4h2v4.172a3 3 0 00.879 2.12l1.027 1.028a4 4 0 00-2.171.102l-.47.156a4 4 0 01-2.53 0l-.563-.187a1.993 1.993 0 00-.114-.035l1.063-1.063A3 3 0 009 8.172z" clipRule="evenodd" />
+                  </svg>
+                )}
+                <span className="hidden sm:inline">Lab</span>
+              </button>
+
+              {/* Concept Constellation */}
+              <button
+                onClick={handleIntuitiveLearningClick}
+                disabled={isIntuitiveLearningLoading}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 text-sm"
+                title="Concept Constellation"
+              >
+                {isIntuitiveLearningLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <EyeIcon className="w-4 h-4" />
+                )}
+                <span className="hidden sm:inline">Concepts</span>
+              </button>
+
+              {/* Active Learning Hub */}
+              <button
+                onClick={handleActiveLearningClick}
+                disabled={isActiveLearningLoading}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 text-sm"
+                title="Active Learning Hub"
+              >
+                {isActiveLearningLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                <span className="hidden sm:inline">Active</span>
+              </button>
+
+              {/* Reflective Learning */}
+              <button
+                onClick={handleReflectiveLearningClick}
+                disabled={isReflectiveLearningLoading}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg hover:from-indigo-700 hover:to-purple-800 transition-all duration-200 disabled:opacity-50 text-sm"
+                title="Reflective Learning Processor"
+              >
+                {isReflectiveLearningLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <EyeIcon className="w-4 h-4" />
+                )}
+                <span className="hidden sm:inline">Reflective</span>
+              </button>
             </div>
           </div>
         </div>
@@ -2285,33 +2406,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
           </aside>
         )}
 
-        {/* Document Tools Sidebar - Only show if tools are not disabled and no overlay is active */}
-        {!disableTools && !showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && !showIntuitiveLearning && !showActiveLearning && !showReflectiveLearning && (
-          <DocumentToolsSidebar
-            onAITutorClick={handleAITutorClick}
-            onVisualContentClick={handleVisualContentClick}
-            onSequentialLearningClick={handleSequentialLearningClick}
-            onGlobalLearningClick={handleGlobalLearningClick}
-            onSensingLearningClick={handleSensingLearningClick}
-            onIntuitiveLearningClick={handleIntuitiveLearningClick}
-            onActiveLearningClick={handleActiveLearningClick}
-            onReflectiveLearningClick={handleReflectiveLearningClick}
-            onNotesClick={() => {
-              // Toggle notes panel using the ref
-              if (floatingNotesRef.current) {
-                floatingNotesRef.current.toggleNotesPanel();
-              }
-            }}
-            isExtractingContent={isExtractingContent}
-            isAINarratorLoading={isAINarratorLoading}
-            isSequentialLearningLoading={isSequentialLearningLoading}
-            isGlobalLearningLoading={isGlobalLearningLoading}
-            isSensingLearningLoading={isSensingLearningLoading}
-            isIntuitiveLearningLoading={isIntuitiveLearningLoading}
-            isActiveLearningLoading={isActiveLearningLoading}
-            isReflectiveLearningLoading={isReflectiveLearningLoading}
-          />
-        )}
+
 
         {/* Main content - Hide when Sequential Learning is active */}
         <div className={`flex-1 relative ${showSequentialLearning ? 'hidden' : ''}`}>
