@@ -836,11 +836,26 @@ const CourseDetailPage = ({
                 />
               )}
               {activeTab === 'people' && (
-                <div className="p-8 bg-white border border-gray-200/60 shadow-sm sm:p-10 rounded-2xl hover:shadow-lg transition-all duration-200">
-                  <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-2xl font-bold text-gray-900">Members</h2>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input type="text" placeholder="Search people..." className="w-56 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:shadow-sm" />
+                <div className="bg-white border border-gray-200 shadow-sm rounded-xl">
+                  {/* Simple Header */}
+                  <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900">Members</h2>
+                      <p className="text-sm text-gray-500 mt-1">{teachers.length + students.length} total members</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <input 
+                          type="text" 
+                          placeholder="Search people..." 
+                          className="w-64 pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        />
+                        <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                      
                       {isInstructor && (
                         <>
                           <button
@@ -848,7 +863,7 @@ const CourseDetailPage = ({
                               setInviteRole('student');
                               setInviteModalOpen(true);
                             }}
-                            className="px-4 py-2 text-sm font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2"
+                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                           >
                             Invite Student
                           </button>
@@ -857,7 +872,7 @@ const CourseDetailPage = ({
                               setInviteRole('coTeacher');
                               setInviteModalOpen(true);
                             }}
-                            className="px-4 py-2 text-sm font-medium text-white transition-all duration-200 bg-purple-600 rounded-lg hover:bg-purple-700 hover:shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:ring-offset-2"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                           >
                             Invite Co-teacher
                           </button>
@@ -865,75 +880,173 @@ const CourseDetailPage = ({
                       )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <div className="p-5 border border-gray-200 rounded-xl bg-gray-50">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">Teachers</h3>
-                        <span className="px-2 py-0.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-full border border-indigo-200">{teachers.length}</span>
-                      </div>
-                      <div className="space-y-3">
-                        {teachers.length === 0 ? (
-                          <p className="text-gray-600">No teachers found.</p>
-                        ) : (
-                          teachers.map((teacher) => (
-                            <div key={teacher._id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
-                              <div className="flex items-center min-w-0 gap-4">
-                                <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full">
-                                  <span className="text-sm font-semibold text-white">{teacher.name ? teacher.name.charAt(0).toUpperCase() : 'U'}</span>
+
+                  {/* Members Table */}
+                  <div className="overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Role
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Joined
+                          </th>
+                          <th className="relative px-6 py-3">
+                            <span className="sr-only">Actions</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {/* Teachers */}
+                        {teachers.map((teacher) => (
+                          <tr key={teacher._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                  <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+                                    <span className="text-sm font-medium text-white">
+                                      {teacher.name ? teacher.name.charAt(0).toUpperCase() : 'T'}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="font-medium text-gray-800 truncate">{teacher.name || 'Unknown Teacher'}</p>
-                                  <p className="text-xs text-gray-500 truncate">Teacher</p>
+                                <div className="ml-4">
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {teacher.name || 'Unknown Teacher'}
+                                    </div>
+                                    {teacher._id === courseDetails.createdBy._id && (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        Owner
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {teacher.email || 'No email provided'}
+                                  </div>
                                 </div>
                               </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Teacher
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="inline-flex items-center">
+                                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                                <span className="text-sm text-gray-900">Active</span>
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {teacher.createdAt ? format(new Date(teacher.createdAt), 'MMM d, yyyy') : 'Unknown'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               {isInstructor && teacher._id !== courseDetails.createdBy._id && (
                                 <button
                                   onClick={() => handleRemoveUser(teacher._id, 'coTeacher')}
-                                  className="p-2 text-red-600 transition-all duration-200 rounded-lg hover:bg-red-100 hover:shadow-sm hover:scale-110 active:scale-95"
-                                  aria-label="Remove teacher"
+                                  className="text-red-600 hover:text-red-900 transition-colors"
                                 >
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                  Remove
                                 </button>
                               )}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                    <div className="p-5 border border-gray-200 rounded-xl bg-gray-50">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">Students</h3>
-                        <span className="px-2 py-0.5 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200">{students.length}</span>
-                      </div>
-                      <div className="space-y-3 max-h-[460px] overflow-auto pr-1">
-                        {students.length === 0 ? (
-                          <p className="text-gray-600">No students enrolled.</p>
-                        ) : (
-                          students.map((student) => (
-                            <div key={student._id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
-                              <div className="flex items-center min-w-0 gap-4">
-                                <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-purple-500 rounded-full">
-                                  <span className="text-sm font-semibold text-white">{student.name ? student.name.charAt(0).toUpperCase() : 'U'}</span>
+                            </td>
+                          </tr>
+                        ))}
+                        
+                        {/* Students */}
+                        {students.map((student) => (
+                          <tr key={student._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                  <div className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center">
+                                    <span className="text-sm font-medium text-white">
+                                      {student.name ? student.name.charAt(0).toUpperCase() : 'S'}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="font-medium text-gray-800 truncate">{student.name || 'Unknown Student'}</p>
-                                  <p className="text-xs text-gray-500 truncate">Student</p>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {student.name || 'Unknown Student'}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {student.email || 'No email provided'}
+                                  </div>
                                 </div>
                               </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Student
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="inline-flex items-center">
+                                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                                <span className="text-sm text-gray-900">Active</span>
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {student.createdAt ? format(new Date(student.createdAt), 'MMM d, yyyy') : 'Unknown'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               {isInstructor && (
                                 <button
                                   onClick={() => handleRemoveUser(student._id, 'student')}
-                                  className="p-2 text-red-600 transition-all duration-200 rounded-lg hover:bg-red-100 hover:shadow-sm hover:scale-110 active:scale-95"
-                                  aria-label="Remove student"
+                                  className="text-red-600 hover:text-red-900 transition-colors"
                                 >
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                  Remove
                                 </button>
                               )}
-                            </div>
-                          ))
+                            </td>
+                          </tr>
+                        ))}
+                        
+                        {/* Empty State */}
+                        {teachers.length === 0 && students.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="px-6 py-12 text-center">
+                              <div className="flex flex-col items-center">
+                                <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                <h3 className="text-lg font-medium text-gray-900 mb-2">No members yet</h3>
+                                <p className="text-gray-500 mb-4">Start by inviting teachers and students to your course.</p>
+                                {isInstructor && (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => {
+                                        setInviteRole('student');
+                                        setInviteModalOpen(true);
+                                      }}
+                                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                      Invite Student
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setInviteRole('coTeacher');
+                                        setInviteModalOpen(true);
+                                      }}
+                                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                    >
+                                      Invite Co-teacher
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
                         )}
-                      </div>
-                    </div>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}

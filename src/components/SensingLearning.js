@@ -326,7 +326,7 @@ const SensingLearning = ({
                       onChange={(e) => handleSimulationInputChange(activeSimulation, element.name, e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     >
-                      {element.range.map((option, optIndex) => (
+                      {(Array.isArray(element.range) ? element.range : []).map((option, optIndex) => (
                         <option key={optIndex} value={option}>{option}</option>
                       ))}
                     </select>
