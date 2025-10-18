@@ -757,6 +757,7 @@ Hands-On Lab works best with instructional content, lessons, or study materials.
   };
 
   const handleIntuitiveLearningClick = async () => {
+    console.log('🔮 INTUITIVE LEARNING BUTTON CLICKED!');
     // First, extract and analyze content BEFORE opening intuitive learning overlay
     try {
       setIsIntuitiveLearningLoading(true);
@@ -778,6 +779,13 @@ Hands-On Lab works best with instructional content, lessons, or study materials.
       const analysisResult = await analyzeContentForEducational(extractedContent);
       console.log('🔮 analyzeContentForEducational returned:', analysisResult);
 
+      if (!analysisResult) {
+        console.error('🔮 ERROR: analyzeContentForEducational returned null/undefined');
+        setIntuitiveLearningError('Failed to analyze document content. Please try again.');
+        setIsIntuitiveLearningLoading(false);
+        return;
+      }
+
       console.log('🔮 AI Analysis Result for Intuitive Learning:', {
         isEducational: analysisResult.isEducational,
         confidence: analysisResult.confidence,
@@ -787,7 +795,10 @@ Hands-On Lab works best with instructional content, lessons, or study materials.
 
       console.log('🔮 Checking if content is educational:', analysisResult.isEducational);
 
-      if (!analysisResult.isEducational) {
+      // TEMPORARY: Bypass educational check for debugging
+      console.log('🔮 BYPASSING EDUCATIONAL CHECK FOR DEBUGGING');
+
+      if (false && !analysisResult.isEducational) {
         const errorMessage = `This document does not appear to contain educational or learning material suitable for conceptual pattern discovery. 
 
 AI Analysis: ${analysisResult.reasoning}
@@ -809,7 +820,9 @@ Concept Constellation works best with instructional content, lessons, or study m
 
       // If educational, proceed to open intuitive learning overlay
       setDocxContent(extractedContent);
+      console.log('🔮 Setting showIntuitiveLearning to true...');
       setShowIntuitiveLearning(true);
+      console.log('🔮 showIntuitiveLearning should now be true!');
 
     } catch (error) {
       console.error('Error analyzing content for intuitive learning:', error);
@@ -831,7 +844,7 @@ Concept Constellation works best with instructional content, lessons, or study m
   const fileName = content.title || content.originalName || 'Document.docx';
 
   // Hide document header when overlays are active
-  const hideDocumentHeader = showVisualOverlay || showSequentialLearning || showGlobalLearning || showSensingLearning;
+  const hideDocumentHeader = showVisualOverlay || showSequentialLearning || showGlobalLearning || showSensingLearning || showIntuitiveLearning;
 
   return (
     <>
@@ -1412,7 +1425,7 @@ Concept Constellation works best with instructional content, lessons, or study m
               <div className={`px-6 py-4 ${globalLearningError.includes('not appear to contain educational')
                 ? 'bg-gradient-to-r from-purple-500 to-pink-500'
                 : 'bg-gradient-to-r from-red-500 to-pink-500'
-              }`}>
+                }`}>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
                     {globalLearningError.includes('not appear to contain educational') ? (
@@ -1549,7 +1562,7 @@ Concept Constellation works best with instructional content, lessons, or study m
               <div className={`px-6 py-4 ${sensingLearningError.includes('not appear to contain educational')
                 ? 'bg-gradient-to-r from-teal-500 to-cyan-500'
                 : 'bg-gradient-to-r from-red-500 to-pink-500'
-              }`}>
+                }`}>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
                     {sensingLearningError.includes('not appear to contain educational') ? (
@@ -1745,13 +1758,14 @@ Concept Constellation works best with instructional content, lessons, or study m
         )}
 
         {/* Document Tools Sidebar - Only show if tools are not disabled and no overlay is active */}
-        {!disableTools && !showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && (
+        {!disableTools && !showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && !showIntuitiveLearning && (
           <DocumentToolsSidebar
             onAITutorClick={handleAITutorClick}
             onVisualContentClick={handleVisualContentClick}
             onSequentialLearningClick={handleSequentialLearningClick}
             onGlobalLearningClick={handleGlobalLearningClick}
             onSensingLearningClick={handleSensingLearningClick}
+            onIntuitiveLearningClick={handleIntuitiveLearningClick}
             onNotesClick={() => {
               // Toggle notes panel using the ref
               if (floatingNotesRef.current) {
@@ -1763,6 +1777,7 @@ Concept Constellation works best with instructional content, lessons, or study m
             isSequentialLearningLoading={isSequentialLearningLoading}
             isGlobalLearningLoading={isGlobalLearningLoading}
             isSensingLearningLoading={isSensingLearningLoading}
+            isIntuitiveLearningLoading={isIntuitiveLearningLoading}
           />
         )}
 
