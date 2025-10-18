@@ -14,6 +14,8 @@ import VisualContentModal from './VisualContentModal';
 import VisualDocxOverlay from './VisualDocxOverlay';
 import SequentialLearning from './SequentialLearning';
 import GlobalLearning from './GlobalLearning';
+import SensingLearning from './SensingLearning';
+import IntuitiveLearning from './IntuitiveLearning';
 
 /**
  * DOCX Preview Component with AI Narrator Integration
@@ -33,16 +35,22 @@ const DocxPreviewWithAI = ({
   const [showVisualOverlay, setShowVisualOverlay] = useState(false);
   const [showSequentialLearning, setShowSequentialLearning] = useState(false);
   const [showGlobalLearning, setShowGlobalLearning] = useState(false);
+  const [showSensingLearning, setShowSensingLearning] = useState(false);
+  const [showIntuitiveLearning, setShowIntuitiveLearning] = useState(false);
   const [activeVisualType, setActiveVisualType] = useState('diagram');
   const [docxContent, setDocxContent] = useState('');
   const [isExtractingContent, setIsExtractingContent] = useState(false);
   const [isAINarratorLoading, setIsAINarratorLoading] = useState(false);
   const [isSequentialLearningLoading, setIsSequentialLearningLoading] = useState(false);
   const [isGlobalLearningLoading, setIsGlobalLearningLoading] = useState(false);
+  const [isSensingLearningLoading, setIsSensingLearningLoading] = useState(false);
+  const [isIntuitiveLearningLoading, setIsIntuitiveLearningLoading] = useState(false);
   const [extractionError, setExtractionError] = useState('');
   const [visualLearningError, setVisualLearningError] = useState('');
   const [sequentialLearningError, setSequentialLearningError] = useState('');
   const [globalLearningError, setGlobalLearningError] = useState('');
+  const [sensingLearningError, setSensingLearningError] = useState('');
+  const [intuitiveLearningError, setIntuitiveLearningError] = useState('');
   const [aiTutorActive, setAiTutorActive] = useState(false);
   const [showModeSelection, setShowModeSelection] = useState(false);
   const [currentAudio, setCurrentAudio] = useState(null);
@@ -685,6 +693,132 @@ Global Learning works best with instructional content, lessons, or study materia
     }
   };
 
+  const handleSensingLearningClick = async () => {
+    // First, extract and analyze content BEFORE opening sensing learning overlay
+    try {
+      setIsSensingLearningLoading(true);
+      const extractedContent = docxContent || await extractDocxContent('sensing');
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setSensingLearningError('Failed to extract document content for hands-on learning.');
+        setIsSensingLearningLoading(false);
+        return;
+      }
+
+      // Analyze if content is educational using the SAME AI as other learning features
+      console.log('🔬 Sensing Learning Content Analysis Debug:');
+      console.log('📝 Content length:', extractedContent.length);
+      console.log('📄 First 200 chars:', extractedContent.substring(0, 200));
+      console.log('📊 Word count:', extractedContent.split(/\s+/).length);
+
+      console.log('🔬 About to call analyzeContentForEducational...');
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+      console.log('🔬 analyzeContentForEducational returned:', analysisResult);
+
+      console.log('🔬 AI Analysis Result for Sensing Learning:', {
+        isEducational: analysisResult.isEducational,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning,
+        contentType: analysisResult.contentType
+      });
+
+      console.log('🔬 Checking if content is educational:', analysisResult.isEducational);
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for hands-on learning. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Hands-On Lab works best with instructional content, lessons, or study materials.`;
+
+        setSensingLearningError(errorMessage);
+        setIsSensingLearningLoading(false);
+        return;
+      }
+
+      console.log('✅ Content approved for sensing learning:', {
+        contentType: analysisResult.contentType,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning
+      });
+
+      // If educational, proceed to open sensing learning overlay
+      setDocxContent(extractedContent);
+      setShowSensingLearning(true);
+
+    } catch (error) {
+      console.error('Error analyzing content for sensing learning:', error);
+      setSensingLearningError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsSensingLearningLoading(false);
+    }
+  };
+
+  const handleIntuitiveLearningClick = async () => {
+    // First, extract and analyze content BEFORE opening intuitive learning overlay
+    try {
+      setIsIntuitiveLearningLoading(true);
+      const extractedContent = docxContent || await extractDocxContent('intuitive');
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setIntuitiveLearningError('Failed to extract document content for conceptual pattern discovery.');
+        setIsIntuitiveLearningLoading(false);
+        return;
+      }
+
+      // Analyze if content is educational using the SAME AI as other learning features
+      console.log('🔮 Intuitive Learning Content Analysis Debug:');
+      console.log('📝 Content length:', extractedContent.length);
+      console.log('📄 First 200 chars:', extractedContent.substring(0, 200));
+      console.log('📊 Word count:', extractedContent.split(/\s+/).length);
+
+      console.log('🔮 About to call analyzeContentForEducational...');
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+      console.log('🔮 analyzeContentForEducational returned:', analysisResult);
+
+      console.log('🔮 AI Analysis Result for Intuitive Learning:', {
+        isEducational: analysisResult.isEducational,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning,
+        contentType: analysisResult.contentType
+      });
+
+      console.log('🔮 Checking if content is educational:', analysisResult.isEducational);
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for conceptual pattern discovery. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Concept Constellation works best with instructional content, lessons, or study materials.`;
+
+        setIntuitiveLearningError(errorMessage);
+        setIsIntuitiveLearningLoading(false);
+        return;
+      }
+
+      console.log('✅ Content approved for intuitive learning:', {
+        contentType: analysisResult.contentType,
+        confidence: analysisResult.confidence,
+        reasoning: analysisResult.reasoning
+      });
+
+      // If educational, proceed to open intuitive learning overlay
+      setDocxContent(extractedContent);
+      setShowIntuitiveLearning(true);
+
+    } catch (error) {
+      console.error('Error analyzing content for intuitive learning:', error);
+      setIntuitiveLearningError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsIntuitiveLearningLoading(false);
+    }
+  };
+
   const handleVisualTypeChange = (newType) => {
     setActiveVisualType(newType);
   };
@@ -697,7 +831,7 @@ Global Learning works best with instructional content, lessons, or study materia
   const fileName = content.title || content.originalName || 'Document.docx';
 
   // Hide document header when overlays are active
-  const hideDocumentHeader = showVisualOverlay || showSequentialLearning || showGlobalLearning;
+  const hideDocumentHeader = showVisualOverlay || showSequentialLearning || showGlobalLearning || showSensingLearning;
 
   return (
     <>
@@ -751,6 +885,26 @@ Global Learning works best with instructional content, lessons, or study materia
           <GlobalLearning
             isActive={showGlobalLearning}
             onClose={() => setShowGlobalLearning(false)}
+            docxContent={docxContent}
+            fileName={fileName}
+          />
+        )}
+
+        {/* Sensing Learning Overlay - replaces the entire document view */}
+        {showSensingLearning && (
+          <SensingLearning
+            isActive={showSensingLearning}
+            onClose={() => setShowSensingLearning(false)}
+            docxContent={docxContent}
+            fileName={fileName}
+          />
+        )}
+
+        {/* Intuitive Learning Overlay - replaces the entire document view */}
+        {showIntuitiveLearning && (
+          <IntuitiveLearning
+            isActive={showIntuitiveLearning}
+            onClose={() => setShowIntuitiveLearning(false)}
             docxContent={docxContent}
             fileName={fileName}
           />
@@ -1387,6 +1541,143 @@ Global Learning works best with instructional content, lessons, or study materia
           </div>
         )}
 
+        {/* Sensing Learning Error Modal - Same Design as Other Learning Features */}
+        {sensingLearningError && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+              {/* Header */}
+              <div className={`px-6 py-4 ${sensingLearningError.includes('not appear to contain educational')
+                ? 'bg-gradient-to-r from-teal-500 to-cyan-500'
+                : 'bg-gradient-to-r from-red-500 to-pink-500'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
+                    {sensingLearningError.includes('not appear to contain educational') ? (
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <XMarkIcon className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {sensingLearningError.includes('not appear to contain educational')
+                        ? 'Hands-On Lab Not Available'
+                        : 'Hands-On Lab Error'
+                      }
+                    </h3>
+                    <p className="text-sm text-white text-opacity-90">
+                      {sensingLearningError.includes('not appear to contain educational')
+                        ? 'Document analysis complete'
+                        : 'Something went wrong'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {sensingLearningError.includes('not appear to contain educational') ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-teal-100 rounded-lg flex-shrink-0 mt-0.5">
+                        <svg className="w-4 h-4 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-2">
+                          This document doesn't contain educational content suitable for hands-on learning.
+                        </p>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Our AI analyzed the document and determined it's not instructional material.
+                          Hands-On Lab works best with lessons, tutorials, study guides, and educational content.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Analysis Details */}
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                      <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Analysis Results</h4>
+
+                      {/* AI Analysis Summary */}
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-2.5 h-2.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-700 mb-1">AI Analysis</p>
+                            <p className="text-xs text-gray-600 leading-relaxed">
+                              The document appears to be a personal study log or development schedule rather than instructional content suitable for hands-on learning.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Suggestions */}
+                      <div className="bg-teal-50 rounded-lg p-3 border border-teal-200">
+                        <h4 className="text-xs font-semibold text-teal-800 mb-2 flex items-center gap-1">
+                          <svg className="w-3 h-3 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                          Try Hands-On Lab with:
+                        </h4>
+                        <ul className="text-xs text-teal-800 space-y-1">
+                          <li>• Science experiments and lab procedures</li>
+                          <li>• Mathematical problem-solving exercises</li>
+                          <li>• Technical tutorials with step-by-step instructions</li>
+                          <li>• Engineering or programming guides</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg flex-shrink-0 mt-0.5">
+                        <XMarkIcon className="w-4 h-4 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-2">
+                          Unable to process document for hands-on learning
+                        </p>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          {sensingLearningError}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end pt-4 border-t border-gray-200 mt-6">
+                  <div className="flex gap-2">
+                    {!sensingLearningError.includes('not appear to contain educational') && (
+                      <button
+                        onClick={handleSensingLearningClick}
+                        className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
+                      >
+                        Try Again
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setSensingLearningError('')}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Content Analysis Loading */}
         {isExtractingContent && (
           <div className="absolute bottom-4 left-4 z-10 max-w-sm">
@@ -1453,13 +1744,14 @@ Global Learning works best with instructional content, lessons, or study materia
           </aside>
         )}
 
-        {/* Document Tools Sidebar - Only show if tools are not disabled */}
-        {!disableTools && (
+        {/* Document Tools Sidebar - Only show if tools are not disabled and no overlay is active */}
+        {!disableTools && !showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && (
           <DocumentToolsSidebar
             onAITutorClick={handleAITutorClick}
             onVisualContentClick={handleVisualContentClick}
             onSequentialLearningClick={handleSequentialLearningClick}
             onGlobalLearningClick={handleGlobalLearningClick}
+            onSensingLearningClick={handleSensingLearningClick}
             onNotesClick={() => {
               // Toggle notes panel using the ref
               if (floatingNotesRef.current) {
@@ -1470,6 +1762,7 @@ Global Learning works best with instructional content, lessons, or study materia
             isAINarratorLoading={isAINarratorLoading}
             isSequentialLearningLoading={isSequentialLearningLoading}
             isGlobalLearningLoading={isGlobalLearningLoading}
+            isSensingLearningLoading={isSensingLearningLoading}
           />
         )}
 
@@ -1699,25 +1992,7 @@ Global Learning works best with instructional content, lessons, or study materia
 
         </div>
 
-        {/* Document Tools Sidebar - Only show if tools are not disabled and no overlay is active */}
-        {!disableTools && !showVisualOverlay && !showSequentialLearning && !showGlobalLearning && (
-          <DocumentToolsSidebar
-            onAITutorClick={handleAITutorClick}
-            onVisualContentClick={handleVisualContentClick}
-            onSequentialLearningClick={handleSequentialLearningClick}
-            onGlobalLearningClick={handleGlobalLearningClick}
-            onNotesClick={() => {
-              // Toggle notes panel using the ref
-              if (floatingNotesRef.current) {
-                floatingNotesRef.current.toggleNotesPanel();
-              }
-            }}
-            isExtractingContent={isExtractingContent}
-            isAINarratorLoading={isAINarratorLoading}
-            isSequentialLearningLoading={isSequentialLearningLoading}
-            isGlobalLearningLoading={isGlobalLearningLoading}
-          />
-        )}
+
       </div>
 
       {/* Enhanced FloatingNotes component - Hide when any overlay is active */}

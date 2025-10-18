@@ -9,7 +9,9 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PhotoIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  BeakerIcon,
+  EyeIcon
 } from '@heroicons/react/24/outline';
 
 const DocumentToolsSidebar = ({
@@ -18,10 +20,14 @@ const DocumentToolsSidebar = ({
   onVisualContentClick,
   onSequentialLearningClick,
   onGlobalLearningClick,
+  onSensingLearningClick,
+  onIntuitiveLearningClick,
   isExtractingContent = false,
   isAINarratorLoading = false,
   isSequentialLearningLoading = false,
   isGlobalLearningLoading = false,
+  isSensingLearningLoading = false,
+  isIntuitiveLearningLoading = false,
   className = ""
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -150,6 +156,50 @@ const DocumentToolsSidebar = ({
                 </button>
               </div>
 
+              {/* Sensing Learning */}
+              <div className="group">
+                <button
+                  onClick={onSensingLearningClick}
+                  disabled={isSensingLearningLoading}
+                  className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50"
+                  title="Hands-On Lab - Interactive experiments and practical challenges"
+                >
+                  {isSensingLearningLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                  ) : (
+                    <BeakerIcon className="w-5 h-5 flex-shrink-0" />
+                  )}
+                  <div className="text-left flex-1">
+                    <div className="font-semibold text-sm">Hands-On Lab</div>
+                    <div className="text-xs opacity-90">
+                      {isSensingLearningLoading ? 'Processing document...' : 'Interactive experiments & challenges'}
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Intuitive Learning */}
+              <div className="group">
+                <button
+                  onClick={onIntuitiveLearningClick}
+                  disabled={isIntuitiveLearningLoading}
+                  className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50"
+                  title="Concept Constellation - Pattern discovery and abstract connections"
+                >
+                  {isIntuitiveLearningLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                  ) : (
+                    <EyeIcon className="w-5 h-5 flex-shrink-0" />
+                  )}
+                  <div className="text-left flex-1">
+                    <div className="font-semibold text-sm">Concept Constellation</div>
+                    <div className="text-xs opacity-90">
+                      {isIntuitiveLearningLoading ? 'Processing document...' : 'Pattern discovery & connections'}
+                    </div>
+                  </div>
+                </button>
+              </div>
+
               {/* Notes */}
               <div className="group">
                 <button
@@ -222,6 +272,34 @@ const DocumentToolsSidebar = ({
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <GlobeAltIcon className="w-5 h-5" />
+                )}
+              </button>
+
+              {/* Sensing Learning Icon */}
+              <button
+                onClick={onSensingLearningClick}
+                disabled={isSensingLearningLoading}
+                className="p-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50"
+                title={isSensingLearningLoading ? "Hands-On Lab - Processing document..." : "Hands-On Lab - Interactive experiments & challenges"}
+              >
+                {isSensingLearningLoading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <BeakerIcon className="w-5 h-5" />
+                )}
+              </button>
+
+              {/* Intuitive Learning Icon */}
+              <button
+                onClick={onIntuitiveLearningClick}
+                disabled={isIntuitiveLearningLoading}
+                className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50"
+                title={isIntuitiveLearningLoading ? "Concept Constellation - Processing document..." : "Concept Constellation - Pattern discovery & connections"}
+              >
+                {isIntuitiveLearningLoading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <EyeIcon className="w-5 h-5" />
                 )}
               </button>
 
