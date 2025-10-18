@@ -53,6 +53,9 @@ const ActiveLearning = ({
         discussionDepth: 0
     });
 
+    // Button feedback states
+    const [buttonFeedback, setButtonFeedback] = useState('');
+
     // Learning phases based on Felder-Silverman Active Learning research
     const learningPhases = [
         {
@@ -214,6 +217,8 @@ const ActiveLearning = ({
         if (!docxContent) return;
 
         setLoading(true);
+        setButtonFeedback('');
+
         try {
             const response = await fetch('/api/active-learning/extract-concepts', {
                 method: 'POST',
@@ -232,10 +237,19 @@ const ActiveLearning = ({
                         ...prev,
                         conceptsProcessed: prev.conceptsProcessed + data.concepts.length
                     }));
+                    setButtonFeedback(`✅ Successfully extracted ${data.concepts.length} new concepts!`);
+
+                    // Clear feedback after 3 seconds
+                    setTimeout(() => setButtonFeedback(''), 3000);
+                } else {
+                    setButtonFeedback('⚠️ No new concepts found in the content.');
                 }
+            } else {
+                setButtonFeedback('❌ Failed to extract concepts. Please try again.');
             }
         } catch (error) {
             console.error('Error extracting concepts:', error);
+            setButtonFeedback('❌ Error occurred while extracting concepts.');
         } finally {
             setLoading(false);
         }
@@ -243,11 +257,14 @@ const ActiveLearning = ({
 
     const handleIdentifyRelationships = async () => {
         if (!docxContent || extractedConcepts.length === 0) {
-            alert('Please extract concepts first to identify relationships');
+            setButtonFeedback('⚠️ Please extract concepts first to identify relationships');
+            setTimeout(() => setButtonFeedback(''), 3000);
             return;
         }
 
         setLoading(true);
+        setButtonFeedback('');
+
         try {
             const response = await fetch('/api/active-learning/identify-relationships', {
                 method: 'POST',
@@ -267,10 +284,20 @@ const ActiveLearning = ({
                         const relationship = data.relationships.find(r => r.conceptId === concept.id);
                         return relationship ? { ...concept, relationships: relationship.connections } : concept;
                     }));
+                    setButtonFeedback(`✅ Successfully identified relationships between ${data.relationships.length} concepts!`);
+                    setTimeout(() => setButtonFeedback(''), 3000);
+                } else {
+                    setButtonFeedback('⚠️ No relationships found between concepts.');
+                    setTimeout(() => setButtonFeedback(''), 3000);
                 }
+            } else {
+                setButtonFeedback('❌ Failed to identify relationships. Please try again.');
+                setTimeout(() => setButtonFeedback(''), 3000);
             }
         } catch (error) {
             console.error('Error identifying relationships:', error);
+            setButtonFeedback('❌ Error occurred while identifying relationships.');
+            setTimeout(() => setButtonFeedback(''), 3000);
         } finally {
             setLoading(false);
         }
@@ -280,6 +307,8 @@ const ActiveLearning = ({
         if (!docxContent) return;
 
         setLoading(true);
+        setButtonFeedback('');
+
         try {
             const response = await fetch('/api/active-learning/generate-questions', {
                 method: 'POST',
@@ -302,10 +331,20 @@ const ActiveLearning = ({
                         phase: 'engagement'
                     }));
                     setDiscussionHistory(prev => [...prev, ...questionEntries]);
+                    setButtonFeedback(`✅ Successfully generated ${data.questions.length} discussion questions! Check the "Simulated Group Discussion" tab to see them.`);
+                    setTimeout(() => setButtonFeedback(''), 4000);
+                } else {
+                    setButtonFeedback('⚠️ No questions could be generated from the content.');
+                    setTimeout(() => setButtonFeedback(''), 3000);
                 }
+            } else {
+                setButtonFeedback('❌ Failed to generate questions. Please try again.');
+                setTimeout(() => setButtonFeedback(''), 3000);
             }
         } catch (error) {
             console.error('Error generating questions:', error);
+            setButtonFeedback('❌ Error occurred while generating questions.');
+            setTimeout(() => setButtonFeedback(''), 3000);
         } finally {
             setLoading(false);
         }
@@ -579,26 +618,36 @@ const ActiveLearning = ({
                                                 {docxContent || 'No content available'}
                                             </div>
                                         </div>
-                                        <div className="flex gap-2 flex-wrap">
+                                        <div className="flex gap-2 flex-wrap mb-4">
                                             <button
                                                 onClick={handleExtractConcepts}
-                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                                                disabled={loading}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
                                             >
-                                                Extract Key Concepts
+                                                {loading ? 'Processing...' : 'Extract Key Concepts'}
                                             </button>
                                             <button
                                                 onClick={handleIdentifyRelationships}
-                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                                                disabled={loading || extractedConcepts.length === 0}
+                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors text-sm"
                                             >
-                                                Identify Relationships
+                                                {loading ? 'Processing...' : 'Identify Relationships'}
                                             </button>
                                             <button
                                                 onClick={handleGenerateQuestions}
-                                                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                                                disabled={loading}
+                                                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm"
                                             >
-                                                Generate Questions
+                                                {loading ? 'Processing...' : 'Generate Questions'}
                                             </button>
                                         </div>
+
+                                        {/* Button Feedback */}
+                                        {buttonFeedback && (
+                                            <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-4">
+                                                <div className="text-sm text-green-700">{buttonFeedback}</div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Concept Extraction Results */}
@@ -611,7 +660,17 @@ const ActiveLearning = ({
                                                 {extractedConcepts.map((concept, index) => (
                                                     <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                                                         <div className="font-medium text-blue-800">{concept.title}</div>
-                                                        <div className="text-sm text-blue-600">{concept.description}</div>
+                                                        <div className="text-sm text-blue-600 mb-2">{concept.description}</div>
+                                                        {concept.relationships && (
+                                                            <div className="text-xs text-blue-500 border-t border-blue-300 pt-2">
+                                                                <strong>Relationships:</strong>
+                                                                <ul className="list-disc list-inside mt-1">
+                                                                    {concept.relationships.map((rel, relIndex) => (
+                                                                        <li key={relIndex}>{rel.type}: {rel.target} ({rel.strength})</li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -720,7 +779,7 @@ const ActiveLearning = ({
                                                 You are a financial advisor consulting with a client who wants to invest 20% of their portfolio in cryptocurrency. They are concerned about volatility but excited about potential returns. How do you advise them?
                                             </p>
                                         </div>
-                                        
+
                                         <div className="space-y-3 mb-4">
                                             <h4 className="font-medium text-gray-700">Choose your approach:</h4>
                                             <button
@@ -775,36 +834,99 @@ const ActiveLearning = ({
                                                 <p className="text-sm text-blue-700 mb-3">
                                                     Your company wants to implement blockchain for supply chain tracking. What are the key considerations?
                                                 </p>
-                                                <button 
-                                                    onClick={() => handleScenarioResponse(1, "Technical implementation scenario response")}
-                                                    className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-                                                >
-                                                    Analyze Scenario
-                                                </button>
+                                                {!scenarioResults[1] ? (
+                                                    <div className="space-y-2">
+                                                        <button
+                                                            onClick={() => handleScenarioResponse(1, "Focus on scalability, integration with existing systems, and staff training requirements")}
+                                                            className="block w-full text-left px-3 py-2 bg-blue-100 border border-blue-300 rounded text-xs hover:bg-blue-200 transition-colors"
+                                                        >
+                                                            Focus on technical infrastructure and scalability
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleScenarioResponse(1, "Prioritize regulatory compliance, data privacy, and legal framework alignment")}
+                                                            className="block w-full text-left px-3 py-2 bg-blue-100 border border-blue-300 rounded text-xs hover:bg-blue-200 transition-colors"
+                                                        >
+                                                            Prioritize compliance and legal considerations
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleScenarioResponse(1, "Conduct pilot program with key stakeholders and measure ROI before full implementation")}
+                                                            className="block w-full text-left px-3 py-2 bg-blue-100 border border-blue-300 rounded text-xs hover:bg-blue-200 transition-colors"
+                                                        >
+                                                            Start with pilot program and stakeholder buy-in
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-blue-100 border border-blue-300 rounded p-3">
+                                                        <div className="text-xs text-blue-800 mb-1"><strong>Score:</strong> {scenarioResults[1].score}/100</div>
+                                                        <div className="text-xs text-blue-700">{scenarioResults[1].feedback}</div>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                                                 <h4 className="font-medium text-green-800 mb-2">Regulatory Compliance</h4>
                                                 <p className="text-sm text-green-700 mb-3">
                                                     A client asks about tax implications of cryptocurrency trading. How do you respond?
                                                 </p>
-                                                <button 
-                                                    onClick={() => handleScenarioResponse(2, "Regulatory compliance scenario response")}
-                                                    className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
-                                                >
-                                                    Analyze Scenario
-                                                </button>
+                                                {!scenarioResults[2] ? (
+                                                    <div className="space-y-2">
+                                                        <button
+                                                            onClick={() => handleScenarioResponse(2, "Recommend consulting a tax professional and keeping detailed transaction records")}
+                                                            className="block w-full text-left px-3 py-2 bg-green-100 border border-green-300 rounded text-xs hover:bg-green-200 transition-colors"
+                                                        >
+                                                            Recommend professional tax consultation
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleScenarioResponse(2, "Explain general tax principles but emphasize the need for jurisdiction-specific advice")}
+                                                            className="block w-full text-left px-3 py-2 bg-green-100 border border-green-300 rounded text-xs hover:bg-green-200 transition-colors"
+                                                        >
+                                                            Provide general guidance with disclaimers
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleScenarioResponse(2, "Direct them to official tax authority resources and documentation")}
+                                                            className="block w-full text-left px-3 py-2 bg-green-100 border border-green-300 rounded text-xs hover:bg-green-200 transition-colors"
+                                                        >
+                                                            Direct to official tax resources
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-green-100 border border-green-300 rounded p-3">
+                                                        <div className="text-xs text-green-800 mb-1"><strong>Score:</strong> {scenarioResults[2].score}/100</div>
+                                                        <div className="text-xs text-green-700">{scenarioResults[2].feedback}</div>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                                                 <h4 className="font-medium text-orange-800 mb-2">Security Assessment</h4>
                                                 <p className="text-sm text-orange-700 mb-3">
                                                     An organization experiences a potential security breach in their crypto wallet. What immediate steps should be taken?
                                                 </p>
-                                                <button 
-                                                    onClick={() => handleScenarioResponse(3, "Security assessment scenario response")}
-                                                    className="px-3 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-700 transition-colors"
-                                                >
-                                                    Analyze Scenario
-                                                </button>
+                                                {!scenarioResults[3] ? (
+                                                    <div className="space-y-2">
+                                                        <button
+                                                            onClick={() => handleScenarioResponse(3, "Immediately isolate affected systems, transfer remaining funds to secure wallets, and conduct forensic analysis")}
+                                                            className="block w-full text-left px-3 py-2 bg-orange-100 border border-orange-300 rounded text-xs hover:bg-orange-200 transition-colors"
+                                                        >
+                                                            Immediate isolation and fund protection
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleScenarioResponse(3, "Notify relevant authorities, document the incident, and implement emergency response protocols")}
+                                                            className="block w-full text-left px-3 py-2 bg-orange-100 border border-orange-300 rounded text-xs hover:bg-orange-200 transition-colors"
+                                                        >
+                                                            Follow incident response procedures
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleScenarioResponse(3, "Assess the scope of compromise, change all credentials, and communicate with stakeholders")}
+                                                            className="block w-full text-left px-3 py-2 bg-orange-100 border border-orange-300 rounded text-xs hover:bg-orange-200 transition-colors"
+                                                        >
+                                                            Comprehensive security assessment
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-orange-100 border border-orange-300 rounded p-3">
+                                                        <div className="text-xs text-orange-800 mb-1"><strong>Score:</strong> {scenarioResults[3].score}/100</div>
+                                                        <div className="text-xs text-orange-700">{scenarioResults[3].feedback}</div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -835,7 +957,7 @@ const ActiveLearning = ({
                                                 <p className="text-sm text-orange-700 mb-3">
                                                     Distill key concepts into a professional summary
                                                 </p>
-                                                <button 
+                                                <button
                                                     onClick={handleCreateSummary}
                                                     className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
                                                 >
@@ -847,7 +969,7 @@ const ActiveLearning = ({
                                                 <p className="text-sm text-blue-700 mb-3">
                                                     Structure content for explaining to others
                                                 </p>
-                                                <button 
+                                                <button
                                                     onClick={handleCreateOutline}
                                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                                                 >
@@ -859,7 +981,7 @@ const ActiveLearning = ({
                                                 <p className="text-sm text-green-700 mb-3">
                                                     Create questions to test understanding
                                                 </p>
-                                                <button 
+                                                <button
                                                     onClick={handleGeneratePracticeQuestions}
                                                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                                                 >
@@ -871,7 +993,7 @@ const ActiveLearning = ({
                                                 <p className="text-sm text-purple-700 mb-3">
                                                     Create actionable steps for applying concepts
                                                 </p>
-                                                <button 
+                                                <button
                                                     onClick={handlePlanImplementation}
                                                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
                                                 >
@@ -879,88 +1001,88 @@ const ActiveLearning = ({
                                                 </button>
                                             </div>
                                         </div>
-        </div>
+                                    </div>
 
-                                    {/* Generated Content Display */ }
-    {
-        executiveSummary && (
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Executive Summary</h3>
-                <div className="bg-orange-50 rounded-lg p-4">
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{executiveSummary}</div>
-                </div>
-            </div>
-        )
-    }
+                                    {/* Generated Content Display */}
+                                    {
+                                        executiveSummary && (
+                                            <div className="bg-white border border-gray-200 rounded-xl p-6">
+                                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Executive Summary</h3>
+                                                <div className="bg-orange-50 rounded-lg p-4">
+                                                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{executiveSummary}</div>
+                                                </div>
+                                            </div>
+                                        )
+                                    }
 
-    {
-        teachingOutline && (
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Teaching Outline</h3>
-                <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{teachingOutline}</div>
-                </div>
-            </div>
-        )
-    }
+                                    {
+                                        teachingOutline && (
+                                            <div className="bg-white border border-gray-200 rounded-xl p-6">
+                                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Teaching Outline</h3>
+                                                <div className="bg-blue-50 rounded-lg p-4">
+                                                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{teachingOutline}</div>
+                                                </div>
+                                            </div>
+                                        )
+                                    }
 
-    {
-        practiceQuestions.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Practice Questions</h3>
-                <div className="space-y-3">
-                    {practiceQuestions.map((question, index) => (
-                        <div key={index} className="bg-green-50 border border-green-200 rounded-lg p-3">
-                            <div className="font-medium text-green-800">Q{index + 1}:</div>
-                            <div className="text-sm text-green-700">{question}</div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )
-    }
+                                    {
+                                        practiceQuestions.length > 0 && (
+                                            <div className="bg-white border border-gray-200 rounded-xl p-6">
+                                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Practice Questions</h3>
+                                                <div className="space-y-3">
+                                                    {practiceQuestions.map((question, index) => (
+                                                        <div key={index} className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                                            <div className="font-medium text-green-800">Q{index + 1}:</div>
+                                                            <div className="text-sm text-green-700">{question}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )
+                                    }
 
-    {
-        implementationPlan && (
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Implementation Plan</h3>
-                <div className="bg-purple-50 rounded-lg p-4">
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{implementationPlan}</div>
-                </div>
-            </div>
-        )
-    }
+                                    {
+                                        implementationPlan && (
+                                            <div className="bg-white border border-gray-200 rounded-xl p-6">
+                                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Implementation Plan</h3>
+                                                <div className="bg-purple-50 rounded-lg p-4">
+                                                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{implementationPlan}</div>
+                                                </div>
+                                            </div>
+                                        )
+                                    }
 
-    {/* Competency Validation */ }
-    <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Learning Competency Validation
-        </h3>
-        <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                <span className="text-sm text-green-800">Direct material engagement completed</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                <span className="text-sm text-green-800">Collaborative discussion participation verified</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                <span className="text-sm text-green-800">Practical application exercises completed</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <ClockIcon className="w-5 h-5 text-blue-600" />
-                <span className="text-sm text-blue-800">Knowledge integration in progress</span>
-            </div>
-        </div>
-    </div>
+                                    {/* Competency Validation */}
+                                    <div className="bg-white border border-gray-200 rounded-xl p-6">
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                                            Learning Competency Validation
+                                        </h3>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                                <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                                                <span className="text-sm text-green-800">Direct material engagement completed</span>
+                                            </div>
+                                            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                                <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                                                <span className="text-sm text-green-800">Collaborative discussion participation verified</span>
+                                            </div>
+                                            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                                <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                                                <span className="text-sm text-green-800">Practical application exercises completed</span>
+                                            </div>
+                                            <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                                <ClockIcon className="w-5 h-5 text-blue-600" />
+                                                <span className="text-sm text-blue-800">Knowledge integration in progress</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div >
                             )}
                         </div >
 
-    {/* Research Information Sidebar */ }
-    < div className = "w-80 bg-gray-50 border-l border-gray-200 p-6 overflow-y-auto" >
+                        {/* Research Information Sidebar */}
+                        < div className="w-80 bg-gray-50 border-l border-gray-200 p-6 overflow-y-auto" >
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">
                                 Research Foundation
                             </h3>
