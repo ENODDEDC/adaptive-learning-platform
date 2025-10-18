@@ -8,7 +8,8 @@ import {
   DocumentTextIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  PhotoIcon
+  PhotoIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 
 const DocumentToolsSidebar = ({
@@ -16,9 +17,11 @@ const DocumentToolsSidebar = ({
   onNotesClick,
   onVisualContentClick,
   onSequentialLearningClick,
+  onGlobalLearningClick,
   isExtractingContent = false,
   isAINarratorLoading = false,
   isSequentialLearningLoading = false,
+  isGlobalLearningLoading = false,
   className = ""
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -125,6 +128,28 @@ const DocumentToolsSidebar = ({
                 </button>
               </div>
 
+              {/* Global Learning */}
+              <div className="group">
+                <button
+                  onClick={onGlobalLearningClick}
+                  disabled={isGlobalLearningLoading}
+                  className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 disabled:opacity-50"
+                  title="Global Learning - Big picture view and interconnections"
+                >
+                  {isGlobalLearningLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                  ) : (
+                    <GlobeAltIcon className="w-5 h-5 flex-shrink-0" />
+                  )}
+                  <div className="text-left flex-1">
+                    <div className="font-semibold text-sm">Global Learning</div>
+                    <div className="text-xs opacity-90">
+                      {isGlobalLearningLoading ? 'Processing document...' : 'Big picture & interconnections'}
+                    </div>
+                  </div>
+                </button>
+              </div>
+
               {/* Notes */}
               <div className="group">
                 <button
@@ -172,6 +197,7 @@ const DocumentToolsSidebar = ({
 
               {/* Sequential Learning Icon */}
               <button
+                onClick={onSequentialLearningClick}
                 disabled={isSequentialLearningLoading}
                 className="p-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50"
                 title={isSequentialLearningLoading ? "Sequential Learning - Processing document..." : "Sequential Learning - Step-by-step progression"}
@@ -182,6 +208,20 @@ const DocumentToolsSidebar = ({
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
                   </svg>
+                )}
+              </button>
+
+              {/* Global Learning Icon */}
+              <button
+                onClick={onGlobalLearningClick}
+                disabled={isGlobalLearningLoading}
+                className="p-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 disabled:opacity-50"
+                title={isGlobalLearningLoading ? "Global Learning - Processing document..." : "Global Learning - Big picture & interconnections"}
+              >
+                {isGlobalLearningLoading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <GlobeAltIcon className="w-5 h-5" />
                 )}
               </button>
 
