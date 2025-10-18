@@ -139,8 +139,17 @@ const SequentialLearning = ({
                 This breaks the document into <strong>logical reading sections</strong> that you should follow in order.
                 Sequential learners benefit from clear, structured progression through content.
               </p>
-              <div className="text-xs text-green-700">
+              <div className="text-xs text-green-700 mb-3">
                 <p><strong>Purpose:</strong> "Read section 1 → then section 2 → then section 3"</p>
+              </div>
+              {/* Enhanced Learning Tips */}
+              <div className="bg-green-100 rounded-lg p-3 mt-3">
+                <h4 className="text-xs font-semibold text-green-800 mb-2">💡 Learning Tips:</h4>
+                <ul className="text-xs text-green-700 space-y-1">
+                  <li>• Complete each step before moving to the next</li>
+                  <li>• Review key takeaways after each step</li>
+                  <li>• Use the progress bar to track your learning journey</li>
+                </ul>
               </div>
             </div>
           </div>
@@ -162,11 +171,19 @@ const SequentialLearning = ({
 
         {/* Current Step */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold">
-              {currentStep + 1}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold">
+                {currentStep + 1}
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">{steps[currentStep]?.title}</h3>
             </div>
-            <h3 className="text-xl font-bold text-gray-900">{steps[currentStep]?.title}</h3>
+            {steps[currentStep]?.estimatedTime && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                <ClockIcon className="w-4 h-4" />
+                <span>{steps[currentStep].estimatedTime}</span>
+              </div>
+            )}
           </div>
 
           <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-6">
@@ -322,8 +339,18 @@ const SequentialLearning = ({
                 This shows how <strong>concepts build on each other</strong> rather than just which sections to read.
                 Sequential learners benefit from understanding these connections to see the logical progression of ideas.
               </p>
-              <div className="text-xs text-blue-700">
+              <div className="text-xs text-blue-700 mb-3">
                 <p><strong>Purpose:</strong> "Learn Concept A → then Concept B (needs A) → then Concept C (needs A+B)"</p>
+              </div>
+              {/* Enhanced Learning Strategy */}
+              <div className="bg-blue-100 rounded-lg p-3 mt-3">
+                <h4 className="text-xs font-semibold text-blue-800 mb-2">🧠 Learning Strategy:</h4>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• Master foundation concepts before advanced ones</li>
+                  <li>• Check prerequisites before starting each concept</li>
+                  <li>• Review learning outcomes to track understanding</li>
+                  <li>• Follow the dependency chain for optimal learning</li>
+                </ul>
               </div>
             </div>
           </div>
