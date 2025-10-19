@@ -6,7 +6,8 @@ import {
   AcademicCapIcon,
   XMarkIcon,
   BookOpenIcon,
-  EyeIcon
+  EyeIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import AITutorModal from './AITutorModal';
 import EnhancedFloatingNotes from './EnhancedFloatingNotes';
@@ -18,6 +19,33 @@ import SensingLearning from './SensingLearning';
 import IntuitiveLearning from './IntuitiveLearning';
 import ActiveLearning from './ActiveLearning';
 import ReflectiveLearning from './ReflectiveLearning';
+import learningModeRecommendationService from '../services/learningModeRecommendationService';
+
+// Add CSS for animations
+const tooltipStyles = `
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined' && !document.getElementById('tooltip-styles')) {
+  const style = document.createElement('style');
+  style.id = 'tooltip-styles';
+  style.textContent = tooltipStyles;
+  document.head.appendChild(style);
+}
 
 /**
  * DOCX Preview Component with AI Narrator Integration
@@ -70,8 +98,103 @@ const DocxPreviewWithAI = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
+  // Recommendation system state
+  const [recommendations, setRecommendations] = useState([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(null);
+
+  // Auto-load recommendations when component mounts
+  useEffect(() => {
+    const autoLoadRecommendations = async () => {
+      if (recommendations.length === 0 && content && !isLoadingRecommendations) {
+        console.log('🎯 Auto-loading recommendations on component mount...');
+
+        console.log('🎯 Loading real AI-powered recommendations based on document content...');
+
+        // Also try to extract content for real AI recommendations
+        try {
+          const extractedContent = await extractDocxContent('general');
+          if (extractedContent) {
+            console.log('✅ Content extracted, will generate real AI recommendations...');
+            // The docxContent useEffect will handle the AI analysis and replace test recommendations
+          }
+        } catch (error) {
+          console.log('⚠️ Could not extract content, keeping test recommendations');
+        }
+      }
+    };
+
+    // Small delay to let component settle
+    const timer = setTimeout(autoLoadRecommendations, 100);
+    return () => clearTimeout(timer);
+  }, [content]);
+
   // Ref for floating notes
   const floatingNotesRef = useRef(null);
+
+  // Load AI recommendations when component mounts or content changes
+  useEffect(() => {
+    const loadRecommendations = async () => {
+      if (docxContent && !isLoadingRecommendations) {
+        console.log('🎯 Starting AI recommendation analysis...');
+        console.log('📄 Document:', content.title || content.originalName || 'Document.docx');
+        console.log('📝 Content length:', docxContent.length);
+
+        setIsLoadingRecommendations(true);
+        try {
+          const fileName = content.title || content.originalName || 'Document.docx';
+          const recs = await learningModeRecommendationService.getRecommendedModes(docxContent, fileName);
+          setRecommendations(recs);
+          console.log('✅ AI Recommendations loaded successfully:', recs);
+          console.log('🎯 Recommended modes:', recs.map(r => r.mode).join(', '));
+        } catch (error) {
+          console.error('❌ Error loading recommendations:', error);
+          // Fallback recommendations
+          const fallbackRecs = [
+            { "mode": "AI Narrator", "reason": "Great starting point for any document" },
+            { "mode": "Visual Learning", "reason": "Visual aids enhance understanding" }
+          ];
+          setRecommendations(fallbackRecs);
+          console.log('🔄 Using fallback recommendations:', fallbackRecs);
+        } finally {
+          setIsLoadingRecommendations(false);
+        }
+      } else if (!docxContent) {
+        console.log('⏳ Waiting for document content to load before generating recommendations...');
+      }
+    };
+
+    loadRecommendations();
+  }, [docxContent, content.title, content.originalName]);
+
+  // Also try to load recommendations when component first mounts
+  useEffect(() => {
+    const tryInitialRecommendations = async () => {
+      // If we have content available but no recommendations yet, try to extract and analyze
+      if (content && !docxContent && recommendations.length === 0 && !isLoadingRecommendations) {
+        console.log('🎯 Component mounted - trying to extract content for recommendations...');
+        try {
+          const extractedContent = await extractDocxContent('general');
+          if (extractedContent) {
+            console.log('✅ Content extracted for recommendations:', extractedContent.length, 'characters');
+            // The docxContent useEffect will handle the rest
+          }
+        } catch (error) {
+          console.log('⚠️ Could not extract content for initial recommendations:', error.message);
+          // Set fallback recommendations immediately
+          setRecommendations([
+            { "mode": "AI Narrator", "reason": "Great starting point for any document" },
+            { "mode": "Visual Learning", "reason": "Visual aids enhance understanding" }
+          ]);
+          console.log('🔄 Set immediate fallback recommendations');
+        }
+      }
+    };
+
+    // Delay slightly to let component settle
+    const timer = setTimeout(tryInitialRecommendations, 1000);
+    return () => clearTimeout(timer);
+  }, [content]);
 
   const extractDocxContent = async (toolType = 'general') => {
     if (docxContent) return docxContent;
@@ -859,7 +982,7 @@ Concept Constellation works best with instructional content, lessons, or study m
       console.log('🎯 About to call analyzeContentForEducational...');
       const analysisResult = await analyzeContentForEducational(extractedContent);
       console.log('🎯 analyzeContentForEducational returned:', analysisResult);
-      
+
       if (!analysisResult) {
         console.error('🎯 ERROR: analyzeContentForEducational returned null/undefined');
         setActiveLearningError('Failed to analyze document content. Please try again.');
@@ -992,6 +1115,32 @@ Reflective Learning Processor works best with instructional content, lessons, or
 
   const fileName = content.title || content.originalName || 'Document.docx';
 
+  // Helper function to check if a mode is recommended
+  const isRecommended = (modeName) => {
+    const isRec = recommendations.some(rec => rec.mode === modeName);
+    if (isRec) {
+      console.log(`✨ ${modeName} is RECOMMENDED!`);
+    }
+    return isRec;
+  };
+
+  // Helper function to get recommendation reason
+  const getRecommendationReason = (modeName) => {
+    const rec = recommendations.find(r => r.mode === modeName);
+    return rec ? rec.reason : '';
+  };
+
+  // Debug: Log current recommendations state
+  useEffect(() => {
+    if (recommendations.length > 0) {
+      console.log('🎯 Current recommendations state:', recommendations);
+      console.log('🎯 Recommended modes:', recommendations.map(r => r.mode));
+    }
+  }, [recommendations]);
+
+  // Get tooltips for all modes
+  const tooltips = learningModeRecommendationService.getTooltips();
+
   // Hide document header when overlays are active
   const hideDocumentHeader = showVisualOverlay || showSequentialLearning || showGlobalLearning || showSensingLearning || showIntuitiveLearning || showActiveLearning;
 
@@ -1005,137 +1154,409 @@ Reflective Learning Processor works best with instructional content, lessons, or
               <AcademicCapIcon className="w-6 h-6 text-indigo-600" />
               <span className="text-sm font-medium text-indigo-800">AI Learning Modes</span>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               {/* AI Narrator */}
-              <button
-                onClick={handleAITutorClick}
-                disabled={isAINarratorLoading}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 text-sm"
-                title="AI Narrator"
-              >
-                {isAINarratorLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <SparklesIcon className="w-4 h-4" />
+              <div className="relative group">
+                <button
+                  onClick={handleAITutorClick}
+                  disabled={isAINarratorLoading}
+                  onMouseEnter={() => setShowTooltip('AI Narrator')}
+                  onMouseLeave={() => setShowTooltip(null)}
+                  className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('AI Narrator') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    }`}
+                >
+                  {isAINarratorLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <SparklesIcon className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline">AI Narrator</span>
+
+                  {/* Recommended Indicator */}
+                  {isRecommended('AI Narrator') && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full border-2 border-white shadow-lg">
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full animate-pulse opacity-75"></div>
+                    </div>
+                  )}
+                </button>
+
+                {/* Quick Preview Tooltip */}
+                {showTooltip === 'AI Narrator' && tooltips['AI Narrator'] && (
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">{tooltips['AI Narrator'].icon}</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{tooltips['AI Narrator'].title}</h4>
+                        <p className="text-sm text-gray-600 mb-2">{tooltips['AI Narrator'].description}</p>
+                        <div className="text-xs text-gray-500">
+                          <strong>Best for:</strong> {tooltips['AI Narrator'].bestFor}
+                        </div>
+                        {isRecommended('AI Narrator') && (
+                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="text-xs text-yellow-800">
+                              <strong>🎯 Why recommended:</strong> {getRecommendationReason('AI Narrator')}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
-                <span className="hidden sm:inline">AI Narrator</span>
-              </button>
+              </div>
 
               {/* Visual Learning */}
-              <button
-                onClick={handleVisualContentClick}
-                disabled={isExtractingContent}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm"
-                title="Visual Learning"
-              >
-                {isExtractingContent ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                  </svg>
+              <div className="relative group">
+                <button
+                  onClick={handleVisualContentClick}
+                  disabled={isExtractingContent}
+                  onMouseEnter={() => setShowTooltip('Visual Learning')}
+                  onMouseLeave={() => setShowTooltip(null)}
+                  className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Visual Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    }`}
+                >
+                  {isExtractingContent ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span className="hidden sm:inline">Visual</span>
+
+                  {/* Recommended Badge */}
+                  {isRecommended('Visual Learning') && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full border-2 border-white shadow-lg">
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full animate-pulse opacity-75"></div>
+                    </div>
+                  )}
+                </button>
+
+                {/* Quick Preview Tooltip */}
+                {showTooltip === 'Visual Learning' && tooltips['Visual Learning'] && (
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">{tooltips['Visual Learning'].icon}</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Visual Learning'].title}</h4>
+                        <p className="text-sm text-gray-600 mb-2">{tooltips['Visual Learning'].description}</p>
+                        <div className="text-xs text-gray-500">
+                          <strong>Best for:</strong> {tooltips['Visual Learning'].bestFor}
+                        </div>
+                        {isRecommended('Visual Learning') && (
+                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="text-xs text-yellow-800">
+                              <strong>🎯 Why recommended:</strong> {getRecommendationReason('Visual Learning')}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
-                <span className="hidden sm:inline">Visual</span>
-              </button>
+              </div>
 
               {/* Sequential Learning */}
-              <button
-                onClick={handleSequentialLearningClick}
-                disabled={isSequentialLearningLoading}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm"
-                title="Sequential Learning"
-              >
-                {isSequentialLearningLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
-                  </svg>
+              <div className="relative group">
+                <button
+                  onClick={handleSequentialLearningClick}
+                  disabled={isSequentialLearningLoading}
+                  onMouseEnter={() => setShowTooltip('Sequential Learning')}
+                  onMouseLeave={() => setShowTooltip(null)}
+                  className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Sequential Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    }`}
+                >
+                  {isSequentialLearningLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span className="hidden sm:inline">Sequential</span>
+
+                  {/* Recommended Badge */}
+                  {isRecommended('Sequential Learning') && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full border-2 border-white shadow-lg">
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full animate-pulse opacity-75"></div>
+                    </div>
+                  )}
+                </button>
+
+                {/* Quick Preview Tooltip */}
+                {showTooltip === 'Sequential Learning' && tooltips['Sequential Learning'] && (
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">{tooltips['Sequential Learning'].icon}</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Sequential Learning'].title}</h4>
+                        <p className="text-sm text-gray-600 mb-2">{tooltips['Sequential Learning'].description}</p>
+                        <div className="text-xs text-gray-500">
+                          <strong>Best for:</strong> {tooltips['Sequential Learning'].bestFor}
+                        </div>
+                        {isRecommended('Sequential Learning') && (
+                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="text-xs text-yellow-800">
+                              <strong>🎯 Why recommended:</strong> {getRecommendationReason('Sequential Learning')}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
-                <span className="hidden sm:inline">Sequential</span>
-              </button>
+              </div>
 
               {/* Global Learning */}
-              <button
-                onClick={handleGlobalLearningClick}
-                disabled={isGlobalLearningLoading}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 text-sm"
-                title="Global Learning"
-              >
-                {isGlobalLearningLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
-                  </svg>
+              <div className="relative group">
+                <button
+                  onClick={handleGlobalLearningClick}
+                  disabled={isGlobalLearningLoading}
+                  onMouseEnter={() => setShowTooltip('Global Learning')}
+                  onMouseLeave={() => setShowTooltip(null)}
+                  className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Global Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    }`}
+                >
+                  {isGlobalLearningLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span className="hidden sm:inline">Global</span>
+
+                  {/* Recommended Badge */}
+                  {isRecommended('Global Learning') && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full border-2 border-white shadow-lg">
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full animate-pulse opacity-75"></div>
+                    </div>
+                  )}
+                </button>
+
+                {/* Quick Preview Tooltip */}
+                {showTooltip === 'Global Learning' && tooltips['Global Learning'] && (
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">{tooltips['Global Learning'].icon}</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Global Learning'].title}</h4>
+                        <p className="text-sm text-gray-600 mb-2">{tooltips['Global Learning'].description}</p>
+                        <div className="text-xs text-gray-500">
+                          <strong>Best for:</strong> {tooltips['Global Learning'].bestFor}
+                        </div>
+                        {isRecommended('Global Learning') && (
+                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="text-xs text-yellow-800">
+                              <strong>🎯 Why recommended:</strong> {getRecommendationReason('Global Learning')}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
-                <span className="hidden sm:inline">Global</span>
-              </button>
+              </div>
 
               {/* Hands-On Lab */}
-              <button
-                onClick={handleSensingLearningClick}
-                disabled={isSensingLearningLoading}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm"
-                title="Hands-On Lab"
-              >
-                {isSensingLearningLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414v3.758a1 1 0 01-.293.707l-4 4C.817 14.769 2.156 18 4.828 18h10.343c2.673 0 4.012-3.231 2.122-5.121l-4-4A1 1 0 0113 8.172V4.414l.707-.707A1 1 0 0013 2H7zm2 6.172V4h2v4.172a3 3 0 00.879 2.12l1.027 1.028a4 4 0 00-2.171.102l-.47.156a4 4 0 01-2.53 0l-.563-.187a1.993 1.993 0 00-.114-.035l1.063-1.063A3 3 0 009 8.172z" clipRule="evenodd" />
-                  </svg>
+              <div className="relative group">
+                <button
+                  onClick={handleSensingLearningClick}
+                  disabled={isSensingLearningLoading}
+                  onMouseEnter={() => setShowTooltip('Hands-On Lab')}
+                  onMouseLeave={() => setShowTooltip(null)}
+                  className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Hands-On Lab') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    }`}
+                >
+                  {isSensingLearningLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414v3.758a1 1 0 01-.293.707l-4 4C.817 14.769 2.156 18 4.828 18h10.343c2.673 0 4.012-3.231 2.122-5.121l-4-4A1 1 0 0113 8.172V4.414l.707-.707A1 1 0 0013 2H7zm2 6.172V4h2v4.172a3 3 0 00.879 2.12l1.027 1.028a4 4 0 00-2.171.102l-.47.156a4 4 0 01-2.53 0l-.563-.187a1.993 1.993 0 00-.114-.035l1.063-1.063A3 3 0 009 8.172z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span className="hidden sm:inline">Lab</span>
+
+                  {/* Recommended Badge */}
+                  {isRecommended('Hands-On Lab') && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full border-2 border-white shadow-lg">
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full animate-pulse opacity-75"></div>
+                    </div>
+                  )}
+                </button>
+
+                {/* Quick Preview Tooltip */}
+                {showTooltip === 'Hands-On Lab' && tooltips['Hands-On Lab'] && (
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">{tooltips['Hands-On Lab'].icon}</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Hands-On Lab'].title}</h4>
+                        <p className="text-sm text-gray-600 mb-2">{tooltips['Hands-On Lab'].description}</p>
+                        <div className="text-xs text-gray-500">
+                          <strong>Best for:</strong> {tooltips['Hands-On Lab'].bestFor}
+                        </div>
+                        {isRecommended('Hands-On Lab') && (
+                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="text-xs text-yellow-800">
+                              <strong>🎯 Why recommended:</strong> {getRecommendationReason('Hands-On Lab')}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
-                <span className="hidden sm:inline">Lab</span>
-              </button>
+              </div>
 
               {/* Concept Constellation */}
-              <button
-                onClick={handleIntuitiveLearningClick}
-                disabled={isIntuitiveLearningLoading}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 text-sm"
-                title="Concept Constellation"
-              >
-                {isIntuitiveLearningLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <EyeIcon className="w-4 h-4" />
+              <div className="relative group">
+                <button
+                  onClick={handleIntuitiveLearningClick}
+                  disabled={isIntuitiveLearningLoading}
+                  onMouseEnter={() => setShowTooltip('Concept Constellation')}
+                  onMouseLeave={() => setShowTooltip(null)}
+                  className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Concept Constellation') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    }`}
+                >
+                  {isIntuitiveLearningLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <EyeIcon className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline">Concepts</span>
+
+                  {/* Recommended Badge */}
+                  {isRecommended('Concept Constellation') && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full border-2 border-white shadow-lg">
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full animate-pulse opacity-75"></div>
+                    </div>
+                  )}
+                </button>
+
+                {/* Quick Preview Tooltip */}
+                {showTooltip === 'Concept Constellation' && tooltips['Concept Constellation'] && (
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">{tooltips['Concept Constellation'].icon}</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Concept Constellation'].title}</h4>
+                        <p className="text-sm text-gray-600 mb-2">{tooltips['Concept Constellation'].description}</p>
+                        <div className="text-xs text-gray-500">
+                          <strong>Best for:</strong> {tooltips['Concept Constellation'].bestFor}
+                        </div>
+                        {isRecommended('Concept Constellation') && (
+                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="text-xs text-yellow-800">
+                              <strong>🎯 Why recommended:</strong> {getRecommendationReason('Concept Constellation')}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
-                <span className="hidden sm:inline">Concepts</span>
-              </button>
+              </div>
 
               {/* Active Learning Hub */}
-              <button
-                onClick={handleActiveLearningClick}
-                disabled={isActiveLearningLoading}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 text-sm"
-                title="Active Learning Hub"
-              >
-                {isActiveLearningLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+              <div className="relative group">
+                <button
+                  onClick={handleActiveLearningClick}
+                  disabled={isActiveLearningLoading}
+                  onMouseEnter={() => setShowTooltip('Active Learning Hub')}
+                  onMouseLeave={() => setShowTooltip(null)}
+                  className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Active Learning Hub') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    }`}
+                >
+                  {isActiveLearningLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  <span className="hidden sm:inline">Active</span>
+
+                  {/* Recommended Badge */}
+                  {isRecommended('Active Learning Hub') && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full border-2 border-white shadow-lg">
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full animate-pulse opacity-75"></div>
+                    </div>
+                  )}
+                </button>
+
+                {/* Quick Preview Tooltip */}
+                {showTooltip === 'Active Learning Hub' && tooltips['Active Learning Hub'] && (
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">{tooltips['Active Learning Hub'].icon}</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Active Learning Hub'].title}</h4>
+                        <p className="text-sm text-gray-600 mb-2">{tooltips['Active Learning Hub'].description}</p>
+                        <div className="text-xs text-gray-500">
+                          <strong>Best for:</strong> {tooltips['Active Learning Hub'].bestFor}
+                        </div>
+                        {isRecommended('Active Learning Hub') && (
+                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="text-xs text-yellow-800">
+                              <strong>🎯 Why recommended:</strong> {getRecommendationReason('Active Learning Hub')}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
-                <span className="hidden sm:inline">Active</span>
-              </button>
+              </div>
 
               {/* Reflective Learning */}
-              <button
-                onClick={handleReflectiveLearningClick}
-                disabled={isReflectiveLearningLoading}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg hover:from-indigo-700 hover:to-purple-800 transition-all duration-200 disabled:opacity-50 text-sm"
-                title="Reflective Learning Processor"
-              >
-                {isReflectiveLearningLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <EyeIcon className="w-4 h-4" />
+              <div className="relative group">
+                <button
+                  onClick={handleReflectiveLearningClick}
+                  disabled={isReflectiveLearningLoading}
+                  onMouseEnter={() => setShowTooltip('Reflective Learning')}
+                  onMouseLeave={() => setShowTooltip(null)}
+                  className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Reflective Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    }`}
+                >
+                  {isReflectiveLearningLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <EyeIcon className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline">Reflective</span>
+
+                  {/* Recommended Badge */}
+                  {isRecommended('Reflective Learning') && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full border-2 border-white shadow-lg">
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full animate-pulse opacity-75"></div>
+                    </div>
+                  )}
+                </button>
+
+                {/* Quick Preview Tooltip */}
+                {showTooltip === 'Reflective Learning' && tooltips['Reflective Learning'] && (
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">{tooltips['Reflective Learning'].icon}</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Reflective Learning'].title}</h4>
+                        <p className="text-sm text-gray-600 mb-2">{tooltips['Reflective Learning'].description}</p>
+                        <div className="text-xs text-gray-500">
+                          <strong>Best for:</strong> {tooltips['Reflective Learning'].bestFor}
+                        </div>
+                        {isRecommended('Reflective Learning') && (
+                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="text-xs text-yellow-800">
+                              <strong>🎯 Why recommended:</strong> {getRecommendationReason('Reflective Learning')}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
-                <span className="hidden sm:inline">Reflective</span>
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1989,7 +2410,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
               <div className={`px-6 py-4 ${intuitiveLearningError.includes('not appear to contain educational')
                 ? 'bg-gradient-to-r from-indigo-500 to-purple-500'
                 : 'bg-gradient-to-r from-red-500 to-pink-500'
-              }`}>
+                }`}>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
                     {intuitiveLearningError.includes('not appear to contain educational') ? (
@@ -2046,8 +2467,8 @@ Reflective Learning Processor works best with instructional content, lessons, or
                         <div>
                           <p className="text-xs font-medium text-gray-700 mb-1">AI Analysis</p>
                           <p className="text-xs text-gray-600 leading-relaxed">
-                            {intuitiveLearningError.split('AI Analysis: ')[1]?.split('Content Type:')[0]?.trim() || 
-                             'The document appears to be non-educational content rather than instructional material suitable for pattern discovery and conceptual learning.'}
+                            {intuitiveLearningError.split('AI Analysis: ')[1]?.split('Content Type:')[0]?.trim() ||
+                              'The document appears to be non-educational content rather than instructional material suitable for pattern discovery and conceptual learning.'}
                           </p>
                         </div>
                       </div>
@@ -2100,7 +2521,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
               <div className={`px-6 py-4 ${activeLearningError.includes('not appear to contain educational')
                 ? 'bg-gradient-to-r from-orange-500 to-red-500'
                 : 'bg-gradient-to-r from-red-500 to-pink-500'
-              }`}>
+                }`}>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
                     {activeLearningError.includes('not appear to contain educational') ? (
@@ -2237,7 +2658,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
               <div className={`px-6 py-4 ${reflectiveLearningError.includes('not appear to contain educational')
                 ? 'bg-gradient-to-r from-indigo-600 to-purple-700'
                 : 'bg-gradient-to-r from-red-500 to-pink-500'
-              }`}>
+                }`}>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
                     {reflectiveLearningError.includes('not appear to contain educational') ? (
@@ -2294,8 +2715,8 @@ Reflective Learning Processor works best with instructional content, lessons, or
                         <div>
                           <p className="text-xs font-medium text-gray-700 mb-1">AI Analysis</p>
                           <p className="text-xs text-gray-600 leading-relaxed">
-                            {reflectiveLearningError.split('AI Analysis: ')[1]?.split('Content Type:')[0]?.trim() || 
-                             'The document appears to be non-educational content rather than instructional material suitable for contemplative learning and reflection.'}
+                            {reflectiveLearningError.split('AI Analysis: ')[1]?.split('Content Type:')[0]?.trim() ||
+                              'The document appears to be non-educational content rather than instructional material suitable for contemplative learning and reflection.'}
                           </p>
                         </div>
                       </div>
@@ -2421,7 +2842,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                         // Get the actual content height
                         const body = iframeDoc.body;
                         const html = iframeDoc.documentElement;
-                        
+
                         const height = Math.max(
                           body.scrollHeight,
                           body.offsetHeight,
@@ -2429,7 +2850,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                           html.scrollHeight,
                           html.offsetHeight
                         );
-                        
+
                         // Set iframe height to content height (no padding to avoid infinite growth)
                         iframe.style.height = height + 'px';
                         console.log('📏 Iframe resized to content height:', height, 'px');
@@ -2445,7 +2866,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
               className="w-full rounded-lg bg-white"
               title={content.title}
               srcDoc={injectOverrideStyles(htmlContent)}
-              style={{ 
+              style={{
                 border: 'none',
                 width: '100%',
                 minHeight: '800px'
