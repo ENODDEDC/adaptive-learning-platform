@@ -999,7 +999,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
     <>
       {/* Learning Features Toolbar - Hide when overlays are active */}
       {!showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && !showIntuitiveLearning && !showActiveLearning && !showReflectiveLearning && (
-        <div className="w-full bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-200 px-6 py-4">
+        <div className="sticky top-0 z-10 w-full bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-200 px-6 py-4 backdrop-blur-sm bg-opacity-95">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <AcademicCapIcon className="w-6 h-6 text-indigo-600" />
@@ -1141,7 +1141,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
         </div>
       )}
 
-      <div className="w-full h-full flex relative">
+      <div className="w-full flex relative" style={{ minHeight: '100vh' }}>
         {/* Visual Overlay - replaces the entire document view */}
         {showVisualOverlay && (
           <VisualDocxOverlay
@@ -2412,10 +2412,44 @@ Reflective Learning Processor works best with instructional content, lessons, or
         <div className={`flex-1 relative ${showSequentialLearning ? 'hidden' : ''}`}>
           {htmlContent ? (
             <iframe
-              className="w-full h-full rounded-lg bg-white"
+              ref={(iframe) => {
+                if (iframe) {
+                  iframe.onload = () => {
+                    try {
+                      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                      if (iframeDoc) {
+                        // Get the actual content height
+                        const body = iframeDoc.body;
+                        const html = iframeDoc.documentElement;
+                        
+                        const height = Math.max(
+                          body.scrollHeight,
+                          body.offsetHeight,
+                          html.clientHeight,
+                          html.scrollHeight,
+                          html.offsetHeight
+                        );
+                        
+                        // Set iframe height to content height (no padding to avoid infinite growth)
+                        iframe.style.height = height + 'px';
+                        console.log('📏 Iframe resized to content height:', height, 'px');
+                      }
+                    } catch (e) {
+                      console.error('Error resizing iframe:', e);
+                      // Fallback to a reasonable height
+                      iframe.style.height = '1500px';
+                    }
+                  };
+                }
+              }}
+              className="w-full rounded-lg bg-white"
               title={content.title}
               srcDoc={injectOverrideStyles(htmlContent)}
-              style={{ border: 'none' }}
+              style={{ 
+                border: 'none',
+                width: '100%',
+                minHeight: '800px'
+              }}
             />
           ) : (
             <div className="flex items-center justify-center h-full">

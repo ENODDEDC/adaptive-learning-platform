@@ -62,7 +62,6 @@ const injectOverrideStyles = (rawHtml) => {
       width: 100% !important; 
       max-width: 100% !important; 
       overflow-x: hidden !important; 
-      height: 100% !important; 
       min-height: 100% !important; 
     }
     
@@ -76,7 +75,6 @@ const injectOverrideStyles = (rawHtml) => {
       width: 100% !important; 
       max-width: 100% !important; 
       overflow-x: hidden !important; 
-      height: 100% !important; 
       min-height: 100% !important; 
       font-size: 16px;
     }
@@ -92,7 +90,6 @@ const injectOverrideStyles = (rawHtml) => {
       min-width: 100% !important; 
       overflow-x: hidden !important; 
       box-sizing: border-box !important; 
-      min-height: calc(100vh - 200px) !important; 
     }
     
     /* Enhanced Typography */
@@ -1869,7 +1866,7 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
         <div className="bg-sky-600 h-1" style={{ width: `${scrollProgress}%`, transition: 'width 0.1s linear' }}></div>
       </div>
 
-      <div className="flex-grow flex-1 flex overflow-hidden min-h-0 h-full">
+      <div className="flex-grow flex-1 flex overflow-auto min-h-0 h-full">
         {headings.length > 2 && (
           <aside className="w-64 flex-shrink-0 h-full overflow-y-auto p-8 border-r bg-slate-50/50 hidden lg:block">
             <h3 className="text-sm font-semibold text-slate-800 mb-4">On this page</h3>
@@ -1892,7 +1889,7 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
             </ul>
           </aside>
         )}
-        <main className="flex-grow overflow-hidden min-h-0 h-full relative" ref={contentRef}>
+        <main className="flex-grow overflow-auto min-h-0 h-full relative" ref={contentRef}>
           {renderPreview()}
           {selection && (
             <button

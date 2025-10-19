@@ -57,15 +57,15 @@ export async function POST(request) {
       console.log('🚫 Content rejected - not educational material');
       errorMessage = 'This document does not appear to contain educational content suitable for hands-on learning. Sensing Learning works best with lessons, tutorials, study materials, and academic content.';
       statusCode = 400;
-      
+
       return NextResponse.json(
-        { 
+        {
           error: errorMessage,
           isEducational: false,
           type: 'NON_EDUCATIONAL_CONTENT',
           suggestions: [
             'Try with lesson plans or study materials',
-            'Use educational articles or tutorials', 
+            'Use educational articles or tutorials',
             'Upload course content or learning guides',
             'Use research papers or academic content'
           ]
@@ -86,9 +86,9 @@ export async function POST(request) {
     console.error('Error stack:', error.stack);
     console.error('Full error object:', error);
     console.error('🔥 Final error response:', { errorMessage, statusCode });
-    
+
     return NextResponse.json(
-      { 
+      {
         error: errorMessage,
         details: error.message,
         type: 'SENSING_LEARNING_GENERATION_ERROR'
