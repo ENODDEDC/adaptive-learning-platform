@@ -10,6 +10,13 @@ import {
 import AITutorModal from './AITutorModal';
 import EnhancedFloatingNotes from './EnhancedFloatingNotes';
 import CleanPDFViewer from './CleanPDFViewer';
+import VisualContentModal from './VisualContentModal';
+import SequentialLearning from './SequentialLearning';
+import GlobalLearning from './GlobalLearning';
+import SensingLearning from './SensingLearning';
+import IntuitiveLearning from './IntuitiveLearning';
+import ActiveLearning from './ActiveLearning';
+import ReflectiveLearning from './ReflectiveLearning';
 
 /**
  * PDF Preview Component with AI Narrator Integration
@@ -23,9 +30,30 @@ const PdfPreviewWithAI = ({
   disableTools = false
 }) => {
   const [showAITutor, setShowAITutor] = useState(false);
+  const [showVisualContent, setShowVisualContent] = useState(false);
+  const [showSequentialLearning, setShowSequentialLearning] = useState(false);
+  const [showGlobalLearning, setShowGlobalLearning] = useState(false);
+  const [showSensingLearning, setShowSensingLearning] = useState(false);
+  const [showIntuitiveLearning, setShowIntuitiveLearning] = useState(false);
+  const [showActiveLearning, setShowActiveLearning] = useState(false);
+  const [showReflectiveLearning, setShowReflectiveLearning] = useState(false);
   const [pdfContent, setPdfContent] = useState('');
-  const [isExtractingContent, setIsExtractingContent] = useState(false);
+  const [isAITutorLoading, setIsAITutorLoading] = useState(false);
+  const [isVisualLearningLoading, setIsVisualLearningLoading] = useState(false);
+  const [isSequentialLearningLoading, setIsSequentialLearningLoading] = useState(false);
+  const [isGlobalLearningLoading, setIsGlobalLearningLoading] = useState(false);
+  const [isSensingLearningLoading, setIsSensingLearningLoading] = useState(false);
+  const [isIntuitiveLearningLoading, setIsIntuitiveLearningLoading] = useState(false);
+  const [isActiveLearningLoading, setIsActiveLearningLoading] = useState(false);
+  const [isReflectiveLearningLoading, setIsReflectiveLearningLoading] = useState(false);
   const [extractionError, setExtractionError] = useState('');
+  const [visualLearningError, setVisualLearningError] = useState('');
+  const [sequentialLearningError, setSequentialLearningError] = useState('');
+  const [globalLearningError, setGlobalLearningError] = useState('');
+  const [sensingLearningError, setSensingLearningError] = useState('');
+  const [intuitiveLearningError, setIntuitiveLearningError] = useState('');
+  const [activeLearningError, setActiveLearningError] = useState('');
+  const [reflectiveLearningError, setReflectiveLearningError] = useState('');
   const [aiTutorActive, setAiTutorActive] = useState(false);
   const [showModeSelection, setShowModeSelection] = useState(false);
   const [currentAudio, setCurrentAudio] = useState(null);
@@ -40,9 +68,8 @@ const PdfPreviewWithAI = ({
   const floatingNotesRef = useRef(null);
 
   const extractPdfContent = async () => {
-    if (isExtractingContent || pdfContent) return pdfContent;
+    if (pdfContent) return pdfContent;
 
-    setIsExtractingContent(true);
     setExtractionError('');
 
     try {
@@ -73,8 +100,6 @@ const PdfPreviewWithAI = ({
       console.error('❌ Error extracting PDF content:', error);
       setExtractionError(error.message);
       throw error;
-    } finally {
-      setIsExtractingContent(false);
     }
   };
 
@@ -403,7 +428,7 @@ const PdfPreviewWithAI = ({
 
     // First, extract and analyze content
     try {
-      setIsExtractingContent(true);
+      setIsAITutorLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
 
       // Analyze if content is educational using AI
@@ -436,7 +461,7 @@ DEBUG INFO:
 - First 100 chars: "${extractedContent.substring(0, 100)}..."`;
 
         setExtractionError(errorMessage);
-        setIsExtractingContent(false);
+        setIsAITutorLoading(false);
         setShowModeSelection(false);
         return;
       }
@@ -458,7 +483,282 @@ DEBUG INFO:
     } catch (error) {
       setExtractionError(`Error analyzing document: ${error.message}`);
     } finally {
-      setIsExtractingContent(false);
+      setIsAITutorLoading(false);
+    }
+  };
+
+  // Visual Learning Handler
+  const handleVisualContentClick = async () => {
+    try {
+      setIsVisualLearningLoading(true);
+      const extractedContent = pdfContent || await extractPdfContent();
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setVisualLearningError('Failed to extract PDF content for visual generation.');
+        setIsVisualLearningLoading(false);
+        return;
+      }
+
+      // Analyze if content is educational
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for visual learning materials. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Visual Learning works best with instructional content, lessons, or study materials.`;
+
+        setVisualLearningError(errorMessage);
+        setIsVisualLearningLoading(false);
+        return;
+      }
+
+      // If educational, proceed to open visual content modal
+      setPdfContent(extractedContent);
+      setShowVisualContent(true);
+
+    } catch (error) {
+      console.error('Error analyzing content for visual learning:', error);
+      setVisualLearningError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsVisualLearningLoading(false);
+    }
+  };
+
+  // Sequential Learning Handler
+  const handleSequentialLearningClick = async () => {
+    try {
+      setIsSequentialLearningLoading(true);
+      const extractedContent = pdfContent || await extractPdfContent();
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setSequentialLearningError('Failed to extract PDF content for sequential learning.');
+        setIsSequentialLearningLoading(false);
+        return;
+      }
+
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for sequential learning. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Sequential Learning works best with instructional content, lessons, or study materials.`;
+
+        setSequentialLearningError(errorMessage);
+        setIsSequentialLearningLoading(false);
+        return;
+      }
+
+      setPdfContent(extractedContent);
+      setShowSequentialLearning(true);
+
+    } catch (error) {
+      console.error('Error analyzing content for sequential learning:', error);
+      setSequentialLearningError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsSequentialLearningLoading(false);
+    }
+  };
+
+  // Global Learning Handler
+  const handleGlobalLearningClick = async () => {
+    try {
+      setIsGlobalLearningLoading(true);
+      const extractedContent = pdfContent || await extractPdfContent();
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setGlobalLearningError('Failed to extract PDF content for global learning.');
+        setIsGlobalLearningLoading(false);
+        return;
+      }
+
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for global learning. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Global Learning works best with instructional content, lessons, or study materials.`;
+
+        setGlobalLearningError(errorMessage);
+        setIsGlobalLearningLoading(false);
+        return;
+      }
+
+      setPdfContent(extractedContent);
+      setShowGlobalLearning(true);
+
+    } catch (error) {
+      console.error('Error analyzing content for global learning:', error);
+      setGlobalLearningError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsGlobalLearningLoading(false);
+    }
+  };
+
+  // Sensing Learning Handler
+  const handleSensingLearningClick = async () => {
+    try {
+      setIsSensingLearningLoading(true);
+      const extractedContent = pdfContent || await extractPdfContent();
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setSensingLearningError('Failed to extract PDF content for sensing learning.');
+        setIsSensingLearningLoading(false);
+        return;
+      }
+
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for sensing learning. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Sensing Learning works best with instructional content, lessons, or study materials.`;
+
+        setSensingLearningError(errorMessage);
+        setIsSensingLearningLoading(false);
+        return;
+      }
+
+      setPdfContent(extractedContent);
+      setShowSensingLearning(true);
+
+    } catch (error) {
+      console.error('Error analyzing content for sensing learning:', error);
+      setSensingLearningError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsSensingLearningLoading(false);
+    }
+  };
+
+  // Intuitive Learning Handler
+  const handleIntuitiveLearningClick = async () => {
+    try {
+      setIsIntuitiveLearningLoading(true);
+      const extractedContent = pdfContent || await extractPdfContent();
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setIntuitiveLearningError('Failed to extract PDF content for intuitive learning.');
+        setIsIntuitiveLearningLoading(false);
+        return;
+      }
+
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for intuitive learning. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Intuitive Learning works best with instructional content, lessons, or study materials.`;
+
+        setIntuitiveLearningError(errorMessage);
+        setIsIntuitiveLearningLoading(false);
+        return;
+      }
+
+      setPdfContent(extractedContent);
+      setShowIntuitiveLearning(true);
+
+    } catch (error) {
+      console.error('Error analyzing content for intuitive learning:', error);
+      setIntuitiveLearningError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsIntuitiveLearningLoading(false);
+    }
+  };
+
+  // Active Learning Handler
+  const handleActiveLearningClick = async () => {
+    try {
+      setIsActiveLearningLoading(true);
+      const extractedContent = pdfContent || await extractPdfContent();
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setActiveLearningError('Failed to extract PDF content for active learning.');
+        setIsActiveLearningLoading(false);
+        return;
+      }
+
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for active learning. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Active Learning works best with instructional content, lessons, or study materials.`;
+
+        setActiveLearningError(errorMessage);
+        setIsActiveLearningLoading(false);
+        return;
+      }
+
+      setPdfContent(extractedContent);
+      setShowActiveLearning(true);
+
+    } catch (error) {
+      console.error('Error analyzing content for active learning:', error);
+      setActiveLearningError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsActiveLearningLoading(false);
+    }
+  };
+
+  // Reflective Learning Handler
+  const handleReflectiveLearningClick = async () => {
+    try {
+      setIsReflectiveLearningLoading(true);
+      const extractedContent = pdfContent || await extractPdfContent();
+
+      if (!extractedContent || !extractedContent.trim()) {
+        setReflectiveLearningError('Failed to extract PDF content for reflective learning.');
+        setIsReflectiveLearningLoading(false);
+        return;
+      }
+
+      const analysisResult = await analyzeContentForEducational(extractedContent);
+
+      if (!analysisResult.isEducational) {
+        const errorMessage = `This document does not appear to contain educational or learning material suitable for reflective learning. 
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+Reflective Learning works best with instructional content, lessons, or study materials.`;
+
+        setReflectiveLearningError(errorMessage);
+        setIsReflectiveLearningLoading(false);
+        return;
+      }
+
+      setPdfContent(extractedContent);
+      setShowReflectiveLearning(true);
+
+    } catch (error) {
+      console.error('Error analyzing content for reflective learning:', error);
+      setReflectiveLearningError(`Error analyzing document: ${error.message}`);
+    } finally {
+      setIsReflectiveLearningLoading(false);
     }
   };
 
@@ -636,7 +936,7 @@ DEBUG INFO:
         )}
 
         {/* Content Analysis Loading */}
-        {isExtractingContent && (
+        {(isAITutorLoading || isVisualLearningLoading || isSequentialLearningLoading || isGlobalLearningLoading || isSensingLearningLoading || isIntuitiveLearningLoading || isActiveLearningLoading || isReflectiveLearningLoading) && (
           <div className="absolute bottom-4 left-4 z-10 max-w-sm">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-lg">
               <div className="flex items-center gap-2">
@@ -664,6 +964,22 @@ DEBUG INFO:
                   filePath: pdfUrl,
                   url: pdfUrl
                 }}
+                onAITutorClick={handleAITutorClick}
+                onVisualLearningClick={handleVisualContentClick}
+                onSequentialLearningClick={handleSequentialLearningClick}
+                onGlobalLearningClick={handleGlobalLearningClick}
+                onSensingLearningClick={handleSensingLearningClick}
+                onIntuitiveLearningClick={handleIntuitiveLearningClick}
+                onActiveLearningClick={handleActiveLearningClick}
+                onReflectiveLearningClick={handleReflectiveLearningClick}
+                isAITutorLoading={isAITutorLoading}
+                isVisualLearningLoading={isVisualLearningLoading}
+                isSequentialLearningLoading={isSequentialLearningLoading}
+                isGlobalLearningLoading={isGlobalLearningLoading}
+                isSensingLearningLoading={isSensingLearningLoading}
+                isIntuitiveLearningLoading={isIntuitiveLearningLoading}
+                isActiveLearningLoading={isActiveLearningLoading}
+                isReflectiveLearningLoading={isReflectiveLearningLoading}
               />
             ) : (
               <div className="flex items-center justify-center h-full">
@@ -866,6 +1182,62 @@ DEBUG INFO:
         onClose={() => setShowAITutor(false)}
         fileName={fileName}
         docxContent={pdfContent}
+      />
+
+      {/* Visual Content Modal */}
+      <VisualContentModal
+        isOpen={showVisualContent}
+        onClose={() => setShowVisualContent(false)}
+        docxContent={pdfContent}
+        fileName={fileName}
+      />
+
+      {/* Sequential Learning Modal */}
+      <SequentialLearning
+        isActive={showSequentialLearning}
+        onClose={() => setShowSequentialLearning(false)}
+        docxContent={pdfContent}
+        fileName={fileName}
+      />
+
+      {/* Global Learning Modal */}
+      <GlobalLearning
+        isActive={showGlobalLearning}
+        onClose={() => setShowGlobalLearning(false)}
+        docxContent={pdfContent}
+        fileName={fileName}
+      />
+
+      {/* Sensing Learning Modal */}
+      <SensingLearning
+        isActive={showSensingLearning}
+        onClose={() => setShowSensingLearning(false)}
+        docxContent={pdfContent}
+        fileName={fileName}
+      />
+
+      {/* Intuitive Learning Modal */}
+      <IntuitiveLearning
+        isActive={showIntuitiveLearning}
+        onClose={() => setShowIntuitiveLearning(false)}
+        docxContent={pdfContent}
+        fileName={fileName}
+      />
+
+      {/* Active Learning Modal */}
+      <ActiveLearning
+        isActive={showActiveLearning}
+        onClose={() => setShowActiveLearning(false)}
+        docxContent={pdfContent}
+        fileName={fileName}
+      />
+
+      {/* Reflective Learning Modal */}
+      <ReflectiveLearning
+        isActive={showReflectiveLearning}
+        onClose={() => setShowReflectiveLearning(false)}
+        docxContent={pdfContent}
+        fileName={fileName}
       />
     </>
   );

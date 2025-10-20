@@ -4,8 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
-  MagnifyingGlassPlusIcon,
-  MagnifyingGlassMinusIcon,
   ArrowDownTrayIcon,
   PrinterIcon,
   SunIcon,
@@ -15,7 +13,25 @@ import {
   ArrowsPointingInIcon
 } from '@heroicons/react/24/outline';
 
-const CleanPDFViewer = ({ content }) => {
+const CleanPDFViewer = ({ 
+  content, 
+  onAITutorClick,
+  onVisualLearningClick,
+  onSequentialLearningClick,
+  onGlobalLearningClick,
+  onSensingLearningClick,
+  onIntuitiveLearningClick,
+  onActiveLearningClick,
+  onReflectiveLearningClick,
+  isAITutorLoading = false,
+  isVisualLearningLoading = false,
+  isSequentialLearningLoading = false,
+  isGlobalLearningLoading = false,
+  isSensingLearningLoading = false,
+  isIntuitiveLearningLoading = false,
+  isActiveLearningLoading = false,
+  isReflectiveLearningLoading = false
+}) => {
   // State management
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -175,19 +191,6 @@ const CleanPDFViewer = ({ content }) => {
     setFitMode('custom');
   };
 
-  const handleFitWidth = () => {
-    setFitMode('width');
-  };
-
-  const handleFitPage = () => {
-    setFitMode('page');
-  };
-
-  const handleActualSize = () => {
-    setFitMode('actual');
-    setZoomLevel(100);
-  };
-
   // Fullscreen handler
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -300,96 +303,178 @@ const CleanPDFViewer = ({ content }) => {
         <div className="flex items-center space-x-2">
           {/* AI Narrator */}
           <button
-            onClick={() => console.log('AI Narrator - Coming Soon')}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 text-sm"
+            onClick={onAITutorClick}
+            disabled={isAITutorLoading}
+            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 text-sm"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l14 9-14 9V3z" />
-            </svg>
+            {isAITutorLoading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l14 9-14 9V3z" />
+              </svg>
+            )}
             <span className="hidden sm:inline">AI Narrator</span>
           </button>
 
           {/* Visual Learning */}
           <button
-            onClick={() => console.log('Visual Learning - Coming Soon')}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 text-sm"
+            onClick={onVisualLearningClick}
+            disabled={isVisualLearningLoading}
+            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
+            {isVisualLearningLoading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            )}
             <span className="hidden sm:inline">Visual Learning</span>
           </button>
 
           {/* Sequential Learning */}
           <button
-            onClick={() => console.log('Sequential Learning - Coming Soon')}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 text-sm"
+            onClick={onSequentialLearningClick}
+            disabled={isSequentialLearningLoading}
+            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            {isSequentialLearningLoading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            )}
             <span className="hidden sm:inline">Sequential</span>
           </button>
 
           {/* Global Learning */}
           <button
-            onClick={() => console.log('Global Learning - Coming Soon')}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 text-sm"
+            onClick={onGlobalLearningClick}
+            disabled={isGlobalLearningLoading}
+            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 text-sm"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            {isGlobalLearningLoading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
             <span className="hidden sm:inline">Global</span>
           </button>
 
           {/* Sensing Learning */}
           <button
-            onClick={() => console.log('Sensing Learning - Coming Soon')}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-green-600 text-white rounded-lg hover:from-teal-600 hover:to-green-700 transition-all duration-200 text-sm"
+            onClick={onSensingLearningClick}
+            disabled={isSensingLearningLoading}
+            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-green-600 text-white rounded-lg hover:from-teal-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 text-sm"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
+            {isSensingLearningLoading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            )}
             <span className="hidden sm:inline">Sensing</span>
           </button>
 
           {/* Intuitive Learning */}
           <button
-            onClick={() => console.log('Intuitive Learning - Coming Soon')}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all duration-200 text-sm"
+            onClick={onIntuitiveLearningClick}
+            disabled={isIntuitiveLearningLoading}
+            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all duration-200 disabled:opacity-50 text-sm"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+            {isIntuitiveLearningLoading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            )}
             <span className="hidden sm:inline">Intuitive</span>
           </button>
 
           {/* Active Learning */}
           <button
-            onClick={() => console.log('Active Learning - Coming Soon')}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-lg hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 text-sm"
+            onClick={onActiveLearningClick}
+            disabled={isActiveLearningLoading}
+            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-lg hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 disabled:opacity-50 text-sm"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-            </svg>
+            {isActiveLearningLoading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+              </svg>
+            )}
             <span className="hidden sm:inline">Active</span>
           </button>
 
           {/* Reflective Learning */}
           <button
-            onClick={() => console.log('Reflective Learning - Coming Soon')}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 text-sm"
+            onClick={onReflectiveLearningClick}
+            disabled={isReflectiveLearningLoading}
+            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 text-sm"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
+            {isReflectiveLearningLoading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            )}
             <span className="hidden sm:inline">Reflective</span>
           </button>
         </div>
 
-        {/* Right Section - Actions Only */}
+        {/* Right Section - Zoom and Actions */}
         <div className="flex items-center space-x-2">
+          {/* Zoom Controls */}
+          <div className="flex items-center space-x-1 border rounded-md">
+            <button
+              onClick={handleZoomOut}
+              disabled={zoomLevel <= 25}
+              className={`p-1.5 transition-colors ${
+                zoomLevel <= 25
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : isDarkMode
+                  ? 'text-gray-300 hover:bg-gray-700'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              title="Zoom out"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+              </svg>
+            </button>
+            
+            <span className={`px-2 py-1 text-xs font-medium min-w-[50px] text-center ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-600'
+            }`}>
+              {fitMode === 'width' ? 'Fit' : fitMode === 'page' ? 'Page' : `${zoomLevel}%`}
+            </span>
+            
+            <button
+              onClick={handleZoomIn}
+              disabled={zoomLevel >= 300}
+              className={`p-1.5 transition-colors ${
+                zoomLevel >= 300
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : isDarkMode
+                  ? 'text-gray-300 hover:bg-gray-700'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              title="Zoom in"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
 
           {/* Fullscreen */}
           <button
@@ -490,9 +575,14 @@ const CleanPDFViewer = ({ content }) => {
           : 'bg-gray-50 border-gray-200 text-gray-600'
       }`}>
         <div className="flex items-center justify-between">
-          <span>
-            Page {currentPage} of {totalPages}
-          </span>
+          <div className="flex items-center space-x-4">
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+            <span className="text-xs opacity-75">
+              Use ← → keys to navigate • +/- to zoom • F for fullscreen
+            </span>
+          </div>
           <span>
             {fitMode === 'width' ? 'Fit Width' : fitMode === 'page' ? 'Fit Page' : `${zoomLevel}%`} • Clean PDF Viewer
           </span>
