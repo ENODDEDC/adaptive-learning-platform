@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import AITutorModal from './AITutorModal';
 import EnhancedFloatingNotes from './EnhancedFloatingNotes';
+import CleanPDFViewer from './CleanPDFViewer';
 
 /**
  * PDF Preview Component with AI Narrator Integration
@@ -759,14 +760,15 @@ DEBUG INFO:
             </div>
           )}
 
-          {/* PDF Content */}
+          {/* Clean PDF Viewer */}
           <div className="flex-1">
             {pdfUrl ? (
-              <iframe
-                className="w-full h-full rounded-lg bg-white"
-                title={content.title}
-                src={pdfUrl}
-                style={{ border: 'none' }}
+              <CleanPDFViewer 
+                content={{
+                  ...content,
+                  filePath: pdfUrl,
+                  url: pdfUrl
+                }}
               />
             ) : (
               <div className="flex items-center justify-center h-full">
