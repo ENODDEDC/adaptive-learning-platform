@@ -203,7 +203,6 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     { href: "/courses", label: "Course" },
     { href: "/todo", label: "To-Do" },
     { href: "/schedule", label: "Schedule" },
-    { href: "/clusters", label: "Cluster" },
     { href: "/settings", label: "Settings" },
   ];
 
@@ -735,8 +734,6 @@ const getIconForLink = (label) => {
       return CheckCircleIcon;
     case 'Schedule':
       return CalendarIcon;
-    case 'Cluster':
-      return Squares2X2Icon;
     case 'Settings':
       return Cog6ToothIcon;
     default:

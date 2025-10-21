@@ -17,7 +17,7 @@ let globalContextMenu = null;
 const createContextMenu = (x, y, options) => {
   // Remove existing menu
   removeContextMenu();
-  
+
   // Create menu element
   const menu = document.createElement('div');
   menu.id = 'isolated-context-menu';
@@ -25,66 +25,65 @@ const createContextMenu = (x, y, options) => {
   menu.style.left = `${x}px`;
   menu.style.top = `${y}px`;
   menu.style.transform = 'translate(0, 0)';
-  
+
   // Add options
   options.forEach((option, index) => {
     const button = document.createElement('button');
-    button.className = `w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-gray-50 transition-colors duration-150 ${
-      option.disabled 
-        ? 'text-gray-400 cursor-not-allowed' 
-        : option.danger 
-          ? 'text-red-600 hover:bg-red-50' 
-          : 'text-gray-700'
-    }`;
-    
+    button.className = `w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-gray-50 transition-colors duration-150 ${option.disabled
+      ? 'text-gray-400 cursor-not-allowed'
+      : option.danger
+        ? 'text-red-600 hover:bg-red-50'
+        : 'text-gray-700'
+      }`;
+
     if (option.icon) {
       const svg = document.createElement('div');
       svg.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">${option.icon}</svg>`;
       button.appendChild(svg.firstChild);
     }
-    
+
     const label = document.createElement('span');
     label.textContent = option.label;
     button.appendChild(label);
-    
+
     if (!option.disabled) {
       button.onclick = () => {
         option.action();
         removeContextMenu();
       };
     }
-    
+
     menu.appendChild(button);
   });
-  
+
   // Add to document
   document.body.appendChild(menu);
   globalContextMenu = menu;
-  
+
   // Add event listeners
   const handleClickOutside = (event) => {
     if (!menu.contains(event.target)) {
       removeContextMenu();
     }
   };
-  
+
   const handleEscape = (event) => {
     if (event.key === 'Escape') {
       removeContextMenu();
     }
   };
-  
+
   const handleContextMenu = (event) => {
     event.preventDefault();
     removeContextMenu();
   };
-  
+
   setTimeout(() => {
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
     document.addEventListener('contextmenu', handleContextMenu);
   }, 0);
-  
+
   // Store cleanup function
   menu._cleanup = () => {
     document.removeEventListener('mousedown', handleClickOutside);
@@ -184,7 +183,7 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit }) => {
         <div className="absolute top-2 right-2 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm bg-purple-500 z-20">
           FORM
         </div>
-        
+
         {/* Hover Overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 z-20">
           <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg">
@@ -227,20 +226,20 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
   // Helper function to detect file types
   const isPdfFile = (attachment) => {
     return attachment?.mimeType === 'application/pdf' ||
-           attachment?.originalName?.toLowerCase().endsWith('.pdf') ||
-           attachment?.title?.toLowerCase().endsWith('.pdf');
+      attachment?.originalName?.toLowerCase().endsWith('.pdf') ||
+      attachment?.title?.toLowerCase().endsWith('.pdf');
   };
 
   const isDocxFile = (attachment) => {
     return attachment?.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-           attachment?.originalName?.toLowerCase().endsWith('.docx') ||
-           attachment?.title?.toLowerCase().endsWith('.docx');
+      attachment?.originalName?.toLowerCase().endsWith('.docx') ||
+      attachment?.title?.toLowerCase().endsWith('.docx');
   };
 
   const isPptxFile = (attachment) => {
     return attachment?.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-           attachment?.originalName?.toLowerCase().endsWith('.pptx') ||
-           attachment?.title?.toLowerCase().endsWith('.pptx');
+      attachment?.originalName?.toLowerCase().endsWith('.pptx') ||
+      attachment?.title?.toLowerCase().endsWith('.pptx');
   };
 
   useEffect(() => {
@@ -259,16 +258,16 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
 
   const generatePdfThumbnail = async () => {
     if (isGeneratingThumbnail || hasFailed) return;
-    
+
     setIsGeneratingThumbnail(true);
-    
+
     try {
       const requestBody = {
         fileKey: attachment.cloudStorage?.key,
         filePath: attachment.filePath,
         contentId: attachment._id
       };
-      
+
       const response = await fetch('/api/pdf-thumbnail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -399,10 +398,9 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
               }}
             />
             {/* File Type Badge */}
-            <div className={`absolute top-2 right-2 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm ${
-              isPdfFile(attachment) ? 'bg-red-500' :
+            <div className={`absolute top-2 right-2 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm ${isPdfFile(attachment) ? 'bg-red-500' :
               isDocxFile(attachment) ? 'bg-blue-500' : 'bg-orange-500'
-            }`}>
+              }`}>
               {isPdfFile(attachment) ? 'PDF' : isDocxFile(attachment) ? 'DOCX' : 'PPTX'}
             </div>
             {/* Hover Overlay */}
@@ -432,7 +430,7 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
             )}
             <span className="text-xs text-gray-500">
               {isPdfFile(attachment) ? 'PDF Preview' :
-               isDocxFile(attachment) ? 'DOCX Preview' : 'PPTX Preview'}
+                isDocxFile(attachment) ? 'DOCX Preview' : 'PPTX Preview'}
             </span>
           </div>
         )}
@@ -467,20 +465,20 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
   // Helper function to detect file types
   const isPdfFile = (attachment) => {
     return attachment?.mimeType === 'application/pdf' ||
-           attachment?.originalName?.toLowerCase().endsWith('.pdf') ||
-           attachment?.title?.toLowerCase().endsWith('.pdf');
+      attachment?.originalName?.toLowerCase().endsWith('.pdf') ||
+      attachment?.title?.toLowerCase().endsWith('.pdf');
   };
 
   const isDocxFile = (attachment) => {
     return attachment?.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-           attachment?.originalName?.toLowerCase().endsWith('.docx') ||
-           attachment?.title?.toLowerCase().endsWith('.docx');
+      attachment?.originalName?.toLowerCase().endsWith('.docx') ||
+      attachment?.title?.toLowerCase().endsWith('.docx');
   };
 
   const isPptxFile = (attachment) => {
     return attachment?.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-           attachment?.originalName?.toLowerCase().endsWith('.pptx') ||
-           attachment?.title?.toLowerCase().endsWith('.pptx');
+      attachment?.originalName?.toLowerCase().endsWith('.pptx') ||
+      attachment?.title?.toLowerCase().endsWith('.pptx');
   };
 
   useEffect(() => {
@@ -499,16 +497,16 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
 
   const generatePdfThumbnail = async () => {
     if (isGeneratingThumbnail || hasFailed) return;
-    
+
     setIsGeneratingThumbnail(true);
-    
+
     try {
       const requestBody = {
         fileKey: attachment.cloudStorage?.key,
         filePath: attachment.filePath,
         contentId: attachment._id
       };
-      
+
       const response = await fetch('/api/pdf-thumbnail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -613,13 +611,12 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
   return (
     <div className="w-full bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group">
       {/* File Header */}
-      <div className={`px-4 py-2 flex items-center justify-between ${
-        isPdfFile(attachment)
-          ? 'bg-gradient-to-r from-red-500 to-red-600'
-          : isDocxFile(attachment)
-            ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-            : 'bg-gradient-to-r from-orange-500 to-orange-600'
-      }`}>
+      <div className={`px-4 py-2 flex items-center justify-between ${isPdfFile(attachment)
+        ? 'bg-gradient-to-r from-red-500 to-red-600'
+        : isDocxFile(attachment)
+          ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+          : 'bg-gradient-to-r from-orange-500 to-orange-600'
+        }`}>
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
             <span className="text-white text-sm font-bold">
@@ -640,10 +637,9 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
         <div className="relative w-full aspect-[4/3] bg-white rounded-lg border-2 border-gray-200 shadow-inner overflow-hidden mb-3">
           {isGeneratingThumbnail ? (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
-              <div className={`w-8 h-8 border-3 border-t-transparent rounded-full animate-spin mb-2 ${
-                isPdfFile(attachment) ? 'border-red-500' :
+              <div className={`w-8 h-8 border-3 border-t-transparent rounded-full animate-spin mb-2 ${isPdfFile(attachment) ? 'border-red-500' :
                 isDocxFile(attachment) ? 'border-blue-500' : 'border-orange-500'
-              }`}></div>
+                }`}></div>
               <span className="text-sm text-gray-600 font-medium">Generating preview...</span>
             </div>
           ) : thumbnailUrl ? (
@@ -660,26 +656,24 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
-              <svg className={`w-12 h-12 mb-2 fill="currentColor" ${
-                isPdfFile(attachment) ? 'text-red-400' :
+              <svg className={`w-12 h-12 mb-2 fill="currentColor" ${isPdfFile(attachment) ? 'text-red-400' :
                 isDocxFile(attachment) ? 'text-blue-400' : 'text-orange-400'
-              }`} viewBox="0 0 24 24">
+                }`} viewBox="0 0 24 24">
                 <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5z" />
               </svg>
               <span className="text-sm text-gray-500 font-medium">
                 {isPdfFile(attachment) ? 'PDF Preview' :
-                 isDocxFile(attachment) ? 'DOCX Preview' : 'PPTX Preview'}
+                  isDocxFile(attachment) ? 'DOCX Preview' : 'PPTX Preview'}
               </span>
             </div>
           )}
-          
+
           {/* Hover Overlay */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
             <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 transform scale-75 group-hover:scale-100 transition-all duration-300">
-              <svg className={`w-6 h-6 ${
-                isPdfFile(attachment) ? 'text-red-600' :
+              <svg className={`w-6 h-6 ${isPdfFile(attachment) ? 'text-red-600' :
                 isDocxFile(attachment) ? 'text-blue-600' : 'text-orange-600'
-              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
@@ -694,13 +688,12 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
           </h4>
           <button
             onClick={() => onPreview ? onPreview(attachment) : null}
-            className={`inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md ${
-              isPdfFile(attachment)
-                ? 'bg-red-500 hover:bg-red-600'
-                : isDocxFile(attachment)
-                  ? 'bg-blue-500 hover:bg-blue-600'
-                  : 'bg-orange-500 hover:bg-orange-600'
-            }`}
+            className={`inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md ${isPdfFile(attachment)
+              ? 'bg-red-500 hover:bg-red-600'
+              : isDocxFile(attachment)
+                ? 'bg-blue-500 hover:bg-blue-600'
+                : 'bg-orange-500 hover:bg-orange-600'
+              }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -740,7 +733,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   const [loading, setLoading] = useState(true);
   const [isDragLoading, setIsDragLoading] = useState(false);
   const [isDragOperationInProgress, setIsDragOperationInProgress] = useState(false);
-  
+
   // New states for assignment modals
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [isTeacherAssignmentModalOpen, setIsTeacherAssignmentModalOpen] = useState(false);
@@ -756,16 +749,16 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   const [dateRange, setDateRange] = useState('all'); // all, thisWeek, thisMonth, overdue
   const [statusFilter, setStatusFilter] = useState('all'); // all, notStarted, inProgress, submitted, completed
   const [groupBy, setGroupBy] = useState('none'); // none, dueDate, type, status
-  
+
   // Toast notification system
   const [toasts, setToasts] = useState([]);
-  
+
   // Toast notification functions
   const showToast = (message, type = 'success', duration = 3000) => {
     const id = Date.now();
     const toast = { id, message, type, duration };
     setToasts(prev => [...prev, toast]);
-    
+
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, duration);
@@ -774,26 +767,26 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   const removeToast = (id) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
-  
+
   // Note: Context menu now uses isolated DOM-based system (no React state)
 
   // Handle right-click context menu (No React State - Completely Isolated)
   const handleContextMenu = (event, item) => {
     event.preventDefault();
     event.stopPropagation();
-    
+
     const x = event.clientX;
     const y = event.clientY;
-    
+
     // Adjust position if menu would go off-screen
     const menuWidth = 160;
     const menuHeight = 120;
     const adjustedX = x + menuWidth > window.innerWidth ? x - menuWidth : x;
     const adjustedY = y + menuHeight > window.innerHeight ? y - menuHeight : y;
-    
+
     // Get context menu options
     const options = getContextMenuOptions(item);
-    
+
     // Create isolated context menu (no React state involved)
     createContextMenu(adjustedX, adjustedY, options);
   };
@@ -948,8 +941,12 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   // Enhanced filtering and sorting logic
   const getFilteredAndSortedAssignments = useCallback(() => {
     // Combine assignments and forms
+    // Note: assignments array contains ALL classwork items with their 'type' field
     let allItems = [
-      ...assignments.map(item => ({ ...item, itemType: 'assignment' })),
+      ...assignments.map(item => ({
+        ...item,
+        itemType: item.type === 'assignment' ? 'assignment' : item.type
+      })),
       ...forms.map(item => ({ ...item, itemType: 'form' }))
     ];
 
@@ -1056,7 +1053,15 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
   const EnhancedActivityCard = ({ assignment, form, submission, isInstructor, onEdit, onDelete, onSubmit, onOpenContent, viewMode }) => {
     // Handle both assignments and forms
     const item = assignment || form;
-    const itemType = form ? 'form' : 'assignment';
+
+    // Return null if no item is provided
+    if (!item) {
+      console.warn('EnhancedActivityCard: No item provided');
+      return null;
+    }
+
+    // Use the actual type from the item, not just form vs assignment
+    const itemType = form ? 'form' : (item.type || 'assignment');
 
     const typeConfig = {
       assignment: {
@@ -1154,7 +1159,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     const config = typeConfig[item.type] || typeConfig.assignment;
     const isCompleted = submission && submission.status === 'submitted' && submission.grade !== undefined && submission.grade !== null;
     const isInProgress = submission && submission.status === 'draft';
-    const isOverdue = item.itemType === 'assignment' && item.dueDate && new Date(item.dueDate) < new Date() && !isCompleted;
+    const isOverdue = itemType === 'assignment' && item.dueDate && new Date(item.dueDate) < new Date() && !isCompleted;
 
     // Enhanced Progress calculation with more realistic logic
     const getProgress = () => {
@@ -1196,8 +1201,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
     // Calculate daysLeft first for use in other parts of the component (only for assignments)
     const now = new Date();
-    const dueDate = item.itemType === 'assignment' ? new Date(item.dueDate) : new Date();
-    const daysLeft = item.itemType === 'assignment' ? Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24)) : 999;
+    const dueDate = itemType === 'assignment' ? new Date(item.dueDate) : new Date();
+    const daysLeft = itemType === 'assignment' ? Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24)) : 999;
 
     const urgency = getUrgency();
 
@@ -1331,14 +1336,14 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     // Render different layouts based on view mode
     if (viewMode === 'grid') {
       return (
-        <div 
+        <div
           className="group relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px] cursor-pointer"
           onContextMenu={(e) => handleContextMenu(e, item)}
           onClick={() => {
             // Handle assignment clicks with modal
-            if (item.itemType === 'assignment') {
+            if (itemType === 'assignment') {
               handleAssignmentClick(item);
-            } else if (item.itemType === 'form') {
+            } else if (itemType === 'form') {
               // Forms open in new tab or edit mode
               if (isInstructor) {
                 handleEditForm(item);
@@ -1395,7 +1400,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
           {/* Main Content Area */}
           <div className="flex-1 px-6">
             {/* Form Thumbnail or Attachments */}
-            {item.itemType === 'form' ? (
+            {itemType === 'form' ? (
               <div className="mb-4">
                 <FormThumbnail
                   form={item}
@@ -1409,8 +1414,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 {item.attachments.slice(0, 1).map((attachment, index) => {
                   // Enhanced DOCX thumbnail with AI narrator for DOCX files
                   if (attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                      attachment.originalName?.toLowerCase().endsWith('.docx') ||
-                      attachment.title?.toLowerCase().endsWith('.docx')) {
+                    attachment.originalName?.toLowerCase().endsWith('.docx') ||
+                    attachment.title?.toLowerCase().endsWith('.docx')) {
                     return (
                       <EnhancedDocxThumbnail
                         key={attachment._id || index}
@@ -1419,10 +1424,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                       />
                     );
                   }
-                  
+
                   // Modern PDF/PPTX thumbnail for other document types
                   if (attachment.mimeType === 'application/pdf' ||
-                      attachment.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+                    attachment.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
                     return (
                       <StableThumbnailComponent
                         key={attachment._id || index}
@@ -1431,7 +1436,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                       />
                     );
                   }
-                  
+
                   // Modern file display for other types
                   const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
                   const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
@@ -1480,7 +1485,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     // List view (compact)
     if (viewMode === 'list') {
       return (
-        <div 
+        <div
           className="bg-white border border-gray-200/60 rounded-xl hover:shadow-lg transition-all duration-300 hover:border-gray-300/60 overflow-hidden cursor-pointer"
           onContextMenu={(e) => handleContextMenu(e, item)}
         >
@@ -1552,7 +1557,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                             </div>
                           </div>
                         )}
-                        {item.itemType === 'assignment' && (
+                        {itemType === 'assignment' && (
                           <div className="flex items-center gap-1">
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -1564,7 +1569,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                     </div>
 
                     {/* Progress Bar for Assignments */}
-                    {item.itemType === 'assignment' && (
+                    {itemType === 'assignment' && (
                       <div className="flex-shrink-0 w-24">
                         <div className="flex items-center justify-between text-xs font-medium text-gray-700 mb-1">
                           <span>Progress</span>
@@ -1603,7 +1608,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 {/* Compact Action Menu */}
                 <div className="flex items-center gap-2">
                   {isInstructor ? (
-                    {/* Right-click context menu replaces dropdown */}
+                    {/* Right-click context menu replaces dropdown */ }
                   ) : (
                     <>
                       {isCompleted ? (
@@ -1698,7 +1703,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
               <div className="space-y-6">
 
                 {/* Enhanced Progress for Assignments */}
-                {item.itemType === 'assignment' && (
+                {itemType === 'assignment' && (
                   <div>
                     <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                       <div className={`w-5 h-5 ${config.bgColor} ${config.borderColor} border rounded-lg flex items-center justify-center shadow-sm`}>
@@ -1760,9 +1765,9 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                   </svg>
-                  {item.itemType === 'form' ? 'Form Preview' : 'Attachments'}
+                  {itemType === 'form' ? 'Form Preview' : 'Attachments'}
                 </h4>
-                {item.itemType === 'form' ? (
+                {itemType === 'form' ? (
                   <div className="space-y-2">
                     <FormThumbnail
                       form={item}
@@ -1776,8 +1781,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                     {item.attachments.slice(0, 3).map((attachment, index) => {
                       // Enhanced DOCX thumbnail with AI narrator for DOCX files
                       if (attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                          attachment.originalName?.toLowerCase().endsWith('.docx') ||
-                          attachment.title?.toLowerCase().endsWith('.docx')) {
+                        attachment.originalName?.toLowerCase().endsWith('.docx') ||
+                        attachment.title?.toLowerCase().endsWith('.docx')) {
                         return (
                           <EnhancedDocxThumbnail
                             key={attachment._id || index}
@@ -1787,10 +1792,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                           />
                         );
                       }
-                      
+
                       // Custom compact PDF/PPTX thumbnail for other document types
                       if (attachment.mimeType === 'application/pdf' ||
-                          attachment.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+                        attachment.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
                         return (
                           <EnhancedPDFFileThumbnail
                             key={attachment._id || index}
@@ -1799,7 +1804,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                           />
                         );
                       }
-                      
+
                       // Keep simple buttons for other file types
                       const fileName = attachment.originalName || attachment.title || `File ${index + 1}`;
                       const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
@@ -1836,13 +1841,13 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
             {/* Compact Actions */}
             <div className="flex items-center justify-between pt-6 border-t border-gray-100">
               <div className="text-sm text-gray-500 font-medium">
-                {item.itemType === 'assignment' && `Progress: ${Math.round(progress)}% • `}
+                {itemType === 'assignment' && `Progress: ${Math.round(progress)}% • `}
                 {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
               </div>
 
               <div className="flex items-center gap-2">
                 {isInstructor ? (
-                  {/* Right-click context menu replaces dropdown */}
+                  {/* Right-click context menu replaces dropdown */ }
                 ) : (
                   <>
                     {!isCompleted && (
@@ -1904,7 +1909,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
           </div>
 
           {/* Progress Bar for Assignments */}
-          {item.itemType === 'assignment' && (
+          {itemType === 'assignment' && (
             <div className="mb-4">
               <div className="flex items-center justify-between text-xs font-medium text-gray-700 mb-2">
                 <span>Progress</span>
@@ -1959,7 +1964,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
             <div className="flex items-center gap-2">
               {isInstructor ? (
-                {/* Right-click context menu replaces dropdown */}
+                {/* Right-click context menu replaces dropdown */ }
               ) : (
                 <>
                   {!isCompleted && (
@@ -2134,7 +2139,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         });
       }
 
-      console.log('🔍 CLASSWORK: Fetched assignments:', classwork.length, 'items');
+      console.log('🔍 CLASSWORK: Fetched classwork:', classwork.length, 'items');
       console.log('🔍 CLASSWORK: First few items:', classwork.slice(0, 3).map(item => ({
         id: item._id,
         title: item.title,
@@ -2142,6 +2147,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         createdAt: item.createdAt
       })));
 
+      // Store ALL classwork items - they already have a 'type' field
       console.log('🔍 CLASSWORK: Setting assignments state with', classwork.length, 'items');
       setAssignments(classwork);
 
@@ -2223,7 +2229,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
     try {
       showToast('Deleting classwork...', 'info', 2000);
-      
+
       const res = await fetch(`/api/classwork/${classworkId}`, {
         method: 'DELETE',
         credentials: 'include' // Use cookie-based authentication
@@ -2236,7 +2242,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
       console.log('🔍 CLASSWORK: Classwork deleted successfully, refreshing data');
       showToast('Classwork deleted successfully!', 'success');
-      
+
       fetchAssignments(); // Refresh assignments list
       fetchForms(); // Also refresh forms list
     } catch (err) {
@@ -2497,8 +2503,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                       </button>
                       <button
                         className={`w-full flex items-center gap-4 px-5 py-4 text-left transition-all duration-200 group ${isCreatingForm
-                            ? 'text-gray-400 cursor-not-allowed opacity-50'
-                            : 'text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100/50 hover:text-emerald-900'
+                          ? 'text-gray-400 cursor-not-allowed opacity-50'
+                          : 'text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100/50 hover:text-emerald-900'
                           }`}
                         onClick={() => {
                           if (!isCreatingForm) {
@@ -2598,8 +2604,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                     <button
                       onClick={() => handleViewModeChange('grid')}
                       className={`p-1.5 rounded transition-all duration-200 ${viewMode === 'grid'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                       title="Grid view"
                     >
@@ -2610,8 +2616,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                     <button
                       onClick={() => handleViewModeChange('list')}
                       className={`p-1.5 rounded transition-all duration-200 ${viewMode === 'list'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                       title="List view"
                     >
@@ -2623,8 +2629,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                     <button
                       onClick={() => handleViewModeChange('kanban')}
                       className={`p-1.5 rounded transition-all duration-200 ${viewMode === 'kanban'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                       title="Kanban view"
                     >
@@ -2652,8 +2658,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                         key={key}
                         onClick={() => setFilter(key)}
                         className={`px-2.5 py-1 text-sm rounded transition-all duration-200 ${filter === key
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
                           }`}
                       >
                         {label}
@@ -2681,10 +2687,10 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                         }
                       }}
                       className={`px-2 py-1 text-xs rounded-full transition-all duration-200 ${(key === 'thisWeek' || key === 'overdue') && dateRange === key
-                          ? 'bg-blue-100 text-blue-700'
-                          : statusFilter === key
-                            ? 'bg-gray-100 text-gray-700'
-                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                        ? 'bg-blue-100 text-blue-700'
+                        : statusFilter === key
+                          ? 'bg-gray-100 text-gray-700'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                         }`}
                     >
                       {label}
@@ -2747,7 +2753,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                         <div className="w-32 h-32 mx-auto mb-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-full opacity-60 animate-pulse"></div>
                         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full opacity-40 animate-bounce" style={{ animationDelay: '1s', animationDuration: '3s' }}></div>
                       </div>
-                      
+
                       {/* Main Icon */}
                       <div className="relative w-28 h-28 mx-auto mb-8 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 rounded-full flex items-center justify-center group-hover:from-blue-200 group-hover:via-indigo-200 group-hover:to-purple-200 transition-all duration-700 shadow-lg group-hover:shadow-xl transform group-hover:scale-110">
                         <div className="absolute inset-2 bg-white rounded-full shadow-inner"></div>
@@ -2760,26 +2766,26 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         )}
-                        
+
                         {/* Floating Elements */}
                         <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-200 rounded-full animate-ping opacity-75"></div>
                         <div className="absolute -bottom-1 -left-1 w-4 h-4 bg-green-200 rounded-full animate-pulse"></div>
                       </div>
-                      
+
                       {/* Content */}
                       <div className="space-y-4">
                         <h3 className="text-2xl font-bold text-gray-800 group-hover:text-gray-900 transition-colors duration-300">
                           {searchQuery ? 'No Results Found' : 'Ready to Get Started?'}
                         </h3>
                         <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors duration-300">
-                          {searchQuery 
+                          {searchQuery
                             ? `No classwork matches "${searchQuery}". Try adjusting your search terms or filters.`
-                            : isInstructor 
+                            : isInstructor
                               ? 'Create your first assignment or form to engage with your students.'
                               : 'No assignments or forms have been posted yet. Check back later!'
                           }
                         </p>
-                        
+
                         {/* Action Buttons */}
                         {isInstructor && !searchQuery && (
                           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-6">
@@ -2803,7 +2809,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                             </button>
                           </div>
                         )}
-                        
+
                         {/* Search Suggestions */}
                         {searchQuery && (
                           <div className="pt-4 space-y-2">
@@ -2832,7 +2838,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                       {filtered.map((item) => (
                         <EnhancedActivityCard
                           key={item._id}
-                          assignment={item.itemType === 'assignment' ? item : null}
+                          assignment={item.itemType !== 'form' ? item : null}
                           form={item.itemType === 'form' ? item : null}
                           submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
                           isInstructor={isInstructor}
@@ -2859,7 +2865,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                       {filtered.map((item) => (
                         <EnhancedActivityCard
                           key={item._id}
-                          assignment={item.itemType === 'assignment' ? item : null}
+                          assignment={item.itemType !== 'form' ? item : null}
                           form={item.itemType === 'form' ? item : null}
                           submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
                           isInstructor={isInstructor}
@@ -2888,7 +2894,7 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                         {filtered.map((item) => (
                           <EnhancedActivityCard
                             key={item._id}
-                            assignment={item.itemType === 'assignment' ? item : null}
+                            assignment={item.itemType !== 'form' ? item : null}
                             form={item.itemType === 'form' ? item : null}
                             submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
                             isInstructor={isInstructor}
@@ -2950,8 +2956,8 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                           >
                             <h3 className="text-base font-bold text-gray-800 mb-5 capitalize flex items-center gap-2">
                               <div className={`w-3 h-3 rounded-full ${status === 'notStarted' ? 'bg-gray-400' :
-                                  status === 'inProgress' ? 'bg-yellow-500 animate-pulse' :
-                                    'bg-emerald-500'
+                                status === 'inProgress' ? 'bg-yellow-500 animate-pulse' :
+                                  'bg-emerald-500'
                                 }`}></div>
                               {status === 'inProgress' ? 'In Progress' :
                                 status.replace(/([A-Z])/g, ' $1').trim()}
@@ -3260,15 +3266,14 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg backdrop-blur-sm border transform transition-all duration-300 animate-in slide-in-from-right-5 ${
-              toast.type === 'success'
-                ? 'bg-emerald-50/90 border-emerald-200 text-emerald-800'
-                : toast.type === 'error'
+            className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg backdrop-blur-sm border transform transition-all duration-300 animate-in slide-in-from-right-5 ${toast.type === 'success'
+              ? 'bg-emerald-50/90 border-emerald-200 text-emerald-800'
+              : toast.type === 'error'
                 ? 'bg-red-50/90 border-red-200 text-red-800'
                 : toast.type === 'warning'
-                ? 'bg-amber-50/90 border-amber-200 text-amber-800'
-                : 'bg-blue-50/90 border-blue-200 text-blue-800'
-            }`}
+                  ? 'bg-amber-50/90 border-amber-200 text-amber-800'
+                  : 'bg-blue-50/90 border-blue-200 text-blue-800'
+              }`}
           >
             {/* Toast Icon */}
             <div className="flex-shrink-0">
@@ -3293,12 +3298,12 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
                 </svg>
               )}
             </div>
-            
+
             {/* Toast Message */}
             <div className="flex-1 font-medium text-sm">
               {toast.message}
             </div>
-            
+
             {/* Close Button */}
             <button
               onClick={() => removeToast(toast.id)}
