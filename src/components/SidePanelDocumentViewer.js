@@ -169,7 +169,7 @@ const SidePanelDocumentViewer = ({
         </div>
 
         {/* Document Content */}
-        <div className="flex-1 min-h-0 overflow-hidden bg-gray-50">
+        <div className="flex-1 min-h-0 overflow-hidden bg-gray-50 side-panel-document-viewer">
           {document && (
             <div className="h-full w-full">
               {/* PDF Documents - Use Enhanced PDF Viewer */}
@@ -207,13 +207,18 @@ const SidePanelDocumentViewer = ({
                     </div>
                   </div>
 
-                  <PdfPreviewWithAI
-                    content={document}
-                    pdfUrl={document.filePath}
-                    notes={[]}
-                    injectOverrideStyles={true}
-                    disableTools={true} // Disable advanced tools in preview mode
-                  />
+                  <div className="h-full w-full overflow-auto" style={{ width: '100%', maxWidth: '100%' }}>
+                    <iframe
+                      src={document.filePath}
+                      className="w-full h-full border-0"
+                      style={{
+                        width: '100%',
+                        height: 'calc(100vh - 80px)',
+                        minHeight: '600px'
+                      }}
+                      title="PDF Preview"
+                    />
+                  </div>
                 </div>
               )}
 

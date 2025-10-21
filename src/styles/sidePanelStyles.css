@@ -42,6 +42,23 @@
   }
 }
 
+/* PDF Sizing in Side Panel */
+.side-panel-document-viewer iframe {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: calc(100vh - 80px) !important;
+}
+
+.side-panel-document-viewer .pdf-viewer-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.side-panel-document-viewer canvas {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
 /* Mobile optimizations */
 @media (max-width: 767px) {
   .side-panel-mobile-overlay {

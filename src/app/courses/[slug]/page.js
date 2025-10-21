@@ -591,23 +591,23 @@ const CourseDetailPage = ({
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium tracking-wide text-gray-500 uppercase">Course</p>
-                    <h1 className="text-3xl font-bold text-gray-900">{courseDetails.subject}</h1>
+                    <p className="text-sm font-medium tracking-wide text-gray-500 uppercase animate-fadeInLeft">Course</p>
+                    <h1 className="text-3xl font-bold text-gray-900 animate-subtleFloat">{courseDetails.subject}</h1>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg animate-subtlePulse">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                     <span className="text-sm font-medium text-blue-700">{teachers.length} Teacher{teachers.length === 1 ? '' : 's'}</span>
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg animate-subtlePulse" style={{ animationDelay: '0.2s' }}>
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <span className="text-sm font-medium text-green-700">{students.length} Student{students.length === 1 ? '' : 's'}</span>
                   </div>
                   
                   {/* Course Access Code - Moved from sidebar */}
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg animate-shimmer" style={{ animationDelay: '0.4s' }}>
                     <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                     </svg>
