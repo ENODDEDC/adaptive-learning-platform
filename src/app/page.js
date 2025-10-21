@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,10 +8,98 @@ import Image from 'next/image';
 export default function LandingPage() {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
+  const [activeMode, setActiveMode] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
+  const heroRef = useRef(null);
+
+  // 8 AI Learning Modes with complete information
+  const learningModes = [
+    {
+      id: 'ai-narrator',
+      name: 'AI Narrator',
+      tagline: 'Listen & Learn in Taglish',
+      icon: '🎧',
+      color: 'from-blue-500 to-cyan-400',
+      description: 'AI-powered audio narration with interactive quizzes, study tips, and summaries in Taglish (English + Tagalog)',
+      features: ['Audio Narration', 'Interactive Quizzes', 'Study Tips', 'Document Summaries'],
+      tech: 'Google TTS + Gemini AI'
+    },
+    {
+      id: 'visual-learning',
+      name: 'Visual Learning',
+      tagline: 'See Concepts Come Alive',
+      icon: '📊',
+      color: 'from-emerald-500 to-teal-400',
+      description: 'Transform complex ideas into stunning diagrams, infographics, mind maps, and flowcharts',
+      features: ['AI Diagrams', 'Infographics', 'Mind Maps', 'Flowcharts'],
+      tech: 'Gemini Image Generation'
+    },
+    {
+      id: 'active-learning',
+      name: 'Active Learning Hub',
+      tagline: 'Learn by Doing',
+      icon: '🎯',
+      color: 'from-purple-500 to-violet-400',
+      description: 'Hands-on activities, simulated discussions, and real-world scenarios for active learners',
+      features: ['Interactive Activities', 'Group Simulations', 'Real Scenarios', 'Immediate Practice'],
+      tech: 'Felder-Silverman Model'
+    },
+    {
+      id: 'intuitive-learning',
+      name: 'Concept Constellation',
+      tagline: 'Discover Hidden Patterns',
+      icon: '🔮',
+      color: 'from-pink-500 to-rose-400',
+      description: 'Explore concept universes, discover patterns, and unlock creative insights',
+      features: ['Pattern Discovery', 'Concept Universe', 'Creative Insights', 'Innovation Ideas'],
+      tech: 'Abstract Pattern AI'
+    },
+    {
+      id: 'sensing-learning',
+      name: 'Hands-On Lab',
+      tagline: 'Experiment & Explore',
+      icon: '🔬',
+      color: 'from-orange-500 to-amber-400',
+      description: 'Interactive simulations, practical challenges, and step-by-step laboratory experiences',
+      features: ['Virtual Labs', 'Simulations', 'Practical Challenges', 'Real Experiments'],
+      tech: 'Interactive Simulation Engine'
+    },
+    {
+      id: 'global-learning',
+      name: 'Global Learning',
+      tagline: 'See the Big Picture',
+      icon: '🌍',
+      color: 'from-indigo-500 to-blue-400',
+      description: 'Holistic overviews, system interconnections, and comprehensive understanding',
+      features: ['Big Picture View', 'Interconnections', 'System Dynamics', 'Context Mapping'],
+      tech: 'Holistic AI Analysis'
+    },
+    {
+      id: 'sequential-learning',
+      name: 'Sequential Learning',
+      tagline: 'Step-by-Step Mastery',
+      icon: '📋',
+      color: 'from-green-500 to-emerald-400',
+      description: 'Logical progression, concept dependencies, and structured learning flows',
+      features: ['Step Breakdown', 'Concept Flow', 'Dependencies', 'Progress Tracking'],
+      tech: 'Sequential AI Processing'
+    },
+    {
+      id: 'reflective-learning',
+      name: 'Reflective Learning',
+      tagline: 'Think Deep, Learn Deeper',
+      icon: '🤔',
+      color: 'from-violet-500 to-purple-400',
+      description: 'Deep contemplation, self-assessment, and metacognitive awareness tracking',
+      features: ['Deep Analysis', 'Self-Assessment', 'Thought Evolution', 'Metacognition'],
+      tech: 'Reflective AI Mentor'
+    }
+  ];
 
   useEffect(() => {
     setIsVisible(true);
-    // Check if user is authenticated
+
+    // Check authentication
     const checkAuth = async () => {
       try {
         const res = await fetch('/api/auth/profile');
@@ -19,151 +107,53 @@ export default function LandingPage() {
           router.replace('/home');
         }
       } catch (error) {
-        // User is not authenticated, show landing page
+        // Not authenticated
       }
     };
     checkAuth();
+
+    // Scroll tracking
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+
+    // Auto-rotate learning modes
+    const interval = setInterval(() => {
+      setActiveMode(prev => (prev + 1) % learningModes.length);
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearInterval(interval);
+    };
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden">
-      {/* Neural Network Canvas */}
-      <canvas
-        ref={(canvas) => {
-          if (!canvas) return;
-          const ctx = canvas.getContext('2d');
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-
-          const nodes = [];
-          const connections = [];
-          const numNodes = 20;
-
-          // Create nodes
-          for (let i = 0; i < numNodes; i++) {
-            nodes.push({
-              x: Math.random() * canvas.width,
-              y: Math.random() * canvas.height,
-              vx: (Math.random() - 0.5) * 0.3,
-              vy: (Math.random() - 0.5) * 0.3,
-              size: Math.random() * 2 + 1,
-              pulse: Math.random() * Math.PI * 2,
-              hue: Math.random() * 60 + 200,
-            });
-          }
-
-          // Create connections
-          for (let i = 0; i < nodes.length; i++) {
-            for (let j = i + 1; j < nodes.length; j++) {
-              const dx = nodes[i].x - nodes[j].x;
-              const dy = nodes[i].y - nodes[j].y;
-              const distance = Math.sqrt(dx * dx + dy * dy);
-
-              if (distance < 120) {
-                connections.push({
-                  from: i,
-                  to: j,
-                  strength: 1 - distance / 120,
-                  active: Math.random() > 0.8,
-                });
-              }
-            }
-          }
-
-          const animate = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Update nodes
-            nodes.forEach((node) => {
-              node.x += node.vx;
-              node.y += node.vy;
-
-              if (node.x < 0 || node.x > canvas.width) node.vx *= -1;
-              if (node.y < 0 || node.y > canvas.height) node.vy *= -1;
-
-              node.x = Math.max(0, Math.min(canvas.width, node.x));
-              node.y = Math.max(0, Math.min(canvas.height, node.y));
-
-              node.vx *= 0.995;
-              node.vy *= 0.995;
-
-              node.pulse += 0.01;
-              const pulseSize = node.size + Math.sin(node.pulse) * 0.3;
-
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, pulseSize, 0, Math.PI * 2);
-              ctx.fillStyle = `hsla(${node.hue}, 70%, 60%, 0.4)`;
-              ctx.fill();
-
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, pulseSize * 1.5, 0, Math.PI * 2);
-              ctx.fillStyle = `hsla(${node.hue}, 70%, 60%, 0.1)`;
-              ctx.fill();
-            });
-
-            // Draw connections
-            connections.forEach((connection) => {
-              const fromNode = nodes[connection.from];
-              const toNode = nodes[connection.to];
-
-              const dx = fromNode.x - toNode.x;
-              const dy = fromNode.y - toNode.y;
-              const distance = Math.sqrt(dx * dx + dy * dy);
-
-              if (distance < 120) {
-                const opacity = (1 - distance / 120) * connection.strength * 0.2;
-
-                ctx.beginPath();
-                ctx.moveTo(fromNode.x, fromNode.y);
-                ctx.lineTo(toNode.x, toNode.y);
-                ctx.strokeStyle = `hsla(${fromNode.hue}, 70%, 60%, ${opacity})`;
-                ctx.lineWidth = connection.active ? 1.5 : 0.8;
-                ctx.stroke();
-              }
-            });
-
-            requestAnimationFrame(animate);
-          };
-
-          animate();
-        }}
-        className="fixed inset-0 w-full h-full pointer-events-none opacity-30"
-      />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-indigo-900 text-white overflow-x-hidden">
+      {/* Animated Background Grid */}
+      <div className="fixed inset-0 opacity-20 pointer-events-none">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)',
+          backgroundSize: '50px 50px',
+          transform: `translateY(${scrollY * 0.5}px)`
+        }}></div>
+      </div>
 
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-screen-xl mx-auto px-6 lg:px-8">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/30 backdrop-blur-2xl border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20">
-                <Image
-                  src="/platform_icon.png"
-                  alt="Intelevo"
-                  width={28}
-                  height={28}
-                  className="rounded-lg"
-                />
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
+                <Image src="/platform_icon.png" alt="Intelevo" width={28} height={28} className="rounded-lg" />
               </div>
-              <span className="text-2xl font-bold tracking-tight text-white">Intelevo</span>
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Intelevo</span>
             </div>
-            <div className="flex items-center gap-8">
-              <Link
-                href="/visual-mockups"
-                className="text-white/70 hover:text-white transition-colors text-sm font-medium"
-              >
-                View Mockups
-              </Link>
-              <Link
-                href="/login"
-                className="text-white/70 hover:text-white transition-colors text-sm font-medium"
-              >
+            <div className="flex items-center gap-6">
+              <Link href="/login" className="text-white/80 hover:text-white transition-colors font-medium">
                 Sign In
               </Link>
-              <Link
-                href="/register"
-                className="bg-white text-black px-6 py-3 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-200 transform hover:scale-105"
-              >
-                Get Started
+              <Link href="/register" className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 rounded-xl font-semibold hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105">
+                Get Started Free
               </Link>
             </div>
           </div>
@@ -171,353 +161,359 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center z-10">
-        <div className="text-center max-w-5xl mx-auto px-6">
+      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center pt-20 px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          {/* Main Headline */}
           <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <div className="mb-8">
-              <h1 className="text-6xl lg:text-8xl font-black tracking-tighter leading-none mb-6">
-                <span className="inline-block animate-float">Where AI Meets</span>
-                <br />
-                <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">
-                  Human Learning
-                </span>
-              </h1>
-              <div className="flex justify-center gap-2 mb-8">
-                <div className="w-3 h-3 bg-blue-400 rounded-full animate-ping"></div>
-                <div className="w-3 h-3 bg-purple-400 rounded-full animate-ping" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-3 h-3 bg-pink-400 rounded-full animate-ping" style={{ animationDelay: '0.4s' }}></div>
-              </div>
+            <div className="inline-block mb-6 px-6 py-2 bg-blue-500/10 border border-blue-500/30 rounded-full">
+              <span className="text-blue-400 font-semibold">🚀 Powered by Advanced AI Technology</span>
             </div>
 
-            <p className="text-xl lg:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed mb-12 font-light">
-              Transform your educational experience with AI-powered courses, intelligent assistance,
-              and collaborative learning environments designed for the modern learner.
+            <h1 className="text-6xl lg:text-8xl font-black mb-8 leading-tight">
+              <span className="block text-white">Transform Learning with</span>
+              <span className="block bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                8 AI Learning Modes
+              </span>
+            </h1>
+
+            <p className="text-xl lg:text-2xl text-white/70 max-w-4xl mx-auto mb-12 leading-relaxed">
+              Personalized AI-powered education that adapts to your unique learning style.
+              From audio narration to visual diagrams, hands-on labs to deep reflection.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-              <Link
-                href="/register"
-                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-blue-500/25"
-              >
-                Start Learning Today
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+              <Link href="/register" className="group relative px-10 py-5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl font-bold text-lg overflow-hidden hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105">
+                <span className="relative z-10">Start Learning Now</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </Link>
-              <Link
-                href="#features"
-                className="border border-white/30 text-white px-8 py-4 rounded-xl text-lg font-medium hover:bg-white/10 transition-all duration-200 backdrop-blur-sm"
-              >
-                Explore Features
+              <Link href="#learning-modes" className="px-10 py-5 border-2 border-white/30 rounded-2xl font-bold text-lg hover:bg-white/10 transition-all duration-300">
+                Explore AI Modes
               </Link>
             </div>
 
-            {/* Key Benefits */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-8 max-w-3xl mx-auto">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-400 mb-2">24/7</div>
-                <div className="text-white/70">AI Learning Assistant</div>
+                <div className="text-5xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">8</div>
+                <div className="text-white/60">AI Learning Modes</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-400 mb-2">∞</div>
-                <div className="text-white/70">Unlimited Courses</div>
+                <div className="text-5xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">24/7</div>
+                <div className="text-white/60">AI Assistant</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-pink-400 mb-2">AI</div>
-                <div className="text-white/70">Smart Analytics</div>
+                <div className="text-5xl font-black bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent mb-2">∞</div>
+                <div className="text-white/60">Personalized Content</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
+          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center pt-2">
+            <div className="w-1 h-3 bg-white/50 rounded-full"></div>
+          </div>
+        </div>
+      </section>
+
+      {/* 8 AI Learning Modes Showcase */}
+      <section id="learning-modes" className="relative py-32 px-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center mb-20">
+            <h2 className="text-5xl lg:text-6xl font-black mb-6">
+              <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                8 Ways to Master Any Subject
+              </span>
+            </h2>
+            <p className="text-xl text-white/70 max-w-3xl mx-auto">
+              Each mode powered by advanced AI, designed for different learning styles based on research
+            </p>
+          </div>
+
+          {/* Learning Modes Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+            {learningModes.map((mode, index) => (
+              <div
+                key={mode.id}
+                className={`group relative p-8 rounded-3xl border-2 cursor-pointer transition-all duration-500 ${activeMode === index
+                  ? 'border-white/40 bg-white/10 scale-105 shadow-2xl'
+                  : 'border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10'
+                  }`}
+                onClick={() => setActiveMode(index)}
+                onMouseEnter={() => setActiveMode(index)}
+              >
+                {/* Icon */}
+                <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform duration-300">
+                  {mode.icon}
+                </div>
+
+                {/* Name */}
+                <h3 className="text-2xl font-bold mb-2 text-white">{mode.name}</h3>
+
+                {/* Tagline */}
+                <p className="text-sm text-white/60 mb-4">{mode.tagline}</p>
+
+                {/* Gradient Bar */}
+                <div className={`h-1 w-full bg-gradient-to-r ${mode.color} rounded-full mb-4`}></div>
+
+                {/* Features */}
+                <div className="space-y-2">
+                  {mode.features.slice(0, 2).map((feature, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm text-white/70">
+                      <div className="w-1.5 h-1.5 bg-white/50 rounded-full"></div>
+                      <span>{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Active Indicator */}
+                {activeMode === index && (
+                  <div className="absolute top-4 right-4 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Active Mode Details */}
+          <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-12 border border-white/20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Left: Details */}
+              <div>
+                <div className="text-6xl mb-6">{learningModes[activeMode].icon}</div>
+                <h3 className="text-4xl font-black mb-4 text-white">{learningModes[activeMode].name}</h3>
+                <p className="text-xl text-white/80 mb-8 leading-relaxed">{learningModes[activeMode].description}</p>
+
+                <div className="space-y-3 mb-8">
+                  {learningModes[activeMode].features.map((feature, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${learningModes[activeMode].color} flex items-center justify-center`}>
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-white/90 font-medium">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="inline-block px-4 py-2 bg-white/10 rounded-lg border border-white/20">
+                  <span className="text-sm text-white/60">Powered by: </span>
+                  <span className="text-sm text-white font-semibold">{learningModes[activeMode].tech}</span>
+                </div>
+              </div>
+
+              {/* Right: Animated UI Preview */}
+              <div className="relative">
+                <div className={`rounded-3xl bg-gradient-to-br ${learningModes[activeMode].color} p-1 shadow-2xl`}>
+                  <div className="w-full bg-gray-900 rounded-3xl p-6 overflow-hidden">
+                    {/* Dynamic UI Preview based on active mode */}
+                    {activeMode === 0 && ( // AI Narrator
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                            <span className="text-xl">🎧</span>
+                          </div>
+                          <div className="flex-1">
+                            <div className="h-2 bg-blue-500/30 rounded-full overflow-hidden">
+                              <div className="h-full bg-blue-500 rounded-full animate-[pulse_2s_ease-in-out_infinite]" style={{ width: '60%' }}></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-4 space-y-2">
+                          <div className="h-3 bg-white/20 rounded w-full"></div>
+                          <div className="h-3 bg-white/20 rounded w-5/6"></div>
+                          <div className="h-3 bg-white/20 rounded w-4/6"></div>
+                        </div>
+                        <div className="flex gap-2">
+                          <div className="flex-1 bg-blue-500/20 rounded-lg p-3 text-center text-xs">Quiz</div>
+                          <div className="flex-1 bg-blue-500/20 rounded-lg p-3 text-center text-xs">Tips</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeMode === 1 && ( // Visual Learning
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-emerald-500/20 rounded-lg p-4 aspect-square flex items-center justify-center">
+                            <div className="text-3xl animate-bounce">📊</div>
+                          </div>
+                          <div className="bg-emerald-500/20 rounded-lg p-4 aspect-square flex items-center justify-center">
+                            <div className="text-3xl animate-bounce" style={{ animationDelay: '0.2s' }}>🗺️</div>
+                          </div>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-3 space-y-2">
+                          <div className="flex gap-2">
+                            <div className="w-8 h-8 bg-emerald-500/30 rounded"></div>
+                            <div className="flex-1 space-y-1">
+                              <div className="h-2 bg-white/20 rounded w-full"></div>
+                              <div className="h-2 bg-white/20 rounded w-3/4"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeMode === 2 && ( // Active Learning
+                      <div className="space-y-3">
+                        <div className="bg-purple-500/20 rounded-xl p-4">
+                          <div className="text-center mb-3">
+                            <div className="text-2xl mb-2">🎯</div>
+                            <div className="text-xs text-white/60">Interactive Scenario</div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="bg-white/10 rounded-lg p-2 text-xs">Option A</div>
+                            <div className="bg-purple-500/40 rounded-lg p-2 text-xs border border-purple-400">Option B ✓</div>
+                            <div className="bg-white/10 rounded-lg p-2 text-xs">Option C</div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 text-xs">
+                          <div className="flex-1 bg-green-500/20 rounded p-2 text-center">Correct!</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeMode === 3 && ( // Intuitive Learning
+                      <div className="relative h-64 flex items-center justify-center">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-16 h-16 bg-pink-500/30 rounded-full animate-ping"></div>
+                        </div>
+                        <div className="relative grid grid-cols-3 gap-4">
+                          {[0, 1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center text-xs animate-pulse" style={{ animationDelay: `${i * 0.2}s` }}>
+                              💡
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {activeMode === 4 && ( // Sensing Learning (Hands-On Lab)
+                      <div className="space-y-3">
+                        <div className="bg-orange-500/20 rounded-xl p-4 text-center">
+                          <div className="text-4xl mb-2 animate-bounce">🔬</div>
+                          <div className="text-xs text-white/60 mb-3">Virtual Lab Simulation</div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="bg-white/10 rounded p-2 text-xs">Step 1 ✓</div>
+                            <div className="bg-orange-500/40 rounded p-2 text-xs border border-orange-400">Step 2</div>
+                            <div className="bg-white/10 rounded p-2 text-xs opacity-50">Step 3</div>
+                          </div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3 text-xs">
+                          <div className="h-2 bg-orange-500/30 rounded-full overflow-hidden">
+                            <div className="h-full bg-orange-500 rounded-full" style={{ width: '65%' }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeMode === 5 && ( // Global Learning
+                      <div className="space-y-3">
+                        <div className="relative h-48 bg-indigo-500/10 rounded-xl p-4">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-5xl animate-spin" style={{ animationDuration: '10s' }}>🌍</div>
+                          </div>
+                          <div className="absolute top-4 left-4 bg-indigo-500/30 rounded-lg p-2 text-xs">Context</div>
+                          <div className="absolute top-4 right-4 bg-indigo-500/30 rounded-lg p-2 text-xs">Systems</div>
+                          <div className="absolute bottom-4 left-4 bg-indigo-500/30 rounded-lg p-2 text-xs">Relations</div>
+                          <div className="absolute bottom-4 right-4 bg-indigo-500/30 rounded-lg p-2 text-xs">Overview</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeMode === 6 && ( // Sequential Learning
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          {[1, 2, 3, 4].map((step) => (
+                            <div key={step} className={`flex items-center gap-3 p-3 rounded-lg ${step <= 2 ? 'bg-green-500/20 border border-green-500/40' : 'bg-white/5'}`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${step <= 2 ? 'bg-green-500' : 'bg-white/20'}`}>
+                                {step <= 2 ? '✓' : step}
+                              </div>
+                              <div className="flex-1">
+                                <div className="h-2 bg-white/20 rounded w-full"></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {activeMode === 7 && ( // Reflective Learning
+                      <div className="space-y-3">
+                        <div className="bg-violet-500/20 rounded-xl p-4">
+                          <div className="text-center mb-3">
+                            <div className="text-3xl mb-2">🤔</div>
+                            <div className="text-xs text-white/60">Deep Reflection</div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="bg-white/5 rounded-lg p-3">
+                              <div className="h-2 bg-white/20 rounded w-full mb-2"></div>
+                              <div className="h-2 bg-white/20 rounded w-5/6 mb-2"></div>
+                              <div className="h-2 bg-white/20 rounded w-4/6"></div>
+                            </div>
+                            <div className="flex gap-2 text-xs">
+                              <div className="flex-1 bg-violet-500/30 rounded p-2 text-center">Self-Assess</div>
+                              <div className="flex-1 bg-violet-500/30 rounded p-2 text-center">Analyze</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* Floating Elements */}
+                <div className="absolute -top-6 -right-6 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl animate-pulse"></div>
+                <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Use Cases Section */}
-      <section className="relative py-32 bg-gradient-to-b from-black via-gray-900 to-black z-10">
-        <div className="max-w-screen-xl mx-auto px-6 lg:px-8">
+      {/* How It Works */}
+      <section className="relative py-32 px-6 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
-            <h2 className="text-4xl lg:text-6xl font-black tracking-tighter mb-6 text-white">
-              Real Learning
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Scenarios</span>
-            </h2>
-            <p className="text-xl text-white/70 max-w-2xl mx-auto">
-              See how Intelevo transforms everyday learning challenges into opportunities for success.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Student Scenario */}
-            <div className="group relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-all duration-300">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mb-6">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-white">For Students</h3>
-                <p className="text-white/70 leading-relaxed mb-6">
-                  &ldquo;Stuck on calculus at 2 AM? Intelevo&rsquo;s AI explains complex problems step-by-step,
-                  creates custom practice sets, and even generates study schedules based on your progress.&rdquo;
-                </p>
-                <div className="text-sm text-blue-400 font-medium">Sarah, Computer Science Student</div>
-              </div>
-            </div>
-
-            {/* Instructor Scenario */}
-            <div className="group relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-all duration-300">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mb-6">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-white">For Instructors</h3>
-                <p className="text-white/70 leading-relaxed mb-6">
-                  &ldquo;Create engaging courses with AI-assisted content generation, automated grading,
-                  and real-time student progress insights. Spend more time teaching, less time administrating.&rdquo;
-                </p>
-                <div className="text-sm text-purple-400 font-medium">Dr. Martinez, Physics Professor</div>
-              </div>
-            </div>
-
-            {/* Group Learning Scenario */}
-            <div className="group relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-pink-500 to-red-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-all duration-300">
-                <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-pink-600 rounded-xl flex items-center justify-center mb-6">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-white">For Groups</h3>
-                <p className="text-white/70 leading-relaxed mb-6">
-                  &ldquo;Form study clusters with classmates, share resources, collaborate on projects,
-                  and learn from peers. Our AI matches you with compatible study partners.&rdquo;
-                </p>
-                <div className="text-sm text-pink-400 font-medium">Study Group Alpha</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="relative py-32 bg-black z-10">
-        <div className="max-w-screen-xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl lg:text-6xl font-black tracking-tighter mb-6 text-white">
-              Intelligent
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Features</span>
-            </h2>
-            <p className="text-xl text-white/70 max-w-2xl mx-auto">
-              Every feature designed with AI at its core, creating an educational experience that adapts, assists, and inspires.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* AI Assistant */}
-            <div className="group relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-all duration-300">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mb-6">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-white">AI Learning Assistant</h3>
-                <p className="text-white/70 leading-relaxed mb-6">
-                  Get instant help with any subject. Our advanced AI understands context, provides personalized explanations,
-                  generates practice questions, and adapts to your learning style.
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-white/60 font-medium">Available 24/7</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Course Management */}
-            <div className="group relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-all duration-300">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mb-6">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-white">Smart Course Management</h3>
-                <p className="text-white/70 leading-relaxed mb-6">
-                  Create and join courses with intelligent organization. Track assignments, receive announcements,
-                  submit work, and monitor progress with AI-powered insights and recommendations.
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-white/60 font-medium">Unlimited Courses</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Document Creation */}
-            <div className="group relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-green-500 to-teal-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-all duration-300">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center mb-6">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-white">AI Document Creation</h3>
-                <p className="text-white/70 leading-relaxed mb-6">
-                  Transform your ideas into professional documents instantly. Generate essays, reports, and study materials
-                  with AI-powered writing assistance, research, and formatting.
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-white/60 font-medium">Smart Writing</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Analytics & Progress */}
-            <div className="group relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-all duration-300">
-                <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mb-6">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-white">Smart Analytics</h3>
-                <p className="text-white/70 leading-relaxed mb-6">
-                  Monitor your learning journey with detailed analytics. Track study time, assignment completion,
-                  performance trends, and receive AI-powered recommendations for improvement.
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-white/60 font-medium">Data-Driven Learning</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Getting Started Section */}
-      <section className="relative py-32 bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900 z-10">
-        <div className="max-w-screen-xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl lg:text-6xl font-black tracking-tighter mb-6 text-white">
-              Getting
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Started</span>
-            </h2>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto">
-              Join thousands of learners already using Intelevo to transform their educational experience.
-            </p>
+            <h2 className="text-5xl font-black mb-6 text-white">How Intelevo Works</h2>
+            <p className="text-xl text-white/70">Simple, powerful, and personalized for you</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/20">
-                <span className="text-2xl font-bold text-white">01</span>
+            {[
+              { step: '01', title: 'Upload Your Content', desc: 'Upload any document (PDF, DOCX, PPTX)', icon: '📄' },
+              { step: '02', title: 'Choose AI Mode', desc: 'Select from 8 AI learning modes that match your style', icon: '🎯' },
+              { step: '03', title: 'Learn & Master', desc: 'Get personalized AI-generated content instantly', icon: '🚀' }
+            ].map((item, i) => (
+              <div key={i} className="relative p-8 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105">
+                <div className="text-6xl mb-6">{item.icon}</div>
+                <div className="text-5xl font-black text-white/20 mb-4">{item.step}</div>
+                <h3 className="text-2xl font-bold mb-3 text-white">{item.title}</h3>
+                <p className="text-white/70">{item.desc}</p>
               </div>
-              <h3 className="text-2xl font-bold mb-4 text-white">Create Account</h3>
-              <p className="text-white/70 leading-relaxed">
-                Sign up in seconds and let our AI learn about your goals, preferences, and learning style.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/20">
-                <span className="text-2xl font-bold text-white">02</span>
-              </div>
-              <h3 className="text-2xl font-bold mb-4 text-white">Join or Create</h3>
-              <p className="text-white/70 leading-relaxed">
-                Browse available courses or create your own. Connect with instructors and fellow learners instantly.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/20">
-                <span className="text-2xl font-bold text-white">03</span>
-              </div>
-              <h3 className="text-2xl font-bold mb-4 text-white">Start Learning</h3>
-              <p className="text-white/70 leading-relaxed">
-                Access AI tools, complete assignments, and get personalized help whenever you need it.
-              </p>
-            </div>
+            ))}
           </div>
+        </div>
+      </section>
 
-          <div className="text-center mt-16">
-            <Link
-              href="/register"
-              className="bg-white text-blue-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-2xl"
-            >
-              Begin Your Learning Journey
+      {/* Final CTA */}
+      <section className="relative py-32 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-xl rounded-3xl p-16 border border-white/20">
+            <h2 className="text-5xl font-black mb-6 text-white">Ready to Transform Your Learning?</h2>
+            <p className="text-xl text-white/70 mb-10">Join thousands of students already using AI-powered education</p>
+            <Link href="/register" className="inline-block px-12 py-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl font-bold text-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105">
+              Start Free Today
             </Link>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-black text-white py-16 border-t border-white/10">
-        <div className="max-w-screen-xl mx-auto px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20">
-                  <Image
-                    src="/platform_icon.png"
-                    alt="Intelevo"
-                    width={28}
-                    height={28}
-                    className="rounded-lg"
-                  />
-                </div>
-                <span className="text-2xl font-bold">Intelevo</span>
-              </div>
-              <p className="text-white/60 leading-relaxed mb-8 max-w-md">
-                Pioneering the future of education through artificial intelligence and neural network technology.
-                Where every connection sparks learning.
-              </p>
-              <div className="flex gap-4">
-                <a href="#" className="text-white/60 hover:text-white transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-                  </svg>
-                </a>
-                <a href="#" className="text-white/60 hover:text-white transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                  </svg>
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-6 text-white">Platform</h4>
-              <ul className="space-y-3">
-                <li><Link href="#" className="text-white/60 hover:text-white transition-colors">AI Assistant</Link></li>
-                <li><Link href="#" className="text-white/60 hover:text-white transition-colors">Courses</Link></li>
-                <li><Link href="#" className="text-white/60 hover:text-white transition-colors">Analytics</Link></li>
-                <li><Link href="#" className="text-white/60 hover:text-white transition-colors">Clusters</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-6 text-white">Support</h4>
-              <ul className="space-y-3">
-                <li><Link href="#" className="text-white/60 hover:text-white transition-colors">Help Center</Link></li>
-                <li><Link href="#" className="text-white/60 hover:text-white transition-colors">Contact</Link></li>
-                <li><Link href="#" className="text-white/60 hover:text-white transition-colors">Privacy</Link></li>
-                <li><Link href="#" className="text-white/60 hover:text-white transition-colors">Terms</Link></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-white/10 mt-16 pt-8 text-center">
-            <p className="text-white/40">&copy; 2025 Intelevo. All rights reserved.</p>
-          </div>
+      <footer className="border-t border-white/10 py-12 px-6">
+        <div className="max-w-7xl mx-auto text-center text-white/50">
+          <p>&copy; 2025 Intelevo. Powered by Advanced AI Technology.</p>
         </div>
       </footer>
     </div>

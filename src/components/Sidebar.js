@@ -201,7 +201,6 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   const links = [
     { href: "/home", label: "Home" },
     { href: "/courses", label: "Course" },
-    { href: "/learning-styles", label: "Learning Styles" },
     { href: "/todo", label: "To-Do" },
     { href: "/schedule", label: "Schedule" },
     { href: "/clusters", label: "Cluster" },
@@ -730,8 +729,6 @@ const getIconForLink = (label) => {
       return BellIcon;
     case 'Course':
       return BookOpenIcon;
-    case 'Learning Styles':
-      return AcademicCapIcon;
     case 'Text to Docs':
       return DocumentTextIcon;
     case 'To-Do':
