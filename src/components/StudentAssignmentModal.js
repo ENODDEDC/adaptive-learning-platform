@@ -54,6 +54,11 @@ const StudentAssignmentModal = ({ isOpen, onClose, assignment, courseId, onSubmi
 
     setSubmitting(true);
     try {
+      // Extract only the MongoDB IDs from files
+      const attachmentIds = files
+        .filter(f => f._id) // Only include files that have been saved to MongoDB
+        .map(f => f._id);
+
       // If submission exists, update it
       if (submission && submission._id) {
         const res = await fetch(`/api/submissions/${submission._id}`, {
@@ -61,7 +66,7 @@ const StudentAssignmentModal = ({ isOpen, onClose, assignment, courseId, onSubmi
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             content,
-            attachments: files.map(f => f._id || f),
+            attachments: attachmentIds,
             status: 'submitted',
             progress: 100
           })
@@ -76,7 +81,7 @@ const StudentAssignmentModal = ({ isOpen, onClose, assignment, courseId, onSubmi
           body: JSON.stringify({
             assignmentId: assignment._id,
             content,
-            attachments: files.map(f => f._id || f),
+            attachments: attachmentIds,
             status: 'submitted',
             progress: 100
           })
@@ -105,15 +110,20 @@ const StudentAssignmentModal = ({ isOpen, onClose, assignment, courseId, onSubmi
 
     setSubmitting(true);
     try {
+      // Extract only the MongoDB IDs from files
+      const attachmentIds = files
+        .filter(f => f._id) // Only include files that have been saved to MongoDB
+        .map(f => f._id);
+
       if (submission && submission._id) {
         await fetch(`/api/submissions/${submission._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             content,
-            attachments: files.map(f => f._id || f),
+            attachments: attachmentIds,
             status: 'draft',
-            progress: Math.min(100, Math.max(0, (content.length > 0 || files.length > 0) ? 50 : 0))
+            progress: Math.min(100, Math.max(0, (content.length > 0 || attachmentIds.length > 0) ? 50 : 0))
           })
         });
       } else {
@@ -123,9 +133,9 @@ const StudentAssignmentModal = ({ isOpen, onClose, assignment, courseId, onSubmi
           body: JSON.stringify({
             assignmentId: assignment._id,
             content,
-            attachments: files.map(f => f._id || f),
+            attachments: attachmentIds,
             status: 'draft',
-            progress: Math.min(100, Math.max(0, (content.length > 0 || files.length > 0) ? 50 : 0))
+            progress: Math.min(100, Math.max(0, (content.length > 0 || attachmentIds.length > 0) ? 50 : 0))
           })
         });
       }
@@ -226,6 +236,7 @@ const StudentAssignmentModal = ({ isOpen, onClose, assignment, courseId, onSubmi
                     onFilesReady={handleFilesReady}
                     initialFiles={files}
                     folder={`submissions/${courseId}/${assignment._id}`}
+                    courseId={courseId}
                   />
                 </div>
 
@@ -310,20 +321,48 @@ const StudentAssignmentModal = ({ isOpen, onClose, assignment, courseId, onSubmi
                     {/* Submission Attachments */}
                     {submission.attachments && submission.attachments.length > 0 && (
                       <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Your Files</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Your Files ({submission.attachments.length})
+                        </label>
                         <div className="space-y-2">
                           {submission.attachments.map((attachment, index) => (
-                            <div
+                            <button
                               key={index}
-                              className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
+                              onClick={() => setViewingContent(attachment)}
+                              className="w-full flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-lg transition-all text-left group"
                             >
-                              <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                              <span className="text-sm font-medium text-gray-900">
-                                {attachment.originalName || attachment.title}
-                              </span>
-                            </div>
+                              <div className="p-2 bg-white rounded-lg shadow-sm">
+                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                  {attachment.originalName || attachment.title || 'Attachment'}
+                                </p>
+                                <div className="flex items-center space-x-3 mt-1">
+                                  {attachment.fileSize && (
+                                    <span className="text-xs text-gray-600">
+                                      {Math.round(attachment.fileSize / 1024)} KB
+                                    </span>
+                                  )}
+                                  {attachment.mimeType && (
+                                    <span className="text-xs text-gray-500">
+                                      {attachment.mimeType.split('/')[1]?.toUpperCase() || 'File'}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-medium text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  Click to view
+                                </span>
+                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </div>
+                            </button>
                           ))}
                         </div>
                       </div>

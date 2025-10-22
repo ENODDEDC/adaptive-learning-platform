@@ -114,7 +114,8 @@ export async function GET(request, { params }) {
 
     const submission = await Submission.findById(id)
       .populate('assignmentId', 'title type courseId')
-      .populate('studentId', 'name email');
+      .populate('studentId', 'name email')
+      .populate('attachments');
 
     if (!submission) {
       return NextResponse.json({ message: 'Submission not found' }, { status: 404 });

@@ -666,38 +666,53 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
         try {
           console.log('🔍 Processing Word document:', attachment);
           
+          // Validate that we have some way to access the file
+          if (!attachment.filePath && !attachment.url && !attachment.cloudStorage?.key) {
+            throw new Error('File location not found. The attachment is missing required file location properties.');
+          }
+          
           // Check if this is a Backblaze B2 file (URL contains /api/files/)
           console.log('🔍 Attachment object:', attachment);
           console.log('🔍 Attachment URL:', attachment.url);
           console.log('🔍 Attachment filePath:', attachment.filePath);
+          console.log('🔍 Attachment cloudStorage:', attachment.cloudStorage);
           
           // Check both url and filePath for Backblaze B2 files
-          const fileUrl = attachment.url || attachment.filePath;
-          const isBackblazeFile = fileUrl && fileUrl.includes('/api/files/');
+          // Priority: cloudStorage.url > url > filePath
+          const fileUrl = attachment.cloudStorage?.url || attachment.url || attachment.filePath;
+          const fileKey = attachment.cloudStorage?.key;
+          
+          const isBackblazeFile = (fileUrl && fileUrl.includes('/api/files/')) || fileKey;
           console.log('🔍 File URL to check:', fileUrl);
+          console.log('🔍 File key:', fileKey);
           console.log('🔍 Is Backblaze file:', isBackblazeFile);
           
           let response;
           
           if (isBackblazeFile) {
-            // Extract file key from URL for Backblaze B2 files
-            const urlParts = fileUrl.split('/api/files/');
-            console.log('🔍 URL parts:', urlParts);
-            const fileKey = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
-            console.log('🔍 Extracted file key:', fileKey);
+            // Extract file key from URL or use direct cloudStorage key
+            let extractedKey = fileKey;
             
-            if (!fileKey) {
-              throw new Error('Could not extract file key from URL');
+            if (!extractedKey && fileUrl) {
+              const urlParts = fileUrl.split('/api/files/');
+              console.log('🔍 URL parts:', urlParts);
+              extractedKey = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
             }
             
-            console.log('🔍 Converting Backblaze B2 Word document with key:', fileKey);
+            console.log('🔍 Extracted file key:', extractedKey);
+            
+            if (!extractedKey) {
+              throw new Error('Could not extract file key from attachment');
+            }
+            
+            console.log('🔍 Converting Backblaze B2 Word document with key:', extractedKey);
             
             response = await fetch('/api/files/convert', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({ fileKey }),
+              body: JSON.stringify({ fileKey: extractedKey }),
             });
             
             if (!response.ok) {
@@ -721,7 +736,8 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
                     errorDetails = responseText || errorDetails;
                   }
                 } else {
-                  errorDetails = 'Empty error response from server';
+                  console.error('🔍 Empty response from server');
+                  errorDetails = 'Empty error response from server. Please check if the file exists and you have permission to access it.';
                 }
               } catch (textError) {
                 console.error('🔍 Could not read error response as text (attachment):', textError);
@@ -881,7 +897,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
       return (
         <div className="flex items-center justify-center h-full">
           <img 
-            src={attachment.filePath} 
+            src={attachment.cloudStorage?.url || attachment.url || attachment.filePath} 
             alt={attachment.title || 'Image'} 
             className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
           />
@@ -894,7 +910,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
           <video 
             controls 
             className="w-full max-h-full rounded-lg bg-black"
-            src={attachment.filePath}
+            src={attachment.cloudStorage?.url || attachment.url || attachment.filePath}
           >
             Your browser does not support the video tag.
           </video>
@@ -913,7 +929,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
             <audio 
               controls 
               className="w-full mb-4"
-              src={attachment.filePath}
+              src={attachment.cloudStorage?.url || attachment.url || attachment.filePath}
             >
               Your browser does not support the audio tag.
             </audio>
@@ -925,7 +941,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
       return (
         <PdfPreviewWithAI
           content={attachment}
-          pdfUrl={attachment.url || attachment.filePath}
+          pdfUrl={attachment.cloudStorage?.url || attachment.url || attachment.filePath}
           notes={notes}
           injectOverrideStyles={injectOverrideStyles}
           disableTools={disableTools}
@@ -961,7 +977,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
       });
       return (
         <EnhancedPowerPointViewer
-          filePath={attachment.filePath ? attachment.filePath.replace(window.location.origin, '') : ''}
+          filePath={(attachment.cloudStorage?.url || attachment.url || attachment.filePath) ? (attachment.cloudStorage?.url || attachment.url || attachment.filePath).replace(window.location.origin, '') : ''}
           fileName={attachment.title || attachment.originalName}
           onClose={() => {}}
           isModal={false}
@@ -981,9 +997,9 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
             </p>
             
             <div className="flex gap-3 justify-center">
-              {attachment.filePath && (
+              {(attachment.cloudStorage?.url || attachment.url || attachment.filePath) && (
                 <a 
-                  href={attachment.filePath} 
+                  href={attachment.cloudStorage?.url || attachment.url || attachment.filePath} 
                   download 
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
@@ -1058,34 +1074,54 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
       if (isWordDocument) {
         try {
           console.log('🔍 Processing Word document (content):', content);
+          console.log('🔍 Content object details:', {
+            url: content.url,
+            filePath: content.filePath,
+            cloudStorage: content.cloudStorage,
+            mimeType: content.mimeType
+          });
+          
+          // Validate that we have some way to access the file
+          if (!content.filePath && !content.url && !content.cloudStorage?.key) {
+            throw new Error('File location not found. The content is missing required file location properties.');
+          }
           
           // Check if this is a Backblaze B2 file (URL contains /api/files/)
-          const fileUrl = content.url || content.filePath;
-          const isBackblazeFile = fileUrl && fileUrl.includes('/api/files/');
+          // Priority: cloudStorage.url > url > filePath
+          const fileUrl = content.cloudStorage?.url || content.url || content.filePath;
+          const fileKey = content.cloudStorage?.key;
+          
+          const isBackblazeFile = (fileUrl && fileUrl.includes('/api/files/')) || fileKey;
           console.log('🔍 File URL to check (content):', fileUrl);
+          console.log('🔍 File key (content):', fileKey);
           console.log('🔍 Is Backblaze file (content):', isBackblazeFile);
           
           let response;
           
           if (isBackblazeFile) {
-            // Extract file key from URL for Backblaze B2 files
-            const urlParts = fileUrl.split('/api/files/');
-            console.log('🔍 URL parts (content):', urlParts);
-            const fileKey = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
-            console.log('🔍 Extracted file key (content):', fileKey);
+            // Extract file key from URL or use direct cloudStorage key
+            let extractedKey = fileKey;
             
-            if (!fileKey) {
-              throw new Error('Could not extract file key from URL');
+            if (!extractedKey && fileUrl) {
+              const urlParts = fileUrl.split('/api/files/');
+              console.log('🔍 URL parts (content):', urlParts);
+              extractedKey = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
             }
             
-            console.log('🔍 Converting Backblaze B2 Word document with key (content):', fileKey);
+            console.log('🔍 Extracted file key (content):', extractedKey);
+            
+            if (!extractedKey) {
+              throw new Error('Could not extract file key from content');
+            }
+            
+            console.log('🔍 Converting Backblaze B2 Word document with key (content):', extractedKey);
             
             response = await fetch('/api/files/convert', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({ fileKey }),
+              body: JSON.stringify({ fileKey: extractedKey }),
             });
             
             if (!response.ok) {
@@ -1109,7 +1145,8 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
                     errorDetails = responseText || errorDetails;
                   }
                 } else {
-                  errorDetails = 'Empty error response from server';
+                  console.error('🔍 Empty response from server (content)');
+                  errorDetails = 'Empty error response from server. Please check if the file exists and you have permission to access it.';
                 }
               } catch (textError) {
                 console.error('🔍 Could not read error response as text:', textError);
@@ -1203,7 +1240,8 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
       } else if (fileInfo.type === 'text' || fileInfo.type === 'code') {
         // Handle text and code files
         try {
-          const response = await fetch(content.filePath);
+          const fileUrl = content.cloudStorage?.url || content.url || content.filePath;
+          const response = await fetch(fileUrl);
           if (!response.ok) {
             throw new Error(`Failed to load file: ${response.statusText}`);
           }

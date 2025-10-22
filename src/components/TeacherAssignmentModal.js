@@ -264,20 +264,36 @@ const TeacherAssignmentModal = ({ isOpen, onClose, assignment, courseId, onUpdat
 
                             {/* Grade */}
                             {submission.status === 'submitted' && (
-                              <div className="text-right">
-                                {submission.grade !== null && submission.grade !== undefined ? (
-                                  <div>
-                                    <p className="text-lg font-bold text-blue-600">{submission.grade}/100</p>
-                                    <p className="text-xs text-gray-500">Graded</p>
-                                  </div>
-                                ) : (
+                              <div className="flex items-center space-x-3">
+                                {/* View Attachments Button */}
+                                {submission.attachments && submission.attachments.length > 0 && (
                                   <button
                                     onClick={() => openGradeModal(submission)}
-                                    className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                    className="px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-sm font-medium rounded-lg hover:bg-indigo-100 transition-colors flex items-center space-x-1.5"
                                   >
-                                    Grade
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                    </svg>
+                                    <span>{submission.attachments.length}</span>
                                   </button>
                                 )}
+                                
+                                {/* Grade Display/Button */}
+                                <div className="text-right">
+                                  {submission.grade !== null && submission.grade !== undefined ? (
+                                    <div>
+                                      <p className="text-lg font-bold text-blue-600">{submission.grade}/100</p>
+                                      <p className="text-xs text-gray-500">Graded</p>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => openGradeModal(submission)}
+                                      className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                      Grade
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -287,18 +303,43 @@ const TeacherAssignmentModal = ({ isOpen, onClose, assignment, courseId, onUpdat
                         {submission.status === 'submitted' && (
                           <div className="mt-3 pt-3 border-t border-gray-100">
                             {submission.content && (
-                              <p className="text-sm text-gray-700 line-clamp-2 mb-2">
-                                {submission.content}
-                              </p>
+                              <div className="mb-3">
+                                <p className="text-xs font-medium text-gray-600 mb-1">Student Response:</p>
+                                <p className="text-sm text-gray-700 line-clamp-2 bg-gray-50 p-2 rounded">
+                                  {submission.content}
+                                </p>
+                              </div>
                             )}
                             {submission.attachments && submission.attachments.length > 0 && (
-                              <div className="flex items-center space-x-2">
-                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                </svg>
-                                <span className="text-sm text-gray-600">
-                                  {submission.attachments.length} attachment{submission.attachments.length !== 1 ? 's' : ''}
-                                </span>
+                              <div className="mb-2">
+                                <p className="text-xs font-medium text-gray-600 mb-2">Attached Files:</p>
+                                <div className="space-y-1.5">
+                                  {submission.attachments.map((attachment, attIndex) => (
+                                    <button
+                                      key={attIndex}
+                                      onClick={() => setViewingContent(attachment)}
+                                      className="w-full flex items-center space-x-2 p-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors text-left group"
+                                    >
+                                      <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                      </svg>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-blue-900 truncate">
+                                          {attachment.originalName || attachment.title || 'Attachment'}
+                                        </p>
+                                        {attachment.fileSize && (
+                                          <p className="text-xs text-blue-600">
+                                            {Math.round(attachment.fileSize / 1024)} KB
+                                          </p>
+                                        )}
+                                      </div>
+                                      <svg className="w-4 h-4 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                      </svg>
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
                             )}
                             {submission.grade !== null && submission.grade !== undefined && submission.feedback && (
@@ -344,20 +385,47 @@ const TeacherAssignmentModal = ({ isOpen, onClose, assignment, courseId, onUpdat
               {/* Attachments */}
               {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">Attachments</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Attachments ({selectedSubmission.attachments.length})
+                  </label>
                   <div className="space-y-2">
                     {selectedSubmission.attachments.map((attachment, index) => (
                       <button
                         key={index}
                         onClick={() => setViewingContent(attachment)}
-                        className="w-full flex items-center space-x-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left"
+                        className="w-full flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-lg transition-all text-left group"
                       >
-                        <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span className="text-sm font-medium text-gray-900">
-                          {attachment.originalName || attachment.title}
-                        </span>
+                        <div className="p-2 bg-white rounded-lg shadow-sm">
+                          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            {attachment.originalName || attachment.title || 'Attachment'}
+                          </p>
+                          <div className="flex items-center space-x-3 mt-1">
+                            {attachment.fileSize && (
+                              <span className="text-xs text-gray-600">
+                                {Math.round(attachment.fileSize / 1024)} KB
+                              </span>
+                            )}
+                            {attachment.mimeType && (
+                              <span className="text-xs text-gray-500">
+                                {attachment.mimeType.split('/')[1]?.toUpperCase() || 'File'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-medium text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Click to view
+                          </span>
+                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </div>
                       </button>
                     ))}
                   </div>

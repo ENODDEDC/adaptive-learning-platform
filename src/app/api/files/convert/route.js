@@ -47,10 +47,15 @@ export async function POST(request) {
     console.log('🔍 Converting file with key:', fileKey);
     console.log('🔍 File key type:', typeof fileKey);
     console.log('🔍 File key length:', fileKey?.length);
+    console.log('🔍 File key value (raw):', JSON.stringify(fileKey));
     
     if (!fileKey) {
       console.error('❌ No file key provided');
-      return NextResponse.json({ message: 'File key is required' }, { status: 400 });
+      return NextResponse.json({ 
+        message: 'File key is required',
+        received: fileKey,
+        type: typeof fileKey
+      }, { status: 400 });
     }
 
     // Decode the file key in case it's URL encoded
@@ -60,17 +65,23 @@ export async function POST(request) {
     // Get file from Backblaze B2
     console.log('📁 Getting file data from Backblaze B2...');
     console.log('📁 Using file key:', decodedKey);
+    console.log('📁 Decoded from:', fileKey);
     
     let fileData;
     try {
       fileData = await backblazeService.getFileData(decodedKey);
       console.log('✅ File data retrieved successfully');
+      console.log('✅ File size:', fileData.ContentLength);
     } catch (fileError) {
       console.error('❌ Error getting file from Backblaze:', fileError);
+      console.error('❌ File key attempted:', decodedKey);
+      console.error('❌ Original file key:', fileKey);
       return NextResponse.json({ 
         message: 'Failed to retrieve file from storage', 
         error: fileError.message,
-        fileKey: decodedKey
+        fileKey: decodedKey,
+        originalKey: fileKey,
+        suggestion: 'The file may not exist in cloud storage or the key is incorrect'
       }, { status: 404 });
     }
     
