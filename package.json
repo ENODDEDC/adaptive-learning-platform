@@ -7,7 +7,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check-deps": "node scripts/check-system-deps.js",
+    "postinstall": "node scripts/check-system-deps.js || echo 'Warning: Some system dependencies may be missing. See README.md'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.893.0",
