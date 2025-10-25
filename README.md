@@ -282,10 +282,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🌐 Deployment
 
 The project is deployed on [Render](https://render.com).
@@ -301,8 +297,6 @@ For issues and questions, please [open an issue](https://github.com/yourusername
 ---
 
 <div align="center">
-
-**Built with ❤️ as a Capstone Project**
 
 [⬆ Back to Top](#-intelevo)
 
