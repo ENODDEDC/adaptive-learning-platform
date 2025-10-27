@@ -12,6 +12,7 @@ import {
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon
 } from '@heroicons/react/24/outline';
+import learningModeRecommendationService from '../services/learningModeRecommendationService';
 
 // Tooltip data for learning modes
 const tooltipData = {
@@ -86,9 +87,25 @@ const CleanPDFViewer = ({
   const [isLoading, setIsLoading] = useState(true);
   const [showTooltip, setShowTooltip] = useState(null);
 
+  // Recommendation system state
+  const [recommendations, setRecommendations] = useState([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [pdfTextContent, setPdfTextContent] = useState('');
+
   // Refs
   const iframeRef = useRef(null);
   const containerRef = useRef(null);
+
+  // Helper function to check if a mode is recommended
+  const isRecommended = (modeName) => {
+    return recommendations.some(rec => rec.mode === modeName);
+  };
+
+  // Get recommendation reason
+  const getRecommendationReason = (modeName) => {
+    const rec = recommendations.find(r => r.mode === modeName);
+    return rec?.reason || '';
+  };
 
   // PDF URL with parameters to control display
   const getPDFUrl = () => {
@@ -115,7 +132,7 @@ const CleanPDFViewer = ({
     return `${baseUrl}#${params.toString()}`;
   };
 
-  // Get real PDF page count
+  // Get real PDF page count and extract content for recommendations
   useEffect(() => {
     const getPDFPageCount = async () => {
       if (!content?.filePath && !content?.url) {
@@ -152,6 +169,28 @@ const CleanPDFViewer = ({
           console.error('Page count API failed:', response.status, response.statusText);
           setTotalPages(1);
         }
+
+        // Extract PDF text content for recommendations
+        try {
+          const extractResponse = await fetch('/api/pdf-extract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileKey: content.cloudStorage?.key,
+              filePath: content.filePath
+            }),
+          });
+
+          if (extractResponse.ok) {
+            const extractResult = await extractResponse.json();
+            if (extractResult.content && extractResult.content.rawText) {
+              setPdfTextContent(extractResult.content.rawText);
+              console.log('✅ PDF content extracted for recommendations:', extractResult.content.rawText.length, 'characters');
+            }
+          }
+        } catch (extractError) {
+          console.log('⚠️ Could not extract PDF content for recommendations:', extractError);
+        }
       } catch (error) {
         console.error('Error getting PDF page count:', error);
         // Fallback to default
@@ -163,6 +202,39 @@ const CleanPDFViewer = ({
 
     getPDFPageCount();
   }, [content]);
+
+  // Load AI recommendations when PDF content is available
+  useEffect(() => {
+    const loadRecommendations = async () => {
+      if (pdfTextContent && !isLoadingRecommendations) {
+        console.log('🎯 Starting AI recommendation analysis for PDF...');
+        console.log('📄 Document:', content.title || content.originalName || 'Document.pdf');
+        console.log('📝 Content length:', pdfTextContent.length);
+
+        setIsLoadingRecommendations(true);
+        try {
+          const fileName = content.title || content.originalName || 'Document.pdf';
+          const recs = await learningModeRecommendationService.getRecommendedModes(pdfTextContent, fileName);
+          setRecommendations(recs);
+          console.log('✅ AI Recommendations loaded successfully:', recs);
+          console.log('🎯 Recommended modes:', recs.map(r => r.mode).join(', '));
+        } catch (error) {
+          console.error('❌ Error loading recommendations:', error);
+          // Fallback recommendations
+          const fallbackRecs = [
+            { "mode": "AI Narrator", "reason": "Great starting point for any document" },
+            { "mode": "Visual Learning", "reason": "Visual aids enhance understanding" }
+          ];
+          setRecommendations(fallbackRecs);
+          console.log('🔄 Using fallback recommendations:', fallbackRecs);
+        } finally {
+          setIsLoadingRecommendations(false);
+        }
+      }
+    };
+
+    loadRecommendations();
+  }, [pdfTextContent, content.title, content.originalName]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -353,7 +425,7 @@ const CleanPDFViewer = ({
               disabled={isAITutorLoading}
               onMouseEnter={() => setShowTooltip('AI Narrator')}
               onMouseLeave={() => setShowTooltip(null)}
-              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 text-sm"
+              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('AI Narrator') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
             >
               {isAITutorLoading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -383,7 +455,7 @@ const CleanPDFViewer = ({
               disabled={isVisualLearningLoading}
               onMouseEnter={() => setShowTooltip('Visual Learning')}
               onMouseLeave={() => setShowTooltip(null)}
-              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm"
+              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Visual Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
             >
               {isVisualLearningLoading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -414,7 +486,7 @@ const CleanPDFViewer = ({
               disabled={isSequentialLearningLoading}
               onMouseEnter={() => setShowTooltip('Sequential Learning')}
               onMouseLeave={() => setShowTooltip(null)}
-              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm"
+              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Sequential Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
             >
               {isSequentialLearningLoading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -444,7 +516,7 @@ const CleanPDFViewer = ({
               disabled={isGlobalLearningLoading}
               onMouseEnter={() => setShowTooltip('Global Learning')}
               onMouseLeave={() => setShowTooltip(null)}
-              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 text-sm"
+              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Global Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
             >
               {isGlobalLearningLoading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -474,7 +546,7 @@ const CleanPDFViewer = ({
               disabled={isSensingLearningLoading}
               onMouseEnter={() => setShowTooltip('Hands-On Lab')}
               onMouseLeave={() => setShowTooltip(null)}
-              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-green-600 text-white rounded-lg hover:from-teal-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 text-sm"
+              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-green-600 text-white rounded-lg hover:from-teal-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Hands-On Lab') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
             >
               {isSensingLearningLoading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -504,7 +576,7 @@ const CleanPDFViewer = ({
               onMouseEnter={() => setShowTooltip('Concept Constellation')}
               onMouseLeave={() => setShowTooltip(null)}
             disabled={isIntuitiveLearningLoading}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all duration-200 disabled:opacity-50 text-sm"
+            className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Concept Constellation') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
           >
             {isIntuitiveLearningLoading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -534,7 +606,7 @@ const CleanPDFViewer = ({
               disabled={isActiveLearningLoading}
               onMouseEnter={() => setShowTooltip('Active Learning Hub')}
               onMouseLeave={() => setShowTooltip(null)}
-              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-lg hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 disabled:opacity-50 text-sm"
+              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-lg hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Active Learning Hub') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
             >
               {isActiveLearningLoading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -564,7 +636,7 @@ const CleanPDFViewer = ({
               disabled={isReflectiveLearningLoading}
               onMouseEnter={() => setShowTooltip('Reflective Learning')}
               onMouseLeave={() => setShowTooltip(null)}
-              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 text-sm"
+              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Reflective Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
             >
               {isReflectiveLearningLoading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
