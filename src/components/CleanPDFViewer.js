@@ -13,6 +13,50 @@ import {
   ArrowsPointingInIcon
 } from '@heroicons/react/24/outline';
 
+// Tooltip data for learning modes
+const tooltipData = {
+  'AI Narrator': {
+    title: 'AI Narrator',
+    description: 'Listen to AI-powered narration of your document. Perfect for auditory learners and multitasking while learning.',
+    icon: '🎙️'
+  },
+  'Visual Learning': {
+    title: 'Visual Learning',
+    description: 'Transform content into visual formats like diagrams, flowcharts, and infographics. See concepts come to life.',
+    icon: '🎨'
+  },
+  'Sequential Learning': {
+    title: 'Sequential Learning',
+    description: 'Learn step-by-step in a logical, linear progression. Perfect for building foundational knowledge systematically.',
+    icon: '📚'
+  },
+  'Global Learning': {
+    title: 'Global Learning',
+    description: 'See the big picture first, then dive into details. Understand how concepts interconnect and relate to each other.',
+    icon: '🌍'
+  },
+  'Hands-On Lab': {
+    title: 'Hands-On Lab (Sensing)',
+    description: 'Learn through practical experiments, real-world examples, and concrete applications. Experience concepts in action.',
+    icon: '🧪'
+  },
+  'Concept Constellation': {
+    title: 'Concept Constellation (Intuitive)',
+    description: 'Discover patterns, explore theories, and make innovative connections. Think abstractly and creatively.',
+    icon: '👁️'
+  },
+  'Active Learning Hub': {
+    title: 'Active Learning Hub',
+    description: 'Engage actively through discussions, problem-solving, and hands-on activities. Learn by doing and experimenting.',
+    icon: '✋'
+  },
+  'Reflective Learning': {
+    title: 'Reflective Learning Processor',
+    description: 'Think deeply, observe carefully, and learn through contemplation. Process information thoughtfully before acting.',
+    icon: '🤔'
+  }
+};
+
 const CleanPDFViewer = ({ 
   content, 
   onAITutorClick,
@@ -40,6 +84,7 @@ const CleanPDFViewer = ({
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showTooltip, setShowTooltip] = useState(null);
 
   // Refs
   const iframeRef = useRef(null);
@@ -302,89 +347,162 @@ const CleanPDFViewer = ({
         {/* Center Section - AI Learning Modes */}
         <div className="flex items-center space-x-2">
           {/* AI Narrator */}
-          <button
-            onClick={onAITutorClick}
-            disabled={isAITutorLoading}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 text-sm"
-          >
-            {isAITutorLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l14 9-14 9V3z" />
-              </svg>
+          <div className="relative group">
+            <button
+              onClick={onAITutorClick}
+              disabled={isAITutorLoading}
+              onMouseEnter={() => setShowTooltip('AI Narrator')}
+              onMouseLeave={() => setShowTooltip(null)}
+              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 text-sm"
+            >
+              {isAITutorLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l14 9-14 9V3z" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">AI Narrator</span>
+            </button>
+            {showTooltip === 'AI Narrator' && (
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{tooltipData['AI Narrator'].icon}</span>
+                  <span className="font-semibold">{tooltipData['AI Narrator'].title}</span>
+                </div>
+                <p className="text-gray-300 leading-relaxed">{tooltipData['AI Narrator'].description}</p>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+              </div>
             )}
-            <span className="hidden sm:inline">AI Narrator</span>
-          </button>
+          </div>
 
           {/* Visual Learning */}
-          <button
-            onClick={onVisualLearningClick}
-            disabled={isVisualLearningLoading}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm"
-          >
-            {isVisualLearningLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
+          <div className="relative group">
+            <button
+              onClick={onVisualLearningClick}
+              disabled={isVisualLearningLoading}
+              onMouseEnter={() => setShowTooltip('Visual Learning')}
+              onMouseLeave={() => setShowTooltip(null)}
+              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm"
+            >
+              {isVisualLearningLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">Visual Learning</span>
+            </button>
+            {showTooltip === 'Visual Learning' && (
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{tooltipData['Visual Learning'].icon}</span>
+                  <span className="font-semibold">{tooltipData['Visual Learning'].title}</span>
+                </div>
+                <p className="text-gray-300 leading-relaxed">{tooltipData['Visual Learning'].description}</p>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+              </div>
             )}
-            <span className="hidden sm:inline">Visual Learning</span>
-          </button>
+          </div>
 
           {/* Sequential Learning */}
-          <button
-            onClick={onSequentialLearningClick}
-            disabled={isSequentialLearningLoading}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm"
-          >
-            {isSequentialLearningLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+          <div className="relative group">
+            <button
+              onClick={onSequentialLearningClick}
+              disabled={isSequentialLearningLoading}
+              onMouseEnter={() => setShowTooltip('Sequential Learning')}
+              onMouseLeave={() => setShowTooltip(null)}
+              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm"
+            >
+              {isSequentialLearningLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">Sequential</span>
+            </button>
+            {showTooltip === 'Sequential Learning' && (
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{tooltipData['Sequential Learning'].icon}</span>
+                  <span className="font-semibold">{tooltipData['Sequential Learning'].title}</span>
+                </div>
+                <p className="text-gray-300 leading-relaxed">{tooltipData['Sequential Learning'].description}</p>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+              </div>
             )}
-            <span className="hidden sm:inline">Sequential</span>
-          </button>
+          </div>
 
           {/* Global Learning */}
-          <button
-            onClick={onGlobalLearningClick}
-            disabled={isGlobalLearningLoading}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 text-sm"
-          >
-            {isGlobalLearningLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+          <div className="relative group">
+            <button
+              onClick={onGlobalLearningClick}
+              disabled={isGlobalLearningLoading}
+              onMouseEnter={() => setShowTooltip('Global Learning')}
+              onMouseLeave={() => setShowTooltip(null)}
+              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 text-sm"
+            >
+              {isGlobalLearningLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">Global</span>
+            </button>
+            {showTooltip === 'Global Learning' && (
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{tooltipData['Global Learning'].icon}</span>
+                  <span className="font-semibold">{tooltipData['Global Learning'].title}</span>
+                </div>
+                <p className="text-gray-300 leading-relaxed">{tooltipData['Global Learning'].description}</p>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+              </div>
             )}
-            <span className="hidden sm:inline">Global</span>
-          </button>
+          </div>
 
           {/* Sensing Learning */}
-          <button
-            onClick={onSensingLearningClick}
-            disabled={isSensingLearningLoading}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-green-600 text-white rounded-lg hover:from-teal-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 text-sm"
-          >
-            {isSensingLearningLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
+          <div className="relative group">
+            <button
+              onClick={onSensingLearningClick}
+              disabled={isSensingLearningLoading}
+              onMouseEnter={() => setShowTooltip('Hands-On Lab')}
+              onMouseLeave={() => setShowTooltip(null)}
+              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-green-600 text-white rounded-lg hover:from-teal-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 text-sm"
+            >
+              {isSensingLearningLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">Sensing</span>
+            </button>
+            {showTooltip === 'Hands-On Lab' && (
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{tooltipData['Hands-On Lab'].icon}</span>
+                  <span className="font-semibold">{tooltipData['Hands-On Lab'].title}</span>
+                </div>
+                <p className="text-gray-300 leading-relaxed">{tooltipData['Hands-On Lab'].description}</p>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+              </div>
             )}
-            <span className="hidden sm:inline">Sensing</span>
-          </button>
+          </div>
 
           {/* Intuitive Learning */}
-          <button
-            onClick={onIntuitiveLearningClick}
+          <div className="relative group">
+            <button
+              onClick={onIntuitiveLearningClick}
+              onMouseEnter={() => setShowTooltip('Concept Constellation')}
+              onMouseLeave={() => setShowTooltip(null)}
             disabled={isIntuitiveLearningLoading}
             className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all duration-200 disabled:opacity-50 text-sm"
           >
@@ -397,38 +515,77 @@ const CleanPDFViewer = ({
             )}
             <span className="hidden sm:inline">Intuitive</span>
           </button>
+          {showTooltip === 'Concept Constellation' && (
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">{tooltipData['Concept Constellation'].icon}</span>
+                <span className="font-semibold">{tooltipData['Concept Constellation'].title}</span>
+              </div>
+              <p className="text-gray-300 leading-relaxed">{tooltipData['Concept Constellation'].description}</p>
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+            </div>
+          )}
+          </div>
 
           {/* Active Learning */}
-          <button
-            onClick={onActiveLearningClick}
-            disabled={isActiveLearningLoading}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-lg hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 disabled:opacity-50 text-sm"
-          >
-            {isActiveLearningLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-              </svg>
+          <div className="relative group">
+            <button
+              onClick={onActiveLearningClick}
+              disabled={isActiveLearningLoading}
+              onMouseEnter={() => setShowTooltip('Active Learning Hub')}
+              onMouseLeave={() => setShowTooltip(null)}
+              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-lg hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 disabled:opacity-50 text-sm"
+            >
+              {isActiveLearningLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">Active</span>
+            </button>
+            {showTooltip === 'Active Learning Hub' && (
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{tooltipData['Active Learning Hub'].icon}</span>
+                  <span className="font-semibold">{tooltipData['Active Learning Hub'].title}</span>
+                </div>
+                <p className="text-gray-300 leading-relaxed">{tooltipData['Active Learning Hub'].description}</p>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+              </div>
             )}
-            <span className="hidden sm:inline">Active</span>
-          </button>
+          </div>
 
           {/* Reflective Learning */}
-          <button
-            onClick={onReflectiveLearningClick}
-            disabled={isReflectiveLearningLoading}
-            className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 text-sm"
-          >
-            {isReflectiveLearningLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
+          <div className="relative group">
+            <button
+              onClick={onReflectiveLearningClick}
+              disabled={isReflectiveLearningLoading}
+              onMouseEnter={() => setShowTooltip('Reflective Learning')}
+              onMouseLeave={() => setShowTooltip(null)}
+              className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 text-sm"
+            >
+              {isReflectiveLearningLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">Reflective</span>
+            </button>
+            {showTooltip === 'Reflective Learning' && (
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{tooltipData['Reflective Learning'].icon}</span>
+                  <span className="font-semibold">{tooltipData['Reflective Learning'].title}</span>
+                </div>
+                <p className="text-gray-300 leading-relaxed">{tooltipData['Reflective Learning'].description}</p>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+              </div>
             )}
-            <span className="hidden sm:inline">Reflective</span>
-          </button>
+          </div>
         </div>
 
         {/* Right Section - Zoom and Actions */}
