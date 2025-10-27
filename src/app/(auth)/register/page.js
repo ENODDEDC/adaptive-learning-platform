@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import TermsModal from '@/components/TermsModal';
+import PrivacyModal from '@/components/PrivacyModal';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -22,6 +24,8 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const router = useRouter();
   const canvasRef = useRef(null);
 
@@ -432,9 +436,13 @@ export default function RegisterPage() {
                       />
                       <span>
                         I agree to the{' '}
-                        <Link href="/terms" className="text-blue-400 hover:text-blue-300 underline">
+                        <button
+                          type="button"
+                          onClick={() => setShowTermsModal(true)}
+                          className="text-blue-400 hover:text-blue-300 underline"
+                        >
                           Terms and Conditions
-                        </Link>
+                        </button>
                       </span>
                     </label>
                     <label className="flex items-start gap-3 text-sm text-white/80 cursor-pointer">
@@ -446,9 +454,13 @@ export default function RegisterPage() {
                       />
                       <span>
                         I agree to the{' '}
-                        <Link href="/privacy" className="text-blue-400 hover:text-blue-300 underline">
+                        <button
+                          type="button"
+                          onClick={() => setShowPrivacyModal(true)}
+                          className="text-blue-400 hover:text-blue-300 underline"
+                        >
                           Privacy Policy
-                        </Link>
+                        </button>
                       </span>
                     </label>
                   </div>
@@ -573,17 +585,29 @@ export default function RegisterPage() {
           <div className="text-center mt-4 text-xs text-white/50">
             <p>
               By creating an account, you agree to our{' '}
-              <Link href="/terms" className="text-blue-400 hover:text-blue-300">
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(true)}
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
                 Terms
-              </Link>{' '}
+              </button>{' '}
               and{' '}
-              <Link href="/privacy" className="text-blue-400 hover:text-blue-300">
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(true)}
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
                 Privacy Policy
-              </Link>
+              </button>
             </p>
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
+      <PrivacyModal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
 
       {/* Floating Elements */}
       <div className="absolute top-1/4 left-10 animate-float-slow opacity-20">
