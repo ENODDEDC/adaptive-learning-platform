@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Models
+models/*.pkl
+models/*.joblib
+!models/.gitkeep
+
+# Data
+data/*.csv
+data/*.json
+!data/.gitkeep
+!data/synthetic_data.csv
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local

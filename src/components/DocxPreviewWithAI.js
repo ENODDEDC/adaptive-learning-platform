@@ -20,6 +20,7 @@ import IntuitiveLearning from './IntuitiveLearning';
 import ActiveLearning from './ActiveLearning';
 import ReflectiveLearning from './ReflectiveLearning';
 import learningModeRecommendationService from '../services/learningModeRecommendationService';
+import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 
 // Add CSS for animations
 const tooltipStyles = `
@@ -97,6 +98,10 @@ const DocxPreviewWithAI = ({
   const [panelPosition, setPanelPosition] = useState({ x: 16, y: 16 }); // Initial position (top-left)
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  // Automatic time tracking for ML classification
+  useLearningModeTracking('aiNarrator', aiTutorActive);
+  useLearningModeTracking('visualLearning', showVisualOverlay);
 
   // Recommendation system state
   const [recommendations, setRecommendations] = useState([]);

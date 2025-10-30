@@ -11,9 +11,11 @@ import {
   GlobeAltIcon,
   PaperClipIcon,
   ArrowUpIcon,
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 import EmptyState from '@/components/EmptyState';
 import { useLayout } from '../../context/LayoutContext';
+import LearningStyleWidget from '@/components/LearningStyleWidget';
 
 export default function Home() {
   const { openCreateCourseModal, openJoinCourseModal, shouldRefreshCourses } = useLayout();
@@ -29,6 +31,8 @@ export default function Home() {
   const [promptText, setPromptText] = useState('');
   const [currentCreatedCourseIndex, setCurrentCreatedCourseIndex] = useState(0);
   const [currentEnrolledCourseIndex, setCurrentEnrolledCourseIndex] = useState(0);
+  const [learningProfile, setLearningProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   const recentActivities = [];
 
@@ -40,8 +44,41 @@ export default function Home() {
   useEffect(() => {
     if (user) {
       fetchUserCourses();
+      fetchLearningProfile();
     }
   }, [user, shouldRefreshCourses]);
+
+  const fetchLearningProfile = async () => {
+    if (!user) return;
+    
+    setLoadingProfile(true);
+    try {
+      const res = await fetch('/api/learning-style/profile');
+      if (res.ok) {
+        const result = await res.json();
+        console.log('Learning profile response:', result);
+        
+        // Check if user has a profile (either from questionnaire or ML)
+        if (result.success && result.data && result.data.hasProfile) {
+          // Format profile data for the widget
+          const profileData = {
+            dimensions: result.data.profile.dimensions,
+            confidence: result.data.profile.confidence,
+            recommendedModes: result.data.profile.recommendedModes?.map(r => r.mode || r) || [],
+            lastUpdated: result.data.profile.lastPrediction,
+            source: result.data.profile.classificationMethod || 'unknown'
+          };
+          setLearningProfile(profileData);
+        } else {
+          setLearningProfile(null);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching learning profile:', err);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
 
   useEffect(() => {
     if (currentCreatedCourseIndex >= createdCourses.length - 1) {
@@ -500,6 +537,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Learning Style Profile Widget */}
+      <LearningStyleWidget profile={learningProfile} loading={loadingProfile} />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 gap-8 mx-4 lg:grid-cols-3 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>

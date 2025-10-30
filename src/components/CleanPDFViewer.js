@@ -512,7 +512,11 @@ const CleanPDFViewer = ({
           {/* Global Learning */}
           <div className="relative group">
             <button
-              onClick={onGlobalLearningClick}
+              onClick={() => {
+                console.log('🔘 Global Learning button clicked in CleanPDFViewer');
+                console.log('📞 Calling onGlobalLearningClick:', typeof onGlobalLearningClick);
+                onGlobalLearningClick?.();
+              }}
               disabled={isGlobalLearningLoading}
               onMouseEnter={() => setShowTooltip('Global Learning')}
               onMouseLeave={() => setShowTooltip(null)}

@@ -13,6 +13,8 @@ import {
   StarIcon,
   BoltIcon
 } from '@heroicons/react/24/outline';
+import { trackBehavior } from '@/utils/learningBehaviorTracker';
+import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 
 const IntuitiveLearning = ({
   isActive,
@@ -29,6 +31,9 @@ const IntuitiveLearning = ({
   const [selectedInsight, setSelectedInsight] = useState(null);
   const [universeView, setUniverseView] = useState('constellation');
   const [insightView, setInsightView] = useState('moments');
+
+  // Automatic time tracking for ML classification
+  useLearningModeTracking('intuitiveLearning', isActive);
 
   const tabs = [
     {
@@ -62,6 +67,8 @@ const IntuitiveLearning = ({
   useEffect(() => {
     if (isActive && docxContent) {
       generateIntuitivContent();
+      // Track mode activation
+      trackBehavior('mode_activated', { mode: 'intuitive', fileName });
     }
   }, [isActive, docxContent]);
 
@@ -187,7 +194,10 @@ const IntuitiveLearning = ({
               return (
                 <button
                   key={view.key}
-                  onClick={() => setUniverseView(view.key)}
+                  onClick={() => {
+                    setUniverseView(view.key);
+                    trackBehavior('tab_switched', { mode: 'intuitive', tab: view.key });
+                  }}
                   className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
                     isActive
                       ? 'border-indigo-500 bg-indigo-50 text-indigo-900'
@@ -260,7 +270,10 @@ const IntuitiveLearning = ({
                   {cluster.concepts?.map((concept, conceptIndex) => (
                     <button
                       key={conceptIndex}
-                      onClick={() => setSelectedConcept(concept)}
+                      onClick={() => {
+                        setSelectedConcept(concept);
+                        trackBehavior('concept_explored', { mode: 'intuitive', conceptName: concept.name });
+                      }}
                       className="w-full bg-white bg-opacity-5 backdrop-blur-sm rounded-lg p-3 border border-white border-opacity-10 hover:bg-opacity-15 transition-all text-left group"
                     >
                       <div className="flex items-start gap-3">

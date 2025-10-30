@@ -11,6 +11,8 @@ import {
   LightBulbIcon,
   PuzzlePieceIcon
 } from '@heroicons/react/24/outline';
+import { trackBehavior } from '@/utils/learningBehaviorTracker';
+import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 
 const GlobalLearning = ({
   isActive,
@@ -21,6 +23,9 @@ const GlobalLearning = ({
   const [activeTab, setActiveTab] = useState('bigpicture');
   const [bigPicture, setBigPicture] = useState(null);
   const [interconnections, setInterconnections] = useState(null);
+
+  // Automatic time tracking for ML classification
+  useLearningModeTracking('globalLearning', isActive);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -42,6 +47,8 @@ const GlobalLearning = ({
   useEffect(() => {
     if (isActive && docxContent) {
       generateGlobalContent();
+      // Track mode activation
+      trackBehavior('mode_activated', { mode: 'global', fileName });
     }
   }, [isActive, docxContent]);
 
@@ -701,7 +708,14 @@ const GlobalLearning = ({
     );
   };
 
-  if (!isActive) return null;
+  console.log('🌍 GlobalLearning render - isActive:', isActive, 'docxContent length:', docxContent?.length);
+  
+  if (!isActive) {
+    console.log('❌ GlobalLearning NOT rendering (isActive is false)');
+    return null;
+  }
+
+  console.log('✅ GlobalLearning IS rendering!');
 
   return (
     <div className="fixed inset-0 bg-white z-[10001] flex flex-col">

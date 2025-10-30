@@ -14,6 +14,8 @@ import {
   CalculatorIcon,
   PuzzlePieceIcon
 } from '@heroicons/react/24/outline';
+import { trackBehavior } from '@/utils/learningBehaviorTracker';
+import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 
 const SensingLearning = ({
   isActive,
@@ -30,6 +32,9 @@ const SensingLearning = ({
   const [activeChallenge, setActiveChallenge] = useState(0);
   const [simulationInputs, setSimulationInputs] = useState({});
   const [challengeProgress, setChallengeProgress] = useState({});
+
+  // Automatic time tracking for ML classification
+  useLearningModeTracking('sensingLearning', isActive);
 
   const tabs = [
     {
@@ -49,6 +54,8 @@ const SensingLearning = ({
   useEffect(() => {
     if (isActive && docxContent) {
       generateSensingContent();
+      // Track mode activation
+      trackBehavior('mode_activated', { mode: 'sensing', fileName });
     }
   }, [isActive, docxContent]);
 
@@ -121,6 +128,13 @@ const SensingLearning = ({
         [elementName]: value
       }
     }));
+    // Track interaction
+    trackBehavior('interactive_element_used', { 
+      mode: 'sensing', 
+      elementType: 'simulation_input',
+      elementName,
+      value 
+    });
   };
 
   const handleChallengeStepComplete = (challengeIndex, stepIndex) => {
@@ -131,6 +145,12 @@ const SensingLearning = ({
         currentStep: Math.max(prev[challengeIndex]?.currentStep || 0, stepIndex + 1)
       }
     }));
+    // Track step completion
+    trackBehavior('step_completed', { 
+      mode: 'sensing', 
+      challengeIndex, 
+      stepIndex 
+    });
   };
 
   const handleCheckpointComplete = (challengeIndex, checkpointIndex) => {
@@ -148,6 +168,12 @@ const SensingLearning = ({
           completedCheckpoints: newCheckpoints
         }
       };
+    });
+    // Track checkpoint completion
+    trackBehavior('checkpoint_completed', { 
+      mode: 'sensing', 
+      challengeIndex, 
+      checkpointIndex 
     });
   };
 

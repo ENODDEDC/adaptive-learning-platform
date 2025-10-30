@@ -16,6 +16,8 @@ import {
     CheckCircleIcon,
     ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import { trackBehavior } from '@/utils/learningBehaviorTracker';
+import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 
 /**
  * Active Learning Component - Evidence-Based Implementation
@@ -88,12 +90,23 @@ const ActiveLearning = ({
         }
     ];
 
+    // Track learning mode usage
     // Generate active learning content when component loads
     useEffect(() => {
         if (isActive && docxContent && !processingData && !loading) {
             generateActiveProcessingContent();
         }
     }, [isActive, docxContent]);
+
+    // Track mode activation
+    // Automatic time tracking for ML classification
+    useLearningModeTracking('activeLearning', isActive);
+
+    useEffect(() => {
+        if (isActive && docxContent) {
+            trackBehavior('mode_activated', { mode: 'active', fileName });
+        }
+    }, [isActive, docxContent, fileName]);
 
     // Track engagement metrics
     useEffect(() => {
@@ -161,6 +174,10 @@ const ActiveLearning = ({
 
     const handleDiscussionSubmit = async () => {
         if (!userInput.trim()) return;
+
+        // Track discussion participation
+        // Track discussion participation
+        trackBehavior('discussion_participated', { mode: 'active', phase: activePhase });
 
         const newEntry = {
             type: 'user',
@@ -547,7 +564,10 @@ const ActiveLearning = ({
                     {learningPhases.map((phase) => (
                         <button
                             key={phase.key}
-                            onClick={() => setActivePhase(phase.key)}
+                            onClick={() => {
+                                setActivePhase(phase.key);
+                                trackBehavior('tab_switched', { mode: 'active', tab: phase.key });
+                            }}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activePhase === phase.key
                                 ? 'bg-white text-blue-700 shadow-md'
                                 : 'text-blue-100 hover:bg-white hover:bg-opacity-20'

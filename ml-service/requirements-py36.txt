@@ -1,0 +1,19 @@
+# ML Service Dependencies for Python 3.6
+# Compatible versions for older Python
+
+# Core ML Libraries
+scikit-learn==0.24.2
+xgboost==1.4.2
+numpy==1.19.5
+pandas==0.25.3
+
+# API Framework
+flask==2.0.3
+flask-cors==3.0.10
+werkzeug==2.0.3
+
+# Data Processing
+joblib==1.0.1
+
+# Utilities
+python-dotenv==0.19.2

@@ -10,6 +10,8 @@ import {
   MapIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
+import { trackBehavior } from '@/utils/learningBehaviorTracker';
+import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 
 const SequentialLearning = ({
   isActive,
@@ -20,6 +22,9 @@ const SequentialLearning = ({
   const [activeTab, setActiveTab] = useState('steps');
   const [steps, setSteps] = useState([]);
   const [conceptFlow, setConceptFlow] = useState([]);
+
+  // Automatic time tracking for ML classification
+  useLearningModeTracking('sequentialLearning', isActive);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
@@ -42,6 +47,8 @@ const SequentialLearning = ({
   useEffect(() => {
     if (isActive && docxContent) {
       generateSequentialContent();
+      // Track mode activation
+      trackBehavior('mode_activated', { mode: 'sequential', fileName });
     }
   }, [isActive, docxContent]);
 
@@ -218,7 +225,11 @@ const SequentialLearning = ({
           {/* Navigation */}
           <div className="flex items-center justify-between">
             <button
-              onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+              onClick={() => {
+                const newStep = Math.max(0, currentStep - 1);
+                setCurrentStep(newStep);
+                trackBehavior('step_navigation', { mode: 'sequential', direction: 'previous', step: newStep });
+              }}
               disabled={currentStep === 0}
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -239,7 +250,11 @@ const SequentialLearning = ({
             </div>
 
             <button
-              onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+              onClick={() => {
+                const newStep = Math.min(steps.length - 1, currentStep + 1);
+                setCurrentStep(newStep);
+                trackBehavior('step_navigation', { mode: 'sequential', direction: 'next', step: newStep });
+              }}
               disabled={currentStep === steps.length - 1}
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -256,7 +271,10 @@ const SequentialLearning = ({
             {steps.map((step, index) => (
               <div
                 key={index}
-                onClick={() => setCurrentStep(index)}
+                onClick={() => {
+                  setCurrentStep(index);
+                  trackBehavior('step_navigation', { mode: 'sequential', direction: 'jump', step: index });
+                }}
                 className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                   index === currentStep
                     ? 'border-blue-500 bg-blue-50'
@@ -541,7 +559,10 @@ const SequentialLearning = ({
               return (
                 <div key={tab.key} className="relative">
                   <button
-                    onClick={() => setActiveTab(tab.key)}
+                    onClick={() => {
+                      setActiveTab(tab.key);
+                      trackBehavior('tab_switched', { mode: 'sequential', tab: tab.key });
+                    }}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                       isActive
                         ? 'bg-blue-600 text-white shadow-md'

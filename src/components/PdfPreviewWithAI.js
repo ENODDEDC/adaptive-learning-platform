@@ -17,6 +17,7 @@ import SensingLearning from './SensingLearning';
 import IntuitiveLearning from './IntuitiveLearning';
 import ActiveLearning from './ActiveLearning';
 import ReflectiveLearning from './ReflectiveLearning';
+import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 
 /**
  * PDF Preview Component with AI Narrator Integration
@@ -63,6 +64,10 @@ const PdfPreviewWithAI = ({
   const [tutorMode, setTutorMode] = useState('');
   const [panelPosition, setPanelPosition] = useState({ x: 16, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
+
+  // Automatic time tracking for ML classification
+  useLearningModeTracking('aiNarrator', aiTutorActive);
+  useLearningModeTracking('visualLearning', showVisualContent);
 
   // Ref for floating notes
   const floatingNotesRef = useRef(null);
@@ -569,19 +574,34 @@ Sequential Learning works best with instructional content, lessons, or study mat
 
   // Global Learning Handler
   const handleGlobalLearningClick = async () => {
+    console.log('🌍 === GLOBAL LEARNING BUTTON CLICKED ===');
+    console.log('📊 Current state:', {
+      showGlobalLearning,
+      pdfContent: pdfContent?.length || 0,
+      isGlobalLearningLoading
+    });
+    
     try {
+      console.log('🔄 Step 1: Setting loading state...');
       setIsGlobalLearningLoading(true);
+      
+      console.log('📄 Step 2: Extracting PDF content...');
       const extractedContent = pdfContent || await extractPdfContent();
+      console.log('✅ Content extracted, length:', extractedContent?.length);
 
       if (!extractedContent || !extractedContent.trim()) {
+        console.error('❌ No content extracted!');
         setGlobalLearningError('Failed to extract PDF content for global learning.');
         setIsGlobalLearningLoading(false);
         return;
       }
 
+      console.log('🔍 Step 3: Analyzing content for educational value...');
       const analysisResult = await analyzeContentForEducational(extractedContent);
+      console.log('📊 Analysis result:', analysisResult);
 
       if (!analysisResult.isEducational) {
+        console.warn('⚠️ Content not educational, showing error');
         const errorMessage = `This document does not appear to contain educational or learning material suitable for global learning. 
 
 AI Analysis: ${analysisResult.reasoning}
@@ -595,13 +615,19 @@ Global Learning works best with instructional content, lessons, or study materia
         return;
       }
 
+      console.log('✅ Step 4: Content approved! Setting PDF content...');
       setPdfContent(extractedContent);
+      
+      console.log('🎯 Step 5: Setting showGlobalLearning to TRUE...');
       setShowGlobalLearning(true);
+      
+      console.log('✅ === GLOBAL LEARNING SHOULD NOW BE VISIBLE ===');
 
     } catch (error) {
-      console.error('Error analyzing content for global learning:', error);
+      console.error('❌ Error in handleGlobalLearningClick:', error);
       setGlobalLearningError(`Error analyzing document: ${error.message}`);
     } finally {
+      console.log('🏁 Step 6: Clearing loading state...');
       setIsGlobalLearningLoading(false);
     }
   };

@@ -29,8 +29,12 @@ import {
     CircleStackIcon,
     WrenchScrewdriverIcon
 } from '@heroicons/react/24/outline';
+import { trackBehavior } from '@/utils/learningBehaviorTracker';
+import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 
 const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
+    // Automatic time tracking for ML classification
+    useLearningModeTracking('reflectiveLearning', isActive);
     const [activePhase, setActivePhase] = useState('absorption');
     const [processingData, setProcessingData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -93,6 +97,13 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
             features: ['Thought Journey Documentation', 'Insight Portfolio', 'Metacognitive Assessment']
         }
     ];
+
+    // Track learning mode usage
+    useEffect(() => {
+        if (isActive && docxContent) {
+            trackBehavior('mode_activated', { mode: 'reflective', fileName });
+        }
+    }, [isActive, docxContent, fileName]);
 
     useEffect(() => {
         if (isActive && docxContent && !processingData && !loading) {
@@ -224,7 +235,10 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
                     {learningPhases.map((phase) => (
                         <button
                             key={phase.key}
-                            onClick={() => setActivePhase(phase.key)}
+                            onClick={() => {
+                                setActivePhase(phase.key);
+                                trackBehavior('tab_switched', { mode: 'reflective', tab: phase.key });
+                            }}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activePhase === phase.key
                                 ? 'bg-white text-indigo-700 shadow-md'
                                 : 'text-indigo-100 hover:bg-white hover:bg-opacity-20'
