@@ -1,334 +1,481 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { CpuChipIcon, SwatchIcon, ViewfinderCircleIcon } from '@heroicons/react/24/outline';
+import { CogIcon, ChartBarIcon, ArrowPathIcon, CheckCircleIcon, SparklesIcon, AcademicCapIcon, LightBulbIcon, EyeIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 
 const LearningPreferences = () => {
-  const [preferences, setPreferences] = useState({
-    cardSize: 'medium',
-    gridColumns: 'auto',
-    compactMode: false,
-    showProgress: true,
-    showStats: true,
-    theme: 'auto',
-    animationSpeed: 'normal',
-    autoAdjustLayout: true,
-    learningRate: 0.1,
-    confidenceThreshold: 0.7
-  });
-  const [isSaving, setIsSaving] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [showResetModal, setShowResetModal] = useState(false);
 
-  // Load preferences on component mount
   useEffect(() => {
-    loadPreferences();
+    fetchProfile();
   }, []);
 
-  const loadPreferences = async () => {
+  const fetchProfile = async () => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/user/preferences');
+      const res = await fetch('/api/learning-style/profile');
       if (res.ok) {
         const data = await res.json();
-        if (data.preferences) {
-          setPreferences(prev => ({ ...prev, ...data.preferences.layoutPreferences }));
+        // API returns data.data.profile and data.data.dataQuality separately
+        const profileData = data.data?.profile || data.profile;
+        
+        // Merge dataQuality into profile for easier access
+        if (data.data?.dataQuality && profileData) {
+          profileData.dataQuality = data.data.dataQuality;
         }
+        
+        // If dataQuality is still missing or has 0 values, fetch from behavior tracking
+        if (profileData && (!profileData.dataQuality || profileData.dataQuality.totalInteractions === 0)) {
+          try {
+            const behaviorRes = await fetch('/api/learning-behavior/track');
+            if (behaviorRes.ok) {
+              const behaviorData = await behaviorRes.json();
+              if (behaviorData.success && behaviorData.data) {
+                profileData.dataQuality = {
+                  totalInteractions: behaviorData.data.totalInteractions || 0,
+                  dataCompleteness: behaviorData.data.dataQuality?.completeness || 0,
+                  sufficientForML: behaviorData.data.hasSufficientData || false
+                };
+              }
+            }
+          } catch (error) {
+            console.log('Could not fetch behavior data:', error);
+          }
+        }
+        
+        setProfile(profileData);
       }
     } catch (error) {
-      console.error('Failed to load preferences:', error);
+      console.error('Failed to fetch profile:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handlePreferenceChange = (key, value) => {
-    setPreferences(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
+  const handleReset = async () => {
+    setShowResetModal(false);
+    setResetting(true);
+    setMessage({ type: '', text: '' });
 
-  const handleSavePreferences = async () => {
-    setIsSaving(true);
     try {
-      const res = await fetch('/api/user/preferences', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          layoutPreferences: preferences
-        }),
+      const res = await fetch('/api/reset-learning-profile', {
+        method: 'DELETE'  // Use DELETE method like test-ml-tracking
       });
 
       if (res.ok) {
-        // Success feedback
-        console.log('Preferences saved successfully');
+        // Clear the profile to show "not classified" message
+        // Don't fetch again - there's nothing to show after reset
+        setProfile({ lastPrediction: null, dimensions: null });
+        setMessage({ type: 'success', text: 'Learning profile reset successfully! Your data has been cleared.' });
       } else {
-        throw new Error('Failed to save preferences');
+        setMessage({ type: 'error', text: 'Failed to reset profile' });
       }
     } catch (error) {
-      console.error('Failed to save preferences:', error);
+      setMessage({ type: 'error', text: 'An error occurred' });
     } finally {
-      setIsSaving(false);
+      setResetting(false);
     }
   };
 
+  const getDimensionLabel = (value) => {
+    if (value === null || value === undefined) return 'Not classified yet';
+    const abs = Math.abs(value);
+    if (abs <= 3) return 'Balanced';
+    if (abs <= 7) return 'Moderate';
+    return 'Strong';
+  };
+
+  const getDimensionPreference = (dimension, value) => {
+    if (value === null || value === undefined) return 'Not determined';
+    
+    const preferences = {
+      activeReflective: value > 0 ? 'Active' : 'Reflective',
+      sensingIntuitive: value > 0 ? 'Sensing' : 'Intuitive',
+      visualVerbal: value > 0 ? 'Visual' : 'Verbal',
+      sequentialGlobal: value > 0 ? 'Sequential' : 'Global'
+    };
+    
+    return preferences[dimension] || 'Unknown';
+  };
+
+  // Create segmented bar visualization
+  const renderSegmentedBar = (value, leftColor, rightColor) => {
+    const percentage = ((value + 11) / 22) * 100;
+    const segments = 22;
+    const activeSegment = Math.round((percentage / 100) * segments);
+    
+    return (
+      <div className="flex gap-1">
+        {Array.from({ length: segments }).map((_, i) => {
+          const isActive = i < activeSegment;
+          const isLeft = i < segments / 2;
+          return (
+            <div
+              key={i}
+              className={`h-8 flex-1 rounded transition-all duration-300 ${
+                isActive
+                  ? isLeft
+                    ? `${leftColor} shadow-sm`
+                    : `${rightColor} shadow-sm`
+                  : 'bg-gray-200'
+              }`}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <p className="text-sm text-gray-600">Loading your learning profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      {/* Layout Preferences */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <ViewfinderCircleIcon className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Layout Preferences</h3>
-              <p className="text-sm text-gray-600">Customize how content is displayed</p>
-            </div>
-          </div>
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <CogIcon className="w-8 h-8 text-blue-600" />
+            Learning Preferences
+          </h2>
+          <p className="mt-2 text-gray-600">
+            Your personalized learning style based on ML analysis
+          </p>
         </div>
-
-        <div className="p-6 space-y-6">
-          {/* Card Size */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Card Size
-            </label>
-            <div className="grid grid-cols-4 gap-3">
-              {['small', 'medium', 'large', 'featured'].map((size) => (
-                <button
-                  key={size}
-                  onClick={() => handlePreferenceChange('cardSize', size)}
-                  className={`p-3 border-2 rounded-lg text-center transition-all ${
-                    preferences.cardSize === size
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className={`w-8 h-8 mx-auto mb-2 rounded ${
-                    size === 'small' ? 'bg-gray-300' :
-                    size === 'medium' ? 'bg-blue-400' :
-                    size === 'large' ? 'bg-green-400' : 'bg-purple-400'
-                  }`} />
-                  <span className="text-xs font-medium capitalize">{size}</span>
-                </button>
-              ))}
+        {profile && profile.lastPrediction && profile.dimensions && profile.dataQuality?.totalInteractions > 0 && (
+          <div className="text-right">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border-2 border-blue-200 rounded-lg">
+              <SparklesIcon className="w-5 h-5 text-blue-600" />
+              <span className="text-sm font-semibold text-blue-900">
+                {profile.classificationMethod === 'ml-prediction' ? 'ML Classified' : 'Rule-Based'}
+              </span>
             </div>
           </div>
-
-          {/* Grid Columns */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Grid Columns
-            </label>
-            <select
-              value={preferences.gridColumns}
-              onChange={(e) => handlePreferenceChange('gridColumns', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="auto">Auto</option>
-              <option value="2">2 Columns</option>
-              <option value="3">3 Columns</option>
-              <option value="4">4 Columns</option>
-              <option value="5">5 Columns</option>
-            </select>
-          </div>
-
-          {/* Display Options */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-700">Compact Mode</p>
-                <p className="text-xs text-gray-500">Show more content in less space</p>
-              </div>
-              <button
-                onClick={() => handlePreferenceChange('compactMode', !preferences.compactMode)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  preferences.compactMode ? 'bg-purple-600' : 'bg-gray-200'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    preferences.compactMode ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-700">Show Progress</p>
-                <p className="text-xs text-gray-500">Display progress bars on course cards</p>
-              </div>
-              <button
-                onClick={() => handlePreferenceChange('showProgress', !preferences.showProgress)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  preferences.showProgress ? 'bg-purple-600' : 'bg-gray-200'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    preferences.showProgress ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-700">Show Statistics</p>
-                <p className="text-xs text-gray-500">Display course statistics and metrics</p>
-              </div>
-              <button
-                onClick={() => handlePreferenceChange('showStats', !preferences.showStats)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  preferences.showStats ? 'bg-purple-600' : 'bg-gray-200'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    preferences.showStats ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* AI & Adaptive Settings */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <CpuChipIcon className="w-5 h-5 text-blue-600" />
+      {message.text && (
+        <div className={`p-4 rounded-lg flex items-center gap-3 border-2 ${
+          message.type === 'success' 
+            ? 'bg-green-50 border-green-300 text-green-800' 
+            : 'bg-red-50 border-red-300 text-red-800'
+        }`}>
+          <CheckCircleIcon className="w-6 h-6 flex-shrink-0" />
+          <span className="font-medium">{message.text}</span>
+        </div>
+      )}
+
+      {/* Learning Style Dimensions */}
+      {profile && profile.lastPrediction && profile.dataQuality?.totalInteractions > 0 ? (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 pb-4 border-b-2 border-gray-200">
+            <ChartBarIcon className="w-6 h-6 text-gray-700" />
+            <h3 className="text-xl font-bold text-gray-900">FSLSM Learning Style Dimensions</h3>
+          </div>
+
+          {/* Active/Reflective */}
+          <div className="bg-white border-2 border-blue-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <AcademicCapIcon className="w-6 h-6 text-blue-700" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900">Active / Reflective</h4>
+                  <p className="text-sm text-gray-600">How you process information</p>
+                </div>
+              </div>
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold border border-blue-300">
+                {getDimensionLabel(profile.dimensions.activeReflective)}
+              </span>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">AI & Adaptive Settings</h3>
-              <p className="text-sm text-gray-600">Configure how the AI learns from your behavior</p>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                <span>Active</span>
+                <span>Reflective</span>
+              </div>
+              {renderSegmentedBar(profile.dimensions.activeReflective, 'bg-blue-500', 'bg-blue-700')}
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                <p className="text-sm font-bold text-blue-700">
+                  Your preference: {getDimensionPreference('activeReflective', profile.dimensions.activeReflective)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Sensing/Intuitive */}
+          <div className="bg-white border-2 border-green-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <LightBulbIcon className="w-6 h-6 text-green-700" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900">Sensing / Intuitive</h4>
+                  <p className="text-sm text-gray-600">How you perceive information</p>
+                </div>
+              </div>
+              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold border border-green-300">
+                {getDimensionLabel(profile.dimensions.sensingIntuitive)}
+              </span>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                <span>Sensing</span>
+                <span>Intuitive</span>
+              </div>
+              {renderSegmentedBar(profile.dimensions.sensingIntuitive, 'bg-green-500', 'bg-green-700')}
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                <p className="text-sm font-bold text-green-700">
+                  Your preference: {getDimensionPreference('sensingIntuitive', profile.dimensions.sensingIntuitive)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Visual/Verbal */}
+          <div className="bg-white border-2 border-purple-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <EyeIcon className="w-6 h-6 text-purple-700" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900">Visual / Verbal</h4>
+                  <p className="text-sm text-gray-600">How you receive information</p>
+                </div>
+              </div>
+              <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold border border-purple-300">
+                {getDimensionLabel(profile.dimensions.visualVerbal)}
+              </span>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                <span>Visual</span>
+                <span>Verbal</span>
+              </div>
+              {renderSegmentedBar(profile.dimensions.visualVerbal, 'bg-purple-500', 'bg-purple-700')}
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                <p className="text-sm font-bold text-purple-700">
+                  Your preference: {getDimensionPreference('visualVerbal', profile.dimensions.visualVerbal)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Sequential/Global */}
+          <div className="bg-white border-2 border-orange-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-orange-100 rounded-lg">
+                  <BookOpenIcon className="w-6 h-6 text-orange-700" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900">Sequential / Global</h4>
+                  <p className="text-sm text-gray-600">How you understand information</p>
+                </div>
+              </div>
+              <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-semibold border border-orange-300">
+                {getDimensionLabel(profile.dimensions.sequentialGlobal)}
+              </span>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                <span>Sequential</span>
+                <span>Global</span>
+              </div>
+              {renderSegmentedBar(profile.dimensions.sequentialGlobal, 'bg-orange-500', 'bg-orange-700')}
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <div className="w-2 h-2 bg-orange-600 rounded-full"></div>
+                <p className="text-sm font-bold text-orange-700">
+                  Your preference: {getDimensionPreference('sequentialGlobal', profile.dimensions.sequentialGlobal)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Recommended Modes */}
+          {profile.recommendedModes && profile.recommendedModes.length > 0 && (
+            <div className="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <SparklesIcon className="w-5 h-5 text-indigo-600" />
+                Recommended Learning Modes
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {profile.recommendedModes.map((mode, index) => (
+                  <div key={index} className="bg-white rounded-lg p-4 flex items-center gap-3 border-2 border-indigo-100 hover:border-indigo-300 transition-colors">
+                    <div className="flex-shrink-0 w-10 h-10 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-bold text-lg">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900">{mode.mode}</p>
+                      {mode.confidence && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+                              style={{ width: `${mode.confidence * 100}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs text-gray-600 font-medium w-12 text-right">
+                            {Math.round(mode.confidence * 100)}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Classification Info */}
+          <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6">
+            <h3 className="font-bold text-gray-900 mb-4">Classification Details</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+                <p className="text-2xl font-bold text-gray-900 mb-1">
+                  {profile.classificationMethod === 'ml-prediction' ? '🤖' : '📋'}
+                </p>
+                <p className="text-xs text-gray-600">Method</p>
+                <p className="text-sm font-semibold text-gray-900 mt-1">
+                  {profile.classificationMethod === 'ml-prediction' ? 'ML' : 'Rule-Based'}
+                </p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+                <p className="text-2xl font-bold text-gray-900 mb-1">📅</p>
+                <p className="text-xs text-gray-600">Last Updated</p>
+                <p className="text-sm font-semibold text-gray-900 mt-1">
+                  {profile.lastPrediction 
+                    ? new Date(profile.lastPrediction).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    : 'Never'}
+                </p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+                <p className="text-2xl font-bold text-blue-600 mb-1">
+                  {profile.dataQuality?.totalInteractions || 0}
+                </p>
+                <p className="text-xs text-gray-600">Total</p>
+                <p className="text-sm font-semibold text-gray-900 mt-1">Interactions</p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+                <p className="text-2xl font-bold text-green-600 mb-1">
+                  {profile.dataQuality?.dataCompleteness || 0}%
+                </p>
+                <p className="text-xs text-gray-600">Data</p>
+                <p className="text-sm font-semibold text-gray-900 mt-1">Quality</p>
+              </div>
             </div>
           </div>
         </div>
-
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-700">Auto-Adjust Layout</p>
-              <p className="text-xs text-gray-500">Let AI optimize your interface based on usage patterns</p>
-            </div>
-            <button
-              onClick={() => handlePreferenceChange('autoAdjustLayout', !preferences.autoAdjustLayout)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                preferences.autoAdjustLayout ? 'bg-blue-600' : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  preferences.autoAdjustLayout ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+      ) : (
+        <div className="text-center py-16 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-200 rounded-full mb-4">
+            <ChartBarIcon className="w-8 h-8 text-gray-500" />
           </div>
-
-          {/* Learning Rate */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Learning Rate: {preferences.learningRate}
-            </label>
-            <input
-              type="range"
-              min="0.01"
-              max="1.0"
-              step="0.01"
-              value={preferences.learningRate}
-              onChange={(e) => handlePreferenceChange('learningRate', parseFloat(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Slow</span>
-              <span>Fast</span>
-            </div>
-          </div>
-
-          {/* Confidence Threshold */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Confidence Threshold: {Math.round(preferences.confidenceThreshold * 100)}%
-            </label>
-            <input
-              type="range"
-              min="0.1"
-              max="1.0"
-              step="0.01"
-              value={preferences.confidenceThreshold}
-              onChange={(e) => handlePreferenceChange('confidenceThreshold', parseFloat(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Low</span>
-              <span>High</span>
-            </div>
-          </div>
+          <p className="text-gray-800 font-semibold mb-2 text-lg">
+            Your learning style hasn't been classified yet
+          </p>
+          <p className="text-gray-600 mb-1">
+            Use the learning modes to build your profile!
+          </p>
+          <p className="text-sm text-gray-500">
+            Need at least 10 interactions for ML classification
+          </p>
         </div>
-      </div>
+      )}
 
-      {/* Theme & Animation */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-              <SwatchIcon className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Theme & Animation</h3>
-              <p className="text-sm text-gray-600">Customize the visual appearance</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Theme
-            </label>
-            <select
-              value={preferences.theme}
-              onChange={(e) => handlePreferenceChange('theme', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="auto">Auto</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Animation Speed
-            </label>
-            <select
-              value={preferences.animationSpeed}
-              onChange={(e) => handlePreferenceChange('animationSpeed', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="slow">Slow</option>
-              <option value="normal">Normal</option>
-              <option value="fast">Fast</option>
-              <option value="none">None</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
+      {/* Reset Button */}
+      <div className="border-t-2 border-gray-200 pt-6">
         <button
-          onClick={handleSavePreferences}
-          disabled={isSaving}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => setShowResetModal(true)}
+          disabled={resetting}
+          className="flex items-center gap-3 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 shadow-md hover:shadow-lg transition-all"
         >
-          {isSaving ? 'Saving...' : 'Save Preferences'}
+          <ArrowPathIcon className={`w-5 h-5 ${resetting ? 'animate-spin' : ''}`} />
+          <span className="font-semibold">{resetting ? 'Resetting...' : 'Reset Learning Profile'}</span>
         </button>
+        <p className="mt-3 text-sm text-gray-600">
+          This will clear all your learning behavior data and start fresh
+        </p>
       </div>
+
+      {/* Custom Reset Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-red-100 rounded-full">
+                <ArrowPathIcon className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Reset Learning Profile?</h3>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700 mb-3">
+                Are you sure you want to reset your learning profile? This action will:
+              </p>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500 mt-0.5">•</span>
+                  <span>Clear all your learning behavior data</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500 mt-0.5">•</span>
+                  <span>Remove your ML learning style classification</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500 mt-0.5">•</span>
+                  <span>Reset all interaction tracking</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-500 mt-0.5">•</span>
+                  <span>Start your learning profile from scratch</span>
+                </li>
+              </ul>
+              <div className="mt-4 p-3 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800 font-medium">
+                  ⚠️ This action cannot be undone!
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetModal(false)}
+                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReset}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors"
+              >
+                Yes, Reset Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
