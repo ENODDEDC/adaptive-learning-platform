@@ -1,8 +1,13 @@
 import connectMongoDB from '@/config/mongoConfig';
 import Course from '@/models/Course';
 import User from '@/models/User';
+import Invitation from '@/models/Invitation';
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/utils/auth';
+import { sendEmail } from '@/utils/sendEmail';
+import { render } from '@react-email/render';
+import CourseInvitationEmail from '@/emails/CourseInvitationEmail';
+import crypto from 'crypto';
 
 export async function POST(request, { params }) {
   try {
@@ -11,19 +16,14 @@ export async function POST(request, { params }) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     const currentUserId = payload.userId;
+    const currentUser = await User.findById(currentUserId);
 
     await connectMongoDB();
+    const { email, role } = await request.json();
     const { id } = params;
-    const { email, role } = await request.json(); // role can be 'student' or 'coTeacher'
 
     if (!email || !role) {
       return NextResponse.json({ message: 'Email and role are required' }, { status: 400 });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ message: 'Invalid email format' }, { status: 400 });
     }
 
     const course = await Course.findById(id);
@@ -31,45 +31,48 @@ export async function POST(request, { params }) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
     }
 
-    // Only the course creator can invite people
     if (course.createdBy.toString() !== currentUserId) {
-      return NextResponse.json({ message: 'Forbidden: Only course creator can invite people' }, { status: 403 });
+      return NextResponse.json({ message: 'Forbidden: Only the course creator can invite people' }, { status: 403 });
     }
 
-    // Find user by email
-    const userToInvite = await User.findOne({ email: email.toLowerCase() });
-    if (!userToInvite) {
-      return NextResponse.json({
-        message: 'User with this email address does not exist. They must register first before being invited.'
-      }, { status: 404 });
+    const invitee = await User.findOne({ email: email.toLowerCase() });
+    if (invitee) {
+      const isEnrolled = course.enrolledUsers.includes(invitee._id);
+      const isCoTeacher = course.coTeachers.includes(invitee._id);
+      if (isEnrolled || isCoTeacher) {
+        return NextResponse.json({ message: 'User is already in this course' }, { status: 409 });
+      }
     }
 
-    // Check if user is already in the course
-    if (role === 'student') {
-      if (course.enrolledUsers.includes(userToInvite._id)) {
-        return NextResponse.json({ message: 'User is already enrolled in this course' }, { status: 409 });
-      }
-      course.enrolledUsers.push(userToInvite._id);
-    } else if (role === 'coTeacher') {
-      if (course.coTeachers.includes(userToInvite._id)) {
-        return NextResponse.json({ message: 'User is already a co-teacher for this course' }, { status: 409 });
-      }
-      course.coTeachers.push(userToInvite._id);
-    } else {
-      return NextResponse.json({ message: 'Invalid role specified. Must be \'student\' or \'coTeacher\'.' }, { status: 400 });
+    const existingInvitation = await Invitation.findOne({ courseId: id, inviteeEmail: email.toLowerCase(), status: 'pending' });
+    if (existingInvitation) {
+      return NextResponse.json({ message: 'An invitation has already been sent to this email address.' }, { status: 409 });
     }
 
-    await course.save();
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
-    return NextResponse.json({
-      message: `${userToInvite.name} ${userToInvite.surname} has been successfully added as a ${role} to the course`,
-      user: {
-        _id: userToInvite._id,
-        name: userToInvite.name,
-        surname: userToInvite.surname,
-        email: userToInvite.email
-      }
-    }, { status: 200 });
+    const acceptUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/courses/accept-invitation?token=${token}`;
+
+    const emailHtml = await render(<CourseInvitationEmail courseName={course.subject} inviterName={`${currentUser.name} ${currentUser.surname}`} acceptUrl={acceptUrl} />);
+
+    await sendEmail({
+      to: email,
+      subject: `You're invited to join ${course.subject}`,
+      html: emailHtml,
+    });
+
+    const invitation = new Invitation({
+      courseId: id,
+      invitedBy: currentUserId,
+      inviteeEmail: email.toLowerCase(),
+      role,
+      token,
+      expiresAt,
+    });
+    await invitation.save();
+
+    return NextResponse.json({ message: `Invitation sent to ${email}` }, { status: 200 });
   } catch (error) {
     console.error('Invite User to Course Error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

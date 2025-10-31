@@ -28,13 +28,11 @@ const InviteModal = ({ isOpen, onClose, onInvite, role, courseName }) => {
 
     try {
       const result = await onInvite(email.trim().toLowerCase(), role);
-      setSuccess(result.message);
+      setSuccess(`An invitation has been sent to ${email.trim().toLowerCase()}.`);
       setEmail('');
-      // Close modal after a short delay to show success message
       setTimeout(() => {
-        onClose();
-        setSuccess('');
-      }, 2000);
+        handleClose();
+      }, 3000);
     } catch (error) {
       setError(error.message || 'Failed to send invitation');
     } finally {

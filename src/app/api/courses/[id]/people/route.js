@@ -3,6 +3,7 @@ import Course from '@/models/Course';
 import User from '@/models/User';
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/utils/auth';
+import Invitation from '@/models/Invitation';
 
 export async function POST(request, { params }) {
   try {
@@ -70,23 +71,32 @@ export async function GET(request, { params }) {
     const { id } = params;
 
     const course = await Course.findById(id)
-      .populate('enrolledUsers', 'name email')
-      .populate('coTeachers', 'name email');
+      .populate('enrolledUsers', 'name email surname')
+      .populate('coTeachers', 'name email surname')
+      .populate('createdBy', 'name surname');
 
     if (!course) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
     }
 
-    // Verify user has access to the course (enrolled, creator, or co-teacher)
-    const isCreator = course.createdBy.toString() === currentUserId;
+    const isCreator = course.createdBy ? course.createdBy._id.toString() === currentUserId : false;
     const isEnrolled = course.enrolledUsers.some(user => user._id.toString() === currentUserId);
     const isCoTeacher = course.coTeachers.some(user => user._id.toString() === currentUserId);
 
     if (!isCreator && !isEnrolled && !isCoTeacher) {
-      return NextResponse.json({ message: 'Forbidden: User not authorized to view this course\'s people' }, { status: 403 });
+      return NextResponse.json({ message: 'Forbidden: You are not authorized to view this course\'s people' }, { status: 403 });
     }
 
-    return NextResponse.json({ enrolledUsers: course.enrolledUsers, coTeachers: course.coTeachers }, { status: 200 });
+    const pendingInvitations = await Invitation.find({ courseId: id, status: 'pending' });
+
+    const people = {
+      creator: course.createdBy,
+      coTeachers: course.coTeachers,
+      students: course.enrolledUsers,
+      pending: pendingInvitations,
+    };
+
+    return NextResponse.json(people, { status: 200 });
   } catch (error) {
     console.error('Get Course People Error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
