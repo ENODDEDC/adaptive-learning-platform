@@ -101,6 +101,10 @@ class LearningBehaviorTracker {
     }
     
     console.log(`📊 Tracking started: ${modeName}`);
+    
+    // 🚀 IMMEDIATELY send batch to trigger auto-classification
+    // This ensures the API receives the interaction count right away
+    this.sendBatch();
   }
   
   /**
@@ -337,7 +341,16 @@ class LearningBehaviorTracker {
         // Re-queue failed events
         this.batchQueue.unshift(...batch);
       } else {
+        const result = await response.json();
         console.log(`📤 Sent ${batch.length} behavior events`);
+        
+        // Log classification status
+        if (result.data?.classificationTriggered) {
+          console.log('🎉 AUTO-CLASSIFICATION TRIGGERED! Your learning style has been determined.');
+          console.log('💡 Refresh the page to see your personalized recommendations!');
+        } else if (result.data?.needsClassification) {
+          console.log('⚠️ Classification was attempted but may have failed');
+        }
       }
     } catch (error) {
       console.error('Error sending behavior data:', error);

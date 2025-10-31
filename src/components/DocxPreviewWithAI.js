@@ -99,9 +99,8 @@ const DocxPreviewWithAI = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
-  // Automatic time tracking for ML classification
-  useLearningModeTracking('aiNarrator', aiTutorActive);
-  useLearningModeTracking('visualLearning', showVisualOverlay);
+  // Note: Tracking is handled by individual modal components (SequentialLearning, GlobalLearning, etc.)
+  // Each modal has its own useLearningModeTracking hook to avoid double-counting
 
   // Recommendation system state
   const [recommendations, setRecommendations] = useState([]);

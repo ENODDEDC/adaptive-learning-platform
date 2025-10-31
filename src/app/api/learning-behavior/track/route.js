@@ -104,13 +104,135 @@ export async function POST(request) {
     
     await profile.save();
 
+    // 🎯 AUTO-TRIGGER CLASSIFICATION when threshold is reached
+    let classificationTriggered = false;
+    
+    // Check if profile has been classified (lastPrediction is the key indicator)
+    // Dimensions always exist with default 0 values, so we check lastPrediction instead
+    const hasBeenClassified = profile.lastPrediction != null;
+    const timeSinceLastPrediction = hasBeenClassified 
+      ? Date.now() - new Date(profile.lastPrediction).getTime()
+      : Infinity;
+    
+    console.log('🔍 Auto-classification check:', {
+      hasSufficientData,
+      hasBeenClassified,
+      lastPrediction: profile.lastPrediction,
+      timeSinceLastPrediction: hasBeenClassified ? `${Math.round(timeSinceLastPrediction / 1000 / 60)} minutes` : 'never',
+      totalInteractions
+    });
+    
+    // Trigger if: (1) has sufficient data AND (2) never been classified OR (3) hasn't been classified in 24 hours
+    const needsClassification = hasSufficientData && (
+      !hasBeenClassified || 
+      timeSinceLastPrediction > 24 * 60 * 60 * 1000
+    );
+    
+    if (needsClassification) {
+      console.log('🎯 Threshold reached! Auto-triggering ML classification...');
+      console.log('📊 Reason:', {
+        noDimensions: !hasDimensions,
+        noPrediction: !profile.lastPrediction,
+        oldPrediction: profile.lastPrediction && (Date.now() - new Date(profile.lastPrediction).getTime() > 24 * 60 * 60 * 1000)
+      });
+      try {
+        // Import services
+        const featureEngineeringService = (await import('@/services/featureEngineeringService')).default;
+        const ruleBasedLabelingService = (await import('@/services/ruleBasedLabelingService')).default;
+        const mlClassificationService = (await import('@/services/mlClassificationService')).default;
+        
+        // Calculate features
+        const featuresResult = await featureEngineeringService.calculateFeatures(userId);
+        
+        // Get aggregated behavior data
+        const behaviors = await LearningBehavior.find({ userId }).sort({ timestamp: -1 });
+        const aggregated = {
+          modeUsage: {
+            aiNarrator: { count: 0, totalTime: 0 },
+            visualLearning: { count: 0, totalTime: 0 },
+            sequentialLearning: { count: 0, totalTime: 0 },
+            globalLearning: { count: 0, totalTime: 0 },
+            sensingLearning: { count: 0, totalTime: 0 },
+            intuitiveLearning: { count: 0, totalTime: 0 },
+            activeLearning: { count: 0, totalTime: 0 },
+            reflectiveLearning: { count: 0, totalTime: 0 }
+          }
+        };
+        
+        behaviors.forEach(b => {
+          Object.keys(aggregated.modeUsage).forEach(mode => {
+            aggregated.modeUsage[mode].count += b.modeUsage[mode]?.count || 0;
+            aggregated.modeUsage[mode].totalTime += b.modeUsage[mode]?.totalTime || 0;
+          });
+        });
+        
+        // Try ML classification
+        let classification;
+        let recommendations;
+        let classificationMethod = 'rule-based';
+        
+        const mlHealth = await mlClassificationService.checkMLServiceHealth();
+        if (mlHealth.available) {
+          const mlFeatures = featureEngineeringService.convertToMLFormat(featuresResult, aggregated);
+          const mlResult = await mlClassificationService.getMLPrediction(mlFeatures);
+          
+          if (mlResult.success) {
+            classification = {
+              dimensions: mlResult.predictions,
+              confidence: mlResult.confidence,
+              method: 'ml-prediction',
+              dataQuality: featuresResult.dataQuality
+            };
+            classificationMethod = 'ml-prediction';
+            recommendations = ruleBasedLabelingService.generateRecommendations(classification);
+            console.log('✅ ML classification successful:', mlResult.predictions);
+          } else {
+            classification = await ruleBasedLabelingService.classifyLearningStyle(userId);
+            recommendations = ruleBasedLabelingService.generateRecommendations(classification);
+            console.log('📋 Fallback to rule-based classification');
+          }
+        } else {
+          classification = await ruleBasedLabelingService.classifyLearningStyle(userId);
+          recommendations = ruleBasedLabelingService.generateRecommendations(classification);
+          console.log('📋 Using rule-based classification (ML unavailable)');
+        }
+        
+        // Update profile with classification
+        profile.dimensions = classification.dimensions;
+        profile.confidence = classification.confidence;
+        profile.recommendedModes = recommendations;
+        profile.classificationMethod = classificationMethod;
+        profile.lastPrediction = new Date();
+        profile.predictionCount = (profile.predictionCount || 0) + 1;
+        
+        await profile.save();
+        classificationTriggered = true;
+        console.log('🎉 Auto-classification complete!');
+      } catch (error) {
+        console.error('❌ Auto-classification failed:', error);
+      }
+    }
+
+    // Log classification status for debugging
+    if (classificationTriggered) {
+      console.log('🎉 CLASSIFICATION TRIGGERED! User learning style has been determined.');
+    } else if (needsClassification) {
+      console.log('⚠️ Classification was needed but failed - check error logs above');
+    } else {
+      console.log('ℹ️ Classification not needed:', {
+        reason: !hasSufficientData ? 'insufficient data' : 'already classified recently'
+      });
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Behavior data tracked successfully',
       data: {
         totalInteractions,
         hasSufficientData,
-        dataCompleteness: profile.dataQuality.dataCompleteness
+        dataCompleteness: profile.dataQuality.dataCompleteness,
+        classificationTriggered,
+        needsClassification
       }
     });
 

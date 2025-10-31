@@ -15,6 +15,8 @@ export default function TrackingDebugPage() {
   const [rawBehaviors, setRawBehaviors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [classifying, setClassifying] = useState(false);
+  const [classificationResult, setClassificationResult] = useState(null);
 
   const fetchTrackingData = async () => {
     setLoading(true);
@@ -37,6 +39,39 @@ export default function TrackingDebugPage() {
       console.error('Error fetching tracking data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const triggerClassification = async () => {
+    setClassifying(true);
+    setClassificationResult(null);
+    try {
+      const response = await fetch('/api/learning-style/classify', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setClassificationResult({
+          success: true,
+          message: 'Classification successful!',
+          data: data.data
+        });
+        // Refresh data to show updated profile
+        await fetchTrackingData();
+      } else {
+        setClassificationResult({
+          success: false,
+          message: data.error || 'Classification failed'
+        });
+      }
+    } catch (error) {
+      setClassificationResult({
+        success: false,
+        message: error.message
+      });
+    } finally {
+      setClassifying(false);
     }
   };
 
@@ -101,6 +136,17 @@ export default function TrackingDebugPage() {
               />
               <span className="text-sm text-gray-700">Auto-refresh (2s)</span>
             </label>
+
+            {behaviorData && behaviorData.hasSufficientData && (
+              <button
+                onClick={triggerClassification}
+                disabled={classifying}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              >
+                <ChartBarIcon className={`w-5 h-5 ${classifying ? 'animate-pulse' : ''}`} />
+                {classifying ? 'Classifying...' : 'Trigger ML Classification'}
+              </button>
+            )}
           </div>
 
           {behaviorData && (
@@ -119,6 +165,52 @@ export default function TrackingDebugPage() {
             </div>
           )}
         </div>
+
+        {/* Classification Result */}
+        {classificationResult && (
+          <div className={`rounded-lg shadow-md p-4 mb-6 ${classificationResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+            <div className="flex items-start gap-3">
+              {classificationResult.success ? (
+                <CheckCircleIcon className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+              ) : (
+                <XCircleIcon className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1">
+                <h3 className={`font-semibold mb-2 ${classificationResult.success ? 'text-green-900' : 'text-red-900'}`}>
+                  {classificationResult.message}
+                </h3>
+                {classificationResult.success && classificationResult.data && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium text-green-800">Active/Reflective:</span>
+                        <span className="ml-2 text-green-700">{classificationResult.data.dimensions.activeReflective}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-green-800">Sensing/Intuitive:</span>
+                        <span className="ml-2 text-green-700">{classificationResult.data.dimensions.sensingIntuitive}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-green-800">Visual/Verbal:</span>
+                        <span className="ml-2 text-green-700">{classificationResult.data.dimensions.visualVerbal}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-green-800">Sequential/Global:</span>
+                        <span className="ml-2 text-green-700">{classificationResult.data.dimensions.sequentialGlobal}</span>
+                      </div>
+                    </div>
+                    <div className="text-sm text-green-700">
+                      <span className="font-medium">Method:</span> {classificationResult.data.method}
+                    </div>
+                    <div className="text-sm text-green-700">
+                      <span className="font-medium">Recommended Modes:</span> {classificationResult.data.recommendations?.map(r => r.mode).join(', ')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Summary Stats */}
         {behaviorData && (
