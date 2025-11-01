@@ -53,6 +53,14 @@ class LearningBehaviorTracker {
         activeLearning: { count: 0, totalTime: 0, lastUsed: null },
         reflectiveLearning: { count: 0, totalTime: 0, lastUsed: null }
       },
+      aiAssistantUsage: {
+        askMode: { count: 0, totalTime: 0, lastUsed: null },
+        researchMode: { count: 0, totalTime: 0, lastUsed: null },
+        textToDocsMode: { count: 0, totalTime: 0, lastUsed: null },
+        totalInteractions: 0,
+        averagePromptLength: 0,
+        totalPromptLength: 0
+      },
       contentInteractions: [],
       activityEngagement: {
         quizzesCompleted: 0,
@@ -289,6 +297,61 @@ class LearningBehaviorTracker {
       type: 'sequential_step_completed',
       timestamp: new Date()
     });
+  }
+  
+  /**
+   * Track AI Assistant mode selection
+   * @param {string} mode - 'ask', 'research', or 'textToDocs'
+   */
+  trackAIAssistantMode(mode) {
+    const modeKey = `${mode}Mode`;
+    
+    if (this.behaviorData.aiAssistantUsage[modeKey]) {
+      this.behaviorData.aiAssistantUsage[modeKey].count += 1;
+      this.behaviorData.aiAssistantUsage[modeKey].lastUsed = new Date();
+    }
+    
+    this.addToBatch({
+      type: 'ai_assistant_mode_selected',
+      mode,
+      timestamp: new Date()
+    });
+    
+    console.log(`🤖 AI Assistant mode selected: ${mode}`);
+  }
+  
+  /**
+   * Track AI Assistant interaction (prompt submission)
+   * @param {string} mode - 'ask', 'research', or 'textToDocs'
+   * @param {number} promptLength - Length of the prompt text
+   */
+  trackAIAssistantInteraction(mode, promptLength = 0) {
+    // Increment the specific mode count
+    const modeKey = `${mode}Mode`;
+    if (this.behaviorData.aiAssistantUsage[modeKey]) {
+      this.behaviorData.aiAssistantUsage[modeKey].count += 1;
+      this.behaviorData.aiAssistantUsage[modeKey].lastUsed = new Date();
+    }
+    
+    // Increment total interactions
+    this.behaviorData.aiAssistantUsage.totalInteractions += 1;
+    this.behaviorData.aiAssistantUsage.totalPromptLength += promptLength;
+    this.behaviorData.aiAssistantUsage.averagePromptLength = 
+      this.behaviorData.aiAssistantUsage.totalPromptLength / 
+      this.behaviorData.aiAssistantUsage.totalInteractions;
+    
+    this.addToBatch({
+      type: 'ai_assistant_interaction',
+      mode,
+      promptLength,
+      timestamp: new Date()
+    });
+    
+    console.log(`🤖 AI Assistant interaction: ${mode} (${promptLength} chars)`);
+    console.log('📊 Current AI Assistant data:', this.behaviorData.aiAssistantUsage);
+    
+    // Send batch immediately to trigger classification
+    this.sendBatch();
   }
   
   /**

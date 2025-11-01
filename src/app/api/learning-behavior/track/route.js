@@ -38,12 +38,22 @@ export async function POST(request) {
     // Find or create behavior document for this session
     let behavior = await LearningBehavior.findOne({ userId, sessionId });
 
+    console.log('📥 Received AI Assistant data:', behaviorData.aiAssistantUsage);
+
     if (!behavior) {
       // Create new behavior document
       behavior = new LearningBehavior({
         userId,
         sessionId,
         modeUsage: behaviorData.modeUsage,
+        aiAssistantUsage: behaviorData.aiAssistantUsage || {
+          askMode: { count: 0, totalTime: 0 },
+          researchMode: { count: 0, totalTime: 0 },
+          textToDocsMode: { count: 0, totalTime: 0 },
+          totalInteractions: 0,
+          averagePromptLength: 0,
+          totalPromptLength: 0
+        },
         contentInteractions: behaviorData.contentInteractions || [],
         activityEngagement: behaviorData.activityEngagement,
         deviceInfo: behaviorData.deviceInfo,
@@ -52,6 +62,7 @@ export async function POST(request) {
     } else {
       // Update existing behavior document
       behavior.modeUsage = behaviorData.modeUsage;
+      behavior.aiAssistantUsage = behaviorData.aiAssistantUsage || behavior.aiAssistantUsage;
       behavior.contentInteractions = [
         ...behavior.contentInteractions,
         ...(behaviorData.contentInteractions || [])
@@ -59,6 +70,8 @@ export async function POST(request) {
       behavior.activityEngagement = behaviorData.activityEngagement;
       behavior.timestamp = new Date();
     }
+    
+    console.log('💾 Saving AI Assistant data:', behavior.aiAssistantUsage);
 
     // Calculate preliminary feature scores
     const totalTime = behavior.getTotalLearningTime();
@@ -292,14 +305,52 @@ export async function GET(request) {
       reflectiveLearning: { count: 0, totalTime: 0 }
     };
 
+    // Aggregate AI Assistant usage
+    const aiAssistantUsage = {
+      askMode: { count: 0, totalTime: 0 },
+      researchMode: { count: 0, totalTime: 0 },
+      textToDocsMode: { count: 0, totalTime: 0 },
+      totalInteractions: 0,
+      averagePromptLength: 0,
+      totalPromptLength: 0
+    };
+
     behaviors.forEach(behavior => {
       Object.keys(modeUsage).forEach(mode => {
         modeUsage[mode].count += behavior.modeUsage[mode].count;
         modeUsage[mode].totalTime += behavior.modeUsage[mode].totalTime;
       });
+
+      // Aggregate AI Assistant data
+      if (behavior.aiAssistantUsage) {
+        aiAssistantUsage.askMode.count += behavior.aiAssistantUsage.askMode?.count || 0;
+        aiAssistantUsage.researchMode.count += behavior.aiAssistantUsage.researchMode?.count || 0;
+        aiAssistantUsage.textToDocsMode.count += behavior.aiAssistantUsage.textToDocsMode?.count || 0;
+        aiAssistantUsage.totalInteractions += behavior.aiAssistantUsage.totalInteractions || 0;
+        aiAssistantUsage.totalPromptLength += behavior.aiAssistantUsage.totalPromptLength || 0;
+      }
     });
 
+    // Recalculate total interactions from individual mode counts (more accurate)
+    const calculatedTotal = aiAssistantUsage.askMode.count + 
+                           aiAssistantUsage.researchMode.count + 
+                           aiAssistantUsage.textToDocsMode.count;
+    
+    // Use calculated total if it's greater (fixes stale data issue)
+    if (calculatedTotal > aiAssistantUsage.totalInteractions) {
+      aiAssistantUsage.totalInteractions = calculatedTotal;
+    }
+    
+    // Calculate average prompt length
+    if (aiAssistantUsage.totalInteractions > 0) {
+      aiAssistantUsage.averagePromptLength = 
+        aiAssistantUsage.totalPromptLength / aiAssistantUsage.totalInteractions;
+    }
+
+    console.log('📊 AI Assistant Usage Stats:', aiAssistantUsage);
+
     stats.modeUsageSummary = modeUsage;
+    stats.aiAssistantUsage = aiAssistantUsage;
 
     // Calculate total learning time across all modes
     stats.totalLearningTime = Object.values(modeUsage).reduce((sum, mode) => sum + mode.totalTime, 0);

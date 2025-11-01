@@ -16,6 +16,7 @@ import {
 import EmptyState from '@/components/EmptyState';
 import { useLayout } from '../../context/LayoutContext';
 import LearningStyleWidget from '@/components/LearningStyleWidget';
+import { getLearningBehaviorTracker } from '@/utils/learningBehaviorTracker';
 
 export default function Home() {
   const { openCreateCourseModal, openJoinCourseModal, shouldRefreshCourses } = useLayout();
@@ -154,10 +155,23 @@ export default function Home() {
   };
 
   const handleSubmit = () => {
-    if (selectedMode === 'Ask' && promptText.trim()) {
-      router.push(`/ask?q=${encodeURIComponent(promptText)}`);
-    } else if (selectedMode === 'Text to Docs' && promptText.trim()) {
-      router.push(`/text-to-docs?prompt=${encodeURIComponent(promptText)}`);
+    if (promptText.trim()) {
+      // Track AI Assistant interaction
+      const tracker = getLearningBehaviorTracker();
+      if (tracker) {
+        const modeMap = {
+          'Ask': 'ask',
+          'Research': 'research',
+          'Text to Docs': 'textToDocs'
+        };
+        tracker.trackAIAssistantInteraction(modeMap[selectedMode], promptText.length);
+      }
+      
+      if (selectedMode === 'Ask') {
+        router.push(`/ask?q=${encodeURIComponent(promptText)}`);
+      } else if (selectedMode === 'Text to Docs') {
+        router.push(`/text-to-docs?prompt=${encodeURIComponent(promptText)}`);
+      }
     }
   };
 
@@ -474,7 +488,11 @@ export default function Home() {
         <div className="flex items-center justify-between mt-4">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setSelectedMode('Ask')}
+              onClick={() => {
+                setSelectedMode('Ask');
+                const tracker = getLearningBehaviorTracker();
+                if (tracker) tracker.trackAIAssistantMode('ask');
+              }}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 ${
                 selectedMode === 'Ask'
                   ? 'text-blue-700 bg-blue-100 border-2 border-blue-200 shadow-sm'
@@ -484,7 +502,11 @@ export default function Home() {
               Ask
             </button>
             <button
-              onClick={() => setSelectedMode('Research')}
+              onClick={() => {
+                setSelectedMode('Research');
+                const tracker = getLearningBehaviorTracker();
+                if (tracker) tracker.trackAIAssistantMode('research');
+              }}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 ${
                 selectedMode === 'Research'
                   ? 'text-blue-700 bg-blue-100 border-2 border-blue-200 shadow-sm'
@@ -494,7 +516,11 @@ export default function Home() {
               Research
             </button>
             <button
-              onClick={() => setSelectedMode('Text to Docs')}
+              onClick={() => {
+                setSelectedMode('Text to Docs');
+                const tracker = getLearningBehaviorTracker();
+                if (tracker) tracker.trackAIAssistantMode('textToDocs');
+              }}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 ${
                 selectedMode === 'Text to Docs'
                   ? 'text-white bg-blue-600 shadow-lg border-2 border-blue-500'

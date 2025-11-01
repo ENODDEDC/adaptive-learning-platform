@@ -67,6 +67,14 @@ class FeatureEngineeringService {
         activeLearning: { count: 0, totalTime: 0 },
         reflectiveLearning: { count: 0, totalTime: 0 }
       },
+      aiAssistantUsage: {
+        askMode: { count: 0, totalTime: 0 },
+        researchMode: { count: 0, totalTime: 0 },
+        textToDocsMode: { count: 0, totalTime: 0 },
+        totalInteractions: 0,
+        averagePromptLength: 0,
+        totalPromptLength: 0
+      },
       activityEngagement: {
         quizzesCompleted: 0,
         practiceQuestionsAttempted: 0,
@@ -90,11 +98,26 @@ class FeatureEngineeringService {
         aggregated.modeUsage[mode].totalTime += behavior.modeUsage[mode]?.totalTime || 0;
       });
 
+      // Aggregate AI Assistant usage
+      if (behavior.aiAssistantUsage) {
+        aggregated.aiAssistantUsage.askMode.count += behavior.aiAssistantUsage.askMode?.count || 0;
+        aggregated.aiAssistantUsage.researchMode.count += behavior.aiAssistantUsage.researchMode?.count || 0;
+        aggregated.aiAssistantUsage.textToDocsMode.count += behavior.aiAssistantUsage.textToDocsMode?.count || 0;
+        aggregated.aiAssistantUsage.totalInteractions += behavior.aiAssistantUsage.totalInteractions || 0;
+        aggregated.aiAssistantUsage.totalPromptLength += behavior.aiAssistantUsage.totalPromptLength || 0;
+      }
+
       // Aggregate activity engagement
       Object.keys(aggregated.activityEngagement).forEach(activity => {
         aggregated.activityEngagement[activity] += behavior.activityEngagement[activity] || 0;
       });
     });
+    
+    // Calculate average prompt length
+    if (aggregated.aiAssistantUsage.totalInteractions > 0) {
+      aggregated.aiAssistantUsage.averagePromptLength = 
+        aggregated.aiAssistantUsage.totalPromptLength / aggregated.aiAssistantUsage.totalInteractions;
+    }
 
     // Calculate totals
     Object.values(aggregated.modeUsage).forEach(mode => {
@@ -113,6 +136,7 @@ class FeatureEngineeringService {
   calculateActiveReflectiveFeatures(aggregated) {
     const totalTime = aggregated.totalLearningTime || 1; // Avoid division by zero
     const totalActivities = aggregated.totalInteractions || 1;
+    const aiTotal = aggregated.aiAssistantUsage.totalInteractions || 1;
 
     return {
       // Primary indicators
@@ -127,7 +151,11 @@ class FeatureEngineeringService {
       groupActivityPreference: aggregated.activityEngagement.discussionParticipation / 
         (aggregated.activityEngagement.discussionParticipation + aggregated.activityEngagement.reflectionJournalEntries + 1),
       
-      immediateApplicationRate: aggregated.activityEngagement.practiceQuestionsAttempted / totalActivities
+      immediateApplicationRate: aggregated.activityEngagement.practiceQuestionsAttempted / totalActivities,
+      
+      // AI Assistant indicators (Ask mode = Active, Research mode = Reflective)
+      aiAskModeRatio: aggregated.aiAssistantUsage.askMode.count / aiTotal,
+      aiResearchModeRatio: aggregated.aiAssistantUsage.researchMode.count / aiTotal
     };
   }
 
@@ -139,6 +167,7 @@ class FeatureEngineeringService {
   calculateSensingIntuitiveFeatures(aggregated) {
     const totalTime = aggregated.totalLearningTime || 1;
     const totalActivities = aggregated.totalInteractions || 1;
+    const aiTotal = aggregated.aiAssistantUsage.totalInteractions || 1;
 
     return {
       // Primary indicators
@@ -153,7 +182,10 @@ class FeatureEngineeringService {
       concreteVsAbstractPreference: (aggregated.modeUsage.sensingLearning.totalTime + 1) / 
         (aggregated.modeUsage.intuitiveLearning.totalTime + 1),
       
-      experimentationFrequency: aggregated.activityEngagement.handsOnLabsCompleted / aggregated.sessionCount
+      experimentationFrequency: aggregated.activityEngagement.handsOnLabsCompleted / aggregated.sessionCount,
+      
+      // AI Assistant indicators (Text to Docs = Sensing, Research = Intuitive)
+      aiTextToDocsRatio: aggregated.aiAssistantUsage.textToDocsMode.count / aiTotal
     };
   }
 
@@ -320,21 +352,24 @@ class FeatureEngineeringService {
     const normalized = this.normalizeFeatures(features);
     
     return [
-      // Active vs Reflective (6 features)
+      // Active vs Reflective (8 features - added AI Assistant)
       normalized.activeLearningUsageRatio,
       normalized.reflectiveLearningUsageRatio,
       normalized.discussionParticipationRate,
       normalized.reflectionJournalFrequency,
       normalized.groupActivityPreference,
       normalized.immediateApplicationRate,
+      normalized.aiAskModeRatio || 0,
+      normalized.aiResearchModeRatio || 0,
       
-      // Sensing vs Intuitive (6 features)
+      // Sensing vs Intuitive (7 features - added AI Assistant)
       normalized.sensingLearningUsageRatio,
       normalized.intuitiveLearningUsageRatio,
       normalized.practicalLabCompletionRate,
       normalized.abstractPatternExplorationRate,
       normalized.concreteVsAbstractPreference,
       normalized.experimentationFrequency,
+      normalized.aiTextToDocsRatio || 0,
       
       // Visual vs Verbal (6 features)
       normalized.visualLearningUsageRatio,
@@ -359,24 +394,31 @@ class FeatureEngineeringService {
    */
   getFeatureNames() {
     return [
+      // Active vs Reflective (8 features)
       'activeLearningUsageRatio',
       'reflectiveLearningUsageRatio',
       'discussionParticipationRate',
       'reflectionJournalFrequency',
       'groupActivityPreference',
       'immediateApplicationRate',
+      'aiAskModeRatio',
+      'aiResearchModeRatio',
+      // Sensing vs Intuitive (7 features)
       'sensingLearningUsageRatio',
       'intuitiveLearningUsageRatio',
       'practicalLabCompletionRate',
       'abstractPatternExplorationRate',
       'concreteVsAbstractPreference',
       'experimentationFrequency',
+      'aiTextToDocsRatio',
+      // Visual vs Verbal (6 features)
       'visualLearningUsageRatio',
       'aiNarratorUsageRatio',
       'diagramViewFrequency',
       'audioNarrationUsage',
       'visualVsVerbalPreference',
       'visualAidEngagement',
+      // Sequential vs Global (6 features)
       'sequentialLearningUsageRatio',
       'globalLearningUsageRatio',
       'stepByStepCompletionRate',

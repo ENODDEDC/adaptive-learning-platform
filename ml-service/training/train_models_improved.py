@@ -51,18 +51,26 @@ def engineer_features(X, feature_cols):
     for col in ['activeModeRatio', 'sensingModeRatio', 'visualModeRatio', 'sequentialModeRatio']:
         df_features[f'{col}_squared'] = df_features[col] ** 2
     
+    # Add AI Assistant interaction features
+    if 'aiAskModeRatio' in df_features.columns:
+        df_features['ai_active_interaction'] = df_features['aiAskModeRatio'] * df_features['activeModeRatio']
+        df_features['ai_reflective_interaction'] = df_features['aiResearchModeRatio'] * df_features['reflectiveModeRatio']
+        df_features['ai_sensing_interaction'] = df_features['aiTextToDocsRatio'] * df_features['sensingModeRatio']
+    
     print(f"✅ Engineered features: {df_features.shape[1]} total features (added {df_features.shape[1] - len(feature_cols)})")
     
     return df_features.values, list(df_features.columns)
 
 def prepare_data(df):
     """Prepare features and labels"""
-    # Original feature columns (24 behavioral features)
+    # Original feature columns (27 behavioral features - includes AI Assistant)
     feature_cols = [
         'activeModeRatio', 'questionsGenerated', 'debatesParticipated',
         'reflectiveModeRatio', 'reflectionsWritten', 'journalEntries',
+        'aiAskModeRatio', 'aiResearchModeRatio',  # AI Assistant features
         'sensingModeRatio', 'simulationsCompleted', 'challengesCompleted',
         'intuitiveModeRatio', 'conceptsExplored', 'patternsDiscovered',
+        'aiTextToDocsRatio',  # AI Assistant feature
         'visualModeRatio', 'diagramsViewed', 'wireframesExplored',
         'verbalModeRatio', 'textRead', 'summariesCreated',
         'sequentialModeRatio', 'stepsCompleted', 'linearNavigation',

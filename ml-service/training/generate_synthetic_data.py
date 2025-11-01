@@ -31,6 +31,9 @@ def generate_features_from_profile(profile):
         features['reflectiveModeRatio'] = 1 - features['activeModeRatio']
         features['reflectionsWritten'] = np.random.randint(0, 10)
         features['journalEntries'] = np.random.randint(0, 5)
+        # AI Assistant: Active learners prefer Ask mode (quick questions)
+        features['aiAskModeRatio'] = np.random.uniform(0.6, 0.9)
+        features['aiResearchModeRatio'] = np.random.uniform(0.1, 0.4)
     elif profile['activeReflective'] > 3:  # Reflective preference
         features['activeModeRatio'] = np.random.uniform(0.1, 0.4)
         features['questionsGenerated'] = np.random.randint(0, 15)
@@ -38,6 +41,9 @@ def generate_features_from_profile(profile):
         features['reflectiveModeRatio'] = 1 - features['activeModeRatio']
         features['reflectionsWritten'] = np.random.randint(10, 40)
         features['journalEntries'] = np.random.randint(5, 20)
+        # AI Assistant: Reflective learners prefer Research mode (deep exploration)
+        features['aiAskModeRatio'] = np.random.uniform(0.1, 0.4)
+        features['aiResearchModeRatio'] = np.random.uniform(0.6, 0.9)
     else:  # Balanced
         features['activeModeRatio'] = np.random.uniform(0.4, 0.6)
         features['questionsGenerated'] = np.random.randint(5, 25)
@@ -45,6 +51,9 @@ def generate_features_from_profile(profile):
         features['reflectiveModeRatio'] = 1 - features['activeModeRatio']
         features['reflectionsWritten'] = np.random.randint(5, 20)
         features['journalEntries'] = np.random.randint(2, 10)
+        # AI Assistant: Balanced usage
+        features['aiAskModeRatio'] = np.random.uniform(0.4, 0.6)
+        features['aiResearchModeRatio'] = np.random.uniform(0.4, 0.6)
     
     # Sensing/Intuitive Features
     if profile['sensingIntuitive'] < -3:  # Sensing preference
@@ -54,6 +63,8 @@ def generate_features_from_profile(profile):
         features['intuitiveModeRatio'] = 1 - features['sensingModeRatio']
         features['conceptsExplored'] = np.random.randint(0, 10)
         features['patternsDiscovered'] = np.random.randint(0, 5)
+        # AI Assistant: Sensing learners prefer Text to Docs (practical outputs)
+        features['aiTextToDocsRatio'] = np.random.uniform(0.6, 0.9)
     elif profile['sensingIntuitive'] > 3:  # Intuitive preference
         features['sensingModeRatio'] = np.random.uniform(0.1, 0.4)
         features['simulationsCompleted'] = np.random.randint(0, 10)
@@ -61,6 +72,8 @@ def generate_features_from_profile(profile):
         features['intuitiveModeRatio'] = 1 - features['sensingModeRatio']
         features['conceptsExplored'] = np.random.randint(15, 50)
         features['patternsDiscovered'] = np.random.randint(10, 30)
+        # AI Assistant: Intuitive learners use less Text to Docs (prefer exploration)
+        features['aiTextToDocsRatio'] = np.random.uniform(0.1, 0.4)
     else:  # Balanced
         features['sensingModeRatio'] = np.random.uniform(0.4, 0.6)
         features['simulationsCompleted'] = np.random.randint(5, 20)
@@ -68,6 +81,8 @@ def generate_features_from_profile(profile):
         features['intuitiveModeRatio'] = 1 - features['sensingModeRatio']
         features['conceptsExplored'] = np.random.randint(5, 25)
         features['patternsDiscovered'] = np.random.randint(3, 15)
+        # AI Assistant: Balanced usage
+        features['aiTextToDocsRatio'] = np.random.uniform(0.4, 0.6)
     
     # Visual/Verbal Features
     if profile['visualVerbal'] < -3:  # Visual preference
@@ -150,8 +165,10 @@ def generate_dataset(n_samples=2500):
     feature_cols = [
         'activeModeRatio', 'questionsGenerated', 'debatesParticipated',
         'reflectiveModeRatio', 'reflectionsWritten', 'journalEntries',
+        'aiAskModeRatio', 'aiResearchModeRatio',  # AI Assistant features for Active/Reflective
         'sensingModeRatio', 'simulationsCompleted', 'challengesCompleted',
         'intuitiveModeRatio', 'conceptsExplored', 'patternsDiscovered',
+        'aiTextToDocsRatio',  # AI Assistant feature for Sensing/Intuitive
         'visualModeRatio', 'diagramsViewed', 'wireframesExplored',
         'verbalModeRatio', 'textRead', 'summariesCreated',
         'sequentialModeRatio', 'stepsCompleted', 'linearNavigation',
@@ -169,8 +186,8 @@ def main():
     data_dir = Path(__file__).parent.parent / 'data'
     data_dir.mkdir(exist_ok=True)
     
-    # Generate dataset with 2500 samples for better accuracy
-    df = generate_dataset(n_samples=2500)
+    # Generate dataset with 5000 samples for better accuracy
+    df = generate_dataset(n_samples=5000)
     
     # Save to CSV
     output_path = data_dir / 'training_data.csv'

@@ -127,6 +127,69 @@ const AnalyticsSettings = () => {
         </div>
       </div>
 
+      {/* AI Assistant Usage */}
+      {stats?.aiAssistantUsage && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <SparklesIcon className="w-6 h-6 text-blue-600" />
+            AI Assistant Usage
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* Ask Mode */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Ask Mode</span>
+                <span className="text-xs text-gray-500 bg-blue-100 px-2 py-1 rounded">Active</span>
+              </div>
+              <p className="text-2xl font-bold text-blue-600">
+                {stats.aiAssistantUsage.askMode?.count || 0}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Quick questions</p>
+            </div>
+
+            {/* Research Mode */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Research Mode</span>
+                <span className="text-xs text-gray-500 bg-purple-100 px-2 py-1 rounded">Reflective</span>
+              </div>
+              <p className="text-2xl font-bold text-purple-600">
+                {stats.aiAssistantUsage.researchMode?.count || 0}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Deep exploration</p>
+            </div>
+
+            {/* Text to Docs Mode */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Text to Docs</span>
+                <span className="text-xs text-gray-500 bg-green-100 px-2 py-1 rounded">Sensing</span>
+              </div>
+              <p className="text-2xl font-bold text-green-600">
+                {stats.aiAssistantUsage.textToDocsMode?.count || 0}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Practical outputs</p>
+            </div>
+          </div>
+
+          {/* AI Assistant Summary Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-sm text-gray-600 mb-1">Total Interactions</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.aiAssistantUsage.totalInteractions || 0}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-sm text-gray-600 mb-1">Avg. Prompt Length</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {Math.round(stats.aiAssistantUsage.averagePromptLength || 0)} chars
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mode Usage */}
       {stats?.modeUsageSummary && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">

@@ -57,6 +57,28 @@ const learningBehaviorSchema = new mongoose.Schema({
     }
   },
   
+  // AI Assistant Usage - tracks interactions with AI Assistant on home page
+  aiAssistantUsage: {
+    askMode: {
+      count: { type: Number, default: 0 },
+      totalTime: { type: Number, default: 0 },
+      lastUsed: { type: Date }
+    },
+    researchMode: {
+      count: { type: Number, default: 0 },
+      totalTime: { type: Number, default: 0 },
+      lastUsed: { type: Date }
+    },
+    textToDocsMode: {
+      count: { type: Number, default: 0 },
+      totalTime: { type: Number, default: 0 },
+      lastUsed: { type: Date }
+    },
+    totalInteractions: { type: Number, default: 0 },
+    averagePromptLength: { type: Number, default: 0 },
+    totalPromptLength: { type: Number, default: 0 }
+  },
+  
   // Content Interaction Patterns
   contentInteractions: [{
     contentId: {
@@ -147,15 +169,21 @@ learningBehaviorSchema.index({ sessionId: 1, timestamp: -1 });
 // TTL index to automatically delete old behavior data after 90 days
 learningBehaviorSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
 
-// Static method to get user's total interactions
+// Static method to get user's total interactions (includes both learning modes and AI Assistant)
 learningBehaviorSchema.statics.getTotalInteractions = async function(userId) {
   const behaviors = await this.find({ userId });
   
   let totalInteractions = 0;
   behaviors.forEach(behavior => {
+    // Count 8 learning mode interactions
     Object.values(behavior.modeUsage).forEach(mode => {
       totalInteractions += mode.count;
     });
+    
+    // Count AI Assistant interactions
+    if (behavior.aiAssistantUsage) {
+      totalInteractions += behavior.aiAssistantUsage.totalInteractions || 0;
+    }
   });
   
   return totalInteractions;
