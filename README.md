@@ -231,7 +231,16 @@ pdfinfo -v
    # - Verify trained models are present
    ```
 
-6. **Run the development server**
+6. **Run the complete system**
+   
+   **Option A: Quick Start (Recommended)**
+   ```bash
+   # Starts everything automatically (MongoDB, Next.js, ML Service)
+   .\start-all.bat
+   ```
+   This will open two terminal windows and start all services automatically.
+   
+   **Option B: Manual Start**
    ```bash
    # Terminal 1: Start Next.js app
    npm run dev
@@ -274,6 +283,11 @@ npm run check-deps   # Verify system dependencies
 ```bash
 scripts\setup-ml.bat       # Setup Python environment & dependencies
 scripts\start-ml-service.bat   # Start ML classification service (port 5000)
+```
+
+### Quick Start (All Services)
+```bash
+.\start-all.bat            # Start MongoDB + Next.js + ML Service automatically
 ```
 
 **Note:** The ML service must be running for learning style classification features to work. Trained models are included in the repository, so no training is required for new team members.
