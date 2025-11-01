@@ -71,6 +71,7 @@ Before running this project, ensure you have the following installed:
 - **Node.js** 18.x or higher
 - **npm** or **yarn**
 - **MongoDB** (local or Atlas)
+- **Python** 3.8 or higher (for ML service)
 
 ### System Dependencies
 
@@ -219,12 +220,27 @@ pdfinfo -v
    JWT_SECRET=your_jwt_secret_key
    ```
 
-5. **Run the development server**
+5. **Set up ML service** (for learning style classification)
    ```bash
-   npm run dev
+   # Run the automated setup script
+   scripts\setup-ml.bat
+   
+   # This will:
+   # - Create a Python virtual environment
+   # - Install required ML packages
+   # - Verify trained models are present
    ```
 
-6. **Open your browser**
+6. **Run the development server**
+   ```bash
+   # Terminal 1: Start Next.js app
+   npm run dev
+   
+   # Terminal 2: Start ML service
+   scripts\start-ml-service.bat
+   ```
+
+7. **Open your browser**
    
    Navigate to [http://localhost:3000](http://localhost:3000)
 
@@ -245,6 +261,7 @@ Used for:
 
 ## 📜 Available Scripts
 
+### Frontend
 ```bash
 npm run dev          # Start development server
 npm run build        # Build for production
@@ -252,6 +269,14 @@ npm start            # Start production server
 npm run lint         # Run ESLint
 npm run check-deps   # Verify system dependencies
 ```
+
+### ML Service
+```bash
+scripts\setup-ml.bat       # Setup Python environment & dependencies
+scripts\start-ml-service.bat   # Start ML classification service (port 5000)
+```
+
+**Note:** The ML service must be running for learning style classification features to work. Trained models are included in the repository, so no training is required for new team members.
 
 ## 🏗️ Project Structure
 
@@ -267,6 +292,11 @@ intelevo/
 │   ├── models/           # MongoDB models
 │   ├── config/           # Configuration files
 │   └── utils/            # Utility functions
+├── ml-service/           # Machine Learning service
+│   ├── models/           # Trained XGBoost models (included)
+│   ├── training/         # Training scripts
+│   ├── data/             # Training data
+│   └── app.py            # Flask API server
 ├── public/               # Static assets
 ├── scripts/              # Build & utility scripts
 └── ...
