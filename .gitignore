@@ -42,3 +42,9 @@ next-env.d.ts
 
 # local env files
 .env.local
+
+# Python virtual environments
+venv/
+env/
+ENV/
+scripts/venv/
