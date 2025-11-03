@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import FileUpload from './FileUpload';
 
-const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSuccess, initialContent = '', initialAttachments = [] }) => {
+const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, courseId, onSubmissionSuccess, initialContent = '', initialAttachments = [] }) => {
   const [content, setContent] = useState(initialContent);
   const [attachments, setAttachments] = useState(initialAttachments);
   const [files, setFiles] = useState([]);
@@ -26,7 +26,12 @@ const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSucc
     setError('');
 
     try {
-      const res = await fetch(`/api/courses/${assignmentId}/submissions`, { // Note: assignmentId is used as courseId in the API route
+      // Extract only the MongoDB IDs from uploaded files
+      const attachmentIds = [...attachments, ...files]
+        .filter(f => f._id) // Only include files that have been saved to MongoDB
+        .map(f => f._id);
+
+      const res = await fetch(`/api/courses/${courseId || assignmentId}/submissions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -34,7 +39,7 @@ const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSucc
         body: JSON.stringify({
           assignmentId,
           content,
-          attachments: [...attachments, ...files],
+          attachments: attachmentIds,
         }),
       });
 
@@ -73,7 +78,7 @@ const SubmitAssignmentModal = ({ isOpen, onClose, assignmentId, onSubmissionSucc
           </div>
           <div>
             <label className="block mb-2 text-sm font-medium text-gray-700">Attach Files</label>
-            <FileUpload onFilesReady={handleFilesReady} />
+            <FileUpload onFilesReady={handleFilesReady} courseId={courseId} folder={courseId ? `submissions/${courseId}` : 'classwork'} />
           </div>
           <div className="flex justify-end gap-4 pt-2">
             <button

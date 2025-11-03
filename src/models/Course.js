@@ -38,6 +38,15 @@ const courseSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'User',
   }],
+  invitationToken: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  invitationEnabled: {
+    type: Boolean,
+    default: false,
+  },
 }, { timestamps: true });
 
 const Course = mongoose.models.Course || mongoose.model('Course', courseSchema);

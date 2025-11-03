@@ -164,7 +164,8 @@ export async function GET(request, { params }) {
 
     const submissions = await Submission.find(query)
       .populate('assignmentId', 'title type')
-      .populate('studentId', 'name email');
+      .populate('studentId', 'name email')
+      .populate('attachments');
 
     return NextResponse.json({ submissions }, { status: 200 });
   } catch (error) {

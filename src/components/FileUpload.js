@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 
-const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork' }) => {
+const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork', courseId = null }) => {
   const [files, setFiles] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -88,6 +88,9 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork' }) =
     });
     
     formData.append('folder', folder);
+    if (courseId) {
+      formData.append('courseId', courseId);
+    }
 
     try {
       const response = await fetch('/api/upload', {
@@ -137,7 +140,7 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork' }) =
     } finally {
       setIsUploading(false);
     }
-  }, [folder]);
+  }, [folder, courseId]);
 
   const handleDrop = useCallback(async (e) => {
     e.preventDefault();

@@ -1518,6 +1518,7 @@ const CourseDetailPage = ({
         onInvite={handleInviteUser}
         role={inviteRole}
         courseName={courseDetails?.subject || 'this course'}
+        courseId={courseDetails?._id}
       />
 
       {/* Side Panel Document Viewer */}
