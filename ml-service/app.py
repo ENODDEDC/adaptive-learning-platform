@@ -29,19 +29,27 @@ def load_models():
     try:
         print("📦 Loading models...")
         
-        # Load scaler
-        scaler_path = MODEL_PATH / 'scaler.pkl'
+        # Try to load improved models first, fallback to base models
+        scaler_path = MODEL_PATH / 'scaler_improved.pkl'
+        if not scaler_path.exists():
+            scaler_path = MODEL_PATH / 'scaler.pkl'
+            print("⚠️ Using base models (scaler.pkl)")
+        else:
+            print("✅ Using improved models (scaler_improved.pkl)")
+        
         if not scaler_path.exists():
             raise FileNotFoundError(f"Scaler not found at {scaler_path}")
         scaler = joblib.load(scaler_path)
-        print(f"✅ Scaler loaded")
+        print(f"✅ Scaler loaded: {scaler_path.name}")
+        print(f"   Features expected: {scaler.n_features_in_}")
         
-        # Load dimension models
+        # Load dimension models (try improved first, fallback to base)
+        model_suffix = '_improved' if 'improved' in scaler_path.name else ''
         model_files = {
-            'activeReflective': 'active_reflective.pkl',
-            'sensingIntuitive': 'sensing_intuitive.pkl',
-            'visualVerbal': 'visual_verbal.pkl',
-            'sequentialGlobal': 'sequential_global.pkl'
+            'activeReflective': f'active_reflective{model_suffix}.pkl',
+            'sensingIntuitive': f'sensing_intuitive{model_suffix}.pkl',
+            'visualVerbal': f'visual_verbal{model_suffix}.pkl',
+            'sequentialGlobal': f'sequential_global{model_suffix}.pkl'
         }
         
         for dim_name, filename in model_files.items():
