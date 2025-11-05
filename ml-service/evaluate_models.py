@@ -22,7 +22,7 @@ def load_data():
     return df
 
 def engineer_features(X, feature_cols):
-    """Add engineered features (same as training)"""
+    """Add engineered features (MUST match train_models_improved.py exactly)"""
     df_features = pd.DataFrame(X, columns=feature_cols)
     
     # Add interaction features (ratio features)
@@ -45,15 +45,24 @@ def engineer_features(X, feature_cols):
     for col in ['activeModeRatio', 'sensingModeRatio', 'visualModeRatio', 'sequentialModeRatio']:
         df_features[f'{col}_squared'] = df_features[col] ** 2
     
+    # Add AI Assistant interaction features (if columns exist)
+    if 'aiAskModeRatio' in df_features.columns:
+        df_features['ai_active_interaction'] = df_features['aiAskModeRatio'] * df_features['activeModeRatio']
+        df_features['ai_reflective_interaction'] = df_features['aiResearchModeRatio'] * df_features['reflectiveModeRatio']
+        df_features['ai_sensing_interaction'] = df_features['aiTextToDocsRatio'] * df_features['sensingModeRatio']
+    
     return df_features.values, list(df_features.columns)
 
 def prepare_features(df, use_engineered=True):
-    """Prepare features (same as training)"""
+    """Prepare features (MUST match train_models_improved.py exactly)"""
+    # Original feature columns (27 behavioral features - includes AI Assistant)
     feature_cols = [
         'activeModeRatio', 'questionsGenerated', 'debatesParticipated',
         'reflectiveModeRatio', 'reflectionsWritten', 'journalEntries',
+        'aiAskModeRatio', 'aiResearchModeRatio',  # AI Assistant features
         'sensingModeRatio', 'simulationsCompleted', 'challengesCompleted',
         'intuitiveModeRatio', 'conceptsExplored', 'patternsDiscovered',
+        'aiTextToDocsRatio',  # AI Assistant feature
         'visualModeRatio', 'diagramsViewed', 'wireframesExplored',
         'verbalModeRatio', 'textRead', 'summariesCreated',
         'sequentialModeRatio', 'stepsCompleted', 'linearNavigation',
