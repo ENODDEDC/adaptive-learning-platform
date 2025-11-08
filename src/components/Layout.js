@@ -150,17 +150,25 @@ const Layout = ({ children }) => {
               headers: {
                 'Content-Type': 'application/json',
               },
+              credentials: 'include',
               body: JSON.stringify(courseData),
             });
             if (!res.ok) {
-              throw new Error(`Error: ${res.status} ${res.statusText}`);
+              const errorData = await res.json();
+              throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
             }
+            const result = await res.json();
             closeCreateCourseModal();
+            // Show success message
+            alert('Course created successfully!');
+            // Refresh the page to show the new course
+            window.location.reload();
           } catch (error) {
-            // Silent fail for course creation
+            console.error('Error creating course:', error);
+            alert(`Failed to create course: ${error.message}`);
           }
         }}
-        adminName={user?.name}
+        adminName={user ? `${user.name} ${user.surname}` : ''}
       />
       <JoinCourseModal
         isOpen={isJoinCourseModalOpen}
@@ -245,12 +253,14 @@ const Layout = ({ children }) => {
       <div className={`transition-all duration-500 ease-in-out ${mainContentMargin} h-screen ${containerOverflow}`}>
         <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
         <main className={`h-full ${contentOverflow}`}>
-          {React.cloneElement(children, {
-            upcomingTasksExpanded,
-            setUpcomingTasksExpanded,
-            sidebarCollapsed: sidebarState,
-            setSidebarCollapsed: setIsSidebarCollapsed
-          })}
+          {React.isValidElement(children) && typeof children.type !== 'string'
+            ? React.cloneElement(children, {
+                upcomingTasksExpanded,
+                setUpcomingTasksExpanded,
+                sidebarCollapsed: sidebarState,
+                setSidebarCollapsed: setIsSidebarCollapsed
+              })
+            : children}
         </main>
       </div>
     </div>

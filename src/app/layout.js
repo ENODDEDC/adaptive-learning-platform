@@ -15,12 +15,16 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={`${lora.variable} ${inter.variable} font-sans`}>
+    <html lang="en" className="scroll-smooth">
+      <body className={`${lora.variable} ${inter.variable} font-sans antialiased`}>
         <AutoClassificationWrapper>
           <AdaptiveLayoutProvider>
             <LayoutProvider>
-              <Layout>{children}</Layout>
+              <Layout>
+                <div className="page-transition-wrapper">
+                  {children}
+                </div>
+              </Layout>
             </LayoutProvider>
           </AdaptiveLayoutProvider>
         </AutoClassificationWrapper>
