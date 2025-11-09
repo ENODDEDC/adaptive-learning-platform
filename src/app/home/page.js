@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -15,8 +15,120 @@ import {
 } from '@heroicons/react/24/outline';
 import EmptyState from '@/components/EmptyState';
 import { useLayout } from '../../context/LayoutContext';
-import LearningStyleWidget from '@/components/LearningStyleWidget';
 import { getLearningBehaviorTracker } from '@/utils/learningBehaviorTracker';
+
+// Utility function to normalize and ensure proper color format
+const normalizeColor = (colorValue) => {
+  // If it's already a proper Tailwind class, return it
+  if (colorValue && colorValue.startsWith('bg-')) {
+    return colorValue;
+  }
+  
+  // Map hex colors to Tailwind classes (from your color picker)
+  const hexToTailwindMap = {
+    // Row 1 - Your color picker colors
+    '#60a5fa': 'bg-blue-400',        // Light blue (top-left)
+    '#a78bfa': 'bg-purple-400',      // Purple
+    '#f472b6': 'bg-pink-400',        // Pink
+    '#34d399': 'bg-emerald-400',     // Green/Emerald
+    
+    // Row 2 - Your color picker colors
+    '#fb923c': 'bg-orange-400',      // Orange
+    '#f87171': 'bg-red-400',         // Red/Coral
+    '#2dd4bf': 'bg-teal-400',        // Teal/Cyan
+    '#818cf8': 'bg-indigo-400',      // Indigo/Blue-purple
+    
+    // Additional Tailwind standard colors (fallbacks)
+    '#3b82f6': 'bg-blue-500',
+    '#8b5cf6': 'bg-violet-500',
+    '#ec4899': 'bg-pink-500',
+    '#10b981': 'bg-emerald-500',
+    '#f97316': 'bg-orange-500',
+    '#ef4444': 'bg-red-500',
+    '#14b8a6': 'bg-teal-500',
+    '#6366f1': 'bg-indigo-500',
+    '#22c55e': 'bg-green-500',
+    '#eab308': 'bg-yellow-500',
+    '#f59e0b': 'bg-amber-500',
+    '#06b6d4': 'bg-cyan-500',
+    '#0ea5e9': 'bg-sky-500',
+    '#84cc16': 'bg-lime-500',
+    '#d946ef': 'bg-fuchsia-500',
+    '#f43f5e': 'bg-rose-500',
+  };
+  
+  // Check if it's a hex color
+  if (colorValue && colorValue.startsWith('#')) {
+    const lowerHex = colorValue.toLowerCase();
+    if (hexToTailwindMap[lowerHex]) {
+      return hexToTailwindMap[lowerHex];
+    }
+  }
+  
+  // Map common color names to Tailwind classes
+  const colorNameMap = {
+    'blue': 'bg-blue-500',
+    'indigo': 'bg-indigo-500',
+    'purple': 'bg-purple-500',
+    'pink': 'bg-pink-500',
+    'red': 'bg-red-500',
+    'orange': 'bg-orange-500',
+    'amber': 'bg-amber-500',
+    'yellow': 'bg-yellow-500',
+    'lime': 'bg-lime-500',
+    'green': 'bg-green-500',
+    'emerald': 'bg-emerald-500',
+    'teal': 'bg-teal-500',
+    'cyan': 'bg-cyan-500',
+    'sky': 'bg-sky-500',
+    'violet': 'bg-violet-500',
+    'fuchsia': 'bg-fuchsia-500',
+    'rose': 'bg-rose-500',
+  };
+  
+  // If it's a color name, convert it
+  if (colorValue) {
+    const lowerColor = colorValue.toLowerCase().trim();
+    if (colorNameMap[lowerColor]) {
+      return colorNameMap[lowerColor];
+    }
+  }
+  
+  // Default to blue if no valid color
+  return 'bg-blue-500';
+};
+
+// Utility function to generate color variations based on theme color
+const getColorVariations = (colorClass) => {
+  // Normalize the color first
+  const normalizedColor = normalizeColor(colorClass);
+  
+  // Map Tailwind color classes to their variations
+  const colorMap = {
+    'bg-blue-500': { lighter: 'bg-blue-50', darker: 'bg-blue-600', text: 'text-blue-700' },
+    'bg-indigo-500': { lighter: 'bg-indigo-50', darker: 'bg-indigo-600', text: 'text-indigo-700' },
+    'bg-purple-500': { lighter: 'bg-purple-50', darker: 'bg-purple-600', text: 'text-purple-700' },
+    'bg-pink-500': { lighter: 'bg-pink-50', darker: 'bg-pink-600', text: 'text-pink-700' },
+    'bg-red-500': { lighter: 'bg-red-50', darker: 'bg-red-600', text: 'text-red-700' },
+    'bg-orange-500': { lighter: 'bg-orange-50', darker: 'bg-orange-600', text: 'text-orange-700' },
+    'bg-amber-500': { lighter: 'bg-amber-50', darker: 'bg-amber-600', text: 'text-amber-700' },
+    'bg-yellow-500': { lighter: 'bg-yellow-50', darker: 'bg-yellow-600', text: 'text-yellow-700' },
+    'bg-lime-500': { lighter: 'bg-lime-50', darker: 'bg-lime-600', text: 'text-lime-700' },
+    'bg-green-500': { lighter: 'bg-green-50', darker: 'bg-green-600', text: 'text-green-700' },
+    'bg-emerald-500': { lighter: 'bg-emerald-50', darker: 'bg-emerald-600', text: 'text-emerald-700' },
+    'bg-teal-500': { lighter: 'bg-teal-50', darker: 'bg-teal-600', text: 'text-teal-700' },
+    'bg-cyan-500': { lighter: 'bg-cyan-50', darker: 'bg-cyan-600', text: 'text-cyan-700' },
+    'bg-sky-500': { lighter: 'bg-sky-50', darker: 'bg-sky-600', text: 'text-sky-700' },
+    'bg-violet-500': { lighter: 'bg-violet-50', darker: 'bg-violet-600', text: 'text-violet-700' },
+    'bg-fuchsia-500': { lighter: 'bg-fuchsia-50', darker: 'bg-fuchsia-600', text: 'text-fuchsia-700' },
+    'bg-rose-500': { lighter: 'bg-rose-50', darker: 'bg-rose-600', text: 'text-rose-700' },
+  };
+  
+  return {
+    base: normalizedColor,
+    ...colorMap[normalizedColor]
+  };
+};
 
 export default function Home() {
   const { openCreateCourseModal, openJoinCourseModal, shouldRefreshCourses } = useLayout();
@@ -24,16 +136,16 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [createdCourses, setCreatedCourses] = useState([]);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isMounted, setIsMounted] = useState(false);
   const [isCourseMenuOpen, setIsCourseMenuOpen] = useState(false);
   const [selectedMode, setSelectedMode] = useState('Ask');
   const [promptText, setPromptText] = useState('');
-  const [currentCreatedCourseIndex, setCurrentCreatedCourseIndex] = useState(0);
-  const [currentEnrolledCourseIndex, setCurrentEnrolledCourseIndex] = useState(0);
-  const [learningProfile, setLearningProfile] = useState(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [currentCourseIndex, setCurrentCourseIndex] = useState(0);
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
+  const hasDataRef = useRef(false);
 
   const recentActivities = [];
 
@@ -45,53 +157,14 @@ export default function Home() {
   useEffect(() => {
     if (user) {
       fetchUserCourses();
-      fetchLearningProfile();
     }
   }, [user, shouldRefreshCourses]);
 
-  const fetchLearningProfile = async () => {
-    if (!user) return;
-    
-    setLoadingProfile(true);
-    try {
-      const res = await fetch('/api/learning-style/profile');
-      if (res.ok) {
-        const result = await res.json();
-        console.log('Learning profile response:', result);
-        
-        // Check if user has a profile (either from questionnaire or ML)
-        if (result.success && result.data && result.data.hasProfile) {
-          // Format profile data for the widget
-          const profileData = {
-            dimensions: result.data.profile.dimensions,
-            confidence: result.data.profile.confidence,
-            recommendedModes: result.data.profile.recommendedModes?.map(r => r.mode || r) || [],
-            lastUpdated: result.data.profile.lastPrediction,
-            source: result.data.profile.classificationMethod || 'unknown'
-          };
-          setLearningProfile(profileData);
-        } else {
-          setLearningProfile(null);
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching learning profile:', err);
-    } finally {
-      setLoadingProfile(false);
-    }
-  };
-
   useEffect(() => {
-    if (currentCreatedCourseIndex >= createdCourses.length - 1) {
-      setCurrentCreatedCourseIndex(Math.max(0, createdCourses.length - 2));
+    if (currentCourseIndex >= allCourses.length - 1) {
+      setCurrentCourseIndex(Math.max(0, allCourses.length - 2));
     }
-  }, [createdCourses.length, currentCreatedCourseIndex]);
-
-  useEffect(() => {
-    if (currentEnrolledCourseIndex >= enrolledCourses.length - 1) {
-      setCurrentEnrolledCourseIndex(Math.max(0, enrolledCourses.length - 2));
-    }
-  }, [enrolledCourses.length, currentEnrolledCourseIndex]);
+  }, [allCourses.length, currentCourseIndex]);
 
   const fetchUserProfile = async () => {
     setLoading(true);
@@ -128,6 +201,8 @@ export default function Home() {
       const enrolled = [];
 
       data.courses.forEach(course => {
+        const isCreator = course.createdBy === user._id;
+        
         const formattedCourse = {
           id: course._id,
           title: course.subject,
@@ -136,9 +211,11 @@ export default function Home() {
           progress: 0,
           color: course.coverColor,
           progressColor: course.coverColor,
+          isCreator: isCreator,
+          role: isCreator ? 'creator' : 'student',
         };
 
-        if (course.createdBy === user._id) {
+        if (isCreator) {
           created.push(formattedCourse);
         } else if (course.enrolledUsers.includes(user._id)) {
           enrolled.push(formattedCourse);
@@ -147,6 +224,9 @@ export default function Home() {
 
       setCreatedCourses(created);
       setEnrolledCourses(enrolled);
+      // Combine all courses with creators first
+      setAllCourses([...created, ...enrolled]);
+      hasDataRef.current = true;
     } catch (err) {
       setError(err.message);
     } finally {
@@ -175,169 +255,188 @@ export default function Home() {
     }
   };
 
-  const nextCreatedCourse = () => {
-    if (currentCreatedCourseIndex < createdCourses.length - 2) {
-      setCurrentCreatedCourseIndex(currentCreatedCourseIndex + 1);
-    }
+  // Smooth scroll carousel implementation
+  const scrollContainerRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  const checkScrollability = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    setCanScrollLeft(scrollLeft > 0);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    
+    // Calculate scroll progress (0 to 100)
+    const maxScroll = scrollWidth - clientWidth;
+    const progress = maxScroll > 0 ? (scrollLeft / maxScroll) * 100 : 0;
+    setScrollProgress(progress);
   };
 
-  const prevCreatedCourse = () => {
-    if (currentCreatedCourseIndex > 0) {
-      setCurrentCreatedCourseIndex(currentCreatedCourseIndex - 1);
-    }
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    checkScrollability();
+    container.addEventListener('scroll', checkScrollability);
+    window.addEventListener('resize', checkScrollability);
+
+    return () => {
+      container.removeEventListener('scroll', checkScrollability);
+      window.removeEventListener('resize', checkScrollability);
+    };
+  }, [allCourses]);
+
+  const scrollToDirection = (direction) => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const cardWidth = container.querySelector('.course-card')?.offsetWidth || 300;
+    const gap = 16; // gap-4 = 16px
+    const scrollAmount = cardWidth + gap;
+
+    container.scrollBy({
+      left: direction === 'next' ? scrollAmount : -scrollAmount,
+      behavior: 'smooth'
+    });
   };
 
-  const getVisibleCreatedCourses = () => {
-    return createdCourses.slice(currentCreatedCourseIndex, currentCreatedCourseIndex + 2);
-  };
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
+      if (e.key === 'ArrowLeft' && canScrollLeft) {
+        scrollToDirection('prev');
+      } else if (e.key === 'ArrowRight' && canScrollRight) {
+        scrollToDirection('next');
+      }
+    };
 
-  const showPrevCreatedArrow = currentCreatedCourseIndex > 0;
-  const showNextCreatedArrow = currentCreatedCourseIndex < createdCourses.length - 2;
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canScrollLeft, canScrollRight]);
 
-  const nextEnrolledCourse = () => {
-    if (currentEnrolledCourseIndex < enrolledCourses.length - 2) {
-      setCurrentEnrolledCourseIndex(currentEnrolledCourseIndex + 1);
-    }
-  };
-
-  const prevEnrolledCourse = () => {
-    if (currentEnrolledCourseIndex > 0) {
-      setCurrentEnrolledCourseIndex(currentEnrolledCourseIndex - 1);
-    }
-  };
-
-  const getVisibleEnrolledCourses = () => {
-    return enrolledCourses.slice(currentEnrolledCourseIndex, currentEnrolledCourseIndex + 2);
-  };
-
-  const showPrevEnrolledArrow = currentEnrolledCourseIndex > 0;
-  const showNextEnrolledArrow = currentEnrolledCourseIndex < enrolledCourses.length - 2;
-
-  if (loading) {
+  // Only show skeleton on first load, not on subsequent data fetches
+  if (loading && !hasDataRef.current) {
     return (
-      <div className="h-full p-8 overflow-y-auto bg-gray-50 animate-fade-in-up">
-        {/* Welcome Header Skeleton */}
-        <div className="relative mx-4 mt-4 mb-8 overflow-hidden bg-white/95 backdrop-blur-sm border border-white/30 shadow-lg rounded-2xl p-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-gray-200 rounded-2xl animate-pulse"></div>
-              <div className="flex flex-col justify-center space-y-2">
-                <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
-                <div className="h-4 bg-gray-200 rounded w-64 animate-pulse"></div>
-                <div className="h-1 bg-gray-200 rounded animate-pulse"></div>
+      <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
+        {/* Welcome Header Skeleton - Matches actual layout */}
+        <div className="relative mx-4 mt-3 bg-white border border-gray-200 shadow-sm rounded-2xl">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-t-2xl"></div>
+          <div className="relative px-6 py-4">
+            <div className="flex items-center justify-between gap-6">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="w-12 h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+                <div className="flex flex-col justify-center flex-1 min-w-0 space-y-2">
+                  <div className="h-7 bg-gray-200 rounded w-64 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                </div>
               </div>
-            </div>
-            <div className="text-right space-y-1">
-              <div className="h-4 bg-gray-200 rounded w-12 animate-pulse"></div>
-              <div className="h-8 bg-gray-200 rounded w-32 animate-pulse"></div>
-              <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
+              <div className="flex-shrink-0">
+                <div className="bg-gray-50 rounded-xl p-2 border border-gray-200 w-44 h-32 animate-pulse"></div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* AI Assistant Skeleton */}
-        <div className="p-6 mx-4 mb-8 bg-white/95 backdrop-blur-sm border border-white/30 shadow-lg rounded-2xl">
-          <div className="h-6 bg-gray-200 rounded w-32 mb-4 animate-pulse"></div>
-          <div className="h-32 bg-gray-200 rounded-xl mb-4 animate-pulse"></div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
-              <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
-              <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
-            </div>
-            <div className="h-10 bg-gray-200 rounded w-10 animate-pulse"></div>
-          </div>
-        </div>
-
-        {/* Courses Grid Skeleton */}
-        <div className="grid grid-cols-1 gap-8 mx-4 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-8">
-            {/* Created Courses Skeleton */}
-            <div className="p-6 bg-white/95 backdrop-blur-sm border border-white/30 shadow-sm rounded-2xl">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
-                <div className="h-6 bg-gray-200 rounded w-8 animate-pulse"></div>
-              </div>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {[1, 2].map((i) => (
-                  <div key={i} className="relative flex flex-col bg-white border cursor-pointer rounded-3xl animate-shadow-enhance">
-                    {/* Enhanced gradient header skeleton */}
-                    <div className="relative h-56 p-4 pr-6 flex flex-col justify-between overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse">
-                      {/* Animated background pattern skeleton */}
-                      <div className="absolute inset-0 opacity-10">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
-                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12"></div>
-                      </div>
-
-                      {/* Top section skeleton */}
-                      <div className="relative z-10 flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
-                            <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl"></div>
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
-                          </div>
-                        </div>
-                        <div className="p-2 text-white/80 rounded-lg opacity-0"></div>
-                      </div>
-
-                      {/* Bottom section skeleton */}
-                      <div className="relative z-10 flex items-end justify-between gap-2">
-                        <div className="flex-1 min-w-0 pr-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-3 h-3 bg-white/40 rounded-full flex-shrink-0"></div>
-                            <div className="h-4 bg-white/40 rounded w-32"></div>
-                          </div>
-                          <div className="h-3 bg-white/30 rounded w-16 mb-2"></div>
-                        </div>
-                        <div className="flex flex-col items-end gap-3 flex-shrink-0 ml-4 mr-2">
-                          <div className="flex items-center justify-center w-14 h-14 bg-white/15 rounded-2xl border border-white/20"></div>
-                        </div>
-                      </div>
-
-                      {/* Floating elements skeleton */}
-                      <div className="absolute top-4 right-4 w-2 h-2 bg-white/30 rounded-full"></div>
-                      <div className="absolute bottom-6 left-6 w-1 h-1 bg-white/20 rounded-full"></div>
-                    </div>
-
-                    {/* Enhanced content section skeleton */}
-                    <div className="relative flex flex-col flex-grow p-6 bg-gradient-to-b from-white to-gray-50/50">
-                      <div className="mb-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-                          <div className="px-2 py-1 text-xs bg-blue-100 rounded-full w-16 h-5"></div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="px-3 py-1.5 bg-blue-50 rounded-lg w-24 h-6"></div>
-                          <div className="px-3 py-1.5 bg-emerald-50 rounded-lg w-32 h-6"></div>
-                        </div>
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-b-3xl"></div>
+        {/* Main Content Grid - Matches actual layout */}
+        <div className="flex-1 grid grid-cols-1 gap-4 mx-4 my-3 lg:grid-cols-3 overflow-hidden">
+          {/* Courses Section Skeleton */}
+          <div className="lg:col-span-2 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col p-4 bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden">
+              {/* Header Skeleton */}
+              <div className="flex items-center justify-between mb-5 flex-shrink-0 pb-4 border-b-2 border-gray-200">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 bg-gray-200 rounded-2xl animate-pulse"></div>
+                  <div className="flex flex-col flex-shrink-0 space-y-2">
+                    <div className="h-5 bg-gray-200 rounded w-32 animate-pulse"></div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+                      <div className="h-4 bg-gray-200 rounded w-12 animate-pulse"></div>
+                      <div className="h-4 bg-gray-200 rounded w-12 animate-pulse"></div>
                     </div>
                   </div>
-                ))}
+                </div>
+                <div className="w-11 h-11 bg-gray-200 rounded-2xl animate-pulse"></div>
+              </div>
+
+              {/* Course Cards Skeleton - Horizontal Slider */}
+              <div className="relative flex-1 overflow-hidden">
+                <div className="flex gap-4 h-full pb-4">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="flex-shrink-0 w-[calc(50%-8px)] min-w-[300px] max-w-[420px]">
+                      <div className="relative flex flex-col h-full bg-white border border-gray-200 rounded-3xl overflow-hidden">
+                        {/* Card Header Skeleton */}
+                        <div className="relative h-44 p-5 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse">
+                          <div className="absolute inset-0 opacity-10">
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full blur-3xl"></div>
+                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full blur-2xl"></div>
+                          </div>
+                          <div className="relative z-10 flex items-start justify-between">
+                            <div className="w-11 h-11 bg-white/30 rounded-2xl"></div>
+                            <div className="w-20 h-7 bg-white/30 rounded-xl"></div>
+                          </div>
+                          <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
+                            <div className="space-y-2">
+                              <div className="h-3 bg-white/40 rounded w-24"></div>
+                              <div className="h-4 bg-white/40 rounded w-16"></div>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Card Content Skeleton */}
+                        <div className="relative flex flex-col flex-grow p-5 bg-gradient-to-b from-white to-gray-50/30">
+                          <div className="mb-4">
+                            <div className="h-6 bg-gray-200 rounded w-3/4 mb-3 animate-pulse"></div>
+                            <div className="flex items-center gap-2.5">
+                              <div className="h-8 bg-gray-200 rounded-xl w-24 animate-pulse"></div>
+                              <div className="h-8 bg-gray-200 rounded-xl w-28 animate-pulse"></div>
+                            </div>
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 rounded-b-3xl"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Progress Bar Skeleton */}
+              <div className="mt-5 flex-shrink-0">
+                <div className="h-1.5 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="flex items-center justify-center mt-3">
+                  <div className="h-6 bg-gray-200 rounded-full w-48 animate-pulse"></div>
+                </div>
+              </div>
+
+              {/* Footer Skeleton */}
+              <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-200 flex-shrink-0">
+                <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
               </div>
             </div>
           </div>
 
-          {/* Sidebar Skeleton */}
-          <div className="space-y-4">
-            <div className="p-6 bg-white/95 backdrop-blur-sm border border-white/30 shadow-lg rounded-2xl">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-6 bg-gray-200 rounded w-40 animate-pulse"></div>
+          {/* Sidebar Skeleton - Matches actual layout */}
+          <div className="flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col p-4 bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden">
+              <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-gray-200 flex-shrink-0">
+                <div className="w-6 h-6 bg-gray-200 rounded-lg animate-pulse"></div>
+                <div className="h-5 bg-gray-200 rounded w-40 animate-pulse"></div>
               </div>
-              <div className="space-y-3">
+              <div className="flex-1 overflow-y-auto space-y-2.5">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-4 bg-gray-50 rounded-xl">
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-gray-200 rounded-full mt-2 animate-pulse"></div>
-                      <div className="flex-1 space-y-2">
+                  <div key={i} className="p-3 border-2 border-gray-200 bg-white rounded-xl">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-2 h-2 bg-gray-200 rounded-full mt-1.5 animate-pulse"></div>
+                      <div className="flex-1 min-w-0 space-y-2">
                         <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
                         <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse"></div>
                         <div className="flex items-center justify-between">
                           <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
-                          <div className="h-5 bg-gray-200 rounded w-16 animate-pulse"></div>
+                          <div className="h-5 bg-gray-200 rounded-full w-16 animate-pulse"></div>
                         </div>
                       </div>
                     </div>
@@ -356,71 +455,62 @@ export default function Home() {
   }
 
   return (
-    <div className="h-full p-8 overflow-y-auto bg-gray-50 animate-fade-in-up">
-      {/* Welcome Header */}
-      <div className="relative mx-4 mt-4 mb-8 overflow-hidden bg-white/95 backdrop-blur-sm border border-white/30 shadow-lg rounded-2xl animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-        {/* Subtle Background Animation */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/30 animate-pulse"></div>
+    <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
+      {/* Compact Welcome Header - Clean Design */}
+      <div className="relative mx-4 mt-3 bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md transition-shadow duration-300">
+        {/* Subtle accent line - Single color */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 rounded-t-2xl"></div>
 
-        {/* Floating Elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-6 left-8 w-3 h-3 bg-blue-200/40 rounded-full animate-float" style={{ animationDelay: '0s' }}></div>
-          <div className="absolute top-12 right-16 w-2 h-2 bg-indigo-200/50 rounded-full animate-float" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute bottom-8 left-1/3 w-2.5 h-2.5 bg-blue-300/30 rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute top-1/4 right-8 w-1.5 h-1.5 bg-indigo-300/40 rounded-full animate-float" style={{ animationDelay: '0.5s' }}></div>
-        </div>
-
-        <div className="relative p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="relative">
-                <div className="flex items-center justify-center w-16 h-16 shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl animate-fade-in-up">
-                  <SparklesIcon className="w-9 h-9 text-white" />
+        <div className="relative px-6 py-4">
+          <div className="flex items-center justify-between gap-6">
+            {/* Left Section - Compact Welcome */}
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <div className="relative flex-shrink-0">
+                <div className="flex items-center justify-center w-12 h-12 bg-blue-500 rounded-xl shadow-sm">
+                  <SparklesIcon className="w-7 h-7 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-pulse border-2 border-white"></div>
+                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
               </div>
-              <div className="flex flex-col justify-center">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2 animate-fade-in-up">
+              <div className="flex flex-col justify-center flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-gray-900 leading-tight">
                   {(() => {
                     const hour = new Date().getHours();
                     const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
                     return greeting;
-                  })()}, <span className="text-blue-600 animate-pulse">
-                    {user?.fullname || user?.name || 'User'}
+                  })()}, <span className="text-blue-600">
+                    {user ? `${user.name} ${user.surname}` : 'User'}
                   </span>!
                 </h1>
-                <p className="text-lg text-gray-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                <p className="text-sm text-gray-600">
                   Welcome back to your learning dashboard
                 </p>
-                <div className="mt-3 h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full animate-expand-width" style={{ animationDelay: '0.5s' }}></div>
               </div>
             </div>
-            <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-500 mb-3">
-                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+            {/* Right Section - Compact Calendar */}
+            <div className="flex-shrink-0">
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-500 mb-2">
+                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span className="font-medium">This Week</span>
+                <span className="font-semibold">This Week</span>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-3 border border-blue-200/50 shadow-lg backdrop-blur-sm">
-                <div className="text-center mb-3">
-                  <div className="text-sm text-blue-700 font-bold uppercase tracking-wider">
-                    {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              <div className="bg-gray-50 rounded-xl p-2 border border-gray-200">
+                <div className="text-center mb-1.5">
+                  <div className="text-xs text-blue-700 font-bold">
+                    {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </div>
-                  <div className="w-12 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 mx-auto mt-1 rounded-full"></div>
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center">
-                  {/* Day headers with modern styling */}
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-                    <div key={`header-${index}`} className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">
-                      {day.slice(0, 1)}
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                    <div key={`header-${index}`} className="text-[10px] text-blue-600 font-bold mb-1">
+                      {day}
                     </div>
                   ))}
-                  {/* Current week days with enhanced styling */}
                   {(() => {
                     const today = new Date();
                     const startOfWeek = new Date(today);
-                    startOfWeek.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+                    startOfWeek.setDate(today.getDate() - today.getDay());
 
                     const days = [];
                     for (let i = 0; i < 7; i++) {
@@ -428,36 +518,24 @@ export default function Home() {
                       currentDate.setDate(startOfWeek.getDate() + i);
                       const isToday = currentDate.toDateString() === today.toDateString();
                       const isPast = currentDate < today && !isToday;
-                      const isFuture = currentDate > today;
 
                       days.push(
                         <div
                           key={i}
-                          className={`relative text-sm font-semibold w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 ${
+                          className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-lg ${
                             isToday
-                              ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30 animate-pulse border-2 border-white'
+                              ? 'bg-blue-500 text-white'
                               : isPast
-                              ? 'bg-gray-100 text-gray-400 border border-gray-200'
-                              : isFuture
-                              ? 'bg-white text-blue-700 border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 hover:shadow-md'
-                              : 'bg-blue-50 text-blue-600 border border-blue-300'
+                              ? 'bg-gray-100 text-gray-400'
+                              : 'bg-white text-gray-700 border border-gray-200'
                           }`}
                         >
                           {currentDate.getDate()}
-                          {isToday && (
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-bounce border border-white"></div>
-                          )}
                         </div>
                       );
                     }
                     return days;
                   })()}
-                </div>
-                <div className="mt-3 text-center">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/70 rounded-full text-xs text-blue-600 font-medium">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    Today: {new Date().getDate()}
-                  </div>
                 </div>
               </div>
             </div>
@@ -465,146 +543,68 @@ export default function Home() {
         </div>
       </div>
 
-      {/* AI Assistant */}
-      <div className="p-6 mx-4 mb-8 bg-white/95 backdrop-blur-sm border border-white/30 shadow-lg rounded-2xl hover:shadow-xl transition-shadow duration-300 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-          AI Assistant
-        </h3>
-
-        <div className="relative">
-          <textarea
-            value={promptText}
-            onChange={(e) => setPromptText(e.target.value)}
-            placeholder="Ask or find anything from your workspace..."
-            className="w-full p-4 text-base text-gray-700 placeholder-gray-500 transition-all duration-300 border-2 border-gray-200 resize-none bg-gray-50 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 focus:scale-[1.02] hover:border-gray-300"
-            rows="3"
-          />
-          <div className="absolute bottom-2 right-2 text-xs text-gray-400">
-            {promptText.length}/500
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                setSelectedMode('Ask');
-                const tracker = getLearningBehaviorTracker();
-                if (tracker) tracker.trackAIAssistantMode('ask');
-              }}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 ${
-                selectedMode === 'Ask'
-                  ? 'text-blue-700 bg-blue-100 border-2 border-blue-200 shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border-2 border-transparent'
-              }`}
-            >
-              Ask
-            </button>
-            <button
-              onClick={() => {
-                setSelectedMode('Research');
-                const tracker = getLearningBehaviorTracker();
-                if (tracker) tracker.trackAIAssistantMode('research');
-              }}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 ${
-                selectedMode === 'Research'
-                  ? 'text-blue-700 bg-blue-100 border-2 border-blue-200 shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border-2 border-transparent'
-              }`}
-            >
-              Research
-            </button>
-            <button
-              onClick={() => {
-                setSelectedMode('Text to Docs');
-                const tracker = getLearningBehaviorTracker();
-                if (tracker) tracker.trackAIAssistantMode('textToDocs');
-              }}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 ${
-                selectedMode === 'Text to Docs'
-                  ? 'text-white bg-blue-600 shadow-lg border-2 border-blue-500'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border-2 border-transparent'
-              }`}
-            >
-              Text to Docs
-            </button>
-          </div>
-
-          <button
-            onClick={handleSubmit}
-            disabled={!promptText.trim()}
-            aria-label="Submit query"
-            className="relative p-3 text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group"
-          >
-            <span className="relative z-10">→</span>
-            <div className="absolute inset-0 bg-blue-700 scale-0 group-active:scale-100 transition-transform duration-200 rounded-lg"></div>
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
-          <div className="flex items-center gap-3">
-            <button className="p-2 text-gray-400 transition-all duration-200 hover:text-blue-500 hover:bg-blue-50 rounded-lg hover:scale-110">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
-            <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-105">
-              <span>All sources</span>
-              <svg className="w-3 h-3 transition-transform duration-200 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            <button className="p-2 text-gray-400 transition-all duration-200 hover:text-blue-500 hover:bg-blue-50 rounded-lg hover:scale-110">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Learning Style Profile Widget */}
-      <LearningStyleWidget profile={learningProfile} loading={loadingProfile} />
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 gap-8 mx-4 lg:grid-cols-3 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-        {/* Courses Section */}
-        <div className="lg:col-span-2">
-          {/* My Created Courses Section */}
-          <div className="p-6 mb-8 bg-white/95 backdrop-blur-sm border border-white/30 shadow-sm rounded-2xl">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* Main Content Grid - Optimized for single viewport */}
+      <div className="flex-1 grid grid-cols-1 gap-4 mx-4 my-3 lg:grid-cols-3 overflow-hidden">
+        {/* Unified Courses Section */}
+        <div className="lg:col-span-2 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col p-4 bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
+                <div className="flex items-center justify-between mb-5 flex-shrink-0 pb-4 border-b-2 border-gray-200">
+                  <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
+                    <div className="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-2xl shadow-sm flex-shrink-0">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900">My Created Courses</h2>
-                    <span className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
-                      {createdCourses.length}
-                    </span>
+                    <div className="flex flex-col flex-shrink-0">
+                      <h2 className="text-base font-bold text-gray-800 tracking-tight">My Courses</h2>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs font-medium text-gray-500">
+                          {allCourses.length} total
+                        </span>
+                        <span className="text-gray-300">•</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-blue-600 bg-blue-50 rounded-lg border border-blue-200 whitespace-nowrap">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                              <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                            </svg>
+                            {createdCourses.length}
+                          </span>
+                          <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-green-600 bg-green-50 rounded-lg border border-green-200 whitespace-nowrap">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                            </svg>
+                            {enrolledCourses.length}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="relative">
+                  <div className="relative flex-shrink-0 z-50">
                     <button
                       onClick={() => setIsCourseMenuOpen(!isCourseMenuOpen)}
-                      className="flex items-center justify-center w-10 h-10 text-white transition-all duration-200 bg-blue-600 shadow-sm rounded-xl hover:bg-blue-700 hover:scale-110 active:scale-95"
+                      className="flex items-center justify-center w-11 h-11 text-white transition-all duration-300 bg-blue-600 rounded-2xl shadow-sm hover:bg-blue-700 hover:shadow-md hover:scale-105 active:scale-95"
                     >
                       <PlusIcon className="w-5 h-5" />
                     </button>
                     {isCourseMenuOpen && (
-                      <div className="absolute right-0 z-10 w-48 mt-2 overflow-hidden bg-white border border-gray-200 shadow-lg rounded-xl">
+                      <div className="absolute right-0 z-50 w-56 mt-3 bg-white border-2 border-gray-200 shadow-2xl rounded-2xl overflow-hidden">
                         <button
                           onClick={() => {
                             openCreateCourseModal();
                             setIsCourseMenuOpen(false);
                           }}
-                          className="block w-full px-4 py-3 text-sm text-left text-gray-700 transition-colors hover:bg-gray-50"
+                          className="block w-full px-5 py-3.5 text-sm font-semibold text-left text-gray-800 transition-all hover:bg-blue-50 hover:text-blue-700 border-b-2 border-gray-100 group"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            Create Course
+                            <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                              <svg className="w-4 h-4 text-blue-600 group-hover:text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                                <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span>Create Course</span>
                           </div>
                         </button>
                         <button
@@ -612,11 +612,15 @@ export default function Home() {
                             openJoinCourseModal();
                             setIsCourseMenuOpen(false);
                           }}
-                          className="block w-full px-4 py-3 text-sm text-left text-gray-700 transition-colors hover:bg-gray-50"
+                          className="block w-full px-5 py-3.5 text-sm font-semibold text-left text-gray-800 transition-all hover:bg-green-50 hover:text-green-700 group"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            Join Course
+                            <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-600 transition-colors">
+                              <svg className="w-4 h-4 text-green-600 group-hover:text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                              </svg>
+                            </div>
+                            <span>Join Course</span>
                           </div>
                         </button>
                       </div>
@@ -624,407 +628,291 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Enhanced Cluster Section */}
-                <div className="flex items-center justify-between p-4 mb-6 border border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 shadow-sm bg-gradient-to-br from-gray-600 to-gray-700 rounded-xl">
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H5a2 2 0 00-2 2v2" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span className="text-lg font-bold text-gray-800">Cluster1</span>
-                      <p className="text-xs text-gray-500">Active Environment</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-xs font-medium text-green-600">Online</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  {createdCourses.length === 0 ? (
-                    <EmptyState type="courses" message="No courses created yet." />
+                <div className="relative flex-1 overflow-hidden">
+                  {allCourses.length === 0 ? (
+                    <EmptyState type="courses" message="No courses yet. Create or join a course to get started!" />
                   ) : (
-                    <div className="overflow-hidden">
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        {getVisibleCreatedCourses().map((course, index) => (
-                          <Link key={course.id} href={`/courses/${course.id}`} className="block group">
-                            <div className={`relative flex flex-col bg-white border cursor-pointer rounded-3xl transition-all duration-700 ease-out transform hover:-translate-y-3 hover:rotate-1 hover:shadow-2xl hover:scale-[1.02] animate-shadow-enhance`} style={{ animationDelay: `${index * 0.1}s` }}>
-                              {/* Enhanced gradient header with multiple layers */}
-                              <div className={`course-card-header relative h-56 p-4 pr-6 flex flex-col justify-between overflow-hidden ${course.color} bg-gradient-to-br from-current via-current to-current transition-all duration-500 group-hover:shadow-inner animate-header-transform`}>
-                                {/* Animated background pattern */}
+                    <div className="h-full relative">
+                      {/* Smooth scroll container */}
+                      <div 
+                        ref={scrollContainerRef}
+                        className="flex gap-4 overflow-x-auto overflow-y-hidden h-full pb-4 scroll-smooth snap-x snap-mandatory scrollbar-hide"
+                        style={{
+                          scrollbarWidth: 'none',
+                          msOverflowStyle: 'none',
+                        }}
+                      >
+                        {allCourses.map((course, index) => {
+                          const colorVariations = getColorVariations(course.color);
+                          
+                          return (
+                          <Link 
+                            key={course.id} 
+                            href={`/courses/${course.id}`} 
+                            className="course-card flex-shrink-0 w-[calc(50%-8px)] min-w-[300px] max-w-[420px] snap-start group"
+                          >
+                            <div className="relative flex flex-col h-full bg-white border border-gray-200 cursor-pointer rounded-3xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-gray-300 overflow-hidden">
+                              {/* Google Material Design 3 inspired "Color Atmosphere" */}
+                              <div className={`relative h-44 p-5 flex flex-col justify-between overflow-hidden ${colorVariations.base} transition-all duration-300`}>
+                                {/* Sophisticated layered atmosphere effect */}
+                                {/* Layer 1: Soft radial glow from top-right (light source simulation) */}
+                                <div 
+                                  className="absolute inset-0 opacity-30"
+                                  style={{
+                                    background: `radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.4) 0%, transparent 50%)`
+                                  }}
+                                ></div>
+                                
+                                {/* Layer 2: Subtle darker gradient at bottom (depth and weight) */}
+                                <div 
+                                  className="absolute inset-0 opacity-20"
+                                  style={{
+                                    background: `linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.15) 100%)`
+                                  }}
+                                ></div>
+                                
+                                {/* Layer 3: Organic shape overlay (modern, playful) */}
                                 <div className="absolute inset-0 opacity-10">
-                                  <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
-                                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12"></div>
+                                  <svg className="absolute top-0 right-0 w-40 h-40 -translate-y-8 translate-x-8" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="white" d="M44.7,-76.4C58.8,-69.2,71.8,-59.1,79.6,-45.8C87.4,-32.6,90,-16.3,88.5,-0.9C87,14.6,81.4,29.2,73.1,42.8C64.8,56.4,53.8,69,40.4,76.1C27,83.2,13.5,84.8,-0.7,86.1C-14.9,87.4,-29.8,88.4,-43.2,81.9C-56.6,75.4,-68.5,61.4,-76.8,45.7C-85.1,30,-89.8,12.6,-89.3,-4.9C-88.8,-22.4,-83.1,-40,-73.8,-54.8C-64.5,-69.6,-51.6,-81.6,-37.1,-88.5C-22.6,-95.4,-11.3,-97.2,1.5,-99.9C14.3,-102.6,28.6,-106.2,44.7,-76.4Z" transform="translate(100 100)" />
+                                  </svg>
+                                  <svg className="absolute bottom-0 left-0 w-32 h-32 translate-y-8 -translate-x-8" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="white" d="M39.5,-65.6C51.4,-58.1,61.4,-47.3,68.2,-34.4C75,-21.5,78.6,-6.5,77.8,8.2C77,22.9,71.8,37.3,63.2,49.4C54.6,61.5,42.6,71.3,29.2,76.4C15.8,81.5,1,82,-13.3,79.8C-27.6,77.6,-41.4,72.7,-53.8,64.8C-66.2,56.9,-77.2,46,-82.7,32.8C-88.2,19.6,-88.2,4.1,-84.8,-10.3C-81.4,-24.7,-74.6,-38,-64.8,-48.8C-55,-59.6,-42.2,-67.9,-28.9,-74.3C-15.6,-80.7,-1.8,-85.2,11.3,-82.8C24.4,-80.4,27.6,-73.1,39.5,-65.6Z" transform="translate(100 100)" />
+                                  </svg>
                                 </div>
 
-                                {/* Enhanced glass-morphism overlay */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/5 transition-opacity duration-300 group-hover:opacity-75 rounded-3xl" style={{paddingRight: '2rem'}}></div>
-
-                                {/* Top section with icon and menu */}
+                                {/* Top section with enhanced styling */}
                                 <div className="relative z-10 flex items-start justify-between">
                                   <div className="flex items-center gap-3">
-                                    <div className="relative">
-                                      <div className="flex items-center justify-center w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl transition-all duration-300 group-hover:bg-white/30 group-hover:scale-110 group-hover:rotate-6 shadow-lg">
-                                        <svg className="w-5 h-5 text-white drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                        </svg>
+                                    <div className="relative group/icon">
+                                      <div className="flex items-center justify-center w-11 h-11 bg-white/25 backdrop-blur-md rounded-2xl shadow-lg border border-white/30 transition-all duration-300 group-hover/icon:scale-110 group-hover/icon:rotate-6">
+                                        {course.isCreator ? (
+                                          <svg className="w-5 h-5 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                                            <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                                          </svg>
+                                        ) : (
+                                          <svg className="w-5 h-5 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                                          </svg>
+                                        )}
                                       </div>
-                                      {/* Status indicator */}
-                                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full animate-pulse shadow-sm"></div>
+                                      {/* Pulsing indicator */}
+                                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
                                     </div>
                                   </div>
 
-                                  {/* Enhanced menu button */}
-                                  <button className="relative z-10 p-2 text-white/80 transition-all duration-300 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-white/20 hover:rotate-90 backdrop-blur-sm">
-                                    <svg className="w-4 h-4 drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
-                                      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                    </svg>
-                                  </button>
+                                  {/* Simplified Role Badge */}
+                                  <div className={`px-3 py-1.5 rounded-xl backdrop-blur-sm shadow-md border border-white/30 transition-all duration-200 ${
+                                    course.isCreator 
+                                      ? 'bg-blue-600/95 text-white' 
+                                      : 'bg-green-600/95 text-white'
+                                  }`}>
+                                    <div className="flex items-center gap-1.5">
+                                      {course.isCreator ? (
+                                        <>
+                                          <svg className="w-3.5 h-3.5 drop-shadow" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                                          </svg>
+                                          <span className="text-xs font-bold uppercase tracking-wide drop-shadow">Creator</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <svg className="w-3.5 h-3.5 drop-shadow" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
+                                          </svg>
+                                          <span className="text-xs font-bold uppercase tracking-wide drop-shadow">Student</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
 
-                                {/* Bottom section with enhanced status and action */}
-                                <div className="relative z-10 flex items-end justify-between gap-2">
-                                  <div className="text-white flex-1 min-w-0 pr-4">
-                                    <div className="flex items-center gap-2 mb-3">
-                                      <div className="w-3 h-3 bg-white/40 rounded-full animate-status-glow flex-shrink-0"></div>
-                                      <div className="text-sm font-bold opacity-95 tracking-wider">ACTIVE COURSE</div>
+                                {/* Bottom section with enhanced design */}
+                                <div className="relative z-10 flex items-end justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="w-2 h-2 bg-green-400 rounded-full shadow-lg shadow-green-400/50 animate-pulse"></div>
+                                      <span className="text-xs font-bold text-white/90 uppercase tracking-wider drop-shadow">Active Course</span>
                                     </div>
-                                    <div className="text-xs opacity-85 mb-2">Active</div>
-                                  </div>
-
-                                  {/* Enhanced action button */}
-                                  <div className="flex flex-col items-end gap-3 flex-shrink-0 ml-4 mr-2">
-                                    <div className="action-button flex items-center justify-center w-14 h-14 bg-white/15 backdrop-blur-md rounded-2xl transition-all duration-300 group-hover:bg-white/25 group-hover:scale-110 shadow-lg border border-white/20 overflow-hidden animate-action-slide">
-                                      <svg className="w-7 h-7 text-white transition-transform duration-300 group-hover:translate-x-1 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                                      </svg>
+                                    <div className="text-sm font-semibold text-white/80 drop-shadow truncate">
+                                      {course.code}
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* Floating elements for depth */}
-                                <div className="absolute top-4 right-4 w-2 h-2 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                                <div className="absolute bottom-6 left-6 w-1 h-1 bg-white/20 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
+                                {/* Decorative floating elements */}
+                                <div className="absolute top-6 right-6 w-3 h-3 bg-white/30 rounded-full blur-sm"></div>
+                                <div className="absolute bottom-8 left-8 w-2 h-2 bg-white/20 rounded-full blur-sm"></div>
                               </div>
-                              {/* Enhanced content section */}
-                              <div className="relative flex flex-col flex-grow p-6 bg-gradient-to-b from-white to-gray-50/50">
-                                {/* Course title with improved typography hierarchy */}
-                                <div className="mb-4">
-                                  <div className="flex items-start justify-between mb-3">
-                                    <h3 className="text-xl font-bold text-gray-900 transition-colors duration-300 group-hover:text-blue-600 leading-tight line-clamp-2 flex-1 mr-2">
-                                      {course.title}
-                                    </h3>
-                                    {/* Course type indicator */}
-                                    <div className="flex-shrink-0 flex items-center gap-2">
-                                      <div className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full border border-blue-200">
-                                        Course
-                                      </div>
-                                    </div>
-                                  </div>
 
-                                  {/* Clean metadata layout */}
-                                  <div className="flex items-center gap-3">
-                                    <span className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 text-sm">
-                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              {/* Content section with sophisticated tinted atmosphere */}
+                              <div className={`relative flex flex-col flex-grow p-5 ${colorVariations.lighter} bg-opacity-20`}>
+                                <div className="mb-4">
+                                  <h3 className={`text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight transition-all duration-300 ${
+                                    course.isCreator ? 'group-hover:text-blue-600' : 'group-hover:text-green-600'
+                                  }`}>
+                                    {course.title}
+                                  </h3>
+
+                                  {/* Enhanced metadata badges */}
+                                  <div className="flex items-center gap-2.5 flex-wrap">
+                                    <span className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 text-xs font-semibold shadow-sm transition-all duration-300 group-hover:scale-105 ${
+                                      course.isCreator 
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200 group-hover:bg-blue-100 group-hover:border-blue-300' 
+                                        : 'bg-green-50 text-green-700 border-green-200 group-hover:bg-green-100 group-hover:border-green-300'
+                                    }`}>
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
                                       </svg>
-                                      <span className="font-semibold">{course.code}</span>
+                                      <span>{course.code}</span>
                                     </span>
-                                    <span className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 text-sm">
-                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <span className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 text-gray-700 rounded-xl border-2 border-gray-200 text-xs font-semibold shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-gray-100 group-hover:border-gray-300">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                       </svg>
-                                      <span className="font-medium">{course.instructor}</span>
+                                      <span>{course.isCreator ? 'You' : course.instructor}</span>
                                     </span>
                                   </div>
                                 </div>
 
-                                {/* Subtle bottom accent */}
-                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-b-3xl"></div>
+                                {/* Elegant bottom accent bar */}
+                                <div className={`absolute bottom-0 left-0 right-0 h-1 ${colorVariations.darker} opacity-50 rounded-b-3xl`}></div>
                               </div>
                             </div>
                           </Link>
-                        ))}
+                          );
+                        })}
                       </div>
-                    </div>
-                  )}
 
-                  {createdCourses.length > 2 && (
-                    <>
-                      {showPrevCreatedArrow && (
-                        <button
-                          onClick={prevCreatedCourse}
-                          aria-label="Previous created courses"
-                          className="absolute left-0 z-10 flex items-center justify-center w-12 h-12 transition-all duration-500 ease-out -translate-x-8 -translate-y-1/2 bg-white border border-gray-200 shadow-lg rounded-2xl top-1/2 hover:bg-blue-50 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-110 active:scale-95 group animate-bounce-in"
-                        >
-                          <ChevronLeftIcon className="w-5 h-5 text-gray-600 transition-all duration-300 group-hover:text-blue-600 group-active:translate-x-[-2px]" />
-                        </button>
+                      {/* Enhanced Navigation Controls - Modern Design */}
+                      {allCourses.length > 2 && (
+                        <>
+                          {/* Left Navigation Button - Premium Design */}
+                          <button
+                            onClick={() => scrollToDirection('prev')}
+                            disabled={!canScrollLeft}
+                            aria-label="Previous courses"
+                            className={`absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-12 h-12 bg-white border-2 border-gray-200 rounded-2xl shadow-md transition-all duration-200 ${
+                              canScrollLeft
+                                ? 'opacity-100 hover:bg-blue-50 hover:border-blue-300 hover:scale-105 active:scale-95'
+                                : 'opacity-0 pointer-events-none'
+                            }`}
+                          >
+                            <ChevronLeftIcon className={`w-6 h-6 transition-colors duration-300 ${
+                              canScrollLeft ? 'text-gray-700 group-hover:text-white' : 'text-gray-400'
+                            }`} />
+                          </button>
+
+                          {/* Right Navigation Button - Premium Design */}
+                          <button
+                            onClick={() => scrollToDirection('next')}
+                            disabled={!canScrollRight}
+                            aria-label="Next courses"
+                            className={`absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-12 h-12 bg-white border-2 border-gray-200 rounded-2xl shadow-md transition-all duration-200 ${
+                              canScrollRight
+                                ? 'opacity-100 hover:bg-blue-50 hover:border-blue-300 hover:scale-105 active:scale-95'
+                                : 'opacity-0 pointer-events-none'
+                            }`}
+                          >
+                            <ChevronRightIcon className={`w-6 h-6 transition-colors duration-300 ${
+                              canScrollRight ? 'text-gray-700 group-hover:text-white' : 'text-gray-400'
+                            }`} />
+                          </button>
+                        </>
                       )}
-                      {showNextCreatedArrow && (
-                        <button
-                          onClick={nextCreatedCourse}
-                          aria-label="Next created courses"
-                          className="absolute right-0 z-10 flex items-center justify-center w-12 h-12 transition-all duration-500 ease-out translate-x-8 -translate-y-1/2 bg-white border border-gray-200 shadow-lg rounded-2xl top-1/2 hover:bg-blue-50 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-110 active:scale-95 group animate-bounce-in"
-                        >
-                          <ChevronRightIcon className="w-5 h-5 text-gray-600 transition-all duration-300 group-hover:text-blue-600 group-active:translate-x-[2px]" />
-                        </button>
-                      )}
-                    </>
+                    </div>
                   )}
                 </div>
 
-                {createdCourses.length > 2 && (
-                  <div className="flex justify-center mt-8">
-                    <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg">
-                      {Array.from({ length: Math.max(0, createdCourses.length - 1) }).map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentCreatedCourseIndex(index)}
-                          className={`transition-all duration-500 ease-out rounded-full ${
-                            index === currentCreatedCourseIndex
-                              ? 'w-8 h-3 bg-blue-600 shadow-lg shadow-blue-500/30 scale-110'
-                              : 'w-3 h-3 bg-gray-300 hover:bg-blue-400 hover:scale-125 active:scale-95'
-                          }`}
-                        />
-                      ))}
+                {/* Simplified Progress Bar - Eye-friendly */}
+                {allCourses.length > 2 && (
+                  <div className="mt-5 flex-shrink-0">
+                    <div className="relative h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className="absolute top-0 left-0 h-full bg-gray-400 rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${Math.min(100, scrollProgress + 20)}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex items-center justify-center mt-3 text-xs text-gray-500">
+                      <span className="flex items-center gap-2">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span>Scroll or use arrow keys</span>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
                     </div>
                   </div>
                 )}
 
-                {createdCourses.length > 0 && (
-                  <div className="flex items-center justify-between pt-4 mt-6 border-t border-gray-200">
-                    <div className="text-sm text-gray-500">
-                      Showing {Math.min(currentCreatedCourseIndex + 2, createdCourses.length)} of {createdCourses.length} created courses
+                {allCourses.length > 0 && (
+                  <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-200 flex-shrink-0">
+                    <div className="text-xs text-gray-500">
+                      {Math.min(currentCourseIndex + 2, allCourses.length)} of {allCourses.length}
+                      <span className="ml-1 text-[10px] text-gray-400">
+                        ({createdCourses.length}C, {enrolledCourses.length}E)
+                      </span>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 transition-all duration-200 rounded-lg hover:text-blue-700 hover:bg-blue-50">
-                      <span>View All Created Courses</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button 
+                      onClick={() => router.push('/courses')}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-purple-600 rounded-md hover:bg-purple-50 transition-colors"
+                    >
+                      <span>View All</span>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
                   </div>
                 )}
           </div>
-
-          {/* My Enrolled Courses Section */}
-          <div className="p-6 mt-8 bg-white/95 backdrop-blur-sm border border-white/30 shadow-sm rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
-                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900">My Enrolled Courses</h2>
-                  <span className="px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
-                    {enrolledCourses.length}
-                  </span>
-                </div>
-              </div>
-
-              <div className="relative">
-                {enrolledCourses.length === 0 ? (
-                  <EmptyState type="courses" message="No courses enrolled yet." />
-                ) : (
-                  <div className="overflow-hidden">
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      {getVisibleEnrolledCourses().map((course, index) => (
-                        <Link key={course.id} href={`/courses/${course.id}`} className="block group">
-                          <div className={`relative flex flex-col bg-white border cursor-pointer rounded-3xl transition-all duration-700 ease-out transform hover:-translate-y-3 hover:rotate-1 hover:shadow-2xl hover:scale-[1.02] animate-shadow-enhance`} style={{ animationDelay: `${index * 0.1}s` }}>
-                            {/* Enhanced gradient header with multiple layers */}
-                            <div className={`course-card-header relative h-56 p-4 pr-6 flex flex-col justify-between overflow-hidden ${course.color} bg-gradient-to-br from-current via-current to-current transition-all duration-500 group-hover:shadow-inner animate-header-transform`}>
-                              {/* Animated background pattern */}
-                              <div className="absolute inset-0 opacity-10">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
-                                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12"></div>
-                              </div>
-
-                              {/* Enhanced glass-morphism overlay */}
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/5 transition-opacity duration-300 group-hover:opacity-75 rounded-3xl" style={{paddingRight: '2rem'}}></div>
-
-                              {/* Top section with icon and menu */}
-                              <div className="relative z-10 flex items-start justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="relative">
-                                    <div className="flex items-center justify-center w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl transition-all duration-300 group-hover:bg-white/30 group-hover:scale-110 group-hover:rotate-6 shadow-lg">
-                                      <svg className="w-5 h-5 text-white drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                      </svg>
-                                    </div>
-                                    {/* Status indicator */}
-                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full animate-pulse shadow-sm"></div>
-                                  </div>
-                                </div>
-
-                                {/* Enhanced menu button */}
-                                <button className="relative z-10 p-2 text-white/80 transition-all duration-300 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-white/20 hover:rotate-90 backdrop-blur-sm">
-                                  <svg className="w-4 h-4 drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                  </svg>
-                                </button>
-                              </div>
-
-                              {/* Bottom section with enhanced status and action */}
-                              <div className="relative z-10 flex items-end justify-between gap-2">
-                                <div className="text-white flex-1 min-w-0 pr-4">
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-3 h-3 bg-white/40 rounded-full animate-status-glow flex-shrink-0"></div>
-                                    <div className="text-sm font-bold opacity-95 tracking-wider">ACTIVE COURSE</div>
-                                  </div>
-                                  <div className="text-xs opacity-85 mb-2">Active</div>
-                                </div>
-
-                                {/* Enhanced action button */}
-                                <div className="flex flex-col items-end gap-3 flex-shrink-0 ml-4 mr-2">
-                                  <div className="action-button flex items-center justify-center w-14 h-14 bg-white/15 backdrop-blur-md rounded-2xl transition-all duration-300 group-hover:bg-white/25 group-hover:scale-110 shadow-lg border border-white/20 overflow-hidden animate-action-slide">
-                                    <svg className="w-7 h-7 text-white transition-transform duration-300 group-hover:translate-x-1 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Floating elements for depth */}
-                              <div className="absolute top-4 right-4 w-2 h-2 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                              <div className="absolute bottom-6 left-6 w-1 h-1 bg-white/20 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
-                            </div>
-                            {/* Enhanced content section */}
-                            <div className="relative flex flex-col flex-grow p-6 bg-gradient-to-b from-white to-gray-50/50">
-                              {/* Course title with improved typography hierarchy */}
-                              <div className="mb-4">
-                                <div className="flex items-start justify-between mb-3">
-                                  <h3 className="text-xl font-bold text-gray-900 transition-colors duration-300 group-hover:text-green-600 leading-tight line-clamp-2 flex-1 mr-2">
-                                    {course.title}
-                                  </h3>
-                                  {/* Course type indicator */}
-                                  <div className="flex-shrink-0 flex items-center gap-2">
-                                    <div className="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full border border-green-200">
-                                      Course
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Clean metadata layout */}
-                                <div className="flex items-center gap-3">
-                                  <span className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg border border-green-100 text-sm">
-                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
-                                    </svg>
-                                    <span className="font-semibold">{course.code}</span>
-                                  </span>
-                                  <span className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 text-sm">
-                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                    <span className="font-medium">{course.instructor}</span>
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Subtle bottom accent */}
-                              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500/20 via-purple-500/20 to-pink-500/20 rounded-b-3xl"></div>
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {enrolledCourses.length > 2 && (
-                  <>
-                    {showPrevEnrolledArrow && (
-                      <button
-                        onClick={prevEnrolledCourse}
-                        className="absolute left-0 z-10 flex items-center justify-center w-12 h-12 transition-all duration-500 ease-out -translate-x-8 -translate-y-1/2 bg-white border border-gray-200 shadow-lg rounded-2xl top-1/2 hover:bg-green-50 hover:shadow-2xl hover:shadow-green-500/20 hover:scale-110 active:scale-95 group animate-bounce-in"
-                      >
-                        <ChevronLeftIcon className="w-5 h-5 text-gray-600 transition-all duration-300 group-hover:text-green-600 group-active:translate-x-[-2px]" />
-                      </button>
-                    )}
-                    {showNextEnrolledArrow && (
-                      <button
-                        onClick={nextEnrolledCourse}
-                        className="absolute right-0 z-10 flex items-center justify-center w-12 h-12 transition-all duration-500 ease-out translate-x-8 -translate-y-1/2 bg-white border border-gray-200 shadow-lg rounded-2xl top-1/2 hover:bg-green-50 hover:shadow-2xl hover:shadow-green-500/20 hover:scale-110 active:scale-95 group animate-bounce-in"
-                      >
-                        <ChevronRightIcon className="w-5 h-5 text-gray-600 transition-all duration-300 group-hover:text-green-600 group-active:translate-x-[2px]" />
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {enrolledCourses.length > 2 && (
-                <div className="flex justify-center mt-8">
-                  <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg">
-                    {Array.from({ length: Math.max(0, enrolledCourses.length - 1) }).map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentEnrolledCourseIndex(index)}
-                        className={`transition-all duration-500 ease-out rounded-full ${
-                          index === currentEnrolledCourseIndex
-                            ? 'w-8 h-3 bg-green-600 shadow-lg shadow-green-500/30 scale-110'
-                            : 'w-3 h-3 bg-gray-300 hover:bg-green-400 hover:scale-125 active:scale-95'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {enrolledCourses.length > 0 && (
-                <div className="flex items-center justify-between pt-4 mt-6 border-t border-gray-200">
-                  <div className="text-sm text-gray-500">
-                    Showing {Math.min(currentEnrolledCourseIndex + 2, enrolledCourses.length)} of {enrolledCourses.length} enrolled courses
-                  </div>
-                  <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 transition-all duration-200 rounded-lg hover:text-green-700 hover:bg-green-50">
-                    <span>View All Enrolled Courses</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              )}
-          </div>
         </div>
 
-        {/* Recent Activities Sidebar */}
-        <div className="animate-slide-in-right">
-          <div className="p-6 bg-white/95 backdrop-blur-sm border border-white/30 shadow-lg rounded-2xl hover:shadow-xl transition-shadow duration-300">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg transition-all duration-300 hover:bg-green-200 hover:scale-110">
-                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {/* Compact Recent Activities Sidebar */}
+        <div className="flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col p-4 bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
+            <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center justify-center w-6 h-6 bg-gray-100 rounded-lg">
+                <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-gray-900">Recent Activities</h3>
+              <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Recent Activities</h3>
             </div>
 
-            <div className="space-y-3">
+            <div className="flex-1 overflow-y-auto space-y-2.5">
               {recentActivities.length === 0 ? (
-                <EmptyState type="recent" />
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium text-gray-500">No recent activities</p>
+                    <p className="text-xs text-gray-400 mt-1">Your activity will appear here</p>
+                  </div>
+                </div>
               ) : (
                 recentActivities.map((activity, index) => (
-                  <div key={activity.id} className={`p-4 transition-all duration-300 border border-gray-100 cursor-pointer group bg-gray-50 rounded-xl hover:bg-white hover:border-green-200 hover:shadow-md hover:scale-[1.02] animate-fade-in-up`} style={{ animationDelay: `${index * 0.15}s` }}>
-                    <div className="flex items-start gap-3">
-                      <div className={`w-2 h-2 rounded-full mt-2 transition-all duration-300 group-hover:scale-150 group-hover:shadow-lg flex-shrink-0 ${activity.color}`}></div>
+                  <div key={activity.id} className="p-3 border-2 border-gray-200 cursor-pointer group bg-white rounded-xl hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all">
+                    <div className="flex items-start gap-2.5">
+                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${activity.color}`}></div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="mb-1 text-sm font-semibold text-gray-900 truncate transition-colors duration-300 group-hover:text-green-600">
+                        <h4 className="text-sm font-bold text-gray-900 truncate mb-1">
                           {activity.title}
                         </h4>
-                        <p className="mb-2 text-xs text-gray-500 transition-colors duration-300 group-hover:text-gray-700">{activity.course}</p>
+                        <p className="text-xs text-gray-600 truncate mb-2">{activity.course}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-400 transition-colors duration-300 group-hover:text-gray-600">{activity.time}</span>
-                          <span className={`text-xs px-2 py-1 font-medium transition-all duration-300 group-hover:rounded-lg group-hover:scale-105 ${
-                            activity.status === 'submitted' ? 'text-green-700 bg-green-100 group-hover:bg-green-200' :
-                            activity.status === 'new' ? 'text-blue-700 bg-blue-100 group-hover:bg-blue-200' :
-                            activity.status === 'graded' ? 'text-purple-700 bg-purple-100 group-hover:bg-purple-200' :
-                            activity.status === 'important' ? 'text-orange-700 bg-orange-100 group-hover:bg-orange-200' :
-                            'text-gray-700 bg-gray-100 group-hover:bg-gray-200'
+                          <span className="text-xs text-gray-500 font-medium">{activity.time}</span>
+                          <span className={`text-xs px-2 py-0.5 font-semibold rounded-md ${
+                            activity.status === 'submitted' ? 'text-green-700 bg-green-100' :
+                            activity.status === 'new' ? 'text-blue-700 bg-blue-100' :
+                            activity.status === 'graded' ? 'text-purple-700 bg-purple-100' :
+                            activity.status === 'important' ? 'text-orange-700 bg-orange-100' :
+                            'text-gray-700 bg-gray-100'
                           }`}>
                             {activity.status}
                           </span>
@@ -1037,8 +925,8 @@ export default function Home() {
             </div>
 
             {recentActivities.length > 0 && (
-              <div className="pt-4 mt-6 border-t border-gray-200">
-                <button className="w-full text-sm font-medium text-blue-600 transition-all duration-300 hover:text-green-600 hover:scale-105">
+              <div className="pt-3 mt-3 border-t border-gray-200 flex-shrink-0">
+                <button className="w-full text-sm font-semibold text-purple-600 hover:text-purple-700 py-1 hover:bg-purple-50 rounded-lg transition-colors">
                   View All Activities
                 </button>
               </div>
@@ -1046,6 +934,203 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Floating AI Assistant Panel - Slides from Bottom */}
+      <div 
+        className={`fixed bottom-24 right-8 z-40 transition-all duration-700 ease-out ${
+          isAIAssistantOpen 
+            ? 'translate-y-0 opacity-100 scale-100' 
+            : 'translate-y-8 opacity-0 scale-95 pointer-events-none invisible'
+        }`}
+        style={{ 
+          visibility: isAIAssistantOpen ? 'visible' : 'hidden',
+          display: isAIAssistantOpen ? 'block' : 'none'
+        }}
+      >
+        <div className="w-[480px] max-w-[calc(100vw-4rem)]">
+          <div className="relative p-6 bg-white rounded-3xl border-2 border-gray-200 shadow-xl backdrop-blur-sm">
+            {/* Subtle background */}
+            <div className="absolute inset-0 bg-gray-50/50 rounded-3xl"></div>
+            
+            <div className="relative z-10">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-xl shadow-sm">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  AI Assistant
+                </h3>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              </div>
+
+              {/* Textarea */}
+              <div className="relative mb-4">
+                <textarea
+                  value={promptText}
+                  onChange={(e) => setPromptText(e.target.value)}
+                  placeholder="Ask or find anything from your workspace..."
+                  className="w-full p-4 text-base text-gray-700 placeholder-gray-500 transition-all duration-300 border-2 border-purple-200 resize-none bg-white/80 backdrop-blur-sm rounded-xl focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-100 focus:scale-[1.01] hover:border-purple-300 shadow-sm"
+                  rows="3"
+                />
+                <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white/80 px-2 py-1 rounded-full">
+                  {promptText.length}/500
+                </div>
+              </div>
+
+              {/* Mode buttons and submit */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedMode('Ask');
+                      const tracker = getLearningBehaviorTracker();
+                      if (tracker) tracker.trackAIAssistantMode('ask');
+                    }}
+                    className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                      selectedMode === 'Ask'
+                        ? 'text-white bg-blue-600 shadow-sm'
+                        : 'text-gray-600 bg-white hover:bg-gray-50 border-2 border-gray-200'
+                    }`}
+                  >
+                    Ask
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedMode('Research');
+                      const tracker = getLearningBehaviorTracker();
+                      if (tracker) tracker.trackAIAssistantMode('research');
+                    }}
+                    className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                      selectedMode === 'Research'
+                        ? 'text-white bg-blue-600 shadow-sm'
+                        : 'text-gray-600 bg-white hover:bg-gray-50 border-2 border-gray-200'
+                    }`}
+                  >
+                    Research
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedMode('Text to Docs');
+                      const tracker = getLearningBehaviorTracker();
+                      if (tracker) tracker.trackAIAssistantMode('textToDocs');
+                    }}
+                    className={`px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                      selectedMode === 'Text to Docs'
+                        ? 'text-white bg-blue-600 shadow-sm'
+                        : 'text-gray-600 bg-white hover:bg-gray-50 border-2 border-gray-200'
+                    }`}
+                  >
+                    Docs
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={!promptText.trim()}
+                  aria-label="Submit query"
+                  className="p-3 text-white transition-all duration-200 bg-blue-600 rounded-xl shadow-sm hover:bg-blue-700 hover:shadow-md hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 active:scale-95"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Additional controls */}
+              <div className="flex items-center justify-between pt-3 border-t border-purple-200/50">
+                <div className="flex items-center gap-3">
+                  <button className="p-2 text-purple-400 transition-all duration-200 hover:text-purple-600 hover:bg-white rounded-lg hover:scale-110">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-purple-600 hover:bg-white rounded-lg transition-all duration-200 hover:scale-105">
+                    <span>All sources</span>
+                    <svg className="w-3 h-3 transition-transform duration-200 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <button className="p-2 text-purple-400 transition-all duration-200 hover:text-purple-600 hover:bg-white rounded-lg hover:scale-110">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Floating AI Assistant Button - Bottom Right */}
+      <button
+        onClick={() => setIsAIAssistantOpen(!isAIAssistantOpen)}
+        className={`fixed bottom-8 right-8 z-50 group transition-all duration-500 ${
+          isAIAssistantOpen ? 'scale-95' : 'scale-100 hover:scale-110'
+        }`}
+        aria-label="Toggle AI Assistant"
+      >
+        {/* Main Button */}
+        <div className={`relative flex items-center gap-3 px-6 py-4 bg-blue-600 rounded-full shadow-lg transition-all duration-300 ${
+          isAIAssistantOpen 
+            ? 'ring-4 ring-blue-200 shadow-blue-500/30' 
+            : 'hover:bg-blue-700 hover:shadow-xl'
+        }`}>
+          {/* Icon with rotation animation */}
+          <div className="relative">
+            <svg 
+              className={`w-6 h-6 text-white transition-transform duration-500 ${
+                isAIAssistantOpen ? 'rotate-180 scale-110' : 'rotate-0'
+              }`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" 
+              />
+            </svg>
+            {/* Pulsing indicator */}
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-pulse border-2 border-white"></div>
+          </div>
+          
+          {/* Text that appears on hover */}
+          <div className={`overflow-hidden transition-all duration-500 ${
+            isAIAssistantOpen 
+              ? 'max-w-0 opacity-0' 
+              : 'max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100'
+          }`}>
+            <div className="text-left whitespace-nowrap">
+              <div className="text-sm font-bold text-white">AI Assistant</div>
+              <div className="text-xs text-purple-100">Ask me anything</div>
+            </div>
+          </div>
+          
+          {/* Close icon when open */}
+          {isAIAssistantOpen && (
+            <svg 
+              className="w-5 h-5 text-white animate-fade-in-up" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
+        </div>
+        
+        {/* Subtle glow effect */}
+        <div className="absolute inset-0 bg-blue-600 rounded-full blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-300 -z-10"></div>
+        
+        {/* Ripple effect on click */}
+        <div className="absolute inset-0 rounded-full bg-white opacity-0 group-active:opacity-20 group-active:animate-ping"></div>
+      </button>
     </div>
   );
 }

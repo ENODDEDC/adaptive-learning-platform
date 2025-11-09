@@ -6,19 +6,32 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
   const { refreshCourses } = useLayout();
   const [subject, setSubject] = useState('');
   const [section, setSection] = useState('');
+  const [coverColor, setCoverColor] = useState('#60a5fa'); // Default blue color
   const [isLoading, setIsLoading] = useState(false);
+
+  const colorOptions = [
+    { name: 'Blue', value: '#60a5fa' },
+    { name: 'Purple', value: '#a78bfa' },
+    { name: 'Pink', value: '#f472b6' },
+    { name: 'Green', value: '#34d399' },
+    { name: 'Orange', value: '#fb923c' },
+    { name: 'Red', value: '#f87171' },
+    { name: 'Teal', value: '#2dd4bf' },
+    { name: 'Indigo', value: '#818cf8' },
+  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await onCreateCourse({ subject, section, teacherName: adminName });
+      await onCreateCourse({ subject, section, teacherName: adminName, coverColor });
       onClose(); // Close modal after submission
       refreshCourses(); // Refresh courses on the home page
       // Reset form fields
       setSubject('');
       setSection('');
+      setCoverColor('#60a5fa');
     } catch (error) {
       console.error('Error creating course:', error);
     } finally {
@@ -114,6 +127,36 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
             </label>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Course Color
+            </label>
+            <div className="grid grid-cols-4 gap-3">
+              {colorOptions.map((color) => (
+                <button
+                  key={color.value}
+                  type="button"
+                  onClick={() => setCoverColor(color.value)}
+                  className={`relative h-12 rounded-xl transition-all duration-200 hover:scale-110 ${
+                    coverColor === color.value
+                      ? 'ring-2 ring-offset-2 ring-blue-500 scale-110'
+                      : 'hover:ring-2 hover:ring-offset-2 hover:ring-gray-300'
+                  }`}
+                  style={{ backgroundColor: color.value }}
+                  title={color.name}
+                >
+                  {coverColor === color.value && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
             <button
@@ -125,7 +168,7 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
             </button>
             <button
               type="submit"
-              disabled={!adminName || !subject.trim() || isLoading}
+              disabled={!subject.trim() || isLoading}
               className="px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
             >
               {isLoading ? (

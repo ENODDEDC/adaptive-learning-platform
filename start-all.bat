@@ -5,13 +5,7 @@ echo ============================================================
 echo.
 
 echo [1/3] Checking MongoDB...
-sc query MongoDB | find "RUNNING" >nul
-if %errorlevel% equ 0 (
-    echo ✅ MongoDB is running
-) else (
-    echo ⚠️ MongoDB not running, attempting to start...
-    net start MongoDB
-)
+echo ✅ Using MongoDB Atlas (Cloud Database)
 echo.
 
 echo [2/3] Starting Next.js Application...
@@ -36,7 +30,7 @@ echo ============================================================
 echo.
 echo 📱 Next.js App:     http://localhost:3000
 echo 🤖 ML Service:      http://localhost:5000
-echo 💾 MongoDB:         mongodb://localhost:27017
+echo 💾 MongoDB:         MongoDB Atlas (Cloud)
 echo.
 echo 📝 Note: Two new windows opened for each service
 echo    Keep them running during your demo!

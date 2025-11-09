@@ -41,13 +41,23 @@ const monitoredPOST = withPerformanceMonitoring(async (request) => {
   await connectMongoDB();
   const { subject, section, teacherName, coverColor } = await request.json();
 
+  // Get user info from database if teacherName not provided
+  let finalTeacherName = teacherName;
+  if (!finalTeacherName) {
+    const User = (await import('@/models/User')).default;
+    const user = await User.findById(userId).select('name surname');
+    if (user) {
+      finalTeacherName = `${user.name} ${user.surname}`;
+    }
+  }
+
   const uniqueKey = Math.random().toString(36).substring(2, 8).toUpperCase();
 
   const newCourse = await Course.create({
     subject,
     section,
-    teacherName,
-    coverColor,
+    teacherName: finalTeacherName,
+    coverColor: coverColor || '#60a5fa',
     uniqueKey,
     createdBy: userId,
   });
