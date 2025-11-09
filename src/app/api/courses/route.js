@@ -99,21 +99,31 @@ const monitoredGET = withPerformanceMonitoring(async (request) => {
     ]
   }).lean();
 
-  // Get student count and module count for each course
+  // Get student count, module count, and assignment count for each course
   const coursesWithStats = await Promise.all(courses.map(async (course) => {
     // Count enrolled students
     const studentCount = course.enrolledUsers?.length || 0;
     
-    // Get module count efficiently
-    const moduleCount = await Content.countDocuments({
+    // Get assignment and material counts from Assignment model
+    const Assignment = (await import('@/models/Assignment')).default;
+    
+    // Count materials (type: 'material')
+    const moduleCount = await Assignment.countDocuments({
       courseId: course._id,
-      isActive: true
+      type: 'material'
+    });
+
+    // Count assignments (type: 'assignment')
+    const assignmentCount = await Assignment.countDocuments({
+      courseId: course._id,
+      type: 'assignment'
     });
 
     return {
       ...course,
       studentCount,
-      moduleCount
+      moduleCount,
+      assignmentCount
     };
   }));
 

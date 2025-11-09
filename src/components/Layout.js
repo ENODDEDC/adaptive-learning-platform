@@ -132,13 +132,13 @@ const Layout = ({ children }) => {
   const sidebarState = isSidebarCollapsed;
   const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-64';
 
-  // Determine if current page needs scrolling
-  const needsScrolling = pathname === '/text-to-docs';
-  const containerOverflow = needsScrolling ? 'overflow-hidden' : 'overflow-hidden';
-  const contentOverflow = needsScrolling ? 'overflow-y-auto' : 'overflow-hidden';
+  // Determine if current page needs scrolling - Enable scrolling for all pages
+  const needsScrolling = true; // Enable scrolling globally
+  const containerOverflow = 'overflow-y-auto';
+  const contentOverflow = 'overflow-y-auto';
 
   return (
-    <div className="h-screen overflow-hidden bg-base-light">
+    <div className="min-h-screen bg-base-light">
       <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
@@ -250,9 +250,9 @@ const Layout = ({ children }) => {
           }
         }}
       />
-      <div className={`transition-all duration-500 ease-in-out ${mainContentMargin} h-screen ${containerOverflow}`}>
+      <div className={`transition-all duration-500 ease-in-out ${mainContentMargin} min-h-screen ${containerOverflow}`}>
         <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
-        <main className={`h-full ${contentOverflow}`}>
+        <main className={`min-h-screen ${contentOverflow}`}>
           {React.isValidElement(children) && typeof children.type !== 'string'
             ? React.cloneElement(children, {
                 upcomingTasksExpanded,

@@ -378,6 +378,16 @@
   -webkit-line-clamp: 3;
 }
 
+html, body {
+  background-color: #F0F2F5; 
+  color: #1a202c;
+  font-family: 'Inter', sans-serif;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  height: auto;
+  min-height: 100vh;
+}
+
 body {
   background-color: #F0F2F5; 
   color: #1a202c;

@@ -567,7 +567,7 @@ const CourseDetailPage = ({
 
   return (
     <>
-      <div className="h-full p-8 overflow-y-auto bg-gray-50">
+      <div className="min-h-screen p-8 overflow-y-auto bg-gray-50">
         {/* Global event listener to open viewer from child components (e.g., Stream attachments) */}
         <script dangerouslySetInnerHTML={{
           __html: `
