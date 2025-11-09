@@ -328,35 +328,42 @@ class RuleBasedLabelingService {
       }
     }
     
-    // If no strong preferences, recommend balanced modes
+    // If no strong preferences, recommend balanced modes (one per dimension)
     if (recommendations.length === 0) {
       recommendations.push(
         {
-          mode: 'AI Narrator',
+          mode: 'Active Learning Hub',
           priority: 1,
-          reason: 'Great starting point for understanding any content',
+          reason: 'Interactive engagement helps retention',
           confidence: 0.5,
-          dimension: 'Balanced'
+          dimension: 'Balanced - Active/Reflective'
+        },
+        {
+          mode: 'Hands-On Lab',
+          priority: 2,
+          reason: 'Practical examples enhance understanding',
+          confidence: 0.5,
+          dimension: 'Balanced - Sensing/Intuitive'
         },
         {
           mode: 'Visual Learning',
-          priority: 2,
+          priority: 3,
           reason: 'Visual aids enhance comprehension for most learners',
           confidence: 0.5,
-          dimension: 'Balanced'
+          dimension: 'Balanced - Visual/Verbal'
         },
         {
-          mode: 'Active Learning Hub',
-          priority: 3,
-          reason: 'Interactive engagement helps retention',
+          mode: 'Sequential Learning',
+          priority: 4,
+          reason: 'Structured progression supports learning',
           confidence: 0.5,
-          dimension: 'Balanced'
+          dimension: 'Balanced - Sequential/Global'
         }
       );
     }
     
-    // Sort by priority and return top 3
-    return recommendations.sort((a, b) => a.priority - b.priority).slice(0, 3);
+    // Sort by priority and return top 4 (one per FSLSM dimension)
+    return recommendations.sort((a, b) => a.priority - b.priority).slice(0, 4);
   }
 
   /**

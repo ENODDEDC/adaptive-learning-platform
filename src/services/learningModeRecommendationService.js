@@ -22,7 +22,7 @@ class LearningModeRecommendationService {
   }
 
   /**
-   * Analyze document content and recommend 2-3 best learning modes
+   * Analyze document content and recommend 3-4 best learning modes
    */
   async getRecommendedModes(docxContent, fileName = '') {
     await this.initialize();
@@ -32,7 +32,7 @@ class LearningModeRecommendationService {
     }
 
     const prompt = `
-Analyze this document content and recommend the 2-3 BEST learning modes for a student based on the content type and complexity.
+Analyze this document content and recommend the 3-4 BEST learning modes for a student based on the content type and complexity.
 
 Document: "${fileName}"
 Content: "${docxContent.substring(0, 2000)}..."
@@ -48,15 +48,17 @@ Available Learning Modes:
 8. Reflective Learning - Self-assessment (good for philosophical, analytical content)
 
 Instructions:
-- Recommend exactly 2-3 modes that would be MOST helpful for THIS specific document
+- Recommend exactly 3-4 modes that would be MOST helpful for THIS specific document
 - Consider content type, complexity, and learning objectives
+- Try to cover different learning dimensions (active/reflective, sensing/intuitive, visual/verbal, sequential/global)
 - Prioritize modes that match the document's nature
 - Return ONLY a JSON array with mode names and brief reasons
 
 Example response:
 [
   {"mode": "AI Narrator", "reason": "Complex financial concepts need audio explanation"},
-  {"mode": "Visual Learning", "reason": "Data and processes benefit from visual diagrams"}
+  {"mode": "Visual Learning", "reason": "Data and processes benefit from visual diagrams"},
+  {"mode": "Sequential Learning", "reason": "Step-by-step procedures require structured approach"}
 ]
 
 Response (JSON only):`;
@@ -74,10 +76,11 @@ Response (JSON only):`;
         return recommendations;
       }
 
-      // Fallback recommendations
+      // Fallback recommendations (3-4 modes covering different dimensions)
       return [
         { "mode": "AI Narrator", "reason": "Great for understanding complex concepts" },
-        { "mode": "Visual Learning", "reason": "Helps visualize key information" }
+        { "mode": "Visual Learning", "reason": "Helps visualize key information" },
+        { "mode": "Active Learning Hub", "reason": "Interactive engagement enhances retention" }
       ];
 
     } catch (error) {
@@ -98,13 +101,13 @@ Response (JSON only):`;
         await this.initialize();
 
         const simplifiedPrompt = `
-Analyze this document content and recommend 2-3 learning modes based on content characteristics:
+Analyze this document content and recommend 3-4 learning modes based on content characteristics:
 
 Content: "${content.substring(0, 1500)}..."
 
 Available modes: AI Narrator, Visual Learning, Sequential Learning, Global Learning, Hands-On Lab, Concept Constellation, Active Learning Hub, Reflective Learning
 
-Return JSON array with mode and reason:
+Return JSON array with mode and reason (3-4 modes covering different learning dimensions):
 [{"mode": "Mode Name", "reason": "Brief reason"}]
 `;
 
@@ -123,10 +126,12 @@ Return JSON array with mode and reason:
       }
     }
 
-    // Ultimate fallback - content-agnostic recommendations
+    // Ultimate fallback - content-agnostic recommendations (covering all 4 FSLSM dimensions)
     return [
       { "mode": "AI Narrator", "reason": "Great starting point for understanding any document" },
-      { "mode": "Visual Learning", "reason": "Visual aids enhance comprehension" }
+      { "mode": "Visual Learning", "reason": "Visual aids enhance comprehension" },
+      { "mode": "Active Learning Hub", "reason": "Interactive engagement improves retention" },
+      { "mode": "Sequential Learning", "reason": "Structured approach supports learning" }
     ];
   }
 
