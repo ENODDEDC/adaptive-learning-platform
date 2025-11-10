@@ -162,51 +162,173 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section ref={heroRef} className="relative min-h-screen flex items-center justify-center pt-20 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          {/* Main Headline */}
-          <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <div className="inline-block mb-6 px-6 py-2 bg-blue-500/10 border border-blue-500/30 rounded-full">
-              <span className="text-blue-400 font-semibold">🚀 Powered by Advanced AI Technology</span>
+        <div className="max-w-7xl mx-auto w-full">
+          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+
+            {/* Left: Main Content */}
+            <div className="text-center lg:text-left">
+              <div className="inline-block mb-6 px-6 py-2 bg-blue-500/10 border border-blue-500/30 rounded-full">
+                <span className="text-blue-400 font-semibold">🧠 Powered by ML + AI Technology | 88% Accuracy</span>
+              </div>
+
+              <h1 className="text-5xl lg:text-7xl font-black mb-8 leading-tight">
+                <span className="block text-white">Transform Learning with</span>
+                <span className="block bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                  8 AI Learning Modes
+                </span>
+              </h1>
+
+              <p className="text-lg lg:text-xl text-white/70 mb-10 leading-relaxed">
+                Machine Learning automatically detects your learning style, then AI generates personalized content.
+                From audio narration to visual diagrams, hands-on labs to deep reflection.
+              </p>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
+                <Link href="/register" className="group relative px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl font-bold text-lg overflow-hidden hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105">
+                  <span className="relative z-10">Start Learning Now</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </Link>
+                <Link href="#learning-modes" className="px-8 py-4 border-2 border-white/30 rounded-2xl font-bold text-lg hover:bg-white/10 transition-all duration-300">
+                  Explore AI Modes
+                </Link>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center lg:text-left">
+                  <div className="text-4xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-1">88%</div>
+                  <div className="text-white/60 text-sm">ML Accuracy</div>
+                </div>
+                <div className="text-center lg:text-left">
+                  <div className="text-4xl font-black bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent mb-1">8</div>
+                  <div className="text-white/60 text-sm">AI Modes</div>
+                </div>
+                <div className="text-center lg:text-left">
+                  <div className="text-4xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-1">24/7</div>
+                  <div className="text-white/60 text-sm">AI Assistant</div>
+                </div>
+                <div className="text-center lg:text-left">
+                  <div className="text-4xl font-black bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent mb-1">∞</div>
+                  <div className="text-white/60 text-sm">Personalized</div>
+                </div>
+              </div>
             </div>
 
-            <h1 className="text-6xl lg:text-8xl font-black mb-8 leading-tight">
-              <span className="block text-white">Transform Learning with</span>
-              <span className="block bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                8 AI Learning Modes
-              </span>
-            </h1>
+            {/* Right: System Interface Preview */}
+            <div className="relative">
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-1 border border-white/20 shadow-2xl">
+                {/* Browser Frame */}
+                <div className="bg-gray-800 rounded-t-xl px-4 py-3 border-b border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-2">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    </div>
+                    <div className="flex-1 bg-gray-700 rounded px-3 py-1 ml-4">
+                      <span className="text-xs text-gray-400">intelevo.com/courses/ai-fundamentals</span>
+                    </div>
+                  </div>
+                </div>
 
-            <p className="text-xl lg:text-2xl text-white/70 max-w-4xl mx-auto mb-12 leading-relaxed">
-              Personalized AI-powered education that adapts to your unique learning style.
-              From audio narration to visual diagrams, hands-on labs to deep reflection.
-            </p>
+                {/* System Interface Mockup */}
+                <div className="bg-white rounded-b-xl overflow-hidden">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-white font-bold text-sm">📚 AI Fundamentals</div>
+                      <div className="flex items-center gap-2">
+                        <div className="bg-white/20 rounded-full px-2 py-1 text-xs text-white">🧠 Active Learner</div>
+                      </div>
+                    </div>
+                  </div>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-              <Link href="/register" className="group relative px-10 py-5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl font-bold text-lg overflow-hidden hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105">
-                <span className="relative z-10">Start Learning Now</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              </Link>
-              <Link href="#learning-modes" className="px-10 py-5 border-2 border-white/30 rounded-2xl font-bold text-lg hover:bg-white/10 transition-all duration-300">
-                Explore AI Modes
-              </Link>
+                  {/* Main Content Area */}
+                  <div className="flex h-64">
+                    {/* Left: Document */}
+                    <div className="flex-1 bg-gray-50 p-3">
+                      <div className="bg-white rounded shadow-sm p-3 h-full">
+                        <div className="text-xs font-semibold text-gray-800 mb-2">📄 Machine Learning Basics</div>
+                        <div className="space-y-1">
+                          <div className="h-2 bg-gray-200 rounded w-full"></div>
+                          <div className="h-2 bg-gray-200 rounded w-5/6"></div>
+                          <div className="h-2 bg-gray-200 rounded w-3/4"></div>
+                          <div className="h-2 bg-blue-200 rounded w-2/3 animate-pulse"></div>
+                        </div>
+
+                        {/* Highlighted Section */}
+                        <div className="mt-3 bg-blue-50 border-l-4 border-blue-400 p-2 rounded-r">
+                          <div className="text-xs text-blue-800">"Neural networks are.."</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: AI Panel */}
+                    <div className="w-48 bg-gray-100 border-l border-gray-200">
+                      {/* Learning Style Widget */}
+                      <div className="p-3 border-b border-gray-200">
+                        <div className="text-xs font-semibold text-gray-700 mb-2">🎯 Your Learning Style</div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-600">Active</span>
+                            <div className="w-12 h-1 bg-gray-200 rounded">
+                              <div className="w-9 h-1 bg-blue-500 rounded animate-pulse"></div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-600">Visual</span>
+                            <div className="w-12 h-1 bg-gray-200 rounded">
+                              <div className="w-7 h-1 bg-purple-500 rounded"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* AI Modes */}
+                      <div className="p-3">
+                        <div className="text-xs font-semibold text-gray-700 mb-2">🤖 Recommended Modes</div>
+                        <div className="space-y-2">
+                          <div className="bg-blue-100 border border-blue-300 rounded p-2 animate-pulse">
+                            <div className="text-xs font-medium text-blue-800">🎯 Active Learning</div>
+                            <div className="text-xs text-blue-600">Generate questions</div>
+                          </div>
+                          <div className="bg-purple-100 border border-purple-300 rounded p-2">
+                            <div className="text-xs font-medium text-purple-800">📊 Visual Learning</div>
+                            <div className="text-xs text-purple-600">Create diagrams</div>
+                          </div>
+                          <div className="bg-gray-100 border border-gray-300 rounded p-2 opacity-50">
+                            <div className="text-xs font-medium text-gray-600">🔊 Audio Mode</div>
+                            <div className="text-xs text-gray-500">Less suitable</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Toolbar */}
+                  <div className="bg-gray-50 border-t border-gray-200 px-4 py-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-2">
+                        <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs animate-pulse">✨ Generate Questions</div>
+                        <div className="bg-purple-500 text-white px-2 py-1 rounded text-xs">📊 Create Diagram</div>
+                      </div>
+                      <div className="text-xs text-gray-500">🧠 ML: 88% confidence</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating Badge */}
+              <div className="absolute -top-3 -right-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg animate-bounce">
+                Live Preview
+              </div>
+
+              {/* Floating particles */}
+              <div className="absolute -top-6 -left-6 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl animate-pulse"></div>
+              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-8 max-w-3xl mx-auto">
-              <div className="text-center">
-                <div className="text-5xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">8</div>
-                <div className="text-white/60">AI Learning Modes</div>
-              </div>
-              <div className="text-center">
-                <div className="text-5xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">24/7</div>
-                <div className="text-white/60">AI Assistant</div>
-              </div>
-              <div className="text-center">
-                <div className="text-5xl font-black bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent mb-2">∞</div>
-                <div className="text-white/60">Personalized Content</div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -228,9 +350,12 @@ export default function LandingPage() {
                 8 Ways to Master Any Subject
               </span>
             </h2>
-            <p className="text-xl text-white/70 max-w-3xl mx-auto">
-              Each mode powered by advanced AI, designed for different learning styles based on research
+            <p className="text-xl text-white/70 max-w-3xl mx-auto mb-4">
+              Each mode powered by advanced AI, designed for different learning styles based on Felder-Silverman research
             </p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
+              <span className="text-emerald-400 font-semibold">🧠 ML automatically recommends the best modes for you</span>
+            </div>
           </div>
 
           {/* Learning Modes Grid */}
@@ -472,25 +597,167 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ML Learning Style Detection */}
+      <section className="relative py-32 px-6 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4 px-4 py-2 bg-blue-500/10 border border-blue-500/30 rounded-full">
+              <span className="text-blue-400 font-semibold">🧠 Machine Learning Technology</span>
+            </div>
+            <h2 className="text-5xl font-black mb-6 text-white">Automatic Learning Style Detection</h2>
+            <p className="text-xl text-white/70 max-w-3xl mx-auto">
+              Our XGBoost ML model analyzes your behavior and classifies your learning preferences with 88% accuracy
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+            {/* Left: How ML Works */}
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl">👁️</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">Tracks Your Behavior</h3>
+                  <p className="text-white/70">Monitors how you interact with content, generate questions, view diagrams, and more</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl">🧮</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">ML Classification</h3>
+                  <p className="text-white/70">XGBoost model trained on 5,348 samples classifies your learning style across 4 dimensions</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl">🎯</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">Personalized Recommendations</h3>
+                  <p className="text-white/70">Automatically suggests the best AI learning modes based on your detected style</p>
+                </div>
+              </div>
+
+              {/* ML Stats - Compact */}
+              <div className="grid grid-cols-2 gap-4 pt-6">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <div className="text-3xl font-black bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent mb-1">88.3%</div>
+                  <div className="text-sm text-white/60">Accuracy</div>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <div className="text-3xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-1">5,348</div>
+                  <div className="text-sm text-white/60">Samples</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Animated System Preview */}
+            <div className="relative">
+              <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
+                <h3 className="text-xl font-bold text-white mb-6 text-center">System in Action</h3>
+
+                {/* Animated Flow */}
+                <div className="space-y-6">
+                  {/* Step 1: User Activity */}
+                  <div className="bg-white/5 rounded-xl p-4 border border-blue-500/30 animate-pulse">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                      <span className="text-white font-semibold">Student Activity</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-blue-500/20 rounded p-2 text-xs text-center">📄 Reading</div>
+                      <div className="bg-blue-500/20 rounded p-2 text-xs text-center">❓ Questions</div>
+                      <div className="bg-blue-500/20 rounded p-2 text-xs text-center">📊 Diagrams</div>
+                    </div>
+                  </div>
+
+                  {/* Arrow */}
+                  <div className="flex justify-center">
+                    <div className="text-3xl animate-bounce">↓</div>
+                  </div>
+
+                  {/* Step 2: ML Processing */}
+                  <div className="bg-white/5 rounded-xl p-4 border border-purple-500/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                      <span className="text-white font-semibold">ML Analysis</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse" style={{ width: '75%' }}></div>
+                        </div>
+                        <span className="text-xs text-white/60">Active</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse" style={{ width: '60%', animationDelay: '0.2s' }}></div>
+                        </div>
+                        <span className="text-xs text-white/60">Visual</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Arrow */}
+                  <div className="flex justify-center">
+                    <div className="text-3xl animate-bounce" style={{ animationDelay: '0.5s' }}>↓</div>
+                  </div>
+
+                  {/* Step 3: Personalized Content */}
+                  <div className="bg-white/5 rounded-xl p-4 border border-emerald-500/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                      <span className="text-white font-semibold">AI Generates Content</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-emerald-500/20 rounded p-2 text-xs text-center">🎯 Active Mode</div>
+                      <div className="bg-emerald-500/20 rounded p-2 text-xs text-center">📊 Visual Mode</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Badge */}
+                <div className="mt-6 text-center">
+                  <div className="inline-block px-4 py-2 bg-white/10 rounded-lg border border-white/20">
+                    <span className="text-xs text-white/60">Powered by </span>
+                    <span className="text-xs text-white font-semibold">XGBoost ML</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating particles */}
+              <div className="absolute -top-4 -right-4 w-20 h-20 bg-blue-500/20 rounded-full blur-2xl animate-pulse"></div>
+              <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-purple-500/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works */}
       <section className="relative py-32 px-6 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
             <h2 className="text-5xl font-black mb-6 text-white">How Intelevo Works</h2>
-            <p className="text-xl text-white/70">Simple, powerful, and personalized for you</p>
+            <p className="text-xl text-white/70">ML detects your style, AI generates your content</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[
-              { step: '01', title: 'Upload Your Content', desc: 'Upload any document (PDF, DOCX, PPTX)', icon: '📄' },
-              { step: '02', title: 'Choose AI Mode', desc: 'Select from 8 AI learning modes that match your style', icon: '🎯' },
-              { step: '03', title: 'Learn & Master', desc: 'Get personalized AI-generated content instantly', icon: '🚀' }
+              { step: '01', title: 'Upload Content', desc: 'Upload any document (PDF, DOCX, PPTX)', icon: '📄' },
+              { step: '02', title: 'ML Analyzes You', desc: 'Machine learning detects your learning style automatically', icon: '🧠' },
+              { step: '03', title: 'AI Generates', desc: 'AI creates personalized content in recommended modes', icon: '✨' },
+              { step: '04', title: 'Learn & Master', desc: 'Study with content perfectly matched to your style', icon: '🚀' }
             ].map((item, i) => (
-              <div key={i} className="relative p-8 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105">
-                <div className="text-6xl mb-6">{item.icon}</div>
-                <div className="text-5xl font-black text-white/20 mb-4">{item.step}</div>
-                <h3 className="text-2xl font-bold mb-3 text-white">{item.title}</h3>
-                <p className="text-white/70">{item.desc}</p>
+              <div key={i} className="relative p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105">
+                <div className="text-5xl mb-4">{item.icon}</div>
+                <div className="text-4xl font-black text-white/20 mb-3">{item.step}</div>
+                <h3 className="text-xl font-bold mb-2 text-white">{item.title}</h3>
+                <p className="text-sm text-white/70">{item.desc}</p>
               </div>
             ))}
           </div>
