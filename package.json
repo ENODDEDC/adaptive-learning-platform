@@ -11,7 +11,8 @@
     "check-deps": "node scripts/check-system-deps.js",
     "postinstall": "node scripts/check-system-deps.js || echo 'Warning: Some system dependencies may be missing. See README.md'",
     "setup-ml": "scripts\\setup-ml.bat",
-    "start-ml": "scripts\\start-ml-service.bat"
+    "start-ml": "scripts\\start-ml-service.bat",
+    "seed:schedules": "node src/seeders/scheduleSeeder.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.893.0",

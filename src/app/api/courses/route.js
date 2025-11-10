@@ -39,7 +39,7 @@ const monitoredPOST = withPerformanceMonitoring(async (request) => {
   const userId = payload.userId;
 
   await connectMongoDB();
-  const { subject, section, teacherName, coverColor } = await request.json();
+  const { subject, section, teacherName, coverColor, schedules } = await request.json();
 
   // Get user info from database if teacherName not provided
   let finalTeacherName = teacherName;
@@ -60,6 +60,7 @@ const monitoredPOST = withPerformanceMonitoring(async (request) => {
     coverColor: coverColor || '#60a5fa',
     uniqueKey,
     createdBy: userId,
+    schedules: schedules || [],
   });
 
   // Clear cache after successful creation

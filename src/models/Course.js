@@ -47,6 +47,21 @@ const courseSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  schedules: [{
+    day: {
+      type: String,
+      required: true,
+      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    },
+    startTime: {
+      type: String,
+      required: true,
+    },
+    endTime: {
+      type: String,
+      required: true,
+    },
+  }],
 }, { timestamps: true });
 
 const Course = mongoose.models.Course || mongoose.model('Course', courseSchema);
