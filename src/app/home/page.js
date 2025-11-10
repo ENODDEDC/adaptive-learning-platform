@@ -213,6 +213,10 @@ export default function Home() {
           progressColor: course.coverColor,
           isCreator: isCreator,
           role: isCreator ? 'creator' : 'student',
+          studentCount: course.studentCount || 0,
+          moduleCount: course.moduleCount || 0,
+          assignmentCount: course.assignmentCount || 0,
+          enrolledUsers: course.enrolledUsers || [],
         };
 
         if (isCreator) {
@@ -455,7 +459,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 overflow-y-auto">
       {/* Compact Welcome Header - Clean Design */}
       <div className="relative mx-4 mt-3 bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md transition-shadow duration-300">
         {/* Subtle accent line - Single color */}
@@ -651,27 +655,27 @@ export default function Home() {
                             href={`/courses/${course.id}`} 
                             className="course-card flex-shrink-0 w-[calc(50%-8px)] min-w-[300px] max-w-[420px] snap-start group"
                           >
-                            <div className="relative flex flex-col h-full bg-white border border-gray-200 cursor-pointer rounded-3xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-gray-300 overflow-hidden">
-                              {/* Google Material Design 3 inspired "Color Atmosphere" */}
+                            <div className="relative flex flex-col bg-white border-2 border-gray-200 cursor-pointer rounded-3xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-gray-300 overflow-hidden">
+                              {/* 1. COLOR HEADER - Improved Hierarchy */}
                               <div className={`relative h-44 p-5 flex flex-col justify-between overflow-hidden ${colorVariations.base} transition-all duration-300`}>
-                                {/* Sophisticated layered atmosphere effect */}
-                                {/* Layer 1: Soft radial glow from top-right (light source simulation) */}
-                                <div 
-                                  className="absolute inset-0 opacity-30"
-                                  style={{
-                                    background: `radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.4) 0%, transparent 50%)`
-                                  }}
-                                ></div>
+                                {/* Dark overlay for better text readability */}
+                                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/40"></div>
                                 
-                                {/* Layer 2: Subtle darker gradient at bottom (depth and weight) */}
+                                {/* Sophisticated layered atmosphere effect */}
                                 <div 
                                   className="absolute inset-0 opacity-20"
                                   style={{
-                                    background: `linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.15) 100%)`
+                                    background: `radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.3) 0%, transparent 50%)`
                                   }}
                                 ></div>
                                 
-                                {/* Layer 3: Organic shape overlay (modern, playful) */}
+                                <div 
+                                  className="absolute inset-0 opacity-15"
+                                  style={{
+                                    background: `linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.2) 100%)`
+                                  }}
+                                ></div>
+                                
                                 <div className="absolute inset-0 opacity-10">
                                   <svg className="absolute top-0 right-0 w-40 h-40 -translate-y-8 translate-x-8" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                                     <path fill="white" d="M44.7,-76.4C58.8,-69.2,71.8,-59.1,79.6,-45.8C87.4,-32.6,90,-16.3,88.5,-0.9C87,14.6,81.4,29.2,73.1,42.8C64.8,56.4,53.8,69,40.4,76.1C27,83.2,13.5,84.8,-0.7,86.1C-14.9,87.4,-29.8,88.4,-43.2,81.9C-56.6,75.4,-68.5,61.4,-76.8,45.7C-85.1,30,-89.8,12.6,-89.3,-4.9C-88.8,-22.4,-83.1,-40,-73.8,-54.8C-64.5,-69.6,-51.6,-81.6,-37.1,-88.5C-22.6,-95.4,-11.3,-97.2,1.5,-99.9C14.3,-102.6,28.6,-106.2,44.7,-76.4Z" transform="translate(100 100)" />
@@ -681,104 +685,87 @@ export default function Home() {
                                   </svg>
                                 </div>
 
-                                {/* Top section with enhanced styling */}
+                                {/* Top section - Creator/Instructor Badge */}
                                 <div className="relative z-10 flex items-start justify-between">
-                                  <div className="flex items-center gap-3">
-                                    <div className="relative group/icon">
-                                      <div className="flex items-center justify-center w-11 h-11 bg-white/25 backdrop-blur-md rounded-2xl shadow-lg border border-white/30 transition-all duration-300 group-hover/icon:scale-110 group-hover/icon:rotate-6">
-                                        {course.isCreator ? (
-                                          <svg className="w-5 h-5 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                                            <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-                                          </svg>
-                                        ) : (
-                                          <svg className="w-5 h-5 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-                                          </svg>
-                                        )}
-                                      </div>
-                                      {/* Pulsing indicator */}
-                                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
-                                    </div>
-                                  </div>
-
-                                  {/* Simplified Role Badge */}
-                                  <div className={`px-3 py-1.5 rounded-xl backdrop-blur-sm shadow-md border border-white/30 transition-all duration-200 ${
+                                  {/* Creator/Instructor Badge - Improved Readability */}
+                                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md shadow-md border text-sm font-semibold ${
                                     course.isCreator 
-                                      ? 'bg-blue-600/95 text-white' 
-                                      : 'bg-green-600/95 text-white'
+                                      ? 'bg-white/30 border-white/40 text-white' 
+                                      : 'bg-white/25 border-white/35 text-white'
                                   }`}>
-                                    <div className="flex items-center gap-1.5">
-                                      {course.isCreator ? (
-                                        <>
-                                          <svg className="w-3.5 h-3.5 drop-shadow" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                                          </svg>
-                                          <span className="text-xs font-bold uppercase tracking-wide drop-shadow">Creator</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <svg className="w-3.5 h-3.5 drop-shadow" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
-                                          </svg>
-                                          <span className="text-xs font-bold uppercase tracking-wide drop-shadow">Student</span>
-                                        </>
-                                      )}
-                                    </div>
+                                    {course.isCreator && (
+                                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                      </svg>
+                                    )}
+                                    <span className="drop-shadow-md">
+                                      {course.isCreator ? 'You' : course.instructor}
+                                    </span>
                                   </div>
                                 </div>
 
-                                {/* Bottom section with enhanced design */}
-                                <div className="relative z-10 flex items-end justify-between gap-3">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <div className="w-2 h-2 bg-green-400 rounded-full shadow-lg shadow-green-400/50 animate-pulse"></div>
-                                      <span className="text-xs font-bold text-white/90 uppercase tracking-wider drop-shadow">Active Course</span>
-                                    </div>
-                                    <div className="text-sm font-semibold text-white/80 drop-shadow truncate">
-                                      {course.code}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Decorative floating elements */}
-                                <div className="absolute top-6 right-6 w-3 h-3 bg-white/30 rounded-full blur-sm"></div>
-                                <div className="absolute bottom-8 left-8 w-2 h-2 bg-white/20 rounded-full blur-sm"></div>
-                              </div>
-
-                              {/* Content section with sophisticated tinted atmosphere */}
-                              <div className={`relative flex flex-col flex-grow p-5 ${colorVariations.lighter} bg-opacity-20`}>
-                                <div className="mb-4">
-                                  <h3 className={`text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight transition-all duration-300 ${
-                                    course.isCreator ? 'group-hover:text-blue-600' : 'group-hover:text-green-600'
-                                  }`}>
+                                {/* Bottom section - Course Title (Primary Focus) */}
+                                <div className="relative z-10">
+                                  <h3 className="text-xl font-bold text-white leading-tight line-clamp-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.8)' }}>
                                     {course.title}
                                   </h3>
-
-                                  {/* Enhanced metadata badges */}
-                                  <div className="flex items-center gap-2.5 flex-wrap">
-                                    <span className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 text-xs font-semibold shadow-sm transition-all duration-300 group-hover:scale-105 ${
-                                      course.isCreator 
-                                        ? 'bg-blue-50 text-blue-700 border-blue-200 group-hover:bg-blue-100 group-hover:border-blue-300' 
-                                        : 'bg-green-50 text-green-700 border-green-200 group-hover:bg-green-100 group-hover:border-green-300'
-                                    }`}>
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
-                                      </svg>
-                                      <span>{course.code}</span>
-                                    </span>
-                                    <span className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 text-gray-700 rounded-xl border-2 border-gray-200 text-xs font-semibold shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-gray-100 group-hover:border-gray-300">
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                      </svg>
-                                      <span>{course.isCreator ? 'You' : course.instructor}</span>
-                                    </span>
-                                  </div>
                                 </div>
-
-                                {/* Elegant bottom accent bar */}
-                                <div className={`absolute bottom-0 left-0 right-0 h-1 ${colorVariations.darker} opacity-50 rounded-b-3xl`}></div>
                               </div>
+
+
+
+                              {/* 3. METRICS GRID - Matches Page Design System */}
+                              <div className="px-5 py-3 bg-white">
+                                {course.isCreator ? (
+                                  <div className="grid grid-cols-2 gap-2.5">
+                                    {/* Students - Dynamic */}
+                                    <div className="flex flex-col items-center gap-1 p-2.5 bg-blue-50 rounded-xl border border-blue-200">
+                                      <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+                                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                        </svg>
+                                      </div>
+                                      <div className="text-lg font-bold text-gray-900">{course.studentCount}</div>
+                                      <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Students</div>
+                                    </div>
+                                    {/* Materials - Dynamic */}
+                                    <div className="flex flex-col items-center gap-1 p-2.5 bg-purple-50 rounded-xl border border-purple-200">
+                                      <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center">
+                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                        </svg>
+                                      </div>
+                                      <div className="text-lg font-bold text-gray-900">{course.moduleCount}</div>
+                                      <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Materials</div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-2 gap-2.5">
+                                    {/* Materials - Dynamic */}
+                                    <div className="flex flex-col items-center gap-1 p-2.5 bg-purple-50 rounded-xl border border-purple-200">
+                                      <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center">
+                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                        </svg>
+                                      </div>
+                                      <div className="text-lg font-bold text-gray-900">{course.moduleCount}</div>
+                                      <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Materials</div>
+                                    </div>
+                                    {/* Assignments - Dynamic (real count from API) */}
+                                    <div className="flex flex-col items-center gap-1 p-2.5 bg-emerald-50 rounded-xl border border-emerald-200">
+                                      <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                        </svg>
+                                      </div>
+                                      <div className="text-lg font-bold text-gray-900">{course.assignmentCount}</div>
+                                      <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Assignments</div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+
                             </div>
                           </Link>
                           );
