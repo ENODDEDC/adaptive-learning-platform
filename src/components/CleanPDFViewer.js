@@ -58,8 +58,8 @@ const tooltipData = {
   }
 };
 
-const CleanPDFViewer = ({ 
-  content, 
+const CleanPDFViewer = ({
+  content,
   onAITutorClick,
   onVisualLearningClick,
   onSequentialLearningClick,
@@ -85,7 +85,7 @@ const CleanPDFViewer = ({
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showTooltip, setShowTooltip] = useState(null);
+  const [showTooltip, setShowTooltip] = useState({ mode: null, content: null });
 
   // Recommendation system state
   const [recommendations, setRecommendations] = useState([]);
@@ -120,7 +120,7 @@ const CleanPDFViewer = ({
   const getRecommendationStyle = (modeName) => {
     const isContentRecommended = recommendations && recommendations.some(rec => rec.mode === modeName);
     const isPersonalized = personalizedRecommendations.includes(modeName);
-    
+
     if (isContentRecommended && isPersonalized) {
       return {
         ring: 'ring-2 ring-emerald-600 ring-offset-2',
@@ -156,11 +156,11 @@ const CleanPDFViewer = ({
   const getPDFUrl = () => {
     const baseUrl = content.filePath || content.url;
     if (!baseUrl) return '';
-    
+
     // Add parameters to control PDF display
     const params = new URLSearchParams();
     params.append('page', currentPage.toString());
-    
+
     if (fitMode === 'width') {
       params.append('zoom', 'page-width');
     } else if (fitMode === 'page') {
@@ -168,12 +168,12 @@ const CleanPDFViewer = ({
     } else {
       params.append('zoom', zoomLevel.toString());
     }
-    
+
     // Add toolbar=0 to try to hide browser toolbar (works in some browsers)
     params.append('toolbar', '0');
     params.append('navpanes', '0');
     params.append('scrollbar', '0');
-    
+
     return `${baseUrl}#${params.toString()}`;
   };
 
@@ -187,7 +187,7 @@ const CleanPDFViewer = ({
 
       try {
         const pdfUrl = content.filePath || content.url;
-        
+
         // Use dedicated page count API
         const response = await fetch('/api/pdf-page-count', {
           method: 'POST',
@@ -202,7 +202,7 @@ const CleanPDFViewer = ({
         if (response.ok) {
           const result = await response.json();
           console.log('Page count API response:', result);
-          
+
           if (result.success && result.totalPages) {
             setTotalPages(result.totalPages);
             console.log(`✅ PDF has ${result.totalPages} pages (method: ${result.method})`);
@@ -394,14 +394,13 @@ const CleanPDFViewer = ({
   }
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={`flex flex-col h-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
     >
       {/* Custom Toolbar - Clean Design */}
-      <div className={`flex items-center justify-between px-4 py-3 border-b ${
-        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-      }`}>
+      <div className={`flex items-center justify-between px-4 py-3 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
         {/* Left Section - Document Info (NO FILE PATH) */}
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
@@ -410,23 +409,22 @@ const CleanPDFViewer = ({
               {content.title || content.originalName || 'PDF Document'}
             </span>
           </div>
-          
+
           {/* Page Navigation */}
           <div className="flex items-center space-x-2">
             <button
               onClick={handlePreviousPage}
               disabled={currentPage <= 1}
-              className={`p-1.5 rounded-md transition-colors ${
-                currentPage <= 1
+              className={`p-1.5 rounded-md transition-colors ${currentPage <= 1
                   ? 'text-gray-400 cursor-not-allowed'
                   : isDarkMode
-                  ? 'text-gray-300 hover:bg-gray-700'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                    ? 'text-gray-300 hover:bg-gray-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <ChevronLeftIcon className="w-4 h-4" />
             </button>
-            
+
             <div className="flex items-center space-x-1">
               <input
                 type="number"
@@ -434,27 +432,25 @@ const CleanPDFViewer = ({
                 max={totalPages}
                 value={currentPage}
                 onChange={(e) => handlePageJump(e.target.value)}
-                className={`w-12 px-2 py-1 text-sm text-center border rounded ${
-                  isDarkMode
+                className={`w-12 px-2 py-1 text-sm text-center border rounded ${isDarkMode
                     ? 'bg-gray-700 border-gray-600 text-white'
                     : 'bg-white border-gray-300 text-gray-900'
-                }`}
+                  }`}
               />
               <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                 / {totalPages}
               </span>
             </div>
-            
+
             <button
               onClick={handleNextPage}
               disabled={currentPage >= totalPages}
-              className={`p-1.5 rounded-md transition-colors ${
-                currentPage >= totalPages
+              className={`p-1.5 rounded-md transition-colors ${currentPage >= totalPages
                   ? 'text-gray-400 cursor-not-allowed'
                   : isDarkMode
-                  ? 'text-gray-300 hover:bg-gray-700'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                    ? 'text-gray-300 hover:bg-gray-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <ChevronRightIcon className="w-4 h-4" />
             </button>
@@ -470,9 +466,9 @@ const CleanPDFViewer = ({
               disabled={isAITutorLoading}
               onMouseEnter={() => {
                 const recStyle = getRecommendationStyle('AI Narrator');
-                setShowTooltip(recStyle.tooltip || 'AI Narrator');
+                setShowTooltip({ mode: 'AI Narrator', content: recStyle.tooltip || 'AI Narrator' });
               }}
-              onMouseLeave={() => setShowTooltip(null)}
+              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
               className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('AI Narrator').ring}`}
             >
               {isAITutorLoading ? (
@@ -484,10 +480,10 @@ const CleanPDFViewer = ({
               )}
               <span className="hidden sm:inline">AI Narrator</span>
             </button>
-            {showTooltip && (showTooltip === 'AI Narrator' || showTooltip.includes('AI Narrator') || showTooltip.includes('Recommended') || showTooltip.includes('Personalized') || showTooltip.includes('Perfect')) && (
+            {showTooltip.mode === 'AI Narrator' && (
               <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip}</p>
+                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
+                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 mb-1">
@@ -509,9 +505,9 @@ const CleanPDFViewer = ({
               disabled={isVisualLearningLoading}
               onMouseEnter={() => {
                 const recStyle = getRecommendationStyle('Visual Learning');
-                setShowTooltip(recStyle.tooltip || 'Visual Learning');
+                setShowTooltip({ mode: 'Visual Learning', content: recStyle.tooltip || 'Visual Learning' });
               }}
-              onMouseLeave={() => setShowTooltip(null)}
+              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
               className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Visual Learning').ring}`}
             >
               {isVisualLearningLoading ? (
@@ -524,10 +520,10 @@ const CleanPDFViewer = ({
               )}
               <span className="hidden sm:inline">Visual Learning</span>
             </button>
-            {showTooltip && (showTooltip === 'Visual Learning' || showTooltip.includes('Visual Learning') || (showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐'))) && (
+            {showTooltip.mode === 'Visual Learning' && (
               <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip}</p>
+                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
+                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 mb-1">
@@ -549,9 +545,9 @@ const CleanPDFViewer = ({
               disabled={isSequentialLearningLoading}
               onMouseEnter={() => {
                 const recStyle = getRecommendationStyle('Sequential Learning');
-                setShowTooltip(recStyle.tooltip || 'Sequential Learning');
+                setShowTooltip({ mode: 'Sequential Learning', content: recStyle.tooltip || 'Sequential Learning' });
               }}
-              onMouseLeave={() => setShowTooltip(null)}
+              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
               className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Sequential Learning').ring}`}
             >
               {isSequentialLearningLoading ? (
@@ -563,10 +559,10 @@ const CleanPDFViewer = ({
               )}
               <span className="hidden sm:inline">Sequential</span>
             </button>
-            {showTooltip && (showTooltip === 'Sequential Learning' || showTooltip.includes('Sequential Learning') || (showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐'))) && (
+            {showTooltip.mode === 'Sequential Learning' && (
               <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip}</p>
+                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
+                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 mb-1">
@@ -592,9 +588,9 @@ const CleanPDFViewer = ({
               disabled={isGlobalLearningLoading}
               onMouseEnter={() => {
                 const recStyle = getRecommendationStyle('Global Learning');
-                setShowTooltip(recStyle.tooltip || 'Global Learning');
+                setShowTooltip({ mode: 'Global Learning', content: recStyle.tooltip || 'Global Learning' });
               }}
-              onMouseLeave={() => setShowTooltip(null)}
+              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
               className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Global Learning').ring}`}
             >
               {isGlobalLearningLoading ? (
@@ -606,10 +602,10 @@ const CleanPDFViewer = ({
               )}
               <span className="hidden sm:inline">Global</span>
             </button>
-            {showTooltip && (showTooltip === 'Global Learning' || showTooltip.includes('Global Learning') || (showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐'))) && (
+            {showTooltip.mode === 'Global Learning' && (
               <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip}</p>
+                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
+                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 mb-1">
@@ -631,9 +627,9 @@ const CleanPDFViewer = ({
               disabled={isSensingLearningLoading}
               onMouseEnter={() => {
                 const recStyle = getRecommendationStyle('Hands-On Lab');
-                setShowTooltip(recStyle.tooltip || 'Hands-On Lab');
+                setShowTooltip({ mode: 'Hands-On Lab', content: recStyle.tooltip || 'Hands-On Lab' });
               }}
-              onMouseLeave={() => setShowTooltip(null)}
+              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
               className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-green-600 text-white rounded-lg hover:from-teal-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Hands-On Lab').ring}`}
             >
               {isSensingLearningLoading ? (
@@ -645,10 +641,10 @@ const CleanPDFViewer = ({
               )}
               <span className="hidden sm:inline">Sensing</span>
             </button>
-            {showTooltip && (showTooltip === 'Hands-On Lab' || showTooltip.includes('Hands-On Lab') || (showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐'))) && (
+            {showTooltip.mode === 'Hands-On Lab' && (
               <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip}</p>
+                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
+                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 mb-1">
@@ -669,37 +665,37 @@ const CleanPDFViewer = ({
               onClick={onIntuitiveLearningClick}
               onMouseEnter={() => {
                 const recStyle = getRecommendationStyle('Concept Constellation');
-                setShowTooltip(recStyle.tooltip || 'Concept Constellation');
+                setShowTooltip({ mode: 'Concept Constellation', content: recStyle.tooltip || 'Concept Constellation' });
               }}
-              onMouseLeave={() => setShowTooltip(null)}
-            disabled={isIntuitiveLearningLoading}
-            className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Concept Constellation').ring}`}
-          >
-            {isIntuitiveLearningLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            )}
-            <span className="hidden sm:inline">Intuitive</span>
-          </button>
-          {showTooltip && (showTooltip === 'Concept Constellation' || showTooltip.includes('Concept Constellation') || (showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐'))) && (
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-              {showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐') ? (
-                <p className="text-gray-300 leading-relaxed">{showTooltip}</p>
+              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
+              disabled={isIntuitiveLearningLoading}
+              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Concept Constellation').ring}`}
+            >
+              {isIntuitiveLearningLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                <>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-lg">{tooltipData['Concept Constellation'].icon}</span>
-                    <span className="font-semibold">{tooltipData['Concept Constellation'].title}</span>
-                  </div>
-                  <p className="text-gray-300 leading-relaxed">{tooltipData['Concept Constellation'].description}</p>
-                </>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
               )}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-            </div>
-          )}
+              <span className="hidden sm:inline">Intuitive</span>
+            </button>
+            {showTooltip.mode === 'Concept Constellation' && (
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
+                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
+                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">{tooltipData['Concept Constellation'].icon}</span>
+                      <span className="font-semibold">{tooltipData['Concept Constellation'].title}</span>
+                    </div>
+                    <p className="text-gray-300 leading-relaxed">{tooltipData['Concept Constellation'].description}</p>
+                  </>
+                )}
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+              </div>
+            )}
           </div>
 
           {/* Active Learning */}
@@ -709,9 +705,9 @@ const CleanPDFViewer = ({
               disabled={isActiveLearningLoading}
               onMouseEnter={() => {
                 const recStyle = getRecommendationStyle('Active Learning Hub');
-                setShowTooltip(recStyle.tooltip || 'Active Learning Hub');
+                setShowTooltip({ mode: 'Active Learning Hub', content: recStyle.tooltip || 'Active Learning Hub' });
               }}
-              onMouseLeave={() => setShowTooltip(null)}
+              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
               className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-lg hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Active Learning Hub').ring}`}
             >
               {isActiveLearningLoading ? (
@@ -723,10 +719,10 @@ const CleanPDFViewer = ({
               )}
               <span className="hidden sm:inline">Active</span>
             </button>
-            {showTooltip && (showTooltip === 'Active Learning Hub' || showTooltip.includes('Active Learning Hub') || (showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐'))) && (
+            {showTooltip.mode === 'Active Learning Hub' && (
               <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip}</p>
+                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
+                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 mb-1">
@@ -748,9 +744,9 @@ const CleanPDFViewer = ({
               disabled={isReflectiveLearningLoading}
               onMouseEnter={() => {
                 const recStyle = getRecommendationStyle('Reflective Learning');
-                setShowTooltip(recStyle.tooltip || 'Reflective Learning');
+                setShowTooltip({ mode: 'Reflective Learning', content: recStyle.tooltip || 'Reflective Learning' });
               }}
-              onMouseLeave={() => setShowTooltip(null)}
+              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
               className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Reflective Learning').ring}`}
             >
               {isReflectiveLearningLoading ? (
@@ -762,10 +758,10 @@ const CleanPDFViewer = ({
               )}
               <span className="hidden sm:inline">Reflective</span>
             </button>
-            {showTooltip && (showTooltip === 'Reflective Learning' || showTooltip.includes('Reflective Learning') || (showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐'))) && (
+            {showTooltip.mode === 'Reflective Learning' && (
               <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.includes('✨') || showTooltip.includes('🎯') || showTooltip.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip}</p>
+                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
+                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 mb-1">
@@ -788,36 +784,33 @@ const CleanPDFViewer = ({
             <button
               onClick={handleZoomOut}
               disabled={zoomLevel <= 25}
-              className={`p-1.5 transition-colors ${
-                zoomLevel <= 25
+              className={`p-1.5 transition-colors ${zoomLevel <= 25
                   ? 'text-gray-400 cursor-not-allowed'
                   : isDarkMode
-                  ? 'text-gray-300 hover:bg-gray-700'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                    ? 'text-gray-300 hover:bg-gray-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
               title="Zoom out"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
               </svg>
             </button>
-            
-            <span className={`px-2 py-1 text-xs font-medium min-w-[50px] text-center ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-600'
-            }`}>
+
+            <span className={`px-2 py-1 text-xs font-medium min-w-[50px] text-center ${isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
               {fitMode === 'width' ? 'Fit' : fitMode === 'page' ? 'Page' : `${zoomLevel}%`}
             </span>
-            
+
             <button
               onClick={handleZoomIn}
               disabled={zoomLevel >= 300}
-              className={`p-1.5 transition-colors ${
-                zoomLevel >= 300
+              className={`p-1.5 transition-colors ${zoomLevel >= 300
                   ? 'text-gray-400 cursor-not-allowed'
                   : isDarkMode
-                  ? 'text-gray-300 hover:bg-gray-700'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                    ? 'text-gray-300 hover:bg-gray-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
               title="Zoom in"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -829,13 +822,12 @@ const CleanPDFViewer = ({
           {/* Fullscreen */}
           <button
             onClick={toggleFullscreen}
-            className={`p-1.5 rounded-md transition-colors ${
-              isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
+              }`}
             title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
           >
-            {isFullscreen ? 
-              <ArrowsPointingInIcon className="w-4 h-4" /> : 
+            {isFullscreen ?
+              <ArrowsPointingInIcon className="w-4 h-4" /> :
               <ArrowsPointingOutIcon className="w-4 h-4" />
             }
           </button>
@@ -843,9 +835,8 @@ const CleanPDFViewer = ({
           {/* Print */}
           <button
             onClick={handlePrint}
-            className={`p-1.5 rounded-md transition-colors ${
-              isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
+              }`}
             title="Print PDF"
           >
             <PrinterIcon className="w-4 h-4" />
@@ -854,9 +845,8 @@ const CleanPDFViewer = ({
           {/* Download */}
           <button
             onClick={handleDownload}
-            className={`p-1.5 rounded-md transition-colors ${
-              isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
+              }`}
             title="Download PDF"
           >
             <ArrowDownTrayIcon className="w-4 h-4" />
@@ -865,9 +855,8 @@ const CleanPDFViewer = ({
           {/* Dark Mode Toggle */}
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
-            className={`p-1.5 rounded-md transition-colors ${
-              isDarkMode ? 'text-yellow-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-yellow-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
+              }`}
             title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {isDarkMode ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
@@ -890,11 +879,10 @@ const CleanPDFViewer = ({
             display: none;
           }
         `}</style>
-        
+
         <div className="pdf-container w-full h-full p-4">
-          <div className={`w-full h-full shadow-lg rounded-lg overflow-hidden ${
-            isDarkMode ? 'shadow-gray-800' : 'shadow-gray-300'
-          }`}>
+          <div className={`w-full h-full shadow-lg rounded-lg overflow-hidden ${isDarkMode ? 'shadow-gray-800' : 'shadow-gray-300'
+            }`}>
             <iframe
               ref={iframeRef}
               src={getPDFUrl()}
@@ -919,11 +907,10 @@ const CleanPDFViewer = ({
       </div>
 
       {/* Status Bar */}
-      <div className={`px-4 py-2 border-t text-sm ${
-        isDarkMode 
-          ? 'bg-gray-800 border-gray-700 text-gray-300' 
+      <div className={`px-4 py-2 border-t text-sm ${isDarkMode
+          ? 'bg-gray-800 border-gray-700 text-gray-300'
           : 'bg-gray-50 border-gray-200 text-gray-600'
-      }`}>
+        }`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <span>
