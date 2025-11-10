@@ -120,7 +120,7 @@ const Layout = ({ children }) => {
         <AdminSidebar isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
         <div className={`transition-all duration-500 ease-in-out ${mainContentMargin}`}>
           <AdminNavbar toggleSidebar={toggleSidebar} />
-          <main className="p-8">{children}</main>
+          <main>{children}</main>
         </div>
       </div>
     );

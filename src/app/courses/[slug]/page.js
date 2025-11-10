@@ -555,7 +555,7 @@ const CourseDetailPage = ({
   // If a content item is selected for viewing, show fullscreen viewer within the page and hide the rest
   if (selectedContent) {
     return (
-      <div className="h-full p-6 bg-gray-50">
+      <div className="h-screen bg-gray-50">
         <ContentViewer
           content={selectedContent}
           onClose={() => setSelectedContent(null)}
@@ -605,7 +605,7 @@ const CourseDetailPage = ({
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <span className="text-sm font-medium text-green-700">{students.length} Student{students.length === 1 ? '' : 's'}</span>
                   </div>
-                  
+
                   {/* Course Access Code - Moved from sidebar */}
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg animate-shimmer" style={{ animationDelay: '0.4s' }}>
                     <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -843,19 +843,19 @@ const CourseDetailPage = ({
                       <h2 className="text-xl font-semibold text-gray-900">Members</h2>
                       <p className="text-sm text-gray-500 mt-1">{teachers.length + students.length} total members</p>
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        <input 
-                          type="text" 
-                          placeholder="Search people..." 
+                        <input
+                          type="text"
+                          placeholder="Search people..."
                           className="w-64 pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         />
                         <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                       </div>
-                      
+
                       {isInstructor && (
                         <>
                           <button
@@ -959,7 +959,7 @@ const CourseDetailPage = ({
                             </td>
                           </tr>
                         ))}
-                        
+
                         {/* Students */}
                         {students.map((student) => (
                           <tr key={student._id} className="hover:bg-gray-50">
@@ -1008,7 +1008,7 @@ const CourseDetailPage = ({
                             </td>
                           </tr>
                         ))}
-                        
+
                         {/* Empty State */}
                         {teachers.length === 0 && students.length === 0 && (
                           <tr>
