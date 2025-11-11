@@ -88,23 +88,25 @@ export async function POST(request) {
       dataQuality: featuresResult.dataQuality
     });
 
-    // Check if user has sufficient data
-    if (!featuresResult.dataQuality.sufficientForML) {
-      console.log('⚠️ Insufficient data for ML, using rule-based classification');
-    }
+    // Always classify, but with varying confidence levels
+    console.log('📊 Data quality assessment:', {
+      interactions: featuresResult.totalInteractions,
+      confidenceLevel: featuresResult.dataQuality.confidenceLevel,
+      confidencePercentage: featuresResult.dataQuality.confidencePercentage
+    });
 
     let classification;
     let recommendations;
     let classificationMethod = 'rule-based';
 
-    // Try ML classification first if sufficient data
-    console.log('🔍 Checking ML readiness:', {
-      sufficientData: featuresResult.dataQuality.sufficientForML,
+    // Try ML classification (always, even with 1 interaction)
+    console.log('🔍 Attempting classification:', {
       hasAggregated: !!aggregated,
-      totalInteractions: featuresResult.totalInteractions
+      totalInteractions: featuresResult.totalInteractions,
+      confidenceLevel: featuresResult.dataQuality.confidenceLevel
     });
     
-    if (featuresResult.dataQuality.sufficientForML && aggregated) {
+    if (aggregated) {
       console.log('🤖 Attempting ML classification...');
       
       // Check ML service health
@@ -176,9 +178,17 @@ export async function POST(request) {
       profile = new LearningStyleProfile({ userId });
     }
 
+    // Calculate average ML confidence (if available)
+    let avgConfidence = 0;
+    if (classification.confidence && typeof classification.confidence === 'object') {
+      const confidenceValues = Object.values(classification.confidence);
+      avgConfidence = confidenceValues.reduce((sum, val) => sum + val, 0) / confidenceValues.length;
+    }
+
     // Update profile with classification results
     profile.dimensions = classification.dimensions;
     profile.confidence = classification.confidence;
+    profile.mlConfidenceScore = avgConfidence; // Store real ML confidence
     profile.recommendedModes = recommendations;
     profile.classificationMethod = classificationMethod;
     profile.lastPrediction = new Date();
@@ -242,12 +252,14 @@ export async function GET(request) {
       success: true,
       data: {
         dataQuality: featuresResult.dataQuality,
-        readyForClassification: featuresResult.dataQuality.sufficientForML,
+        readyForClassification: true, // Always ready
         totalInteractions: featuresResult.totalInteractions,
         totalLearningTime: featuresResult.totalLearningTime,
-        message: featuresResult.dataQuality.sufficientForML
-          ? 'Ready for learning style classification'
-          : `Need ${10 - featuresResult.totalInteractions} more interactions for classification`
+        confidenceLevel: featuresResult.dataQuality.confidenceLevel,
+        confidencePercentage: featuresResult.dataQuality.confidencePercentage,
+        message: featuresResult.totalInteractions === 0
+          ? 'Start interacting to build your learning profile'
+          : `Classification available with ${featuresResult.dataQuality.confidenceLevel} confidence (${featuresResult.dataQuality.confidencePercentage}%)`
       }
     });
 

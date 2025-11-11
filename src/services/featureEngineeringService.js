@@ -243,29 +243,37 @@ class FeatureEngineeringService {
 
   /**
    * Assess data quality for ML readiness
+   * NOW: Always ready for classification, but with varying confidence levels
    */
   assessDataQuality(aggregated) {
-    const minInteractions = 10;
-    const minTime = 30000; // 30 seconds (lowered for testing)
-    const minSessions = 1; // 1 session is enough (lowered for testing)
-
-    const hasEnoughInteractions = aggregated.totalInteractions >= minInteractions;
-    const hasEnoughTime = aggregated.totalLearningTime >= minTime;
-    const hasEnoughSessions = aggregated.sessionCount >= minSessions;
-
-    // Calculate completeness score (0-100)
+    // Calculate completeness score (0-100) based on interaction count
+    // Confidence increases with more interactions
     const interactionScore = Math.min(100, (aggregated.totalInteractions / 20) * 100);
     const timeScore = Math.min(100, (aggregated.totalLearningTime / 300000) * 100); // 5 minutes
     const sessionScore = Math.min(100, (aggregated.sessionCount / 5) * 100);
     
     const completeness = (interactionScore + timeScore + sessionScore) / 3;
 
+    // Calculate confidence level based on interactions
+    let confidenceLevel = 'low';
+    let confidencePercentage = Math.min(100, (aggregated.totalInteractions / 30) * 100);
+    
+    if (aggregated.totalInteractions >= 30) {
+      confidenceLevel = 'high';
+    } else if (aggregated.totalInteractions >= 15) {
+      confidenceLevel = 'medium';
+    } else if (aggregated.totalInteractions >= 5) {
+      confidenceLevel = 'low-medium';
+    }
+
     return {
-      sufficientForML: hasEnoughInteractions && hasEnoughTime && hasEnoughSessions,
+      sufficientForML: true, // Always ready to classify
       completeness: Math.round(completeness),
       interactionCount: aggregated.totalInteractions,
       totalTime: aggregated.totalLearningTime,
-      sessionCount: aggregated.sessionCount
+      sessionCount: aggregated.sessionCount,
+      confidenceLevel,
+      confidencePercentage: Math.round(confidencePercentage)
     };
   }
 
@@ -310,11 +318,13 @@ class FeatureEngineeringService {
       totalInteractions: 0,
       totalLearningTime: 0,
       dataQuality: {
-        sufficientForML: false,
+        sufficientForML: true, // Always ready to classify
         completeness: 0,
         interactionCount: 0,
         totalTime: 0,
-        sessionCount: 0
+        sessionCount: 0,
+        confidenceLevel: 'very-low',
+        confidencePercentage: 0
       }
     };
   }
@@ -445,6 +455,10 @@ class FeatureEngineeringService {
       reflectionsWritten: aggregated.activityEngagement.reflectionJournalEntries,
       journalEntries: aggregated.activityEngagement.reflectionJournalEntries,
       
+      // AI Assistant features
+      aiAskModeRatio: normalized.aiAskModeRatio || 0,
+      aiResearchModeRatio: normalized.aiResearchModeRatio || 0,
+      
       // Sensing vs Intuitive
       sensingModeRatio: normalized.sensingLearningUsageRatio,
       simulationsCompleted: aggregated.activityEngagement.handsOnLabsCompleted,
@@ -453,6 +467,9 @@ class FeatureEngineeringService {
       intuitiveModeRatio: normalized.intuitiveLearningUsageRatio,
       conceptsExplored: aggregated.activityEngagement.conceptExplorationsCount,
       patternsDiscovered: aggregated.activityEngagement.conceptExplorationsCount,
+      
+      // AI Assistant feature
+      aiTextToDocsRatio: normalized.aiTextToDocsRatio || 0,
       
       // Visual vs Verbal
       visualModeRatio: normalized.visualLearningUsageRatio,

@@ -35,12 +35,20 @@ export async function GET(request) {
     // Check if profile needs update
     const needsUpdate = profile.needsUpdate();
 
+    // Calculate overall ML confidence score (average of all dimension confidences)
+    const mlConfidenceScore = profile.confidence ? 
+      (profile.confidence.activeReflective + 
+       profile.confidence.sensingIntuitive + 
+       profile.confidence.visualVerbal + 
+       profile.confidence.sequentialGlobal) / 4 : 0;
+
     return NextResponse.json({
       success: true,
       data: {
         profile: {
           dimensions: profile.dimensions,
           confidence: profile.confidence,
+          mlConfidenceScore: mlConfidenceScore, // Add overall ML confidence
           recommendedModes: profile.recommendedModes,
           dominantStyle: profile.getDominantStyle(),
           classificationMethod: profile.classificationMethod,

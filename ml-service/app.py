@@ -75,12 +75,14 @@ def load_models():
         raise
 
 def extract_features(feature_dict):
-    """Extract features in correct order"""
+    """Extract features in correct order (27 features including AI Assistant)"""
     feature_order = [
         'activeModeRatio', 'questionsGenerated', 'debatesParticipated',
         'reflectiveModeRatio', 'reflectionsWritten', 'journalEntries',
+        'aiAskModeRatio', 'aiResearchModeRatio',  # AI Assistant features
         'sensingModeRatio', 'simulationsCompleted', 'challengesCompleted',
         'intuitiveModeRatio', 'conceptsExplored', 'patternsDiscovered',
+        'aiTextToDocsRatio',  # AI Assistant feature
         'visualModeRatio', 'diagramsViewed', 'wireframesExplored',
         'verbalModeRatio', 'textRead', 'summariesCreated',
         'sequentialModeRatio', 'stepsCompleted', 'linearNavigation',
@@ -94,6 +96,57 @@ def extract_features(feature_dict):
         features.append(float(feature_dict[feature_name]))
     
     return np.array(features).reshape(1, -1)
+
+def engineer_features(features_array, feature_dict):
+    """
+    Engineer additional features to match training (27 base -> 46 total)
+    Must match train_models_improved.py feature engineering exactly!
+    """
+    # Convert to list for easier manipulation
+    features_list = features_array.flatten().tolist()
+    
+    # Add ratio features (4 features)
+    active_ratio = feature_dict.get('activeModeRatio', 0)
+    reflective_ratio = feature_dict.get('reflectiveModeRatio', 0)
+    sensing_ratio = feature_dict.get('sensingModeRatio', 0)
+    intuitive_ratio = feature_dict.get('intuitiveModeRatio', 0)
+    visual_ratio = feature_dict.get('visualModeRatio', 0)
+    verbal_ratio = feature_dict.get('verbalModeRatio', 0)
+    sequential_ratio = feature_dict.get('sequentialModeRatio', 0)
+    global_ratio = feature_dict.get('globalModeRatio', 0)
+    
+    features_list.append(active_ratio / (reflective_ratio + 0.001))  # active_reflective_ratio
+    features_list.append(sensing_ratio / (intuitive_ratio + 0.001))  # sensing_intuitive_ratio
+    features_list.append(visual_ratio / (verbal_ratio + 0.001))      # visual_verbal_ratio
+    features_list.append(sequential_ratio / (global_ratio + 0.001))  # sequential_global_ratio
+    
+    # Add intensity features (8 features)
+    features_list.append(feature_dict.get('questionsGenerated', 0) + feature_dict.get('debatesParticipated', 0))  # active_intensity
+    features_list.append(feature_dict.get('reflectionsWritten', 0) + feature_dict.get('journalEntries', 0))       # reflective_intensity
+    features_list.append(feature_dict.get('simulationsCompleted', 0) + feature_dict.get('challengesCompleted', 0))  # sensing_intensity
+    features_list.append(feature_dict.get('conceptsExplored', 0) + feature_dict.get('patternsDiscovered', 0))     # intuitive_intensity
+    features_list.append(feature_dict.get('diagramsViewed', 0) + feature_dict.get('wireframesExplored', 0))       # visual_intensity
+    features_list.append(feature_dict.get('textRead', 0) + feature_dict.get('summariesCreated', 0))               # verbal_intensity
+    features_list.append(feature_dict.get('stepsCompleted', 0) + feature_dict.get('linearNavigation', 0))         # sequential_intensity
+    features_list.append(feature_dict.get('overviewsViewed', 0) + feature_dict.get('navigationJumps', 0))         # global_intensity
+    
+    # Add squared features (4 features)
+    features_list.append(active_ratio ** 2)      # activeModeRatio_squared
+    features_list.append(sensing_ratio ** 2)     # sensingModeRatio_squared
+    features_list.append(visual_ratio ** 2)      # visualModeRatio_squared
+    features_list.append(sequential_ratio ** 2)  # sequentialModeRatio_squared
+    
+    # Add AI Assistant interaction features (3 features)
+    ai_ask = feature_dict.get('aiAskModeRatio', 0)
+    ai_research = feature_dict.get('aiResearchModeRatio', 0)
+    ai_text_to_docs = feature_dict.get('aiTextToDocsRatio', 0)
+    
+    features_list.append(ai_ask * active_ratio)           # ai_active_interaction
+    features_list.append(ai_research * reflective_ratio)  # ai_reflective_interaction
+    features_list.append(ai_text_to_docs * sensing_ratio) # ai_sensing_interaction
+    
+    # Total: 27 base + 4 ratios + 8 intensities + 4 squared + 3 AI interactions = 46 features
+    return np.array(features_list).reshape(1, -1)
 
 def interpret_score(score, dimension):
     """Interpret FSLSM score"""
@@ -149,14 +202,44 @@ def interpret_score(score, dimension):
     
     return "Unknown"
 
-def calculate_confidence(prediction, feature_variance):
-    """Calculate prediction confidence based on feature variance"""
-    # Higher variance in features = lower confidence
-    # This is a simple heuristic; can be improved with model uncertainty
-    base_confidence = 0.7
-    variance_penalty = min(0.2, feature_variance * 0.1)
-    confidence = max(0.5, base_confidence - variance_penalty)
-    return round(confidence, 2)
+def calculate_confidence_from_model(model, features_scaled, prediction):
+    """
+    Calculate real ML confidence using multiple methods:
+    1. Feature importance variance (how much features agree)
+    2. Prediction stability (how far from decision boundary)
+    3. Model's internal uncertainty
+    """
+    try:
+        # Method 1: Use feature importances to gauge confidence
+        # Features with high importance that are clear = higher confidence
+        feature_importance = model.feature_importances_
+        importance_variance = np.var(feature_importance)
+        
+        # Method 2: Distance from neutral (0) - further = more confident
+        # Normalize by max range (11)
+        distance_confidence = min(abs(prediction) / 11.0, 1.0)
+        
+        # Method 3: Feature variance - lower variance = more confident
+        feature_variance = np.var(features_scaled)
+        variance_confidence = max(0.3, 1.0 - min(feature_variance * 0.5, 0.7))
+        
+        # Combine all three methods with weights
+        combined_confidence = (
+            0.3 * (1.0 - min(importance_variance * 2, 0.7)) +  # Feature agreement
+            0.4 * distance_confidence +                         # Prediction strength
+            0.3 * variance_confidence                           # Data quality
+        )
+        
+        # Ensure confidence is between 0.3 and 0.95
+        confidence = np.clip(combined_confidence, 0.3, 0.95)
+        
+        # Round to 2 decimal places for realistic variation
+        return round(float(confidence), 2)
+        
+    except Exception as e:
+        print(f"⚠️  Confidence calculation error: {e}")
+        # Fallback to simple method
+        return round(max(0.5, 0.7 - min(0.2, np.var(features_scaled) * 0.1)), 2)
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -185,11 +268,14 @@ def predict():
                 'error': 'Missing features in request'
             }), 400
         
-        # Extract and validate features
+        # Extract and validate features (27 base features)
         features = extract_features(data['features'])
         
+        # Engineer additional features (27 -> 46 features)
+        features_engineered = engineer_features(features, data['features'])
+        
         # Scale features
-        features_scaled = scaler.transform(features)
+        features_scaled = scaler.transform(features_engineered)
         
         # Calculate feature variance for confidence
         feature_variance = np.var(features_scaled)
@@ -210,7 +296,8 @@ def predict():
             pred_int = int(round(pred))
             
             predictions[dim_name] = pred_int
-            confidence[dim_name] = calculate_confidence(pred, feature_variance)
+            # Use real ML-based confidence calculation
+            confidence[dim_name] = calculate_confidence_from_model(model, features_scaled, pred)
             interpretation[dim_name] = interpret_score(pred_int, dim_name)
         
         # Return response

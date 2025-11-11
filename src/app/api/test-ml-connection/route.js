@@ -20,7 +20,7 @@ export async function GET() {
       });
     }
     
-    // Try a test prediction with dummy features in correct format
+    // Try a test prediction with dummy features in correct format (27 features)
     const dummyFeatures = {
       // Active vs Reflective
       activeModeRatio: 0.5,
@@ -30,6 +30,10 @@ export async function GET() {
       reflectionsWritten: 2,
       journalEntries: 2,
       
+      // AI Assistant features
+      aiAskModeRatio: 0.4,
+      aiResearchModeRatio: 0.2,
+      
       // Sensing vs Intuitive
       sensingModeRatio: 0.6,
       simulationsCompleted: 4,
@@ -37,6 +41,9 @@ export async function GET() {
       intuitiveModeRatio: 0.2,
       conceptsExplored: 3,
       patternsDiscovered: 3,
+      
+      // AI Assistant feature
+      aiTextToDocsRatio: 0.3,
       
       // Visual vs Verbal
       visualModeRatio: 0.7,

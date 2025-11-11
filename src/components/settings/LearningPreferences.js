@@ -348,6 +348,79 @@ const LearningPreferences = () => {
             </div>
           )}
 
+          {/* Confidence Level Banner */}
+          {profile.dataQuality && (
+            <div className={`border-2 rounded-xl p-6 ${
+              profile.dataQuality.confidenceLevel === 'high' ? 'bg-green-50 border-green-300' :
+              profile.dataQuality.confidenceLevel === 'medium' ? 'bg-yellow-50 border-yellow-300' :
+              profile.dataQuality.confidenceLevel === 'low-medium' ? 'bg-orange-50 border-orange-300' :
+              'bg-red-50 border-red-300'
+            }`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <SparklesIcon className={`w-6 h-6 ${
+                    profile.dataQuality.confidenceLevel === 'high' ? 'text-green-600' :
+                    profile.dataQuality.confidenceLevel === 'medium' ? 'text-yellow-600' :
+                    profile.dataQuality.confidenceLevel === 'low-medium' ? 'text-orange-600' :
+                    'text-red-600'
+                  }`} />
+                  Classification Confidence
+                </h3>
+                <span className={`px-4 py-2 rounded-full text-sm font-bold border-2 ${
+                  (profile.mlConfidenceScore || 0) >= 0.80 ? 'bg-green-100 text-green-800 border-green-400' :
+                  (profile.mlConfidenceScore || 0) >= 0.65 ? 'bg-yellow-100 text-yellow-800 border-yellow-400' :
+                  (profile.mlConfidenceScore || 0) >= 0.50 ? 'bg-orange-100 text-orange-800 border-orange-400' :
+                  'bg-red-100 text-red-800 border-red-400'
+                }`}>
+                  {Math.round((profile.mlConfidenceScore || 0) * 100)}% ML Confidence
+                </span>
+              </div>
+              
+              {/* Confidence Progress Bar */}
+              <div className="mb-4">
+                <div className="flex justify-between text-xs text-gray-600 mb-2">
+                  <span>Low</span>
+                  <span>Medium</span>
+                  <span>High</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      (profile.mlConfidenceScore || 0) >= 0.80 ? 'bg-green-600' :
+                      (profile.mlConfidenceScore || 0) >= 0.65 ? 'bg-yellow-500' :
+                      (profile.mlConfidenceScore || 0) >= 0.50 ? 'bg-orange-500' :
+                      'bg-red-500'
+                    }`}
+                    style={{ width: `${Math.round((profile.mlConfidenceScore || 0) * 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <p className={`text-sm ${
+                (profile.mlConfidenceScore || 0) >= 0.80 ? 'text-green-800' :
+                (profile.mlConfidenceScore || 0) >= 0.65 ? 'text-yellow-800' :
+                (profile.mlConfidenceScore || 0) >= 0.50 ? 'text-orange-800' :
+                'text-red-800'
+              }`}>
+                <strong>
+                  {(profile.mlConfidenceScore || 0) >= 0.80 && '✓ High ML Confidence - '}
+                  {(profile.mlConfidenceScore || 0) >= 0.65 && (profile.mlConfidenceScore || 0) < 0.80 && '⚡ Good ML Confidence - '}
+                  {(profile.mlConfidenceScore || 0) >= 0.50 && (profile.mlConfidenceScore || 0) < 0.65 && '📊 Moderate ML Confidence - '}
+                  {(profile.mlConfidenceScore || 0) < 0.50 && '🌱 Low ML Confidence - '}
+                </strong>
+                The ML model is {Math.round((profile.mlConfidenceScore || 0) * 100)}% confident in this classification based on {profile.dataQuality.interactionCount || profile.dataQuality.totalInteractions || 0} interactions. 
+                {profile.dataQuality.confidenceLevel !== 'high' && ` Keep learning to reach ${
+                  profile.dataQuality.confidenceLevel === 'medium' ? '30' :
+                  profile.dataQuality.confidenceLevel === 'low-medium' ? '15' : '5'
+                } interactions for ${
+                  profile.dataQuality.confidenceLevel === 'medium' ? 'high' :
+                  profile.dataQuality.confidenceLevel === 'low-medium' ? 'medium' : 'low-medium'
+                } confidence.`}
+                {profile.dataQuality.confidenceLevel === 'high' && ' Your profile is highly accurate!'}
+              </p>
+            </div>
+          )}
+
           {/* Classification Info */}
           <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6">
             <h3 className="font-bold text-gray-900 mb-4">Classification Details</h3>
@@ -372,17 +445,17 @@ const LearningPreferences = () => {
               </div>
               <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
                 <p className="text-2xl font-bold text-blue-600 mb-1">
-                  {profile.dataQuality?.totalInteractions || 0}
+                  {profile.dataQuality?.interactionCount || profile.dataQuality?.totalInteractions || 0}
                 </p>
                 <p className="text-xs text-gray-600">Total</p>
                 <p className="text-sm font-semibold text-gray-900 mt-1">Interactions</p>
               </div>
               <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
                 <p className="text-2xl font-bold text-green-600 mb-1">
-                  {profile.dataQuality?.dataCompleteness || 0}%
+                  {profile.dataQuality?.completeness || profile.dataQuality?.dataCompleteness || 0}%
                 </p>
                 <p className="text-xs text-gray-600">Data</p>
-                <p className="text-sm font-semibold text-gray-900 mt-1">Quality</p>
+                <p className="text-sm font-semibold text-gray-900 mt-1">Completeness</p>
               </div>
             </div>
           </div>
@@ -399,7 +472,7 @@ const LearningPreferences = () => {
             Use the learning modes to build your profile!
           </p>
           <p className="text-sm text-gray-500">
-            Need at least 10 interactions for ML classification
+            Start using learning modes to build your profile with immediate classification!
           </p>
         </div>
       )}

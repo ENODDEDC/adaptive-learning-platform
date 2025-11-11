@@ -25,9 +25,21 @@ const AnalyticsSettings = () => {
   const fetchStats = async () => {
     setLoading(true);
     try {
+      // Fetch behavior stats
       const res = await fetch('/api/learning-behavior/track');
       if (res.ok) {
         const data = await res.json();
+        
+        // Also fetch ML confidence from profile
+        const profileRes = await fetch('/api/learning-style/profile');
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          const profile = profileData.data?.profile || profileData.profile;
+          if (profile && profile.mlConfidenceScore !== undefined) {
+            data.data.mlConfidenceScore = profile.mlConfidenceScore;
+          }
+        }
+        
         setStats(data.data);
       }
     } catch (error) {
@@ -251,11 +263,104 @@ const AnalyticsSettings = () => {
         </div>
       )}
 
+      {/* ML Classification Confidence */}
+      {stats?.mlConfidenceScore !== undefined && (
+        <div className={`rounded-lg border-2 p-6 ${
+          (stats.mlConfidenceScore || 0) >= 0.80 ? 'bg-green-50 border-green-300' :
+          (stats.mlConfidenceScore || 0) >= 0.65 ? 'bg-yellow-50 border-yellow-300' :
+          (stats.mlConfidenceScore || 0) >= 0.50 ? 'bg-orange-50 border-orange-300' :
+          'bg-red-50 border-red-300'
+        }`}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <SparklesIcon className={`w-6 h-6 ${
+                (stats.mlConfidenceScore || 0) >= 0.80 ? 'text-green-600' :
+                (stats.mlConfidenceScore || 0) >= 0.65 ? 'text-yellow-600' :
+                (stats.mlConfidenceScore || 0) >= 0.50 ? 'text-orange-600' :
+                'text-red-600'
+              }`} />
+              Real ML Model Confidence
+            </h3>
+            <span className={`px-4 py-2 rounded-full text-lg font-bold border-2 ${
+              (stats.mlConfidenceScore || 0) >= 0.80 ? 'bg-green-100 text-green-800 border-green-400' :
+              (stats.mlConfidenceScore || 0) >= 0.65 ? 'bg-yellow-100 text-yellow-800 border-yellow-400' :
+              (stats.mlConfidenceScore || 0) >= 0.50 ? 'bg-orange-100 text-orange-800 border-orange-400' :
+              'bg-red-100 text-red-800 border-red-400'
+            }`}>
+              {Math.round((stats.mlConfidenceScore || 0) * 100)}%
+            </span>
+          </div>
+
+          {/* ML Confidence Progress Bar */}
+          <div className="mb-4">
+            <div className="flex justify-between text-xs font-medium text-gray-600 mb-2">
+              <span>0% (Low)</span>
+              <span>50% (Moderate)</span>
+              <span>65% (Good)</span>
+              <span>80%+ (High)</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden shadow-inner">
+              <div
+                className={`h-full transition-all duration-500 flex items-center justify-center ${
+                  (stats.mlConfidenceScore || 0) >= 0.80 ? 'bg-gradient-to-r from-green-400 to-green-600' :
+                  (stats.mlConfidenceScore || 0) >= 0.65 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
+                  (stats.mlConfidenceScore || 0) >= 0.50 ? 'bg-gradient-to-r from-orange-400 to-orange-600' :
+                  'bg-gradient-to-r from-red-400 to-red-600'
+                }`}
+                style={{ width: `${Math.round((stats.mlConfidenceScore || 0) * 100)}%` }}
+              >
+                <span className="text-xs font-bold text-white">
+                  {Math.round((stats.mlConfidenceScore || 0) * 100)}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`p-4 rounded-lg border-2 ${
+              (stats.mlConfidenceScore || 0) >= 0.80 ? 'bg-white border-green-200' :
+              (stats.mlConfidenceScore || 0) >= 0.65 ? 'bg-white border-yellow-200' :
+              (stats.mlConfidenceScore || 0) >= 0.50 ? 'bg-white border-orange-200' :
+              'bg-white border-red-200'
+            }`}>
+              <p className="text-sm font-semibold text-gray-700 mb-2">ML Confidence Level</p>
+              <p className={`text-2xl font-bold ${
+                (stats.mlConfidenceScore || 0) >= 0.80 ? 'text-green-700' :
+                (stats.mlConfidenceScore || 0) >= 0.65 ? 'text-yellow-700' :
+                (stats.mlConfidenceScore || 0) >= 0.50 ? 'text-orange-700' :
+                'text-red-700'
+              }`}>
+                {(stats.mlConfidenceScore || 0) >= 0.80 && '✓ High'}
+                {(stats.mlConfidenceScore || 0) >= 0.65 && (stats.mlConfidenceScore || 0) < 0.80 && '⚡ Good'}
+                {(stats.mlConfidenceScore || 0) >= 0.50 && (stats.mlConfidenceScore || 0) < 0.65 && '📊 Moderate'}
+                {(stats.mlConfidenceScore || 0) < 0.50 && '🌱 Low'}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                Real ML model confidence score
+              </p>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg border-2 border-blue-200">
+              <p className="text-sm font-semibold text-gray-700 mb-2">Model Certainty</p>
+              <p className="text-2xl font-bold text-blue-700">
+                {(stats.mlConfidenceScore || 0) >= 0.80 ? '🎉 High Certainty' :
+                 (stats.mlConfidenceScore || 0) >= 0.65 ? '⚡ Good Certainty' :
+                 (stats.mlConfidenceScore || 0) >= 0.50 ? '📊 Moderate' :
+                 '🌱 Low Certainty'}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                Based on {stats.dataQuality?.interactionCount || stats.dataQuality?.totalInteractions || 0} interactions. More data improves confidence.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Data Quality */}
       {stats?.dataQuality && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-6">
-            Data Quality
+            Data Quality Metrics
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Completeness */}
@@ -270,7 +375,7 @@ const AnalyticsSettings = () => {
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-600 mb-2">Total Interactions</p>
               <p className="text-3xl font-bold text-gray-900">
-                {stats.dataQuality.totalInteractions}
+                {stats.dataQuality.interactionCount || stats.dataQuality.totalInteractions}
               </p>
             </div>
 
@@ -282,15 +387,11 @@ const AnalyticsSettings = () => {
               </p>
             </div>
 
-            {/* ML Ready */}
+            {/* Session Count */}
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">ML Ready</p>
-              <p className="text-3xl font-bold">
-                {stats.dataQuality.sufficientForML ? (
-                  <span className="text-green-600">✓</span>
-                ) : (
-                  <span className="text-orange-600">✗</span>
-                )}
+              <p className="text-sm text-gray-600 mb-2">Sessions</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {stats.dataQuality.sessionCount || 0}
               </p>
             </div>
           </div>

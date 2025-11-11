@@ -66,7 +66,7 @@ const LearningStyleWidget = ({ profile, loading }) => {
   }
 
   // Has profile - show summary
-  const { dimensions, confidence, recommendedModes, lastUpdated, source } = profile;
+  const { dimensions, confidence, recommendedModes, lastUpdated, source, dataQuality } = profile;
 
   // Calculate overall learning style
   const getStyleLabel = (score) => {
@@ -90,6 +90,25 @@ const LearningStyleWidget = ({ profile, loading }) => {
   };
 
   const primaryStyle = getPrimaryStyle();
+
+  // Get confidence badge
+  const getConfidenceBadge = () => {
+    const confidenceLevel = dataQuality?.confidenceLevel || 'low';
+    const confidencePercentage = dataQuality?.confidencePercentage || 0;
+    
+    const colors = {
+      'high': 'bg-green-100 text-green-700 border-green-300',
+      'medium': 'bg-yellow-100 text-yellow-700 border-yellow-300',
+      'low-medium': 'bg-orange-100 text-orange-700 border-orange-300',
+      'low': 'bg-red-100 text-red-700 border-red-300'
+    };
+    
+    return (
+      <span className={`px-2 py-0.5 text-xs rounded-full font-semibold border ${colors[confidenceLevel] || colors['low']}`}>
+        {confidencePercentage}% Confidence
+      </span>
+    );
+  };
 
   // Determine source badge
   const getSourceBadge = () => {
@@ -125,9 +144,10 @@ const LearningStyleWidget = ({ profile, loading }) => {
             <ChartBarIcon className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 flex-wrap">
               Your Learning Style
               {getSourceBadge()}
+              {getConfidenceBadge()}
             </h3>
             <p className="text-sm text-gray-600">{primaryStyle} Learner</p>
           </div>
@@ -197,6 +217,34 @@ const LearningStyleWidget = ({ profile, loading }) => {
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Confidence Level Info */}
+      {dataQuality && (
+        <div className={`border rounded-lg p-3 mb-3 ${
+          dataQuality.confidenceLevel === 'high' ? 'bg-green-50 border-green-200' :
+          dataQuality.confidenceLevel === 'medium' ? 'bg-yellow-50 border-yellow-200' :
+          dataQuality.confidenceLevel === 'low-medium' ? 'bg-orange-50 border-orange-200' :
+          'bg-red-50 border-red-200'
+        }`}>
+          <p className={`text-xs ${
+            dataQuality.confidenceLevel === 'high' ? 'text-green-800' :
+            dataQuality.confidenceLevel === 'medium' ? 'text-yellow-800' :
+            dataQuality.confidenceLevel === 'low-medium' ? 'text-orange-800' :
+            'text-red-800'
+          }`}>
+            <strong>
+              {dataQuality.confidenceLevel === 'high' && '✓ High Confidence Classification'}
+              {dataQuality.confidenceLevel === 'medium' && '⚡ Medium Confidence Classification'}
+              {dataQuality.confidenceLevel === 'low-medium' && '📊 Growing Confidence'}
+              {dataQuality.confidenceLevel === 'low' && '🌱 Initial Classification'}
+            </strong>
+            {' '}
+            {dataQuality.interactionCount} interactions tracked. 
+            {dataQuality.confidenceLevel !== 'high' && ` Keep learning to improve accuracy (${dataQuality.confidencePercentage}%).`}
+            {dataQuality.confidenceLevel === 'high' && ' Your profile is highly accurate!'}
+          </p>
         </div>
       )}
 
