@@ -67,6 +67,7 @@ const CourseContent = () => {
     enrollment: [],
     difficulty: []
   });
+  const [expandedSchedules, setExpandedSchedules] = useState({});
 
   // Notification system
   useEffect(() => {
@@ -267,6 +268,7 @@ const CourseContent = () => {
         progressColor: course.coverColor || '#60a5fa',
         studentCount: course.enrolledUsers?.length || 0, // Use actual enrolled students only (no +1 for creator)
         moduleCount: course.moduleCount || 0,   // Use real module count from API
+        schedules: course.schedules || [],
       };
     });
 
@@ -570,7 +572,7 @@ const CourseContent = () => {
 
   // Default fallback - no slug provided, show all courses
   return (
-    <div className="flex-1 h-screen p-2 sm:p-4 lg:p-6 bg-gray-50 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+    <div className="min-h-screen flex flex-col bg-gray-50 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
       {/* Enhanced Header */}
       <div className="relative mx-4 mt-4 mb-8 bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl">
         {/* Animated background gradient */}
@@ -848,13 +850,15 @@ const CourseContent = () => {
       </div>
 
       {/* Course Filter and Sort Component */}
-      <CourseFilterSort
-        courses={courses}
-        onFilteredCoursesChange={setFilteredCourses}
-        onSortChange={setSortBy}
-        initialFilters={activeFilters}
-        initialSort={sortBy}
-      />
+      <div className="mx-4">
+        <CourseFilterSort
+          courses={courses}
+          onFilteredCoursesChange={setFilteredCourses}
+          onSortChange={setSortBy}
+          initialFilters={activeFilters}
+          initialSort={sortBy}
+        />
+      </div>
 
 
 
@@ -913,9 +917,10 @@ const CourseContent = () => {
       })()}
 
       {/* Enhanced Course/Cluster Grid with Masonry Layout */}
-      <AdaptiveLayout componentType="courses" trackInteractions={true} adaptiveMode={true}>
-        <div className="w-full flex justify-center">
-          <div className="masonry-grid w-full max-w-none">
+      <div className="relative mb-8 ml-4 mr-4">
+        <div className="w-full transition-all duration-500 ease-in-out">
+          <AdaptiveLayout componentType="courses" trackInteractions={true} adaptiveMode={true}>
+            <div className="masonry-grid">
           {activeTab === 'courses' ? (
           filteredCourses.length === 0 ? (
             <div className="col-span-full animate-fade-in-up">
@@ -954,23 +959,196 @@ const CourseContent = () => {
               </div>
             </div>
           ) : (
-            filteredCourses.map((course, index) => (
-              <ProfessionalCourseCard
-                key={course.id}
-                course={course}
-                index={index}
-                onPreview={handleCoursePreview}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragEnter={handleDragEnter}
-                onDragLeave={handleDragLeave}
-                onDragEnd={handleDragEnd}
-                onDrop={handleDrop}
-                draggedCourse={draggedCourse}
-                dragOverIndex={dragOverIndex}
-                trackUserInteraction={trackUserInteraction}
-              />
-            ))
+            filteredCourses.map((course, index) => {
+              // Utility function to normalize and ensure proper color format
+              const normalizeColor = (colorValue) => {
+                if (colorValue && colorValue.startsWith('bg-')) {
+                  return colorValue;
+                }
+                
+                const hexToTailwindMap = {
+                  '#60a5fa': 'bg-blue-400',
+                  '#a78bfa': 'bg-purple-400',
+                  '#f472b6': 'bg-pink-400',
+                  '#34d399': 'bg-emerald-400',
+                  '#fb923c': 'bg-orange-400',
+                  '#f87171': 'bg-red-400',
+                  '#2dd4bf': 'bg-teal-400',
+                  '#818cf8': 'bg-indigo-400',
+                };
+                
+                if (colorValue && colorValue.startsWith('#')) {
+                  const lowerHex = colorValue.toLowerCase();
+                  if (hexToTailwindMap[lowerHex]) {
+                    return hexToTailwindMap[lowerHex];
+                  }
+                }
+                
+                return 'bg-blue-500';
+              };
+
+              const getColorVariations = (colorClass) => {
+                const normalizedColor = normalizeColor(colorClass);
+                
+                const colorMap = {
+                  'bg-blue-500': { lighter: 'bg-blue-50', darker: 'bg-blue-600', text: 'text-blue-700' },
+                  'bg-blue-400': { lighter: 'bg-blue-50', darker: 'bg-blue-600', text: 'text-blue-700' },
+                  'bg-indigo-500': { lighter: 'bg-indigo-50', darker: 'bg-indigo-600', text: 'text-indigo-700' },
+                  'bg-indigo-400': { lighter: 'bg-indigo-50', darker: 'bg-indigo-600', text: 'text-indigo-700' },
+                  'bg-purple-500': { lighter: 'bg-purple-50', darker: 'bg-purple-600', text: 'text-purple-700' },
+                  'bg-purple-400': { lighter: 'bg-purple-50', darker: 'bg-purple-600', text: 'text-purple-700' },
+                  'bg-pink-500': { lighter: 'bg-pink-50', darker: 'bg-pink-600', text: 'text-pink-700' },
+                  'bg-pink-400': { lighter: 'bg-pink-50', darker: 'bg-pink-600', text: 'text-pink-700' },
+                  'bg-red-500': { lighter: 'bg-red-50', darker: 'bg-red-600', text: 'text-red-700' },
+                  'bg-red-400': { lighter: 'bg-red-50', darker: 'bg-red-600', text: 'text-red-700' },
+                  'bg-orange-500': { lighter: 'bg-orange-50', darker: 'bg-orange-600', text: 'text-orange-700' },
+                  'bg-orange-400': { lighter: 'bg-orange-50', darker: 'bg-orange-600', text: 'text-orange-700' },
+                  'bg-emerald-500': { lighter: 'bg-emerald-50', darker: 'bg-emerald-600', text: 'text-emerald-700' },
+                  'bg-emerald-400': { lighter: 'bg-emerald-50', darker: 'bg-emerald-600', text: 'text-emerald-700' },
+                  'bg-teal-500': { lighter: 'bg-teal-50', darker: 'bg-teal-600', text: 'text-teal-700' },
+                  'bg-teal-400': { lighter: 'bg-teal-50', darker: 'bg-teal-600', text: 'text-teal-700' },
+                };
+                
+                return {
+                  base: normalizedColor,
+                  ...colorMap[normalizedColor]
+                };
+              };
+
+              const colorVariations = getColorVariations(course.color);
+              
+              return (
+                <Link 
+                  key={course.id} 
+                  href={`/courses/${course.id}`} 
+                  className="masonry-item group"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, course, index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnter={(e) => handleDragEnter(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDragEnd={handleDragEnd}
+                  onDrop={(e) => handleDrop(e, index)}
+                >
+                  <div className={`relative flex flex-col h-full bg-white border-2 cursor-pointer rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl overflow-hidden ${
+                    dragOverIndex === index ? 'border-blue-500 ring-4 ring-blue-200' : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                    {/* Colored Header */}
+                    <div className={`relative px-5 py-6 overflow-hidden ${colorVariations.base} transition-all duration-300`}>
+                      <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/15"></div>
+                      <div className="absolute inset-0 opacity-[0.06]">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-12 translate-x-12"></div>
+                      </div>
+
+                      <div className="relative z-10 space-y-3.5">
+                        {/* Section Badge */}
+                        <div>
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-lg text-xs font-bold text-gray-800 shadow-sm border border-white/50">
+                            <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            <span className="text-gray-600 text-[10px] font-semibold uppercase tracking-wider">Section</span>
+                            <span className="text-gray-900">{course.code}</span>
+                          </span>
+                        </div>
+
+                        {/* Course Title */}
+                        <h3 className="text-xl font-bold text-white leading-snug line-clamp-2 pr-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5)' }}>
+                          {course.title}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Content Section */}
+                    <div className="flex-1 px-5 py-5 flex flex-col">
+                      {/* Instructor */}
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex-shrink-0 shadow-sm">
+                          <span className="text-sm font-bold text-white">
+                            {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-gray-500 mb-0.5">Instructor</div>
+                          <div className="text-sm font-semibold text-gray-900 truncate">{course.instructor}</div>
+                        </div>
+                      </div>
+
+                      {/* Schedule Display */}
+                      {course.schedules && course.schedules.length > 0 && (
+                        <div className="mb-4 p-3 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+                          <div className="flex items-center gap-2 mb-2">
+                            <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-xs font-bold text-indigo-900 uppercase tracking-wide">Schedule</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {(expandedSchedules[course.id] ? course.schedules : course.schedules.slice(0, 2)).map((schedule, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-xs">
+                                <span className="font-semibold text-indigo-700">{schedule.day.slice(0, 3)}</span>
+                                <span className="text-indigo-600">{schedule.startTime} - {schedule.endTime}</span>
+                              </div>
+                            ))}
+                            {course.schedules.length > 2 && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setExpandedSchedules(prev => ({
+                                    ...prev,
+                                    [course.id]: !prev[course.id]
+                                  }));
+                                }}
+                                className="w-full text-xs text-indigo-600 hover:text-indigo-700 font-semibold text-center pt-1 transition-colors flex items-center justify-center gap-1"
+                              >
+                                {expandedSchedules[course.id] ? (
+                                  <>
+                                    <span>Show less</span>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                    </svg>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>+{course.schedules.length - 2} more</span>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Metrics */}
+                      <div className="flex items-stretch gap-2.5 pt-4 border-t border-gray-200 mt-auto">
+                        <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-purple-50 rounded-xl border border-purple-100 transition-all hover:bg-purple-100">
+                          <svg className="w-5 h-5 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.moduleCount || 0}</div>
+                            <div className="text-xs font-medium text-gray-600">Materials</div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-blue-50 rounded-xl border border-blue-100 transition-all hover:bg-blue-100">
+                          <svg className="w-5 h-5 text-blue-600 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                          </svg>
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.studentCount || 0}</div>
+                            <div className="text-xs font-medium text-gray-600">Students</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })
           )
         ) : (
           clusters.length === 0 ? (
@@ -1060,7 +1238,6 @@ const CourseContent = () => {
           )
         )}
         </div>
-      </div>
 
       {/* Course Preview Modal */}
       <CoursePreviewModal
@@ -1123,7 +1300,9 @@ const CourseContent = () => {
         variant="floating"
         position="bottom-left"
       /> */}
-      </AdaptiveLayout>
+          </AdaptiveLayout>
+        </div>
+      </div>
     </div>
   );
 };

@@ -11,6 +11,7 @@ import CreateCourseModal from '@/components/CreateCourseModal';
 import JoinCourseModal from '@/components/JoinCourseModal';
 import CreateClusterModal from '@/components/CreateClusterModal';
 import JoinClusterModal from '@/components/JoinClusterModal';
+import FloatingAIAssistant from '@/components/FloatingAIAssistant';
 import { useLayout } from '../context/LayoutContext';
 import featureFlags from '../utils/featureFlags';
 import { api } from '../services/apiService';
@@ -262,6 +263,9 @@ const Layout = ({ children }) => {
               })
             : children}
         </main>
+        
+        {/* Global AI Assistant Button - Fixed to bottom viewport */}
+        <FloatingAIAssistant />
       </div>
     </div>
   );

@@ -1012,24 +1012,37 @@ body {
   /* Professional Masonry Layout for Course Cards */
   .masonry-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: 1.5rem;
-    padding: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    padding: 0;
     align-items: start;
-    justify-content: center;
+    justify-content: start;
     width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
+    box-sizing: border-box;
     /* Ensure consistent spacing */
     grid-auto-flow: row;
+    /* Smooth transition when sidebar changes */
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Professional grid alignment */
   .masonry-grid > * {
-    align-self: start;
-    justify-self: center;
+    align-self: stretch;
+    justify-self: stretch;
     width: 100%;
-    max-width: 380px;
+    margin: 0;
+    min-height: 420px;
+    /* Smooth transition for items */
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Ensure card content fills height */
+  .masonry-grid > * > div {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Professional responsive breakpoints */
@@ -1037,7 +1050,7 @@ body {
     .masonry-grid {
       grid-template-columns: 1fr;
       gap: 1rem;
-      padding: 1rem;
+      padding: 0;
       max-width: 100%;
     }
     .masonry-grid > * {
@@ -1048,36 +1061,36 @@ body {
   @media (min-width: 481px) and (max-width: 768px) {
     .masonry-grid {
       grid-template-columns: 1fr;
-      gap: 1.25rem;
-      padding: 1.25rem;
-      max-width: 500px;
+      gap: 1rem;
+      padding: 0;
+      max-width: 100%;
     }
   }
 
   @media (min-width: 769px) and (max-width: 1024px) {
     .masonry-grid {
       grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
-      padding: 1.5rem;
-      max-width: 900px;
+      gap: 1rem;
+      padding: 0;
+      max-width: 100%;
     }
   }
 
   @media (min-width: 1025px) and (max-width: 1440px) {
     .masonry-grid {
       grid-template-columns: repeat(3, 1fr);
-      gap: 1.75rem;
-      padding: 1.75rem;
-      max-width: 1200px;
+      gap: 1rem;
+      padding: 0;
+      max-width: 100%;
     }
   }
 
   @media (min-width: 1441px) {
     .masonry-grid {
       grid-template-columns: repeat(4, 1fr);
-      gap: 2rem;
-      padding: 2rem;
-      max-width: 1400px;
+      gap: 1rem;
+      padding: 0;
+      max-width: 100%;
     }
   }
 
