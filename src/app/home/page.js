@@ -145,6 +145,7 @@ export default function Home() {
   const [promptText, setPromptText] = useState('');
   const [currentCourseIndex, setCurrentCourseIndex] = useState(0);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
+  const [expandedSchedules, setExpandedSchedules] = useState({});
   const hasDataRef = useRef(false);
 
   const recentActivities = [];
@@ -217,6 +218,7 @@ export default function Home() {
           moduleCount: course.moduleCount || 0,
           assignmentCount: course.assignmentCount || 0,
           enrolledUsers: course.enrolledUsers || [],
+          schedules: course.schedules || [],
         };
 
         if (isCreator) {
@@ -655,117 +657,144 @@ export default function Home() {
                             href={`/courses/${course.id}`} 
                             className="course-card flex-shrink-0 w-[calc(50%-8px)] min-w-[300px] max-w-[420px] snap-start group"
                           >
-                            <div className="relative flex flex-col bg-white border-2 border-gray-200 cursor-pointer rounded-3xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-gray-300 overflow-hidden">
-                              {/* 1. COLOR HEADER - Improved Hierarchy */}
-                              <div className={`relative h-44 p-5 flex flex-col justify-between overflow-hidden ${colorVariations.base} transition-all duration-300`}>
-                                {/* Dark overlay for better text readability */}
-                                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/40"></div>
-                                
-                                {/* Sophisticated layered atmosphere effect */}
-                                <div 
-                                  className="absolute inset-0 opacity-20"
-                                  style={{
-                                    background: `radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.3) 0%, transparent 50%)`
-                                  }}
-                                ></div>
-                                
-                                <div 
-                                  className="absolute inset-0 opacity-15"
-                                  style={{
-                                    background: `linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.2) 100%)`
-                                  }}
-                                ></div>
-                                
-                                <div className="absolute inset-0 opacity-10">
-                                  <svg className="absolute top-0 right-0 w-40 h-40 -translate-y-8 translate-x-8" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill="white" d="M44.7,-76.4C58.8,-69.2,71.8,-59.1,79.6,-45.8C87.4,-32.6,90,-16.3,88.5,-0.9C87,14.6,81.4,29.2,73.1,42.8C64.8,56.4,53.8,69,40.4,76.1C27,83.2,13.5,84.8,-0.7,86.1C-14.9,87.4,-29.8,88.4,-43.2,81.9C-56.6,75.4,-68.5,61.4,-76.8,45.7C-85.1,30,-89.8,12.6,-89.3,-4.9C-88.8,-22.4,-83.1,-40,-73.8,-54.8C-64.5,-69.6,-51.6,-81.6,-37.1,-88.5C-22.6,-95.4,-11.3,-97.2,1.5,-99.9C14.3,-102.6,28.6,-106.2,44.7,-76.4Z" transform="translate(100 100)" />
-                                  </svg>
-                                  <svg className="absolute bottom-0 left-0 w-32 h-32 translate-y-8 -translate-x-8" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill="white" d="M39.5,-65.6C51.4,-58.1,61.4,-47.3,68.2,-34.4C75,-21.5,78.6,-6.5,77.8,8.2C77,22.9,71.8,37.3,63.2,49.4C54.6,61.5,42.6,71.3,29.2,76.4C15.8,81.5,1,82,-13.3,79.8C-27.6,77.6,-41.4,72.7,-53.8,64.8C-66.2,56.9,-77.2,46,-82.7,32.8C-88.2,19.6,-88.2,4.1,-84.8,-10.3C-81.4,-24.7,-74.6,-38,-64.8,-48.8C-55,-59.6,-42.2,-67.9,-28.9,-74.3C-15.6,-80.7,-1.8,-85.2,11.3,-82.8C24.4,-80.4,27.6,-73.1,39.5,-65.6Z" transform="translate(100 100)" />
-                                  </svg>
+                            <div className="relative flex flex-col h-full bg-white border border-gray-200 cursor-pointer rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-gray-300 overflow-hidden">
+                              {/* Colored Header - Optimized */}
+                              <div className={`relative px-5 py-6 overflow-hidden ${colorVariations.base} transition-all duration-300`}>
+                                <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/15"></div>
+                                <div className="absolute inset-0 opacity-[0.06]">
+                                  <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-12 translate-x-12"></div>
                                 </div>
 
-                                {/* Top section - Creator/Instructor Badge */}
-                                <div className="relative z-10 flex items-start justify-between">
-                                  {/* Creator/Instructor Badge - Improved Readability */}
-                                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md shadow-md border text-sm font-semibold ${
-                                    course.isCreator 
-                                      ? 'bg-white/30 border-white/40 text-white' 
-                                      : 'bg-white/25 border-white/35 text-white'
-                                  }`}>
-                                    {course.isCreator && (
-                                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                <div className="relative z-10 space-y-3.5">
+                                  {/* Section Badge - Improved */}
+                                  <div>
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-lg text-xs font-bold text-gray-800 shadow-sm border border-white/50">
+                                      <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
                                       </svg>
-                                    )}
-                                    <span className="drop-shadow-md">
-                                      {course.isCreator ? 'You' : course.instructor}
+                                      <span className="text-gray-600 text-[10px] font-semibold uppercase tracking-wider">Section</span>
+                                      <span className="text-gray-900">{course.code}</span>
                                     </span>
                                   </div>
-                                </div>
 
-                                {/* Bottom section - Course Title (Primary Focus) */}
-                                <div className="relative z-10">
-                                  <h3 className="text-xl font-bold text-white leading-tight line-clamp-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.8)' }}>
+                                  {/* Course Title - Better Typography */}
+                                  <h3 className="text-xl font-bold text-white leading-snug line-clamp-2 pr-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5)' }}>
                                     {course.title}
                                   </h3>
                                 </div>
                               </div>
 
-
-
-                              {/* 3. METRICS GRID - Matches Page Design System */}
-                              <div className="px-5 py-3 bg-white">
-                                {course.isCreator ? (
-                                  <div className="grid grid-cols-2 gap-2.5">
-                                    {/* Students - Dynamic */}
-                                    <div className="flex flex-col items-center gap-1 p-2.5 bg-blue-50 rounded-xl border border-blue-200">
-                                      <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
-                                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                                        </svg>
-                                      </div>
-                                      <div className="text-lg font-bold text-gray-900">{course.studentCount}</div>
-                                      <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Students</div>
-                                    </div>
-                                    {/* Materials - Dynamic */}
-                                    <div className="flex flex-col items-center gap-1 p-2.5 bg-purple-50 rounded-xl border border-purple-200">
-                                      <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center">
-                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                        </svg>
-                                      </div>
-                                      <div className="text-lg font-bold text-gray-900">{course.moduleCount}</div>
-                                      <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Materials</div>
-                                    </div>
+                              {/* Content Section - Optimized Spacing */}
+                              <div className="flex-1 px-5 py-5 flex flex-col">
+                                {/* Instructor - Better Visual Weight */}
+                                <div className="flex items-center gap-3 mb-4">
+                                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex-shrink-0 shadow-sm">
+                                    <span className="text-sm font-bold text-white">
+                                      {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                    </span>
                                   </div>
-                                ) : (
-                                  <div className="grid grid-cols-2 gap-2.5">
-                                    {/* Materials - Dynamic */}
-                                    <div className="flex flex-col items-center gap-1 p-2.5 bg-purple-50 rounded-xl border border-purple-200">
-                                      <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center">
-                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                        </svg>
-                                      </div>
-                                      <div className="text-lg font-bold text-gray-900">{course.moduleCount}</div>
-                                      <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Materials</div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-medium text-gray-500 mb-0.5">Instructor</div>
+                                    <div className="text-sm font-semibold text-gray-900 truncate">{course.instructor}</div>
+                                  </div>
+                                </div>
+
+                                {/* Schedule Display */}
+                                {course.schedules && course.schedules.length > 0 && (
+                                  <div className="mb-4 p-3 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      </svg>
+                                      <span className="text-xs font-bold text-indigo-900 uppercase tracking-wide">Schedule</span>
                                     </div>
-                                    {/* Assignments - Dynamic (real count from API) */}
-                                    <div className="flex flex-col items-center gap-1 p-2.5 bg-emerald-50 rounded-xl border border-emerald-200">
-                                      <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
-                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                                        </svg>
-                                      </div>
-                                      <div className="text-lg font-bold text-gray-900">{course.assignmentCount}</div>
-                                      <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Assignments</div>
+                                    <div className="space-y-1.5">
+                                      {(expandedSchedules[course.id] ? course.schedules : course.schedules.slice(0, 2)).map((schedule, idx) => (
+                                        <div key={idx} className="flex items-center justify-between text-xs">
+                                          <span className="font-semibold text-indigo-700">{schedule.day.slice(0, 3)}</span>
+                                          <span className="text-indigo-600">{schedule.startTime} - {schedule.endTime}</span>
+                                        </div>
+                                      ))}
+                                      {course.schedules.length > 2 && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setExpandedSchedules(prev => ({
+                                              ...prev,
+                                              [course.id]: !prev[course.id]
+                                            }));
+                                          }}
+                                          className="w-full text-xs text-indigo-600 hover:text-indigo-700 font-semibold text-center pt-1 transition-colors flex items-center justify-center gap-1"
+                                        >
+                                          {expandedSchedules[course.id] ? (
+                                            <>
+                                              <span>Show less</span>
+                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                              </svg>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <span>+{course.schedules.length - 2} more</span>
+                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                              </svg>
+                                            </>
+                                          )}
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
                                 )}
+
+                                {/* Metrics - Improved Layout */}
+                                <div className="flex items-stretch gap-2.5 pt-4 border-t border-gray-200 mt-auto">
+                                  {course.isCreator ? (
+                                    <>
+                                      <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-blue-50 rounded-xl border border-blue-100 transition-all hover:bg-blue-100">
+                                        <svg className="w-5 h-5 text-blue-600 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                        </svg>
+                                        <div className="text-center">
+                                          <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.studentCount}</div>
+                                          <div className="text-xs font-medium text-gray-600">Students</div>
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-purple-50 rounded-xl border border-purple-100 transition-all hover:bg-purple-100">
+                                        <svg className="w-5 h-5 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                        </svg>
+                                        <div className="text-center">
+                                          <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.moduleCount}</div>
+                                          <div className="text-xs font-medium text-gray-600">Materials</div>
+                                        </div>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-purple-50 rounded-xl border border-purple-100 transition-all hover:bg-purple-100">
+                                        <svg className="w-5 h-5 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                        </svg>
+                                        <div className="text-center">
+                                          <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.moduleCount}</div>
+                                          <div className="text-xs font-medium text-gray-600">Materials</div>
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-emerald-50 rounded-xl border border-emerald-100 transition-all hover:bg-emerald-100">
+                                        <svg className="w-5 h-5 text-emerald-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                        </svg>
+                                        <div className="text-center">
+                                          <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.assignmentCount}</div>
+                                          <div className="text-xs font-medium text-gray-600">Assignments</div>
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
                               </div>
-
-
                             </div>
                           </Link>
                           );

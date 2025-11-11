@@ -8,6 +8,7 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
   const [section, setSection] = useState('');
   const [coverColor, setCoverColor] = useState('#60a5fa'); // Default blue color
   const [isLoading, setIsLoading] = useState(false);
+  const [schedules, setSchedules] = useState([{ day: 'Monday', startTime: '09:00', endTime: '10:00' }]);
 
   const colorOptions = [
     { name: 'Blue', value: '#60a5fa' },
@@ -20,18 +21,33 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
     { name: 'Indigo', value: '#818cf8' },
   ];
 
+  const handleAddSchedule = () => {
+    setSchedules([...schedules, { day: 'Monday', startTime: '09:00', endTime: '10:00' }]);
+  };
+
+  const handleRemoveSchedule = (index) => {
+    setSchedules(schedules.filter((_, i) => i !== index));
+  };
+
+  const handleScheduleChange = (index, field, value) => {
+    const newSchedules = [...schedules];
+    newSchedules[index][field] = value;
+    setSchedules(newSchedules);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await onCreateCourse({ subject, section, teacherName: adminName, coverColor });
+      await onCreateCourse({ subject, section, teacherName: adminName, coverColor, schedules });
       onClose(); // Close modal after submission
       refreshCourses(); // Refresh courses on the home page
       // Reset form fields
       setSubject('');
       setSection('');
       setCoverColor('#60a5fa');
+      setSchedules([{ day: 'Monday', startTime: '09:00', endTime: '10:00' }]);
     } catch (error) {
       console.error('Error creating course:', error);
     } finally {
@@ -157,6 +173,70 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
             </div>
           </div>
 
+          {/* Schedule Section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Class Schedule *
+              </label>
+              <button
+                type="button"
+                onClick={handleAddSchedule}
+                className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Schedule
+              </button>
+            </div>
+
+            {schedules.length > 0 && (
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {schedules.map((schedule, index) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 grid grid-cols-3 gap-2">
+                        <select
+                          value={schedule.day}
+                          onChange={(e) => handleScheduleChange(index, 'day', e.target.value)}
+                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="Monday">Monday</option>
+                          <option value="Tuesday">Tuesday</option>
+                          <option value="Wednesday">Wednesday</option>
+                          <option value="Thursday">Thursday</option>
+                          <option value="Friday">Friday</option>
+                          <option value="Saturday">Saturday</option>
+                          <option value="Sunday">Sunday</option>
+                        </select>
+                        <input
+                          type="time"
+                          value={schedule.startTime}
+                          onChange={(e) => handleScheduleChange(index, 'startTime', e.target.value)}
+                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <input
+                          type="time"
+                          value={schedule.endTime}
+                          onChange={(e) => handleScheduleChange(index, 'endTime', e.target.value)}
+                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSchedule(index)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
             <button
@@ -168,7 +248,7 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
             </button>
             <button
               type="submit"
-              disabled={!subject.trim() || isLoading}
+              disabled={!subject.trim() || schedules.length === 0 || isLoading}
               className="px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
             >
               {isLoading ? (
