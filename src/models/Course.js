@@ -62,6 +62,10 @@ const courseSchema = new Schema({
       required: true,
     },
   }],
+  isArchived: {
+    type: Boolean,
+    default: false,
+  },
 }, { timestamps: true });
 
 const Course = mongoose.models.Course || mongoose.model('Course', courseSchema);

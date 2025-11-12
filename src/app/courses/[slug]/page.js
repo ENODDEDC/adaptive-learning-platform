@@ -135,6 +135,7 @@ const CourseDetailPage = ({
     fetchCurrentUser();
   }, [fetchCourseDetails, fetchCurrentUser]);
 
+
   // Hydration tracking
   useEffect(() => {
     console.log('🔍 HYDRATION: Component mounted on client');
@@ -440,6 +441,7 @@ const CourseDetailPage = ({
     }
   }, [courseDetails]);
 
+
   const handleInviteUser = useCallback(async (email, role) => {
     if (!courseDetails?._id) {
       throw new Error('Course details not available');
@@ -521,6 +523,62 @@ const CourseDetailPage = ({
       setError(err.message);
     }
   }, [fetchAssignments, fetchStreamItems]);
+
+  const handleArchiveCourse = useCallback(async () => {
+    if (!window.confirm('Are you sure you want to archive this course? Archived courses can be restored by administrators and will be hidden from students.')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/courses/${slug}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
+      }
+
+      // Redirect to courses list or home page
+      window.location.href = '/';
+    } catch (err) {
+      console.error('Failed to archive course:', err);
+      setError(err.message);
+    }
+  }, [slug]);
+
+  const handleLeaveCourse = useCallback(async () => {
+    if (!window.confirm('Are you sure you want to leave this course?')) {
+      return;
+    }
+
+    if (!user) {
+      setError('User not authenticated');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/courses/${slug}/people`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user._id || user.id, role: 'student' }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
+      }
+
+      // Redirect to courses list or home page
+      window.location.href = '/';
+    } catch (err) {
+      console.error('Failed to leave course:', err);
+      setError(err.message);
+    }
+  }, [slug, user]);
+
 
   // Callback function to refresh both assignments and stream items when new classwork is created
   const handleClassworkCreated = useCallback(async () => {
@@ -612,7 +670,7 @@ const CourseDetailPage = ({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                     </svg>
                     <span className="text-sm font-medium text-indigo-700">Class Code:</span>
-                    <span className="text-sm font-bold text-indigo-800 tracking-wider">{courseDetails.uniqueKey}</span>
+                    <span className="text-sm font-bold tracking-wider text-indigo-800">{courseDetails.uniqueKey}</span>
                     <button
                       onClick={() => {
                         console.log('🔍 CLIPBOARD: Attempting to copy code to clipboard');
@@ -628,7 +686,7 @@ const CourseDetailPage = ({
                           console.log('🔍 CLIPBOARD: Error copying to clipboard:', error);
                         }
                       }}
-                      className="ml-1 p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 rounded transition-all duration-200"
+                      className="p-1 ml-1 text-indigo-600 transition-all duration-200 rounded hover:text-indigo-800 hover:bg-indigo-100"
                       title="Copy class code"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -658,6 +716,29 @@ const CourseDetailPage = ({
                   </svg>
                   People
                 </button>
+
+                {/* Course Actions */}
+                {isInstructor ? (
+                  <button
+                    onClick={handleArchiveCourse}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white transition-all duration-200 border rounded-lg bg-amber-600 border-amber-600 hover:bg-amber-700 hover:border-amber-700 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                    Delete Course
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleLeaveCourse}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:border-gray-300 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Leave Course
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -706,7 +787,7 @@ const CourseDetailPage = ({
               <button id="__openContentViewerBtn" type="button" className="hidden" />
               {/* Enhanced Navigation Tabs - Hidden when document panel is open */}
               {!documentPanelOpen && (
-                <div className="flex justify-between mb-10 overflow-hidden bg-white border border-gray-200/60 shadow-sm rounded-xl hover:shadow-md transition-shadow duration-200">
+                <div className="flex justify-between mb-10 overflow-hidden transition-shadow duration-200 bg-white border shadow-sm border-gray-200/60 rounded-xl hover:shadow-md">
                   <button
                     className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'stream'
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
@@ -841,7 +922,7 @@ const CourseDetailPage = ({
                   <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">Members</h2>
-                      <p className="text-sm text-gray-500 mt-1">{teachers.length + students.length} total members</p>
+                      <p className="mt-1 text-sm text-gray-500">{teachers.length + students.length} total members</p>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -849,9 +930,9 @@ const CourseDetailPage = ({
                         <input
                           type="text"
                           placeholder="Search people..."
-                          className="w-64 pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          className="w-64 py-2 pr-4 text-sm border border-gray-300 rounded-lg pl-9 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         />
-                        <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="absolute w-4 h-4 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                       </div>
@@ -863,7 +944,7 @@ const CourseDetailPage = ({
                               setInviteRole('student');
                               setInviteModalOpen(true);
                             }}
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                            className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
                           >
                             Invite Student
                           </button>
@@ -872,7 +953,7 @@ const CourseDetailPage = ({
                               setInviteRole('coTeacher');
                               setInviteModalOpen(true);
                             }}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                           >
                             Invite Co-teacher
                           </button>
@@ -886,16 +967,16 @@ const CourseDetailPage = ({
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                             Name
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                             Role
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                             Status
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                             Joined
                           </th>
                           <th className="relative px-6 py-3">
@@ -909,8 +990,8 @@ const CourseDetailPage = ({
                           <tr key={teacher._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10">
-                                  <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+                                <div className="flex-shrink-0 w-10 h-10">
+                                  <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full">
                                     <span className="text-sm font-medium text-white">
                                       {teacher.name ? teacher.name.charAt(0).toUpperCase() : 'T'}
                                     </span>
@@ -940,18 +1021,18 @@ const CourseDetailPage = ({
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="inline-flex items-center">
-                                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                                <div className="w-2 h-2 mr-2 bg-green-400 rounded-full"></div>
                                 <span className="text-sm text-gray-900">Active</span>
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                               {teacher.createdAt ? format(new Date(teacher.createdAt), 'MMM d, yyyy') : 'Unknown'}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
                               {isInstructor && teacher._id !== courseDetails.createdBy._id && (
                                 <button
                                   onClick={() => handleRemoveUser(teacher._id, 'coTeacher')}
-                                  className="text-red-600 hover:text-red-900 transition-colors"
+                                  className="text-red-600 transition-colors hover:text-red-900"
                                 >
                                   Remove
                                 </button>
@@ -965,8 +1046,8 @@ const CourseDetailPage = ({
                           <tr key={student._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10">
-                                  <div className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center">
+                                <div className="flex-shrink-0 w-10 h-10">
+                                  <div className="flex items-center justify-center w-10 h-10 bg-green-600 rounded-full">
                                     <span className="text-sm font-medium text-white">
                                       {student.name ? student.name.charAt(0).toUpperCase() : 'S'}
                                     </span>
@@ -989,18 +1070,18 @@ const CourseDetailPage = ({
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="inline-flex items-center">
-                                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                                <div className="w-2 h-2 mr-2 bg-green-400 rounded-full"></div>
                                 <span className="text-sm text-gray-900">Active</span>
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                               {student.createdAt ? format(new Date(student.createdAt), 'MMM d, yyyy') : 'Unknown'}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
                               {isInstructor && (
                                 <button
                                   onClick={() => handleRemoveUser(student._id, 'student')}
-                                  className="text-red-600 hover:text-red-900 transition-colors"
+                                  className="text-red-600 transition-colors hover:text-red-900"
                                 >
                                   Remove
                                 </button>
@@ -1014,11 +1095,11 @@ const CourseDetailPage = ({
                           <tr>
                             <td colSpan={5} className="px-6 py-12 text-center">
                               <div className="flex flex-col items-center">
-                                <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-12 h-12 mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
-                                <h3 className="text-lg font-medium text-gray-900 mb-2">No members yet</h3>
-                                <p className="text-gray-500 mb-4">Start by inviting teachers and students to your course.</p>
+                                <h3 className="mb-2 text-lg font-medium text-gray-900">No members yet</h3>
+                                <p className="mb-4 text-gray-500">Start by inviting teachers and students to your course.</p>
                                 {isInstructor && (
                                   <div className="flex gap-2">
                                     <button
@@ -1026,7 +1107,7 @@ const CourseDetailPage = ({
                                         setInviteRole('student');
                                         setInviteModalOpen(true);
                                       }}
-                                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                                      className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
                                     >
                                       Invite Student
                                     </button>
@@ -1035,7 +1116,7 @@ const CourseDetailPage = ({
                                         setInviteRole('coTeacher');
                                         setInviteModalOpen(true);
                                       }}
-                                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                      className="px-4 py-2 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                                     >
                                       Invite Co-teacher
                                     </button>
@@ -1052,16 +1133,16 @@ const CourseDetailPage = ({
               )}
 
               {activeTab === 'marks' && (
-                <div className="p-8 bg-white border border-gray-200/60 shadow-sm sm:p-10 rounded-2xl hover:shadow-lg transition-all duration-200">
+                <div className="p-8 transition-all duration-200 bg-white border shadow-sm border-gray-200/60 sm:p-10 rounded-2xl hover:shadow-lg">
                   <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
                     <h2 className="text-2xl font-bold text-gray-900">Scores</h2>
                     <div className="flex items-center gap-2">
-                      <select className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:shadow-sm">
+                      <select className="px-3 py-2 text-sm transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:shadow-sm">
                         <option>All assignments</option>
                         <option>Quizzes</option>
                         <option>Materials</option>
                       </select>
-                      <select className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg transition-all duration-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:shadow-sm">
+                      <select className="px-3 py-2 text-sm transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:shadow-sm">
                         <option>Sort: Newest</option>
                         <option>Sort: Oldest</option>
                       </select>
@@ -1101,6 +1182,56 @@ const CourseDetailPage = ({
                   </div>
                 </div>
               )}
+
+              {activeTab === 'archive' && isInstructor && (
+                <div className="p-8 transition-all duration-200 bg-white border shadow-sm border-gray-200/60 sm:p-10 rounded-2xl hover:shadow-lg">
+                  <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
+                    <h2 className="text-2xl font-bold text-gray-900">Archived Courses</h2>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Manage your archived courses</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {archivedCourses.length > 0 ? (
+                      archivedCourses.map((course) => (
+                        <div key={course._id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-semibold text-gray-900">{course.subject}</h3>
+                              <p className="text-sm text-gray-600">
+                                Archived on {format(new Date(course.updatedAt), 'MMM dd, yyyy')}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleRestoreCourse(course._id)}
+                                className="px-3 py-1 text-sm text-blue-600 transition-colors rounded hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                Restore
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCoursePermanently(course._id)}
+                                className="px-3 py-1 text-sm text-red-600 transition-colors rounded hover:text-red-700 hover:bg-red-50"
+                              >
+                                Delete Permanently
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-8 text-center text-gray-500">
+                        <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                        </svg>
+                        <p>No archived courses yet</p>
+                        <p className="text-sm">Courses you archive will appear here</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1119,7 +1250,7 @@ const CourseDetailPage = ({
                         setSidebarCollapsed(true);
                       }
                     }}
-                    className="flex items-center gap-3 cursor-pointer group flex-1"
+                    className="flex items-center flex-1 gap-3 cursor-pointer group"
                   >
                     <div className="flex items-center justify-center w-8 h-8 transition-colors duration-200 bg-blue-100 rounded-lg group-hover:bg-blue-200">
                       <svg className={`w-4 h-4 text-blue-600 transition-transform duration-200 ${upcomingTasksExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1127,7 +1258,7 @@ const CourseDetailPage = ({
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-base font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">Upcoming Tasks</h3>
+                      <h3 className="text-base font-semibold text-gray-900 transition-colors group-hover:text-blue-700">Upcoming Tasks</h3>
                       <p className="text-xs text-gray-600">Due dates & assignments</p>
                     </div>
                     <svg className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${upcomingTasksExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1184,13 +1315,13 @@ const CourseDetailPage = ({
                     if (upcoming.length === 0) {
                       return (
                         <div className="py-12 text-center">
-                          <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl">
+                          <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 border border-green-100 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
                             <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           </div>
                           <h4 className="mb-2 text-base font-semibold text-gray-900">All caught up!</h4>
-                          <p className="text-sm text-gray-600 leading-relaxed">No upcoming tasks. Great job staying on top of your assignments!</p>
+                          <p className="text-sm leading-relaxed text-gray-600">No upcoming tasks. Great job staying on top of your assignments!</p>
                         </div>
                       );
                     }
@@ -1351,7 +1482,7 @@ const CourseDetailPage = ({
                                       </div>
 
                                       {/* Drag handle for prioritization */}
-                                      <div className="flex items-center gap-1 text-gray-400 cursor-move hover:text-gray-600 hover:bg-gray-100 p-1 rounded transition-all duration-200" title="Drag to prioritize">
+                                      <div className="flex items-center gap-1 p-1 text-gray-400 transition-all duration-200 rounded cursor-move hover:text-gray-600 hover:bg-gray-100" title="Drag to prioritize">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                                         </svg>
