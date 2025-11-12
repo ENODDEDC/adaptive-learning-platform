@@ -14,7 +14,8 @@ import {
   Cog6ToothIcon,
   DocumentTextIcon,
   AcademicCapIcon,
-  PlusIcon
+  PlusIcon,
+  ArchiveBoxIcon
 } from '@heroicons/react/24/outline';
 import { Dialog, Transition } from '@headlessui/react';
 import CourseBrowserModal from './CourseBrowserModal';
@@ -201,6 +202,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   const links = [
     { href: "/home", label: "Home" },
     { href: "/courses", label: "Course" },
+    { href: "/archive", label: "Archive" },
     { href: "/todo", label: "To-Do" },
     { href: "/schedule", label: "Schedule" },
     { href: "/settings", label: "Settings" },
@@ -250,7 +252,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
             </button>
 
             {isUserDropdownOpen && (
-              <div className="absolute left-full top-0 z-50 ml-2 w-64 overflow-hidden bg-white border border-gray-200 shadow-xl rounded-xl">
+              <div className="absolute top-0 z-50 w-64 ml-2 overflow-hidden bg-white border border-gray-200 shadow-xl left-full rounded-xl">
                 <div className="py-2">
                   <button
                     onClick={() => setIsNotificationModalOpen(true)}
@@ -324,8 +326,8 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                 <div className="absolute left-0 w-1 h-6 transform -translate-y-1/2 bg-blue-600 rounded-r-full top-1/2"></div>
               )}
               {navigatingTo === 'Home' ? (
-                <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <div className="flex items-center justify-center flex-shrink-0 w-5 h-5">
+                  <div className="w-4 h-4 border-2 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
                 </div>
               ) : (
                 <HomeIcon
@@ -356,10 +358,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                 {/* Courses Header */}
                 <button
                   onClick={() => setIsCoursesExpanded(!isCoursesExpanded)}
-                  className="group flex items-center justify-between w-full rounded-xl font-medium transition-all duration-300 text-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 hover:border hover:border-blue-200 hover:shadow-blue-500/10 gap-3 px-4 py-3 mx-1"
+                  className="flex items-center justify-between w-full gap-3 px-4 py-3 mx-1 font-medium text-gray-600 transition-all duration-300 group rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 hover:border hover:border-blue-200 hover:shadow-blue-500/10"
                 >
                   <div className="flex items-center gap-3">
-                    <BookOpenIcon className="flex-shrink-0 w-5 h-5 transition-all duration-300 text-gray-500 group-hover:text-blue-600 group-hover:scale-110" />
+                    <BookOpenIcon className="flex-shrink-0 w-5 h-5 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110" />
                     <span className="text-sm font-medium">Courses</span>
                   </div>
                   <ChevronDownIcon
@@ -374,7 +376,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                     <div className="space-y-1">
                       <button
                         onClick={() => setIsCreatedCoursesExpanded(!isCreatedCoursesExpanded)}
-                        className="group flex items-center justify-between w-full rounded-lg font-medium transition-all duration-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 gap-2 px-3 py-2 text-xs"
+                        className="flex items-center justify-between w-full gap-2 px-3 py-2 text-xs font-medium text-gray-500 transition-all duration-200 rounded-lg group hover:text-blue-600 hover:bg-blue-50/50"
                       >
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -398,12 +400,12 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                               key={course.id}
                               onClick={() => handleNavigation(`/courses/${course.id}`, `Course: ${course.title}`)}
                               disabled={navigatingTo === `Course: ${course.title}`}
-                              className="group flex items-center gap-2 rounded-lg font-medium transition-all duration-200 text-gray-600 hover:text-blue-700 hover:bg-blue-50/50 px-3 py-2 ml-4 text-xs border-l-2 border-transparent hover:border-blue-300 w-full text-left disabled:opacity-75"
+                              className="flex items-center w-full gap-2 px-3 py-2 ml-4 text-xs font-medium text-left text-gray-600 transition-all duration-200 border-l-2 border-transparent rounded-lg group hover:text-blue-700 hover:bg-blue-50/50 hover:border-blue-300 disabled:opacity-75"
                               style={{ animationDelay: `${index * 0.05}s` }}
                             >
                               {navigatingTo === `Course: ${course.title}` ? (
                                 <div className="w-1.5 h-1.5 flex items-center justify-center">
-                                  <div className="w-3 h-3 border border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                  <div className="w-3 h-3 border border-blue-600 rounded-full border-t-transparent animate-spin"></div>
                                 </div>
                               ) : (
                                 <div className="w-1.5 h-1.5 bg-blue-400 rounded-full group-hover:bg-blue-600 transition-colors"></div>
@@ -411,10 +413,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                               <span className="truncate">
                                 {navigatingTo === `Course: ${course.title}` ? 'Loading...' : course.title}
                               </span>
-                              <div className="ml-auto flex items-center gap-1">
-                                <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+                              <div className="flex items-center gap-1 ml-auto">
+                                <div className="w-8 h-1 overflow-hidden bg-gray-200 rounded-full">
                                   <div
-                                    className="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500"
+                                    className="h-full transition-all duration-500 bg-gradient-to-r from-blue-400 to-blue-600"
                                     style={{ width: `${course.progress}%` }}
                                   ></div>
                                 </div>
@@ -430,12 +432,12 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                                 setCourseBrowserType('created');
                                 setIsCourseBrowserOpen(true);
                               }}
-                              className="group flex items-center gap-2 px-3 py-2 ml-4 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 rounded-lg transition-all duration-200 w-full text-left"
+                              className="flex items-center w-full gap-2 px-3 py-2 ml-4 text-xs text-left text-blue-600 transition-all duration-200 rounded-lg group hover:text-blue-700 hover:bg-blue-50/50"
                             >
                               <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
                               <span>View All ({courses.created.length - 2} more)</span>
                               <div className="ml-auto">
-                                <div className="w-4 h-4 border border-blue-300 rounded group-hover:border-blue-400 transition-colors flex items-center justify-center">
+                                <div className="flex items-center justify-center w-4 h-4 transition-colors border border-blue-300 rounded group-hover:border-blue-400">
                                   <span className="text-xs text-blue-500">+</span>
                                 </div>
                               </div>
@@ -449,7 +451,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                     <div className="space-y-1">
                       <button
                         onClick={() => setIsEnrolledCoursesExpanded(!isEnrolledCoursesExpanded)}
-                        className="group flex items-center justify-between w-full rounded-lg font-medium transition-all duration-200 text-gray-500 hover:text-purple-600 hover:bg-purple-50/50 gap-2 px-3 py-2 text-xs"
+                        className="flex items-center justify-between w-full gap-2 px-3 py-2 text-xs font-medium text-gray-500 transition-all duration-200 rounded-lg group hover:text-purple-600 hover:bg-purple-50/50"
                       >
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
@@ -473,12 +475,12 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                               key={course.id}
                               onClick={() => handleNavigation(`/courses/${course.id}`, `Course: ${course.title}`)}
                               disabled={navigatingTo === `Course: ${course.title}`}
-                              className="group flex items-center gap-2 rounded-lg font-medium transition-all duration-200 text-gray-600 hover:text-purple-700 hover:bg-purple-50/50 px-3 py-2 ml-4 text-xs border-l-2 border-transparent hover:border-purple-300 w-full text-left disabled:opacity-75"
+                              className="flex items-center w-full gap-2 px-3 py-2 ml-4 text-xs font-medium text-left text-gray-600 transition-all duration-200 border-l-2 border-transparent rounded-lg group hover:text-purple-700 hover:bg-purple-50/50 hover:border-purple-300 disabled:opacity-75"
                               style={{ animationDelay: `${index * 0.05}s` }}
                             >
                               {navigatingTo === `Course: ${course.title}` ? (
                                 <div className="w-1.5 h-1.5 flex items-center justify-center">
-                                  <div className="w-3 h-3 border border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                                  <div className="w-3 h-3 border border-purple-600 rounded-full border-t-transparent animate-spin"></div>
                                 </div>
                               ) : (
                                 <div className="w-1.5 h-1.5 bg-purple-400 rounded-full group-hover:bg-purple-600 transition-colors"></div>
@@ -486,10 +488,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                               <span className="truncate">
                                 {navigatingTo === `Course: ${course.title}` ? 'Loading...' : course.title}
                               </span>
-                              <div className="ml-auto flex items-center gap-1">
-                                <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+                              <div className="flex items-center gap-1 ml-auto">
+                                <div className="w-8 h-1 overflow-hidden bg-gray-200 rounded-full">
                                   <div
-                                    className="h-full bg-gradient-to-r from-purple-400 to-purple-600 transition-all duration-500"
+                                    className="h-full transition-all duration-500 bg-gradient-to-r from-purple-400 to-purple-600"
                                     style={{ width: `${course.progress}%` }}
                                   ></div>
                                 </div>
@@ -505,12 +507,12 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                                 setCourseBrowserType('enrolled');
                                 setIsCourseBrowserOpen(true);
                               }}
-                              className="group flex items-center gap-2 px-3 py-2 ml-4 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50/50 rounded-lg transition-all duration-200 w-full text-left"
+                              className="flex items-center w-full gap-2 px-3 py-2 ml-4 text-xs text-left text-purple-600 transition-all duration-200 rounded-lg group hover:text-purple-700 hover:bg-purple-50/50"
                             >
                               <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
                               <span>View All ({courses.enrolled.length - 2} more)</span>
                               <div className="ml-auto">
-                                <div className="w-4 h-4 border border-purple-300 rounded group-hover:border-purple-400 transition-colors flex items-center justify-center">
+                                <div className="flex items-center justify-center w-4 h-4 transition-colors border border-purple-300 rounded group-hover:border-purple-400">
                                   <span className="text-xs text-purple-500">+</span>
                                 </div>
                               </div>
@@ -526,11 +528,11 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                         <button
                           onClick={() => handleNavigation('/courses', 'View All Courses')}
                           disabled={navigatingTo === 'View All Courses'}
-                          className="group flex items-center gap-2 w-full rounded-lg font-medium transition-all duration-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 px-3 py-2 text-xs disabled:opacity-75 disabled:cursor-not-allowed"
+                          className="flex items-center w-full gap-2 px-3 py-2 text-xs font-medium text-gray-500 transition-all duration-200 rounded-lg group hover:text-blue-600 hover:bg-blue-50/50 disabled:opacity-75 disabled:cursor-not-allowed"
                         >
                           {navigatingTo === 'View All Courses' ? (
-                            <div className="w-3 h-3 flex items-center justify-center">
-                              <div className="w-2 h-2 border border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            <div className="flex items-center justify-center w-3 h-3">
+                              <div className="w-2 h-2 border border-blue-600 rounded-full border-t-transparent animate-spin"></div>
                             </div>
                           ) : (
                             <Squares2X2Icon className="w-3 h-3" />
@@ -571,8 +573,8 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                     <div className="absolute left-0 w-1 h-6 transform -translate-y-1/2 bg-blue-600 rounded-r-full top-1/2"></div>
                   )}
                   {isNavigating ? (
-                    <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="flex items-center justify-center flex-shrink-0 w-5 h-5">
+                      <div className="w-4 h-4 border-2 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
                     </div>
                   ) : (
                     IconComponent && (
@@ -616,7 +618,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
         {/* Footer section */}
         {!isCollapsed && (
           <div className="pt-6 mt-8 border-t border-gray-100 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
-            <div className="px-3 py-2 border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:shadow-md transition-shadow duration-300">
+            <div className="px-3 py-2 transition-shadow duration-300 border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:shadow-md">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg animate-pulse">
                   <span className="text-xs font-bold text-blue-600">AI</span>
@@ -728,6 +730,8 @@ const getIconForLink = (label) => {
       return BellIcon;
     case 'Course':
       return BookOpenIcon;
+    case 'Archive':
+      return ArchiveBoxIcon;
     case 'Text to Docs':
       return DocumentTextIcon;
     case 'To-Do':

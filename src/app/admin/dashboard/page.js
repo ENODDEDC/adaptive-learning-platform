@@ -65,7 +65,7 @@ export default function AdminDashboard() {
 
       // Calculate real stats
       const totalUsers = usersData.length;
-      const activeCourses = coursesData.filter(course => course.status === 'active').length;
+      const activeCourses = coursesData.filter(course => !course.isArchived).length;
       const totalStudents = coursesData.reduce((acc, course) => acc + (course.enrolledUsersCount || 0), 0);
 
       // Mock revenue for now (you can replace with real API)

@@ -503,7 +503,10 @@ export default function AdminCourseManagementPage() {
       createdBy.toLowerCase().includes(searchTerm.toLowerCase()) ||
       teacherName.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = filterStatus === 'all' || course.status === filterStatus;
+    const matchesStatus = filterStatus === 'all' ||
+      (filterStatus === 'active' && !course.isArchived) ||
+      (filterStatus === 'inactive' && course.isArchived) ||
+      (filterStatus === 'archived' && course.isArchived);
 
     return matchesSearch && matchesStatus;
   }).sort((a, b) => {
@@ -948,10 +951,10 @@ export default function AdminCourseManagementPage() {
                         <span className="text-sm text-gray-500">students</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className={`w-5 h-5 ${course.isArchived ? 'text-amber-500' : 'text-green-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="text-sm font-medium text-gray-900">Active</span>
+                        <span className="text-sm font-medium text-gray-900">{course.isArchived ? 'Archived' : 'Active'}</span>
                       </div>
                     </div>
                     <div className="text-sm text-gray-500">
@@ -1006,8 +1009,12 @@ export default function AdminCourseManagementPage() {
                       </div>
                     </div>
                     <div className="flex flex-col items-end space-y-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-green-800 bg-green-100 rounded-full">
-                        Active
+                      <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${
+                        course.isArchived
+                          ? 'text-amber-800 bg-amber-100'
+                          : 'text-green-800 bg-green-100'
+                      }`}>
+                        {course.isArchived ? 'Archived' : 'Active'}
                       </span>
                       {course.enrolledUsersCount > 0 && (
                         <div className="flex items-center space-x-1 text-xs text-gray-500">
@@ -1206,7 +1213,7 @@ export default function AdminCourseManagementPage() {
             </div>
 
             {/* Modal Tabs Navigation */}
-            <div className="border-b border-gray-200 bg-white">
+            <div className="bg-white border-b border-gray-200">
               <nav className="flex px-8 -mb-px space-x-8">
                 <button
                   onClick={() => handleModalTabChange('feed', selectedCourse._id)}
@@ -1282,9 +1289,9 @@ export default function AdminCourseManagementPage() {
                       {/* Announcements Section */}
                       {courseAnnouncements.length > 0 && (
                         <div className="space-y-4">
-                          <h4 className="text-md font-semibold text-gray-800">Announcements</h4>
+                          <h4 className="font-semibold text-gray-800 text-md">Announcements</h4>
                           {courseAnnouncements.map((announcement) => (
-                            <div key={announcement.id} className="p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+                            <div key={announcement.id} className="p-4 transition-shadow bg-white border border-gray-200 rounded-xl hover:shadow-md">
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center mb-2 space-x-3">
@@ -1316,11 +1323,11 @@ export default function AdminCourseManagementPage() {
                       {/* Content Section */}
                       {courseContent.length > 0 && (
                         <div className="space-y-4">
-                          <h4 className="text-md font-semibold text-gray-800">Course Materials</h4>
+                          <h4 className="font-semibold text-gray-800 text-md">Course Materials</h4>
                           {courseContent.map((content) => (
-                            <div key={content._id} className="p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+                            <div key={content._id} className="p-4 transition-shadow bg-white border border-gray-200 rounded-xl hover:shadow-md">
                               <div className="flex items-start justify-between">
-                                <div className="flex items-start space-x-3 flex-1">
+                                <div className="flex items-start flex-1 space-x-3">
                                   <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
                                     <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -1343,7 +1350,7 @@ export default function AdminCourseManagementPage() {
                                         setViewingContent({ ...content, type: 'content' });
                                         setShowContentModal(true);
                                       }}
-                                      className="p-2 text-blue-600 transition-colors hover:bg-blue-50 rounded-lg"
+                                      className="p-2 text-blue-600 transition-colors rounded-lg hover:bg-blue-50"
                                       title="View"
                                     >
                                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1355,7 +1362,7 @@ export default function AdminCourseManagementPage() {
                                   <button
                                     onClick={() => handleDeleteContent(content.id || content._id)}
                                     disabled={actionLoading[`delete-content-${content.id || content._id}`]}
-                                    className="p-2 text-red-600 transition-colors hover:bg-red-50 rounded-lg disabled:opacity-50"
+                                    className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-50"
                                     title="Delete"
                                   >
                                     {actionLoading[`delete-content-${content.id || content._id}`] ? (
@@ -1404,9 +1411,9 @@ export default function AdminCourseManagementPage() {
                   ) : courseActivities.length > 0 ? (
                     <div className="space-y-4">
                       {courseActivities.map((activity) => (
-                        <div key={activity._id} className="p-5 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+                        <div key={activity._id} className="p-5 transition-shadow bg-white border border-gray-200 rounded-xl hover:shadow-md">
                           <div className="flex items-start justify-between">
-                            <div className="flex items-start space-x-3 flex-1">
+                            <div className="flex items-start flex-1 space-x-3">
                               <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${
                                 activity.type === 'assignment' ? 'bg-orange-100' : 
                                 activity.type === 'quiz' ? 'bg-green-100' : 'bg-blue-100'
@@ -1465,7 +1472,7 @@ export default function AdminCourseManagementPage() {
                                   setViewingContent({ ...activity, type: 'activity' });
                                   setShowContentModal(true);
                                 }}
-                                className="p-2 text-blue-600 transition-colors hover:bg-blue-50 rounded-lg"
+                                className="p-2 text-blue-600 transition-colors rounded-lg hover:bg-blue-50"
                                 title="View Details"
                               >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1476,7 +1483,7 @@ export default function AdminCourseManagementPage() {
                               <button
                                 onClick={() => handleDeleteActivity(activity._id)}
                                 disabled={actionLoading[`delete-activity-${activity._id}`]}
-                                className="p-2 text-red-600 transition-colors hover:bg-red-50 rounded-lg disabled:opacity-50"
+                                className="p-2 text-red-600 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-50"
                                 title="Delete"
                               >
                                 {actionLoading[`delete-activity-${activity._id}`] ? (
@@ -1626,7 +1633,7 @@ export default function AdminCourseManagementPage() {
             <div className="p-6">
               {/* Title and Type */}
               <div className="mb-6">
-                <div className="flex items-center space-x-3 mb-2">
+                <div className="flex items-center mb-2 space-x-3">
                   <h4 className="text-2xl font-bold text-gray-900">{viewingContent.title}</h4>
                   {viewingContent.type === 'activity' && (
                     <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full ${
@@ -1666,7 +1673,7 @@ export default function AdminCourseManagementPage() {
               {viewingContent.fileUrl && (
                 <div className="mb-6">
                   <h5 className="mb-3 text-lg font-semibold text-gray-900">Attached File</h5>
-                  <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl">
+                  <div className="p-4 border-2 border-gray-300 border-dashed rounded-xl">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg">
@@ -1683,7 +1690,7 @@ export default function AdminCourseManagementPage() {
                         href={viewingContent.fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
                       >
                         Open File
                       </a>
@@ -1724,7 +1731,7 @@ export default function AdminCourseManagementPage() {
                   }
                 }}
                 disabled={actionLoading[`delete-${viewingContent.type}-${viewingContent.id || viewingContent._id}`]}
-                className="px-6 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 text-sm font-medium text-white transition-all duration-200 bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {actionLoading[`delete-${viewingContent.type}-${viewingContent.id || viewingContent._id}`] ? 'Deleting...' : 'Delete'}
               </button>

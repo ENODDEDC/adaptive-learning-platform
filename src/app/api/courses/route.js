@@ -97,7 +97,8 @@ const monitoredGET = withPerformanceMonitoring(async (request) => {
     $or: [
       { createdBy: userId },
       { enrolledUsers: userId }
-    ]
+    ],
+    isArchived: { $ne: true } // Exclude archived courses
   }).lean();
 
   // Get student count, module count, and assignment count for each course

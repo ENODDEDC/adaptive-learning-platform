@@ -114,9 +114,17 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
     }
 
-    // Only the course creator can remove people
-    if (course.createdBy.toString() !== currentUserId) {
-      return NextResponse.json({ message: 'Forbidden: Only course creator can manage people' }, { status: 403 });
+    // Allow self-removal (leaving course) or creator removing others
+    const isSelfRemoval = currentUserId === userId;
+    const isCreator = course.createdBy.toString() === currentUserId;
+
+    if (!isSelfRemoval && !isCreator) {
+      return NextResponse.json({ message: 'Forbidden: You can only remove yourself or be the course creator' }, { status: 403 });
+    }
+
+    // Course creator cannot leave their own course, only delete it
+    if (isSelfRemoval && isCreator) {
+      return NextResponse.json({ message: 'Forbidden: Course creator cannot leave their own course. Use delete instead.' }, { status: 403 });
     }
 
     if (role === 'student') {
