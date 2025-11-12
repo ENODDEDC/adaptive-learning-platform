@@ -11,7 +11,6 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 import PowerPointViewer from './PowerPointViewer';
-import EnhancedFloatingNotes from './EnhancedFloatingNotes';
 import EnhancedPDFViewer from './EnhancedPDFViewer';
 import AITutorModal from './AITutorModal';
 import DocxPreviewWithAI from './DocxPreviewWithAI';
@@ -1024,7 +1023,6 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
   const contentRef = useRef(null);
   const [selection, setSelection] = useState(null);
-  const floatingNotesRef = useRef(null);
   const iframeRef = useRef(null);
 
   const iframeSrcDoc = useMemo(() => (htmlContent ? injectOverrideStyles(htmlContent) : ''), [htmlContent]);
@@ -1382,11 +1380,6 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
       });
     };
 
-    if (floatingNotesRef.current) {
-      const notes = floatingNotesRef.current.getNotes();
-      highlightNotes(notes);
-    }
-
     const handleSelection = () => {
       const iframeDoc = iframe.contentDocument;
       if (!iframeDoc) return;
@@ -1420,7 +1413,7 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
         iframeDoc.removeEventListener('mouseup', handleSelection);
       }
     };
-  }, [htmlContent, floatingNotesRef.current?.getNotes()]);
+  }, [htmlContent]);
 
   if (!content) return null;
 
@@ -1843,27 +1836,11 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0">
         <div className="bg-white rounded-2xl shadow-2xl w-full h-full max-w-none max-h-none flex flex-col m-0 overflow-hidden relative">
           {children}
-          {/* Enhanced FloatingNotes component */}
-          <EnhancedFloatingNotes
-            ref={floatingNotesRef}
-            contentId={content?._id || content?.id || 'test-content'}
-            courseId={content?.courseId || 'test-course'}
-            userId={user?.id || 'test-user-123'}
-            isVisible={true}
-          />
         </div>
       </div>
     ) : (
       <div className="bg-white rounded-2xl shadow-xl w-full h-full flex flex-col relative">
         {children}
-        {/* Enhanced FloatingNotes component */}
-        <EnhancedFloatingNotes
-          ref={floatingNotesRef}
-          contentId={content?._id || content?.id || 'test-content'}
-          courseId={content?.courseId || 'test-course'}
-          userId={user?.id || 'test-user-123'}
-          isVisible={true}
-        />
       </div>
     )
   };
@@ -1929,34 +1906,6 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
         )}
         <main className="flex-grow overflow-auto min-h-0 h-full relative" ref={contentRef}>
           {renderPreview()}
-          {selection && (
-            <button
-              onClick={() => {
-                if (floatingNotesRef.current) {
-                  const { text, range } = selection;
-                  let parent = range.commonAncestorContainer;
-                  if (parent.nodeType !== Node.ELEMENT_NODE) {
-                    parent = parent.parentNode;
-                  }
-                  let contextualId = parent.id;
-                  if (!contextualId) {
-                    contextualId = `selection-${Date.now()}`;
-                    parent.id = contextualId;
-                  }
-                  floatingNotesRef.current.createContextualNote(text, contextualId);
-                  setSelection(null);
-                }
-              }}
-              className="absolute bg-blue-500 text-white px-3 py-1 rounded-md text-sm shadow-lg hover:bg-blue-600"
-              style={{
-                top: `${selection.rect.top - 40}px`,
-                left: `${selection.rect.left + selection.rect.width / 2}px`,
-                transform: 'translateX(-50%)',
-              }}
-            >
-              Add Note
-            </button>
-          )}
         </main>
       </div>
 

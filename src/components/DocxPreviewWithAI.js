@@ -10,7 +10,6 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import AITutorModal from './AITutorModal';
-import EnhancedFloatingNotes from './EnhancedFloatingNotes';
 import VisualContentModal from './VisualContentModal';
 import VisualDocxOverlay from './VisualDocxOverlay';
 import SequentialLearning from './SequentialLearning';
@@ -133,8 +132,7 @@ const DocxPreviewWithAI = ({
     return () => clearTimeout(timer);
   }, [content]);
 
-  // Ref for floating notes
-  const floatingNotesRef = useRef(null);
+
 
   // Load AI recommendations when component mounts or content changes
   useEffect(() => {
@@ -3095,17 +3093,6 @@ Reflective Learning Processor works best with instructional content, lessons, or
 
 
       </div>
-
-      {/* Enhanced FloatingNotes component - Hide when any overlay is active */}
-      {!showVisualOverlay && !showSequentialLearning && (
-        <EnhancedFloatingNotes
-          ref={floatingNotesRef}
-          contentId={content?._id || content?.id || 'docx-content'}
-          courseId={content?.courseId || 'default-course'}
-          userId="current-user"
-          isVisible={true}
-        />
-      )}
 
       {/* AI Narrator Modal */}
       <AITutorModal

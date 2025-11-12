@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getLearningBehaviorTracker } from '@/utils/learningBehaviorTracker';
 
@@ -9,6 +9,13 @@ export default function FloatingAIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedMode, setSelectedMode] = useState('Ask');
   const [promptText, setPromptText] = useState('');
+  const [buttonPosition, setButtonPosition] = useState({ x: null, y: null });
+  const [panelPosition, setPanelPosition] = useState({ x: null, y: null });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragStartTime, setDragStartTime] = useState(0);
+  const buttonRef = useRef(null);
+  const panelRef = useRef(null);
 
   const handleSubmit = () => {
     if (promptText.trim()) {
@@ -35,11 +42,158 @@ export default function FloatingAIAssistant() {
     }
   };
 
+  const calculatePanelPosition = (btnX, btnY) => {
+    if (!buttonRef.current || !panelRef.current) return { x: null, y: null };
+    
+    const buttonRect = buttonRef.current.getBoundingClientRect();
+    const panelWidth = 480; // w-[480px]
+    const panelHeight = panelRef.current.offsetHeight || 400; // approximate height
+    const margin = 16;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    let panelX, panelY;
+    
+    // Determine button's edge position
+    const isOnLeft = btnX < viewportWidth / 2;
+    const isOnTop = btnY < viewportHeight / 2;
+    
+    if (isOnLeft) {
+      // Button on left, panel appears to the right
+      panelX = btnX + buttonRect.width + margin;
+    } else {
+      // Button on right, panel appears to the left
+      panelX = btnX - panelWidth - margin;
+    }
+    
+    // Vertically center panel with button
+    panelY = btnY + (buttonRect.height / 2) - (panelHeight / 2);
+    
+    // Keep panel within viewport bounds
+    panelX = Math.max(margin, Math.min(panelX, viewportWidth - panelWidth - margin));
+    panelY = Math.max(margin, Math.min(panelY, viewportHeight - panelHeight - margin));
+    
+    return { x: panelX, y: panelY };
+  };
+
+  const handleButtonMouseDown = (e) => {
+    setDragStartTime(Date.now());
+    setIsDragging(true);
+    const rect = buttonRef.current.getBoundingClientRect();
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (isDragging && buttonRef.current) {
+        const newX = e.clientX - dragOffset.x;
+        const newY = e.clientY - dragOffset.y;
+        
+        // Keep within viewport bounds
+        const maxX = window.innerWidth - buttonRef.current.offsetWidth;
+        const maxY = window.innerHeight - buttonRef.current.offsetHeight;
+        
+        setButtonPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY))
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      const dragDuration = Date.now() - dragStartTime;
+      
+      // If drag was very short (< 200ms), treat it as a click
+      if (dragDuration < 200 && buttonPosition.x === null) {
+        setIsDragging(false);
+        setIsOpen(!isOpen);
+        return;
+      }
+      
+      // Snap to nearest edge (like Messenger chat heads)
+      if (isDragging && buttonRef.current && buttonPosition.x !== null) {
+        const buttonWidth = buttonRef.current.offsetWidth;
+        const buttonHeight = buttonRef.current.offsetHeight;
+        const centerX = buttonPosition.x + buttonWidth / 2;
+        const centerY = buttonPosition.y + buttonHeight / 2;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        const margin = 32; // 8 * 4 (same as bottom-8 right-8)
+        
+        // Determine which edge is closest
+        const distanceToLeft = centerX;
+        const distanceToRight = viewportWidth - centerX;
+        const distanceToTop = centerY;
+        const distanceToBottom = viewportHeight - centerY;
+        
+        const minDistance = Math.min(distanceToLeft, distanceToRight, distanceToTop, distanceToBottom);
+        
+        let newX, newY;
+        
+        if (minDistance === distanceToLeft) {
+          // Snap to left edge
+          newX = margin;
+          newY = Math.max(margin, Math.min(buttonPosition.y, viewportHeight - buttonHeight - margin));
+        } else if (minDistance === distanceToRight) {
+          // Snap to right edge
+          newX = viewportWidth - buttonWidth - margin;
+          newY = Math.max(margin, Math.min(buttonPosition.y, viewportHeight - buttonHeight - margin));
+        } else if (minDistance === distanceToTop) {
+          // Snap to top edge
+          newY = margin;
+          newX = Math.max(margin, Math.min(buttonPosition.x, viewportWidth - buttonWidth - margin));
+        } else {
+          // Snap to bottom edge
+          newY = viewportHeight - buttonHeight - margin;
+          newX = Math.max(margin, Math.min(buttonPosition.x, viewportWidth - buttonWidth - margin));
+        }
+        
+        setButtonPosition({ x: newX, y: newY });
+        
+        // Update panel position to follow button
+        const newPanelPos = calculatePanelPosition(newX, newY);
+        setPanelPosition(newPanelPos);
+      }
+      
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset, dragStartTime, buttonPosition.x, buttonPosition.y, isOpen]);
+
+  // Update panel position when button position changes or panel opens
+  useEffect(() => {
+    if (buttonPosition.x !== null && buttonPosition.y !== null) {
+      const newPanelPos = calculatePanelPosition(buttonPosition.x, buttonPosition.y);
+      setPanelPosition(newPanelPos);
+    }
+  }, [buttonPosition.x, buttonPosition.y, isOpen]);
+
   return (
     <>
-      {/* Floating AI Assistant Panel - Slides from Bottom */}
+      {/* Floating AI Assistant Panel - Follows button position */}
       <div 
-        className={`fixed bottom-24 right-8 z-40 transition-all duration-700 ease-out ${
+        ref={panelRef}
+        style={panelPosition.x !== null ? {
+          left: `${panelPosition.x}px`,
+          top: `${panelPosition.y}px`,
+          bottom: 'auto',
+          right: 'auto'
+        } : {}}
+        className={`fixed ${panelPosition.x === null ? 'bottom-24 right-8' : ''} z-40 transition-all duration-700 ease-out ${
           isOpen 
             ? 'translate-y-0 opacity-100 scale-100' 
             : 'translate-y-8 opacity-0 scale-95 pointer-events-none'
@@ -156,8 +310,25 @@ export default function FloatingAIAssistant() {
 
       {/* Floating AI Assistant Button - Bottom Right */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-8 right-8 z-50 group transition-all duration-500 ${
+        ref={buttonRef}
+        onMouseDown={handleButtonMouseDown}
+        onClick={() => {
+          // Only toggle if not dragging
+          if (!isDragging && Date.now() - dragStartTime < 200) {
+            setIsOpen(!isOpen);
+          }
+        }}
+        style={buttonPosition.x !== null ? {
+          left: `${buttonPosition.x}px`,
+          top: `${buttonPosition.y}px`,
+          bottom: 'auto',
+          right: 'auto'
+        } : {}}
+        className={`fixed ${buttonPosition.x === null ? 'bottom-8 right-8' : ''} z-50 group ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        } ${
+          isDragging ? '' : 'transition-all duration-500'
+        } ${
           isOpen ? 'scale-95' : 'scale-100 hover:scale-110'
         }`}
         aria-label="Toggle AI Assistant"

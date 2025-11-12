@@ -8,7 +8,6 @@ import {
   BookOpenIcon
 } from '@heroicons/react/24/outline';
 import AITutorModal from './AITutorModal';
-import EnhancedFloatingNotes from './EnhancedFloatingNotes';
 import CleanPDFViewer from './CleanPDFViewer';
 import VisualContentModal from './VisualContentModal';
 import SequentialLearning from './SequentialLearning';
@@ -69,8 +68,7 @@ const PdfPreviewWithAI = ({
   useLearningModeTracking('aiNarrator', aiTutorActive);
   useLearningModeTracking('visualLearning', showVisualContent);
 
-  // Ref for floating notes
-  const floatingNotesRef = useRef(null);
+
 
   const extractPdfContent = async () => {
     if (pdfContent) return pdfContent;
@@ -1194,13 +1192,6 @@ Reflective Learning works best with instructional content, lessons, or study mat
           )}
         </div>
       </div>
-
-      {/* Floating Notes */}
-      <EnhancedFloatingNotes
-        ref={floatingNotesRef}
-        notes={notes}
-        fileName={fileName}
-      />
 
       {/* AI Narrator Modal */}
       <AITutorModal
