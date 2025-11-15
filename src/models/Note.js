@@ -8,12 +8,13 @@ const noteSchema = new mongoose.Schema({
     index: true
   },
   
-  // Reference to the course
+  // Reference to the course (optional for global notes)
   courseId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Course',
-    required: true,
-    index: true
+    required: false,
+    index: true,
+    default: null
   },
   
   // User who created the note
