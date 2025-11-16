@@ -12,6 +12,7 @@ export default function SimpleSmartNotes({ onClose, userId, courseId, contentId,
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [minimizedNotes, setMinimizedNotes] = useState(new Set());
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const notesRef = useRef([]);
 
   // Load notes from database on mount - GLOBAL NOTES (no filtering by course/content)
@@ -240,13 +241,12 @@ export default function SimpleSmartNotes({ onClose, userId, courseId, contentId,
   };
 
   const deleteNote = async (id) => {
-    if (!confirm('Delete this note?')) return;
-
     // Optimistically remove from UI
     const previousNotes = [...notesRef.current];
     const updatedNotes = notesRef.current.filter(note => note.id !== id);
     setNotes(updatedNotes);
     notesRef.current = updatedNotes;
+    setDeleteConfirmId(null);
 
     try {
       const response = await fetch(`/api/notes/${id}`, {
@@ -574,7 +574,7 @@ export default function SimpleSmartNotes({ onClose, userId, courseId, contentId,
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteNote(note.id);
+                        setDeleteConfirmId(note.id);
                       }}
                       onMouseDown={(e) => e.stopPropagation()}
                       className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
@@ -749,7 +749,7 @@ export default function SimpleSmartNotes({ onClose, userId, courseId, contentId,
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteNote(note.id);
+                          setDeleteConfirmId(note.id);
                         }}
                         className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all flex-shrink-0"
                       >
@@ -840,6 +840,44 @@ export default function SimpleSmartNotes({ onClose, userId, courseId, contentId,
             )}
           </div>
         </button>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-[10003] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-fade-in-up">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Note</h3>
+                <p className="text-sm text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this note? All content will be permanently removed.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteNote(deleteConfirmId)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

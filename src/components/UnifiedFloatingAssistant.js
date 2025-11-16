@@ -280,6 +280,20 @@ export default function UnifiedFloatingAssistant() {
     }
   }, [buttonPosition.x, buttonPosition.y, selectedTool]);
 
+  // Keyboard shortcut - Esc to close
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && selectedTool) {
+        e.preventDefault();
+        setSelectedTool(null);
+        setIsExpanded(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedTool]);
+
   return (
     <>
       {/* AI Assistant Panel */}
