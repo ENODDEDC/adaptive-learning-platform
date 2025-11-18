@@ -599,7 +599,29 @@ const CourseDetailPage = ({
   };
 
   if (loading) {
-    return <div className="flex-1 min-h-screen p-8 text-center bg-gray-100">Loading course details...</div>;
+    return (
+      <div className="flex items-center justify-center flex-1 min-h-screen p-8 bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+        <div className="text-center">
+          {/* Animated spinner with gradient */}
+          <div className="relative w-20 h-20 mx-auto mb-6">
+            <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-transparent rounded-full border-t-blue-600 border-r-blue-500 animate-spin"></div>
+            <div className="absolute inset-2 border-4 border-transparent rounded-full border-t-indigo-400 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
+          </div>
+          
+          {/* Loading text with animation */}
+          <h2 className="mb-2 text-xl font-semibold text-gray-800 animate-pulse">Loading Course Details</h2>
+          <p className="text-sm text-gray-600">Please wait while we prepare your content...</p>
+          
+          {/* Animated dots */}
+          <div className="flex justify-center gap-2 mt-4">
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
