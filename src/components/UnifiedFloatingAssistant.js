@@ -508,28 +508,19 @@ export default function UnifiedFloatingAssistant() {
             isDragging ? '' : 'transition-all duration-500'
           }`}
         >
-        {/* Expanded Options - Position based on button location */}
+        {/* Expanded Options - Positioned to the side based on screen position */}
         <div 
-          className={`absolute transition-all duration-300 ${
-            isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          className={`absolute flex flex-col gap-3 mb-3 transition-all duration-300 ${
+            isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
           }`}
           style={{
-            // If button is on the right half of screen, show buttons to the left horizontally
+            bottom: '72px', // 56px (button height) + 16px gap
+            // If button is on right side, align buttons to the left of it
+            // If button is on left side, align buttons to the right of it
             ...(buttonPosition.x !== null && buttonPosition.x > window.innerWidth / 2 ? {
-              right: '72px', // 56px (button width) + 16px gap
-              top: '50%',
-              transform: isExpanded ? 'translateY(-50%)' : 'translateY(-50%) translateX(20px)',
-              display: 'flex',
-              flexDirection: 'row',
-              gap: '12px'
+              right: '0', // Align to right edge of button
             } : {
-              // Otherwise show buttons above vertically
-              bottom: '72px', // 56px (button height) + 16px gap
-              left: '50%',
-              transform: isExpanded ? 'translateX(-50%)' : 'translateX(-50%) translateY(20px)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
+              left: '0', // Align to left edge of button
             })
           }}
         >
