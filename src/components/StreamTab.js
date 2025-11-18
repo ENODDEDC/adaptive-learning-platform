@@ -5,6 +5,8 @@ import { format } from 'date-fns';
 import AttachmentPreview from '@/components/AttachmentPreview';
 import RichTextEditor from '@/components/RichTextEditor';
 import SidePanelDocumentViewer from '@/components/SidePanelDocumentViewer';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import { TrashIcon } from '@heroicons/react/24/outline';
 import '@/styles/sidePanelStyles.css';
 
 const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, newAnnouncementContent, setNewAnnouncementContent, handlePostAnnouncement, handleDeleteAnnouncement, newCommentContent, setNewCommentContent, handlePostComment, onOpenContent, compactMode = false, documentPanelOpen, setDocumentPanelOpen, setSidePanelDocument: setParentSidePanelDocument }) => {
@@ -16,6 +18,12 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
   const [sortBy, setSortBy] = useState('newest');
   const [visibleComments, setVisibleComments] = useState({});
   const [isClient, setIsClient] = useState(false);
+  
+  // Confirmation modal state
+  const [confirmationModal, setConfirmationModal] = useState({
+    isOpen: false,
+    announcementId: null
+  });
   
   // Side Panel Document Viewer State - Use parent state when available
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
@@ -195,20 +203,7 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                           </button>
                           <button
                             onClick={() => {
-                              console.log('🔍 WINDOW: Attempting window.confirm for delete');
-                              console.log('🔍 WINDOW: Window available:', typeof window !== 'undefined');
-                              console.log('🔍 WINDOW: Confirm available:', typeof window?.confirm !== 'undefined');
-                              console.log('🔍 WINDOW: isClient:', isClient);
-                              if (!isClient || typeof window === 'undefined' || !window.confirm) {
-                                console.log('🔍 WINDOW: Cannot show confirm dialog - not on client');
-                                return;
-                              }
-                              if (window.confirm('Are you sure you want to delete this announcement?')) {
-                                console.log('🔍 WINDOW: User confirmed deletion');
-                                handleDeleteAnnouncement(item._id);
-                              } else {
-                                console.log('🔍 WINDOW: User cancelled deletion');
-                              }
+                              setConfirmationModal({ isOpen: true, announcementId: item._id });
                             }}
                             className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:scale-110"
                             title="Delete announcement"
@@ -469,15 +464,7 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                           </button>
                           <button
                             onClick={() => {
-                              console.log('🔍 WINDOW: Attempting window.confirm for delete (feed section)');
-                              console.log('🔍 WINDOW: isClient:', isClient);
-                              if (!isClient || typeof window === 'undefined' || !window.confirm) {
-                                console.log('🔍 WINDOW: Cannot show confirm dialog - not on client');
-                                return;
-                              }
-                              if (window.confirm('Are you sure you want to delete this announcement?')) {
-                                handleDeleteAnnouncement(item._id);
-                              }
+                              setConfirmationModal({ isOpen: true, announcementId: item._id });
                             }}
                             className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:scale-110"
                             title="Delete announcement"
@@ -641,6 +628,24 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
           document={sidePanelDocument}
         />
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        onClose={() => setConfirmationModal({ isOpen: false, announcementId: null })}
+        onConfirm={() => {
+          if (handleDeleteAnnouncement) {
+            handleDeleteAnnouncement(confirmationModal.announcementId);
+          }
+          setConfirmationModal({ isOpen: false, announcementId: null });
+        }}
+        title="Delete Announcement"
+        message="Are you sure you want to delete this announcement? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        icon={<TrashIcon className="w-6 h-6" />}
+      />
     </div>
   );
 };
