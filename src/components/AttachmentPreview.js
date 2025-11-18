@@ -1,64 +1,78 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { DocumentIcon, VideoCameraIcon, SpeakerWaveIcon, EyeIcon, PhotographIcon } from '@heroicons/react/24/outline';
 import ContentViewer from './ContentViewer.client';
+import thumbnailCache from '@/utils/thumbnailGenerationCache';
 
 const AttachmentPreview = ({ attachment, onPreview }) => {
   const [showViewer, setShowViewer] = useState(false);
-  const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
+  const [thumbnailUrl, setThumbnailUrl] = useState(
+    attachment.thumbnailUrl || thumbnailCache.getThumbnailUrl(attachment._id)
+  );
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const hasAttemptedRef = useRef(false);
 
   useEffect(() => {
-    setThumbnailUrl(attachment.thumbnailUrl);
+    // Update thumbnail URL if it exists in props or cache
+    const cachedUrl = thumbnailCache.getThumbnailUrl(attachment._id);
+    if (attachment.thumbnailUrl) {
+      setThumbnailUrl(attachment.thumbnailUrl);
+      // Store in cache for future use
+      if (attachment._id && !cachedUrl) {
+        thumbnailCache.finishGenerating(attachment._id, attachment.thumbnailUrl);
+      }
+    } else if (cachedUrl) {
+      setThumbnailUrl(cachedUrl);
+    }
+
+    // Only attempt generation ONCE per attachment, ever
+    if (hasAttemptedRef.current) return;
+    if (!attachment._id) return;
+
+    // Check cache before attempting generation
+    if (!thumbnailCache.shouldAttemptGeneration(attachment._id, attachment.thumbnailUrl)) {
+      return;
+    }
+
+    hasAttemptedRef.current = true;
+    thumbnailCache.markAttempted(attachment._id);
 
     // Auto-generate PDF thumbnail if it doesn't exist
-    if (attachment.mimeType === 'application/pdf' && !attachment.thumbnailUrl && !isGeneratingThumbnail) {
+    if (attachment.mimeType === 'application/pdf') {
       generatePdfThumbnail();
     }
-
     // Auto-generate DOCX thumbnail if it doesn't exist
-    if (isDocxFile(attachment) && !attachment.thumbnailUrl && !isGeneratingThumbnail) {
+    else if (isDocxFile(attachment)) {
       generateDocxThumbnail();
     }
-
     // Auto-generate PPTX thumbnail if it doesn't exist
-    if (isPptxFile(attachment) && !attachment.thumbnailUrl && !isGeneratingThumbnail) {
+    else if (isPptxFile(attachment)) {
       generatePptxThumbnail();
     }
-  }, [attachment.thumbnailUrl, attachment.mimeType]);
+  }, [attachment._id, attachment.thumbnailUrl]);
 
   const generatePdfThumbnail = async () => {
-    if (isGeneratingThumbnail) return;
+    if (!attachment._id) return;
+    if (thumbnailCache.isGenerating(attachment._id)) return;
     
+    thumbnailCache.startGenerating(attachment._id);
     setIsGeneratingThumbnail(true);
-    console.log('🖼️ Generating PDF thumbnail for:', attachment.title);
-    console.log('📋 Full attachment object:', attachment);
-    console.log('📋 Attachment data:', {
-      id: attachment._id,
-      cloudStorageKey: attachment.cloudStorage?.key,
-      filePath: attachment.filePath,
-      mimeType: attachment.mimeType,
-      hasCloudStorage: !!attachment.cloudStorage,
-      hasFilePath: !!attachment.filePath
-    });
+    console.log('🖼️ [ONCE] Generating PDF thumbnail for:', attachment.title, 'ID:', attachment._id);
     
     // Validate required data
     if (!attachment.cloudStorage?.key && !attachment.filePath) {
       console.error('❌ Missing both cloudStorage key and filePath');
+      thumbnailCache.markFailed(attachment._id);
       setIsGeneratingThumbnail(false);
       return;
-    }
-    
-    if (!attachment._id) {
-      console.warn('⚠️ Missing attachment ID - database won\'t be updated');
     }
     
     try {
       const requestBody = {
         fileKey: attachment.cloudStorage?.key,
         filePath: attachment.filePath,
-        contentId: attachment._id // Pass the content ID to update the database
+        contentId: attachment._id
       };
       
       console.log('📤 Sending request to /api/pdf-thumbnail:', requestBody);
@@ -71,60 +85,36 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
         body: JSON.stringify(requestBody),
       });
 
-      console.log('📥 Response status:', response.status, response.statusText);
-
       if (response.ok) {
         const result = await response.json();
         console.log('✅ PDF thumbnail generated successfully:', result);
         
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
-          console.log('🖼️ Thumbnail URL set:', result.thumbnailUrl);
-          
-          // Force a re-render to show the new thumbnail
-          setTimeout(() => {
-            console.log('🔄 Forcing component re-render for thumbnail display');
-          }, 100);
+          thumbnailCache.finishGenerating(attachment._id, result.thumbnailUrl);
+          console.log('🖼️ Thumbnail cached for future use');
         } else {
-          console.warn('⚠️ No thumbnail URL in response:', result);
+          thumbnailCache.markFailed(attachment._id);
         }
       } else {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (parseError) {
-          errorData = await response.text();
-        }
-        console.error('❌ Failed to generate PDF thumbnail:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData,
-          url: response.url
-        });
+        console.error('❌ Failed to generate PDF thumbnail:', response.status);
+        thumbnailCache.markFailed(attachment._id);
       }
     } catch (error) {
       console.error('❌ Error generating PDF thumbnail:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        cause: error.cause
-      });
-      
-      // Check if it's a network error
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.error('❌ Network error - check if server is running');
-      }
+      thumbnailCache.markFailed(attachment._id);
     } finally {
       setIsGeneratingThumbnail(false);
     }
   };
 
   const generateDocxThumbnail = async () => {
-    if (isGeneratingThumbnail) return;
+    if (!attachment._id) return;
+    if (thumbnailCache.isGenerating(attachment._id)) return;
 
+    thumbnailCache.startGenerating(attachment._id);
     setIsGeneratingThumbnail(true);
-    console.log('🖼️ Generating DOCX thumbnail for:', attachment.title);
+    console.log('🖼️ [ONCE] Generating DOCX thumbnail for:', attachment.title, 'ID:', attachment._id);
 
     try {
       const requestBody = {
@@ -132,8 +122,6 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
         filePath: attachment.filePath,
         contentId: attachment._id
       };
-
-      console.log('📤 Sending DOCX thumbnail request:', requestBody);
 
       const response = await fetch('/api/docx-thumbnail', {
         method: 'POST',
@@ -143,43 +131,36 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
         body: JSON.stringify(requestBody),
       });
 
-      console.log('📥 DOCX thumbnail response status:', response.status);
-
       if (response.ok) {
         const result = await response.json();
         console.log('✅ DOCX thumbnail generated successfully:', result);
 
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
-          console.log('🖼️ DOCX thumbnail URL set:', result.thumbnailUrl);
+          thumbnailCache.finishGenerating(attachment._id, result.thumbnailUrl);
+          console.log('🖼️ Thumbnail cached for future use');
         } else {
-          console.warn('⚠️ No thumbnail URL in DOCX response:', result);
+          thumbnailCache.markFailed(attachment._id);
         }
       } else {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (parseError) {
-          errorData = await response.text();
-        }
-        console.error('❌ Failed to generate DOCX thumbnail:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData,
-        });
+        console.error('❌ Failed to generate DOCX thumbnail:', response.status);
+        thumbnailCache.markFailed(attachment._id);
       }
     } catch (error) {
       console.error('❌ Error generating DOCX thumbnail:', error);
+      thumbnailCache.markFailed(attachment._id);
     } finally {
       setIsGeneratingThumbnail(false);
     }
   };
 
   const generatePptxThumbnail = async () => {
-    if (isGeneratingThumbnail) return;
+    if (!attachment._id) return;
+    if (thumbnailCache.isGenerating(attachment._id)) return;
 
+    thumbnailCache.startGenerating(attachment._id);
     setIsGeneratingThumbnail(true);
-    console.log('🖼️ Generating PPTX thumbnail for:', attachment.title);
+    console.log('🖼️ [ONCE] Generating PPTX thumbnail for:', attachment.title, 'ID:', attachment._id);
 
     try {
       const requestBody = {
@@ -187,8 +168,6 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
         filePath: attachment.filePath,
         contentId: attachment._id
       };
-
-      console.log('📤 Sending PPTX thumbnail request:', requestBody);
 
       const response = await fetch('/api/pptx-thumbnail', {
         method: 'POST',
@@ -198,33 +177,24 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
         body: JSON.stringify(requestBody),
       });
 
-      console.log('📥 PPTX thumbnail response status:', response.status);
-
       if (response.ok) {
         const result = await response.json();
         console.log('✅ PPTX thumbnail generated successfully:', result);
 
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
-          console.log('🖼️ PPTX thumbnail URL set:', result.thumbnailUrl);
+          thumbnailCache.finishGenerating(attachment._id, result.thumbnailUrl);
+          console.log('🖼️ Thumbnail cached for future use');
         } else {
-          console.warn('⚠️ No thumbnail URL in PPTX response:', result);
+          thumbnailCache.markFailed(attachment._id);
         }
       } else {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (parseError) {
-          errorData = await response.text();
-        }
-        console.error('❌ Failed to generate PPTX thumbnail:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData,
-        });
+        console.error('❌ Failed to generate PPTX thumbnail:', response.status);
+        thumbnailCache.markFailed(attachment._id);
       }
     } catch (error) {
       console.error('❌ Error generating PPTX thumbnail:', error);
+      thumbnailCache.markFailed(attachment._id);
     } finally {
       setIsGeneratingThumbnail(false);
     }

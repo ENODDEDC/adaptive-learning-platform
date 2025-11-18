@@ -10,6 +10,7 @@ import StudentAssignmentModal from '@/components/StudentAssignmentModal';
 import ContentViewer from '@/components/ContentViewer.client';
 import AttachmentPreview from '@/components/AttachmentPreview';
 import EnhancedDocxThumbnail from '@/components/EnhancedDocxThumbnail';
+import thumbnailCache from '@/utils/thumbnailGenerationCache';
 
 // Completely Isolated Context Menu System (No React State)
 let globalContextMenu = null;
@@ -218,7 +219,9 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit }) => {
 
 // Stable Thumbnail Component that prevents re-renders from parent state changes
 const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
-  const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
+  const [thumbnailUrl, setThumbnailUrl] = useState(
+    attachment.thumbnailUrl || thumbnailCache.getThumbnailUrl(attachment._id)
+  );
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [hasFailed, setHasFailed] = useState(false);
   const hasAttemptedRef = useRef(false);
@@ -243,22 +246,37 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
   };
 
   useEffect(() => {
-    // Only attempt once per attachment, and skip if already failed or has thumbnail
-    if (!thumbnailUrl && !isGeneratingThumbnail && !hasFailed && !hasAttemptedRef.current) {
-      hasAttemptedRef.current = true;
-      if (isPdfFile(attachment)) {
-        generatePdfThumbnail();
-      } else if (isDocxFile(attachment)) {
-        generateDocxThumbnail();
-      } else if (isPptxFile(attachment)) {
-        generatePptxThumbnail();
-      }
+    // Check cache first
+    const cachedUrl = thumbnailCache.getThumbnailUrl(attachment._id);
+    if (cachedUrl && !thumbnailUrl) {
+      setThumbnailUrl(cachedUrl);
+      return;
+    }
+
+    // Only attempt once per attachment globally using cache
+    if (!attachment._id) return;
+    if (hasAttemptedRef.current) return;
+    if (!thumbnailCache.shouldAttemptGeneration(attachment._id, attachment.thumbnailUrl || thumbnailUrl)) {
+      return;
+    }
+
+    hasAttemptedRef.current = true;
+    thumbnailCache.markAttempted(attachment._id);
+
+    if (isPdfFile(attachment)) {
+      generatePdfThumbnail();
+    } else if (isDocxFile(attachment)) {
+      generateDocxThumbnail();
+    } else if (isPptxFile(attachment)) {
+      generatePptxThumbnail();
     }
   }, []);
 
   const generatePdfThumbnail = async () => {
-    if (isGeneratingThumbnail || hasFailed) return;
+    if (!attachment._id) return;
+    if (thumbnailCache.isGenerating(attachment._id)) return;
 
+    thumbnailCache.startGenerating(attachment._id);
     setIsGeneratingThumbnail(true);
 
     try {
@@ -278,25 +296,28 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+          thumbnailCache.finishGenerating(attachment._id, result.thumbnailUrl);
         } else {
           setHasFailed(true);
+          thumbnailCache.markFailed(attachment._id);
         }
-      } else if (response.status === 404) {
-        // File not found, mark as failed and don't retry
-        setHasFailed(true);
       } else {
         setHasFailed(true);
+        thumbnailCache.markFailed(attachment._id);
       }
     } catch (error) {
       setHasFailed(true);
+      thumbnailCache.markFailed(attachment._id);
     } finally {
       setIsGeneratingThumbnail(false);
     }
   };
 
   const generateDocxThumbnail = async () => {
-    if (isGeneratingThumbnail || hasFailed) return;
+    if (!attachment._id) return;
+    if (thumbnailCache.isGenerating(attachment._id)) return;
 
+    thumbnailCache.startGenerating(attachment._id);
     setIsGeneratingThumbnail(true);
 
     try {
@@ -316,25 +337,28 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+          thumbnailCache.finishGenerating(attachment._id, result.thumbnailUrl);
         } else {
           setHasFailed(true);
+          thumbnailCache.markFailed(attachment._id);
         }
-      } else if (response.status === 404) {
-        // File not found, mark as failed and don't retry
-        setHasFailed(true);
       } else {
         setHasFailed(true);
+        thumbnailCache.markFailed(attachment._id);
       }
     } catch (error) {
       setHasFailed(true);
+      thumbnailCache.markFailed(attachment._id);
     } finally {
       setIsGeneratingThumbnail(false);
     }
   };
 
   const generatePptxThumbnail = async () => {
-    if (isGeneratingThumbnail || hasFailed) return;
+    if (!attachment._id) return;
+    if (thumbnailCache.isGenerating(attachment._id)) return;
 
+    thumbnailCache.startGenerating(attachment._id);
     setIsGeneratingThumbnail(true);
 
     try {
@@ -354,17 +378,18 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+          thumbnailCache.finishGenerating(attachment._id, result.thumbnailUrl);
         } else {
           setHasFailed(true);
+          thumbnailCache.markFailed(attachment._id);
         }
-      } else if (response.status === 404) {
-        // File not found, mark as failed and don't retry
-        setHasFailed(true);
       } else {
         setHasFailed(true);
+        thumbnailCache.markFailed(attachment._id);
       }
     } catch (error) {
       setHasFailed(true);
+      thumbnailCache.markFailed(attachment._id);
     } finally {
       setIsGeneratingThumbnail(false);
     }
@@ -457,7 +482,9 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
 
 // Enhanced PDF/DOCX Thumbnail Component for Grid View (Stable)
 const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
-  const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
+  const [thumbnailUrl, setThumbnailUrl] = useState(
+    attachment.thumbnailUrl || thumbnailCache.getThumbnailUrl(attachment._id)
+  );
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [hasFailed, setHasFailed] = useState(false);
   const hasAttemptedRef = useRef(false);
@@ -482,22 +509,37 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
   };
 
   useEffect(() => {
-    // Only attempt once per attachment, and skip if already failed or has thumbnail
-    if (!thumbnailUrl && !isGeneratingThumbnail && !hasFailed && !hasAttemptedRef.current) {
-      hasAttemptedRef.current = true;
-      if (isPdfFile(attachment)) {
-        generatePdfThumbnail();
-      } else if (isDocxFile(attachment)) {
-        generateDocxThumbnail();
-      } else if (isPptxFile(attachment)) {
-        generatePptxThumbnail();
-      }
+    // Check cache first
+    const cachedUrl = thumbnailCache.getThumbnailUrl(attachment._id);
+    if (cachedUrl && !thumbnailUrl) {
+      setThumbnailUrl(cachedUrl);
+      return;
+    }
+
+    // Only attempt once per attachment globally using cache
+    if (!attachment._id) return;
+    if (hasAttemptedRef.current) return;
+    if (!thumbnailCache.shouldAttemptGeneration(attachment._id, attachment.thumbnailUrl || thumbnailUrl)) {
+      return;
+    }
+
+    hasAttemptedRef.current = true;
+    thumbnailCache.markAttempted(attachment._id);
+
+    if (isPdfFile(attachment)) {
+      generatePdfThumbnail();
+    } else if (isDocxFile(attachment)) {
+      generateDocxThumbnail();
+    } else if (isPptxFile(attachment)) {
+      generatePptxThumbnail();
     }
   }, []);
 
   const generatePdfThumbnail = async () => {
-    if (isGeneratingThumbnail || hasFailed) return;
+    if (!attachment._id) return;
+    if (thumbnailCache.isGenerating(attachment._id)) return;
 
+    thumbnailCache.startGenerating(attachment._id);
     setIsGeneratingThumbnail(true);
 
     try {
@@ -517,24 +559,28 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+          thumbnailCache.finishGenerating(attachment._id, result.thumbnailUrl);
         } else {
           setHasFailed(true);
+          thumbnailCache.markFailed(attachment._id);
         }
-      } else if (response.status === 404) {
-        setHasFailed(true);
       } else {
         setHasFailed(true);
+        thumbnailCache.markFailed(attachment._id);
       }
     } catch (error) {
       setHasFailed(true);
+      thumbnailCache.markFailed(attachment._id);
     } finally {
       setIsGeneratingThumbnail(false);
     }
   };
 
   const generateDocxThumbnail = async () => {
-    if (isGeneratingThumbnail || hasFailed) return;
+    if (!attachment._id) return;
+    if (thumbnailCache.isGenerating(attachment._id)) return;
 
+    thumbnailCache.startGenerating(attachment._id);
     setIsGeneratingThumbnail(true);
 
     try {
@@ -554,24 +600,28 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+          thumbnailCache.finishGenerating(attachment._id, result.thumbnailUrl);
         } else {
           setHasFailed(true);
+          thumbnailCache.markFailed(attachment._id);
         }
-      } else if (response.status === 404) {
-        setHasFailed(true);
       } else {
         setHasFailed(true);
+        thumbnailCache.markFailed(attachment._id);
       }
     } catch (error) {
       setHasFailed(true);
+      thumbnailCache.markFailed(attachment._id);
     } finally {
       setIsGeneratingThumbnail(false);
     }
   };
 
   const generatePptxThumbnail = async () => {
-    if (isGeneratingThumbnail || hasFailed) return;
+    if (!attachment._id) return;
+    if (thumbnailCache.isGenerating(attachment._id)) return;
 
+    thumbnailCache.startGenerating(attachment._id);
     setIsGeneratingThumbnail(true);
 
     try {
@@ -591,16 +641,18 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
         const result = await response.json();
         if (result.thumbnailUrl) {
           setThumbnailUrl(result.thumbnailUrl);
+          thumbnailCache.finishGenerating(attachment._id, result.thumbnailUrl);
         } else {
           setHasFailed(true);
+          thumbnailCache.markFailed(attachment._id);
         }
-      } else if (response.status === 404) {
-        setHasFailed(true);
       } else {
         setHasFailed(true);
+        thumbnailCache.markFailed(attachment._id);
       }
     } catch (error) {
       setHasFailed(true);
+      thumbnailCache.markFailed(attachment._id);
     } finally {
       setIsGeneratingThumbnail(false);
     }
