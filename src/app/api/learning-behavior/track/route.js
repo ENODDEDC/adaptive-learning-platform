@@ -103,81 +103,127 @@ export async function POST(request) {
     }
 
     // Save behavior data
-    await behavior.save();
+    const savedBehavior = await behavior.save();
 
-    // Update learning style profile data quality
+    // 📊 INCREMENTAL AGGREGATION: Update profile with new behavior data
     const profile = await LearningStyleProfile.getOrCreate(userId);
-    const totalInteractions = await LearningBehavior.getTotalInteractions(userId);
-    const hasSufficientData = await LearningBehavior.hasSufficientData(userId);
     
-    profile.dataQuality.totalInteractions = totalInteractions;
-    profile.dataQuality.sufficientForML = hasSufficientData;
-    profile.dataQuality.dataCompleteness = Math.min(100, (totalInteractions / 20) * 100);
+    // Initialize aggregatedStats if not exists
+    if (!profile.aggregatedStats) {
+      profile.aggregatedStats = {
+        modeUsage: {
+          aiNarrator: { count: 0, totalTime: 0 },
+          visualLearning: { count: 0, totalTime: 0 },
+          sequentialLearning: { count: 0, totalTime: 0 },
+          globalLearning: { count: 0, totalTime: 0 },
+          sensingLearning: { count: 0, totalTime: 0 },
+          intuitiveLearning: { count: 0, totalTime: 0 },
+          activeLearning: { count: 0, totalTime: 0 },
+          reflectiveLearning: { count: 0, totalTime: 0 }
+        },
+        aiAssistantUsage: {
+          askMode: { count: 0, totalTime: 0 },
+          researchMode: { count: 0, totalTime: 0 },
+          textToDocsMode: { count: 0, totalTime: 0 },
+          totalInteractions: 0,
+          totalPromptLength: 0
+        },
+        activityEngagement: {
+          quizzesCompleted: 0,
+          practiceQuestionsAttempted: 0,
+          discussionParticipation: 0,
+          reflectionJournalEntries: 0,
+          visualDiagramsViewed: 0,
+          handsOnLabsCompleted: 0,
+          conceptExplorationsCount: 0,
+          sequentialStepsCompleted: 0
+        },
+        lastAggregatedDate: new Date(),
+        lastProcessedBehaviorId: null,
+        totalInteractionsProcessed: 0
+      };
+    }
+    
+    // Add new behavior data to running totals (INCREMENTAL UPDATE)
+    Object.keys(behavior.modeUsage).forEach(mode => {
+      if (profile.aggregatedStats.modeUsage[mode]) {
+        profile.aggregatedStats.modeUsage[mode].count += behavior.modeUsage[mode].count;
+        profile.aggregatedStats.modeUsage[mode].totalTime += behavior.modeUsage[mode].totalTime;
+      }
+    });
+    
+    // Add AI Assistant usage
+    if (behavior.aiAssistantUsage) {
+      profile.aggregatedStats.aiAssistantUsage.askMode.count += behavior.aiAssistantUsage.askMode?.count || 0;
+      profile.aggregatedStats.aiAssistantUsage.researchMode.count += behavior.aiAssistantUsage.researchMode?.count || 0;
+      profile.aggregatedStats.aiAssistantUsage.textToDocsMode.count += behavior.aiAssistantUsage.textToDocsMode?.count || 0;
+      profile.aggregatedStats.aiAssistantUsage.totalInteractions += behavior.aiAssistantUsage.totalInteractions || 0;
+      profile.aggregatedStats.aiAssistantUsage.totalPromptLength += behavior.aiAssistantUsage.totalPromptLength || 0;
+    }
+    
+    // Add activity engagement
+    Object.keys(behavior.activityEngagement).forEach(activity => {
+      if (profile.aggregatedStats.activityEngagement[activity] !== undefined) {
+        profile.aggregatedStats.activityEngagement[activity] += behavior.activityEngagement[activity] || 0;
+      }
+    });
+    
+    // Update metadata
+    profile.aggregatedStats.lastProcessedBehaviorId = savedBehavior._id;
+    profile.aggregatedStats.lastAggregatedDate = new Date();
+    
+    // Calculate total interactions from aggregated data
+    let totalInteractionsFromAggregates = 0;
+    Object.values(profile.aggregatedStats.modeUsage).forEach(mode => {
+      totalInteractionsFromAggregates += mode.count;
+    });
+    totalInteractionsFromAggregates += profile.aggregatedStats.aiAssistantUsage.totalInteractions;
+    
+    profile.aggregatedStats.totalInteractionsProcessed = totalInteractionsFromAggregates;
+    
+    // Update data quality indicators
+    profile.dataQuality.totalInteractions = totalInteractionsFromAggregates;
+    profile.dataQuality.sufficientForML = totalInteractionsFromAggregates >= 10;
+    profile.dataQuality.dataCompleteness = Math.min(100, (totalInteractionsFromAggregates / 200) * 100);
     profile.dataQuality.lastDataUpdate = new Date();
     
     await profile.save();
+    
+    console.log('📊 Incremental aggregation updated:', {
+      totalInteractions: totalInteractionsFromAggregates,
+      lastProcessedBehaviorId: savedBehavior._id
+    });
 
-    // 🎯 AUTO-TRIGGER CLASSIFICATION when threshold is reached
+    // 🎯 THRESHOLD-BASED AUTO-CLASSIFICATION
     let classificationTriggered = false;
+    const totalInteractions = totalInteractionsFromAggregates;
     
-    // Check if profile has been classified (lastPrediction is the key indicator)
-    // Dimensions always exist with default 0 values, so we check lastPrediction instead
-    const hasBeenClassified = profile.lastPrediction != null;
-    const timeSinceLastPrediction = hasBeenClassified 
-      ? Date.now() - new Date(profile.lastPrediction).getTime()
-      : Infinity;
+    // Check if we should classify at this threshold
+    const shouldClassify = profile.shouldClassifyNow();
+    const confidenceInfo = profile.getConfidenceLevel();
+    const nextThreshold = profile.getNextThreshold();
     
-    console.log('🔍 Auto-classification check:', {
-      hasSufficientData,
-      hasBeenClassified,
-      lastPrediction: profile.lastPrediction,
-      timeSinceLastPrediction: hasBeenClassified ? `${Math.round(timeSinceLastPrediction / 1000 / 60)} minutes` : 'never',
-      totalInteractions
+    console.log('🔍 Threshold-based classification check:', {
+      totalInteractions,
+      shouldClassify,
+      nextThreshold,
+      confidenceLevel: confidenceInfo.level,
+      stage: confidenceInfo.stage
     });
     
-    // Trigger if: (1) has sufficient data AND (2) never been classified OR (3) hasn't been classified in 24 hours
-    const needsClassification = hasSufficientData && (
-      !hasBeenClassified || 
-      timeSinceLastPrediction > 24 * 60 * 60 * 1000
-    );
-    
-    if (needsClassification) {
-      console.log('🎯 Threshold reached! Auto-triggering ML classification...');
-      console.log('📊 Reason:', {
-        noDimensions: !hasDimensions,
-        noPrediction: !profile.lastPrediction,
-        oldPrediction: profile.lastPrediction && (Date.now() - new Date(profile.lastPrediction).getTime() > 24 * 60 * 60 * 1000)
-      });
+    if (shouldClassify) {
+      console.log(`🎯 Threshold milestone reached (${totalInteractions})! Auto-triggering classification...`);
+      
       try {
         // Import services
         const featureEngineeringService = (await import('@/services/featureEngineeringService')).default;
         const ruleBasedLabelingService = (await import('@/services/ruleBasedLabelingService')).default;
         const mlClassificationService = (await import('@/services/mlClassificationService')).default;
         
-        // Calculate features
-        const featuresResult = await featureEngineeringService.calculateFeatures(userId);
+        // 📊 USE INCREMENTAL AGGREGATES (no need to fetch all behaviors!)
+        const featuresResult = featureEngineeringService.calculateFeaturesFromAggregates(profile.aggregatedStats);
         
-        // Get aggregated behavior data
-        const behaviors = await LearningBehavior.find({ userId }).sort({ timestamp: -1 });
-        const aggregated = {
-          modeUsage: {
-            aiNarrator: { count: 0, totalTime: 0 },
-            visualLearning: { count: 0, totalTime: 0 },
-            sequentialLearning: { count: 0, totalTime: 0 },
-            globalLearning: { count: 0, totalTime: 0 },
-            sensingLearning: { count: 0, totalTime: 0 },
-            intuitiveLearning: { count: 0, totalTime: 0 },
-            activeLearning: { count: 0, totalTime: 0 },
-            reflectiveLearning: { count: 0, totalTime: 0 }
-          }
-        };
-        
-        behaviors.forEach(b => {
-          Object.keys(aggregated.modeUsage).forEach(mode => {
-            aggregated.modeUsage[mode].count += b.modeUsage[mode]?.count || 0;
-            aggregated.modeUsage[mode].totalTime += b.modeUsage[mode]?.totalTime || 0;
-          });
-        });
+        console.log('✅ Features calculated from aggregates (scalable approach)');
         
         // Try ML classification
         let classification;
@@ -186,7 +232,14 @@ export async function POST(request) {
         
         const mlHealth = await mlClassificationService.checkMLServiceHealth();
         if (mlHealth.available) {
-          const mlFeatures = featureEngineeringService.convertToMLFormat(featuresResult, aggregated);
+          // Use aggregated stats for ML format conversion
+          const aggregatedForML = {
+            modeUsage: profile.aggregatedStats.modeUsage,
+            activityEngagement: profile.aggregatedStats.activityEngagement,
+            aiAssistantUsage: profile.aggregatedStats.aiAssistantUsage
+          };
+          
+          const mlFeatures = featureEngineeringService.convertToMLFormat(featuresResult, aggregatedForML);
           const mlResult = await mlClassificationService.getMLPrediction(mlFeatures);
           
           if (mlResult.success) {
@@ -198,7 +251,17 @@ export async function POST(request) {
             };
             classificationMethod = 'ml-prediction';
             recommendations = ruleBasedLabelingService.generateRecommendations(classification);
+            
+            // Calculate average ML confidence
+            let avgConfidence = 0;
+            if (mlResult.confidence && typeof mlResult.confidence === 'object') {
+              const confidenceValues = Object.values(mlResult.confidence);
+              avgConfidence = confidenceValues.reduce((sum, val) => sum + val, 0) / confidenceValues.length;
+            }
+            profile.mlConfidenceScore = avgConfidence;
+            
             console.log('✅ ML classification successful:', mlResult.predictions);
+            console.log('📊 ML Confidence:', Math.round(avgConfidence * 100) + '%');
           } else {
             classification = await ruleBasedLabelingService.classifyLearningStyle(userId);
             recommendations = ruleBasedLabelingService.generateRecommendations(classification);
@@ -220,21 +283,12 @@ export async function POST(request) {
         
         await profile.save();
         classificationTriggered = true;
-        console.log('🎉 Auto-classification complete!');
+        console.log(`🎉 Classification complete at ${totalInteractions} interactions (${confidenceInfo.stage} stage)!`);
       } catch (error) {
         console.error('❌ Auto-classification failed:', error);
       }
-    }
-
-    // Log classification status for debugging
-    if (classificationTriggered) {
-      console.log('🎉 CLASSIFICATION TRIGGERED! User learning style has been determined.');
-    } else if (needsClassification) {
-      console.log('⚠️ Classification was needed but failed - check error logs above');
     } else {
-      console.log('ℹ️ Classification not needed:', {
-        reason: !hasSufficientData ? 'insufficient data' : 'already classified recently'
-      });
+      console.log(`ℹ️ Classification not triggered. Next threshold: ${nextThreshold} (${nextThreshold - totalInteractions} more interactions needed)`);
     }
 
     return NextResponse.json({
@@ -242,10 +296,13 @@ export async function POST(request) {
       message: 'Behavior data tracked successfully',
       data: {
         totalInteractions,
-        hasSufficientData,
+        hasSufficientData: profile.dataQuality.sufficientForML,
         dataCompleteness: profile.dataQuality.dataCompleteness,
         classificationTriggered,
-        needsClassification
+        nextThreshold,
+        interactionsUntilNext: nextThreshold - totalInteractions,
+        confidenceLevel: confidenceInfo.level,
+        confidenceStage: confidenceInfo.stage
       }
     });
 

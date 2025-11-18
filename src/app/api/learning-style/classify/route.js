@@ -88,7 +88,23 @@ export async function POST(request) {
       dataQuality: featuresResult.dataQuality
     });
 
-    // Always classify, but with varying confidence levels
+    // THRESHOLD SYSTEM: Only classify if minimum interactions met
+    const MINIMUM_INTERACTIONS = 50;
+    
+    if (featuresResult.totalInteractions < MINIMUM_INTERACTIONS) {
+      console.log(`⏸️ Insufficient data: ${featuresResult.totalInteractions}/${MINIMUM_INTERACTIONS} interactions`);
+      return NextResponse.json({
+        success: false,
+        needsMoreData: true,
+        message: `Need ${MINIMUM_INTERACTIONS - featuresResult.totalInteractions} more interactions before classification`,
+        data: {
+          currentInteractions: featuresResult.totalInteractions,
+          requiredInteractions: MINIMUM_INTERACTIONS,
+          progress: Math.round((featuresResult.totalInteractions / MINIMUM_INTERACTIONS) * 100)
+        }
+      }, { status: 400 });
+    }
+    
     console.log('📊 Data quality assessment:', {
       interactions: featuresResult.totalInteractions,
       confidenceLevel: featuresResult.dataQuality.confidenceLevel,
@@ -99,7 +115,7 @@ export async function POST(request) {
     let recommendations;
     let classificationMethod = 'rule-based';
 
-    // Try ML classification (always, even with 1 interaction)
+    // Try ML classification (threshold met)
     console.log('🔍 Attempting classification:', {
       hasAggregated: !!aggregated,
       totalInteractions: featuresResult.totalInteractions,
@@ -247,18 +263,24 @@ export async function GET(request) {
 
     // Get current features
     const featuresResult = await featureEngineeringService.calculateFeatures(userId);
+    
+    const MINIMUM_INTERACTIONS = 50;
+    const readyForClassification = featuresResult.totalInteractions >= MINIMUM_INTERACTIONS;
+    const progress = Math.round((featuresResult.totalInteractions / MINIMUM_INTERACTIONS) * 100);
 
     return NextResponse.json({
       success: true,
       data: {
         dataQuality: featuresResult.dataQuality,
-        readyForClassification: true, // Always ready
+        readyForClassification,
         totalInteractions: featuresResult.totalInteractions,
         totalLearningTime: featuresResult.totalLearningTime,
         confidenceLevel: featuresResult.dataQuality.confidenceLevel,
         confidencePercentage: featuresResult.dataQuality.confidencePercentage,
-        message: featuresResult.totalInteractions === 0
-          ? 'Start interacting to build your learning profile'
+        requiredInteractions: MINIMUM_INTERACTIONS,
+        progress,
+        message: !readyForClassification
+          ? `Building your profile: ${featuresResult.totalInteractions}/${MINIMUM_INTERACTIONS} interactions (${progress}%)`
           : `Classification available with ${featuresResult.dataQuality.confidenceLevel} confidence (${featuresResult.dataQuality.confidencePercentage}%)`
       }
     });

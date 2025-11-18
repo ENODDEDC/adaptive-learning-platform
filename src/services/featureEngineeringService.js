@@ -439,6 +439,58 @@ class FeatureEngineeringService {
   }
 
   /**
+   * Calculate features from aggregated stats (for incremental approach)
+   * Uses pre-computed aggregates instead of fetching all behaviors
+   */
+  calculateFeaturesFromAggregates(aggregatedStats) {
+    if (!aggregatedStats || !aggregatedStats.modeUsage) {
+      return this.getDefaultFeatures();
+    }
+
+    // Use aggregated stats directly (already computed)
+    const aggregated = {
+      modeUsage: aggregatedStats.modeUsage,
+      aiAssistantUsage: {
+        ...aggregatedStats.aiAssistantUsage,
+        averagePromptLength: aggregatedStats.aiAssistantUsage.totalInteractions > 0
+          ? aggregatedStats.aiAssistantUsage.totalPromptLength / aggregatedStats.aiAssistantUsage.totalInteractions
+          : 0
+      },
+      activityEngagement: aggregatedStats.activityEngagement,
+      totalInteractions: aggregatedStats.totalInteractionsProcessed || 0,
+      totalLearningTime: 0,
+      sessionCount: 1 // Approximation for aggregated data
+    };
+
+    // Calculate total learning time from aggregated mode usage
+    Object.values(aggregated.modeUsage).forEach(mode => {
+      aggregated.totalLearningTime += mode.totalTime;
+    });
+
+    // Calculate features using the same methods
+    const features = {
+      // Active vs Reflective features
+      ...this.calculateActiveReflectiveFeatures(aggregated),
+      
+      // Sensing vs Intuitive features
+      ...this.calculateSensingIntuitiveFeatures(aggregated),
+      
+      // Visual vs Verbal features
+      ...this.calculateVisualVerbalFeatures(aggregated),
+      
+      // Sequential vs Global features
+      ...this.calculateSequentialGlobalFeatures(aggregated),
+      
+      // Metadata
+      totalInteractions: aggregated.totalInteractions,
+      totalLearningTime: aggregated.totalLearningTime,
+      dataQuality: this.assessDataQuality(aggregated)
+    };
+
+    return features;
+  }
+
+  /**
    * Convert features to ML service format
    * Maps our feature names to the ML service's expected names
    */

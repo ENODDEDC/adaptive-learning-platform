@@ -103,6 +103,64 @@ const AnalyticsSettings = () => {
         </button>
       </div>
 
+      {/* Threshold Progress Banner */}
+      {stats && (
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-2xl font-bold mb-1">Classification Journey</h3>
+              <p className="text-blue-100 text-sm">Track your progress toward research-validated accuracy</p>
+            </div>
+            <TrophyIcon className="w-12 h-12 text-yellow-300" />
+          </div>
+          
+          {(() => {
+            const totalInteractions = stats.totalInteractions || 0;
+            const nextThreshold = totalInteractions < 50 ? 50 : totalInteractions < 100 ? 100 : totalInteractions < 200 ? 200 : Math.ceil(totalInteractions / 50) * 50 + 50;
+            const progress = (totalInteractions / nextThreshold) * 100;
+            
+            return (
+              <>
+                <div className="mb-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-semibold">
+                      {totalInteractions} / {nextThreshold} interactions
+                    </span>
+                    <span className="text-sm font-bold bg-white/20 px-3 py-1 rounded-full">
+                      {nextThreshold - totalInteractions} to go
+                    </span>
+                  </div>
+                  <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-yellow-300 to-yellow-400 transition-all duration-500"
+                      style={{ width: `${Math.min(progress, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mt-4">
+                  {[50, 100, 200].map((threshold) => {
+                    const reached = totalInteractions >= threshold;
+                    return (
+                      <div
+                        key={threshold}
+                        className={`flex-1 text-center py-2 rounded-lg text-xs font-bold transition-all ${
+                          reached
+                            ? 'bg-green-400 text-green-900'
+                            : 'bg-white/20 text-white/60'
+                        }`}
+                      >
+                        {reached ? '✓' : ''} {threshold}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Total Interactions Card */}
@@ -263,8 +321,8 @@ const AnalyticsSettings = () => {
         </div>
       )}
 
-      {/* ML Classification Confidence */}
-      {stats?.mlConfidenceScore !== undefined && (
+      {/* ML Classification Confidence - Only show if classification has happened */}
+      {stats?.mlConfidenceScore !== undefined && stats.mlConfidenceScore > 0 && (
         <div className={`rounded-lg border-2 p-6 ${
           (stats.mlConfidenceScore || 0) >= 0.80 ? 'bg-green-50 border-green-300' :
           (stats.mlConfidenceScore || 0) >= 0.65 ? 'bg-yellow-50 border-yellow-300' :

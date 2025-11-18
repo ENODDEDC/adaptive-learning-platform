@@ -22,31 +22,32 @@ const LearningPreferences = () => {
         const data = await res.json();
         // API returns data.data.profile and data.data.dataQuality separately
         const profileData = data.data?.profile || data.profile;
-        
+
         // Merge dataQuality into profile for easier access
         if (data.data?.dataQuality && profileData) {
           profileData.dataQuality = data.data.dataQuality;
         }
-        
-        // If dataQuality is still missing or has 0 values, fetch from behavior tracking
-        if (profileData && (!profileData.dataQuality || profileData.dataQuality.totalInteractions === 0)) {
-          try {
-            const behaviorRes = await fetch('/api/learning-behavior/track');
-            if (behaviorRes.ok) {
-              const behaviorData = await behaviorRes.json();
-              if (behaviorData.success && behaviorData.data) {
-                profileData.dataQuality = {
-                  totalInteractions: behaviorData.data.totalInteractions || 0,
-                  dataCompleteness: behaviorData.data.dataQuality?.completeness || 0,
-                  sufficientForML: behaviorData.data.hasSufficientData || false
-                };
-              }
+
+        // ALWAYS fetch fresh data from behavior tracking for accurate interaction count
+        try {
+          const behaviorRes = await fetch('/api/learning-behavior/track');
+          if (behaviorRes.ok) {
+            const behaviorData = await behaviorRes.json();
+            if (behaviorData.success && behaviorData.data) {
+              // Override with fresh behavior data (same source as Analytics)
+              profileData.dataQuality = {
+                totalInteractions: behaviorData.data.totalInteractions || 0,
+                dataCompleteness: behaviorData.data.dataQuality?.completeness || 0,
+                sufficientForML: behaviorData.data.hasSufficientData || false
+              };
+              // Remove aggregatedStats to prevent using stale data
+              delete profileData.aggregatedStats;
             }
-          } catch (error) {
-            console.log('Could not fetch behavior data:', error);
           }
+        } catch (error) {
+          console.log('Could not fetch behavior data:', error);
         }
-        
+
         setProfile(profileData);
       }
     } catch (error) {
@@ -91,14 +92,14 @@ const LearningPreferences = () => {
 
   const getDimensionPreference = (dimension, value) => {
     if (value === null || value === undefined) return 'Not determined';
-    
+
     const preferences = {
       activeReflective: value > 0 ? 'Active' : 'Reflective',
       sensingIntuitive: value > 0 ? 'Sensing' : 'Intuitive',
       visualVerbal: value > 0 ? 'Visual' : 'Verbal',
       sequentialGlobal: value > 0 ? 'Sequential' : 'Global'
     };
-    
+
     return preferences[dimension] || 'Unknown';
   };
 
@@ -107,7 +108,7 @@ const LearningPreferences = () => {
     const percentage = ((value + 11) / 22) * 100;
     const segments = 22;
     const activeSegment = Math.round((percentage / 100) * segments);
-    
+
     return (
       <div className="flex gap-1">
         {Array.from({ length: segments }).map((_, i) => {
@@ -116,13 +117,12 @@ const LearningPreferences = () => {
           return (
             <div
               key={i}
-              className={`h-8 flex-1 rounded transition-all duration-300 ${
-                isActive
+              className={`h-8 flex-1 rounded transition-all duration-300 ${isActive
                   ? isLeft
                     ? `${leftColor} shadow-sm`
                     : `${rightColor} shadow-sm`
                   : 'bg-gray-200'
-              }`}
+                }`}
             />
           );
         })}
@@ -154,7 +154,13 @@ const LearningPreferences = () => {
             Your personalized learning style based on ML analysis
           </p>
         </div>
-        {profile && profile.lastPrediction && profile.dimensions && profile.dataQuality?.totalInteractions > 0 && (
+        {profile && profile.dimensions && (
+          profile.predictionCount > 0 || 
+          profile.dimensions.activeReflective !== 0 || 
+          profile.dimensions.sensingIntuitive !== 0 || 
+          profile.dimensions.visualVerbal !== 0 || 
+          profile.dimensions.sequentialGlobal !== 0
+        ) && (
           <div className="text-right">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border-2 border-blue-200 rounded-lg">
               <SparklesIcon className="w-5 h-5 text-blue-600" />
@@ -167,18 +173,108 @@ const LearningPreferences = () => {
       </div>
 
       {message.text && (
-        <div className={`p-4 rounded-lg flex items-center gap-3 border-2 ${
-          message.type === 'success' 
-            ? 'bg-green-50 border-green-300 text-green-800' 
+        <div className={`p-4 rounded-lg flex items-center gap-3 border-2 ${message.type === 'success'
+            ? 'bg-green-50 border-green-300 text-green-800'
             : 'bg-red-50 border-red-300 text-red-800'
-        }`}>
+          }`}>
           <CheckCircleIcon className="w-6 h-6 flex-shrink-0" />
           <span className="font-medium">{message.text}</span>
         </div>
       )}
 
+      {/* Threshold Progress Section */}
+      {profile && (profile.aggregatedStats || profile.dataQuality) && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <SparklesIcon className="w-6 h-6 text-blue-600" />
+            Classification Progress
+          </h3>
+          
+          {(() => {
+            const totalInteractions = profile.aggregatedStats?.totalInteractionsProcessed || profile.dataQuality?.totalInteractions || 0;
+            const nextThreshold = totalInteractions < 50 ? 50 : totalInteractions < 100 ? 100 : totalInteractions < 200 ? 200 : Math.ceil(totalInteractions / 50) * 50 + 50;
+            const progress = (totalInteractions / nextThreshold) * 100;
+            const stage = totalInteractions < 50 ? 'building' : totalInteractions < 100 ? 'initial' : totalInteractions < 200 ? 'refined' : 'stable';
+            const stageEmoji = totalInteractions < 50 ? '🌱' : totalInteractions < 100 ? '📊' : totalInteractions < 200 ? '⚡' : '✅';
+            
+            return (
+              <>
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-semibold text-gray-700">
+                      {stageEmoji} {totalInteractions} / {nextThreshold} interactions
+                    </span>
+                    <span className="text-sm font-bold text-blue-700">
+                      {nextThreshold - totalInteractions} more needed
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 flex items-center justify-end pr-2"
+                      style={{ width: `${Math.min(progress, 100)}%` }}
+                    >
+                      {progress > 15 && (
+                        <span className="text-xs font-bold text-white">
+                          {Math.round(progress)}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Milestone Badges */}
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { threshold: 50, label: 'Initial', emoji: '📊', stage: 'preliminary' },
+                    { threshold: 100, label: 'Refined', emoji: '⚡', stage: 'moderate' },
+                    { threshold: 200, label: 'Stable', emoji: '✅', stage: 'high' },
+                    { threshold: nextThreshold > 200 ? nextThreshold : 250, label: 'Next', emoji: '🎯', stage: 'update' }
+                  ].map((milestone, idx) => {
+                    const reached = totalInteractions >= milestone.threshold;
+                    const isCurrent = !reached && milestone.threshold === nextThreshold;
+                    
+                    return (
+                      <div
+                        key={idx}
+                        className={`text-center p-3 rounded-lg border-2 transition-all ${
+                          reached
+                            ? 'bg-green-100 border-green-400'
+                            : isCurrent
+                            ? 'bg-blue-100 border-blue-400 ring-2 ring-blue-300'
+                            : 'bg-gray-100 border-gray-300'
+                        }`}
+                      >
+                        <div className="text-2xl mb-1">{reached ? '✓' : milestone.emoji}</div>
+                        <div className="text-xs font-bold text-gray-900">{milestone.threshold}</div>
+                        <div className="text-xs text-gray-600">{milestone.label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
+                  <p className="text-sm text-gray-700">
+                    <strong>Current Stage:</strong> {stage.charAt(0).toUpperCase() + stage.slice(1)}
+                    {stage === 'building' && ' - Keep interacting to reach your first classification at 50 interactions!'}
+                    {stage === 'initial' && ' - Your learning style is emerging. Reach 100 for refined classification.'}
+                    {stage === 'refined' && ' - Almost there! 200 interactions provides research-validated accuracy.'}
+                    {stage === 'stable' && ' - Your learning style is confirmed with high confidence!'}
+                  </p>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Learning Style Dimensions */}
-      {profile && profile.lastPrediction && profile.dataQuality?.totalInteractions > 0 ? (
+      {profile && profile.dimensions && (
+        profile.predictionCount > 0 || 
+        profile.dimensions.activeReflective !== 0 || 
+        profile.dimensions.sensingIntuitive !== 0 || 
+        profile.dimensions.visualVerbal !== 0 || 
+        profile.dimensions.sequentialGlobal !== 0
+      ) ? (
         <div className="space-y-6">
           <div className="flex items-center gap-2 pb-4 border-b-2 border-gray-200">
             <ChartBarIcon className="w-6 h-6 text-gray-700" />
@@ -201,7 +297,7 @@ const LearningPreferences = () => {
                 {getDimensionLabel(profile.dimensions.activeReflective)}
               </span>
             </div>
-            
+
             <div className="space-y-3">
               <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
                 <span>Active</span>
@@ -233,7 +329,7 @@ const LearningPreferences = () => {
                 {getDimensionLabel(profile.dimensions.sensingIntuitive)}
               </span>
             </div>
-            
+
             <div className="space-y-3">
               <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
                 <span>Sensing</span>
@@ -265,7 +361,7 @@ const LearningPreferences = () => {
                 {getDimensionLabel(profile.dimensions.visualVerbal)}
               </span>
             </div>
-            
+
             <div className="space-y-3">
               <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
                 <span>Visual</span>
@@ -297,7 +393,7 @@ const LearningPreferences = () => {
                 {getDimensionLabel(profile.dimensions.sequentialGlobal)}
               </span>
             </div>
-            
+
             <div className="space-y-3">
               <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
                 <span>Sequential</span>
@@ -331,7 +427,7 @@ const LearningPreferences = () => {
                       {mode.confidence && (
                         <div className="flex items-center gap-2 mt-1">
                           <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
+                            <div
                               className="h-full bg-indigo-600 rounded-full transition-all duration-500"
                               style={{ width: `${mode.confidence * 100}%` }}
                             ></div>
@@ -350,32 +446,29 @@ const LearningPreferences = () => {
 
           {/* Confidence Level Banner */}
           {profile.dataQuality && (
-            <div className={`border-2 rounded-xl p-6 ${
-              profile.dataQuality.confidenceLevel === 'high' ? 'bg-green-50 border-green-300' :
-              profile.dataQuality.confidenceLevel === 'medium' ? 'bg-yellow-50 border-yellow-300' :
-              profile.dataQuality.confidenceLevel === 'low-medium' ? 'bg-orange-50 border-orange-300' :
-              'bg-red-50 border-red-300'
-            }`}>
+            <div className={`border-2 rounded-xl p-6 ${profile.dataQuality.confidenceLevel === 'high' ? 'bg-green-50 border-green-300' :
+                profile.dataQuality.confidenceLevel === 'medium' ? 'bg-yellow-50 border-yellow-300' :
+                  profile.dataQuality.confidenceLevel === 'low-medium' ? 'bg-orange-50 border-orange-300' :
+                    'bg-red-50 border-red-300'
+              }`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <SparklesIcon className={`w-6 h-6 ${
-                    profile.dataQuality.confidenceLevel === 'high' ? 'text-green-600' :
-                    profile.dataQuality.confidenceLevel === 'medium' ? 'text-yellow-600' :
-                    profile.dataQuality.confidenceLevel === 'low-medium' ? 'text-orange-600' :
-                    'text-red-600'
-                  }`} />
+                  <SparklesIcon className={`w-6 h-6 ${profile.dataQuality.confidenceLevel === 'high' ? 'text-green-600' :
+                      profile.dataQuality.confidenceLevel === 'medium' ? 'text-yellow-600' :
+                        profile.dataQuality.confidenceLevel === 'low-medium' ? 'text-orange-600' :
+                          'text-red-600'
+                    }`} />
                   Classification Confidence
                 </h3>
-                <span className={`px-4 py-2 rounded-full text-sm font-bold border-2 ${
-                  (profile.mlConfidenceScore || 0) >= 0.80 ? 'bg-green-100 text-green-800 border-green-400' :
-                  (profile.mlConfidenceScore || 0) >= 0.65 ? 'bg-yellow-100 text-yellow-800 border-yellow-400' :
-                  (profile.mlConfidenceScore || 0) >= 0.50 ? 'bg-orange-100 text-orange-800 border-orange-400' :
-                  'bg-red-100 text-red-800 border-red-400'
-                }`}>
+                <span className={`px-4 py-2 rounded-full text-sm font-bold border-2 ${(profile.mlConfidenceScore || 0) >= 0.80 ? 'bg-green-100 text-green-800 border-green-400' :
+                    (profile.mlConfidenceScore || 0) >= 0.65 ? 'bg-yellow-100 text-yellow-800 border-yellow-400' :
+                      (profile.mlConfidenceScore || 0) >= 0.50 ? 'bg-orange-100 text-orange-800 border-orange-400' :
+                        'bg-red-100 text-red-800 border-red-400'
+                  }`}>
                   {Math.round((profile.mlConfidenceScore || 0) * 100)}% ML Confidence
                 </span>
               </div>
-              
+
               {/* Confidence Progress Bar */}
               <div className="mb-4">
                 <div className="flex justify-between text-xs text-gray-600 mb-2">
@@ -385,37 +478,33 @@ const LearningPreferences = () => {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                   <div
-                    className={`h-full transition-all duration-500 ${
-                      (profile.mlConfidenceScore || 0) >= 0.80 ? 'bg-green-600' :
-                      (profile.mlConfidenceScore || 0) >= 0.65 ? 'bg-yellow-500' :
-                      (profile.mlConfidenceScore || 0) >= 0.50 ? 'bg-orange-500' :
-                      'bg-red-500'
-                    }`}
+                    className={`h-full transition-all duration-500 ${(profile.mlConfidenceScore || 0) >= 0.80 ? 'bg-green-600' :
+                        (profile.mlConfidenceScore || 0) >= 0.65 ? 'bg-yellow-500' :
+                          (profile.mlConfidenceScore || 0) >= 0.50 ? 'bg-orange-500' :
+                            'bg-red-500'
+                      }`}
                     style={{ width: `${Math.round((profile.mlConfidenceScore || 0) * 100)}%` }}
                   ></div>
                 </div>
               </div>
 
-              <p className={`text-sm ${
-                (profile.mlConfidenceScore || 0) >= 0.80 ? 'text-green-800' :
-                (profile.mlConfidenceScore || 0) >= 0.65 ? 'text-yellow-800' :
-                (profile.mlConfidenceScore || 0) >= 0.50 ? 'text-orange-800' :
-                'text-red-800'
-              }`}>
+              <p className={`text-sm ${(profile.mlConfidenceScore || 0) >= 0.80 ? 'text-green-800' :
+                  (profile.mlConfidenceScore || 0) >= 0.65 ? 'text-yellow-800' :
+                    (profile.mlConfidenceScore || 0) >= 0.50 ? 'text-orange-800' :
+                      'text-red-800'
+                }`}>
                 <strong>
                   {(profile.mlConfidenceScore || 0) >= 0.80 && '✓ High ML Confidence - '}
                   {(profile.mlConfidenceScore || 0) >= 0.65 && (profile.mlConfidenceScore || 0) < 0.80 && '⚡ Good ML Confidence - '}
                   {(profile.mlConfidenceScore || 0) >= 0.50 && (profile.mlConfidenceScore || 0) < 0.65 && '📊 Moderate ML Confidence - '}
                   {(profile.mlConfidenceScore || 0) < 0.50 && '🌱 Low ML Confidence - '}
                 </strong>
-                The ML model is {Math.round((profile.mlConfidenceScore || 0) * 100)}% confident in this classification based on {profile.dataQuality.interactionCount || profile.dataQuality.totalInteractions || 0} interactions. 
-                {profile.dataQuality.confidenceLevel !== 'high' && ` Keep learning to reach ${
-                  profile.dataQuality.confidenceLevel === 'medium' ? '30' :
-                  profile.dataQuality.confidenceLevel === 'low-medium' ? '15' : '5'
-                } interactions for ${
-                  profile.dataQuality.confidenceLevel === 'medium' ? 'high' :
-                  profile.dataQuality.confidenceLevel === 'low-medium' ? 'medium' : 'low-medium'
-                } confidence.`}
+                The ML model is {Math.round((profile.mlConfidenceScore || 0) * 100)}% confident in this classification based on {profile.dataQuality.interactionCount || profile.dataQuality.totalInteractions || 0} interactions.
+                {profile.dataQuality.confidenceLevel !== 'high' && ` Keep learning to reach ${profile.dataQuality.confidenceLevel === 'medium' ? '30' :
+                    profile.dataQuality.confidenceLevel === 'low-medium' ? '15' : '5'
+                  } interactions for ${profile.dataQuality.confidenceLevel === 'medium' ? 'high' :
+                    profile.dataQuality.confidenceLevel === 'low-medium' ? 'medium' : 'low-medium'
+                  } confidence.`}
                 {profile.dataQuality.confidenceLevel === 'high' && ' Your profile is highly accurate!'}
               </p>
             </div>
@@ -438,7 +527,7 @@ const LearningPreferences = () => {
                 <p className="text-2xl font-bold text-gray-900 mb-1">📅</p>
                 <p className="text-xs text-gray-600">Last Updated</p>
                 <p className="text-sm font-semibold text-gray-900 mt-1">
-                  {profile.lastPrediction 
+                  {profile.lastPrediction
                     ? new Date(profile.lastPrediction).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                     : 'Never'}
                 </p>
@@ -469,10 +558,10 @@ const LearningPreferences = () => {
             Your learning style hasn't been classified yet
           </p>
           <p className="text-gray-600 mb-1">
-            Use the learning modes to build your profile!
+            Reach 50 interactions to unlock ML classification!
           </p>
           <p className="text-sm text-gray-500">
-            Start using learning modes to build your profile with immediate classification!
+            Use learning modes to build your profile. Classification happens automatically at 50 interactions.
           </p>
         </div>
       )}
@@ -502,7 +591,7 @@ const LearningPreferences = () => {
               </div>
               <h3 className="text-xl font-bold text-gray-900">Reset Learning Profile?</h3>
             </div>
-            
+
             <div className="mb-6">
               <p className="text-gray-700 mb-3">
                 Are you sure you want to reset your learning profile? This action will:

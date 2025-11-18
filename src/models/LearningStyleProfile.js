@@ -154,6 +154,91 @@ const learningStyleProfileSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
+  },
+  
+  // Incremental Aggregated Stats (for scalability)
+  // Maintains running totals to avoid re-fetching all historical data
+  aggregatedStats: {
+    modeUsage: {
+      aiNarrator: {
+        count: { type: Number, default: 0 },
+        totalTime: { type: Number, default: 0 }
+      },
+      visualLearning: {
+        count: { type: Number, default: 0 },
+        totalTime: { type: Number, default: 0 }
+      },
+      sequentialLearning: {
+        count: { type: Number, default: 0 },
+        totalTime: { type: Number, default: 0 }
+      },
+      globalLearning: {
+        count: { type: Number, default: 0 },
+        totalTime: { type: Number, default: 0 }
+      },
+      sensingLearning: {
+        count: { type: Number, default: 0 },
+        totalTime: { type: Number, default: 0 }
+      },
+      intuitiveLearning: {
+        count: { type: Number, default: 0 },
+        totalTime: { type: Number, default: 0 }
+      },
+      activeLearning: {
+        count: { type: Number, default: 0 },
+        totalTime: { type: Number, default: 0 }
+      },
+      reflectiveLearning: {
+        count: { type: Number, default: 0 },
+        totalTime: { type: Number, default: 0 }
+      }
+    },
+    aiAssistantUsage: {
+      askMode: {
+        count: { type: Number, default: 0 },
+        totalTime: { type: Number, default: 0 }
+      },
+      researchMode: {
+        count: { type: Number, default: 0 },
+        totalTime: { type: Number, default: 0 }
+      },
+      textToDocsMode: {
+        count: { type: Number, default: 0 },
+        totalTime: { type: Number, default: 0 }
+      },
+      totalInteractions: { type: Number, default: 0 },
+      totalPromptLength: { type: Number, default: 0 }
+    },
+    activityEngagement: {
+      quizzesCompleted: { type: Number, default: 0 },
+      practiceQuestionsAttempted: { type: Number, default: 0 },
+      discussionParticipation: { type: Number, default: 0 },
+      reflectionJournalEntries: { type: Number, default: 0 },
+      visualDiagramsViewed: { type: Number, default: 0 },
+      handsOnLabsCompleted: { type: Number, default: 0 },
+      conceptExplorationsCount: { type: Number, default: 0 },
+      sequentialStepsCompleted: { type: Number, default: 0 }
+    },
+    lastAggregatedDate: {
+      type: Date,
+      default: Date.now
+    },
+    lastProcessedBehaviorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'LearningBehavior'
+    },
+    totalInteractionsProcessed: {
+      type: Number,
+      default: 0
+    }
+  },
+  
+  // ML Confidence Score (real ML model confidence, not rule-based)
+  mlConfidenceScore: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 1
   }
 }, {
   timestamps: true
@@ -207,6 +292,37 @@ learningStyleProfileSchema.statics.getOrCreate = async function(userId) {
   }
   
   return profile;
+};
+
+// Instance method to get next classification threshold
+learningStyleProfileSchema.methods.getNextThreshold = function() {
+  const current = this.aggregatedStats?.totalInteractionsProcessed || 0;
+  
+  if (current < 50) return 50;
+  if (current < 100) return 100;
+  if (current < 200) return 200;
+  return Math.ceil(current / 50) * 50 + 50; // Every 50 after 200
+};
+
+// Instance method to check if should classify at current interaction count
+learningStyleProfileSchema.methods.shouldClassifyNow = function() {
+  const total = this.aggregatedStats?.totalInteractionsProcessed || 0;
+  
+  // Classify at milestones: 50, 100, 200, then every 50
+  if (total === 50 || total === 100 || total === 200) return true;
+  if (total > 200 && total % 50 === 0) return true;
+  
+  return false;
+};
+
+// Instance method to get confidence level based on interactions
+learningStyleProfileSchema.methods.getConfidenceLevel = function() {
+  const total = this.aggregatedStats?.totalInteractionsProcessed || 0;
+  
+  if (total < 50) return { level: 'insufficient', percentage: Math.min(100, (total / 50) * 100), stage: 'building' };
+  if (total < 100) return { level: 'preliminary', percentage: 65, stage: 'initial' };
+  if (total < 200) return { level: 'moderate', percentage: 78, stage: 'refined' };
+  return { level: 'high', percentage: 88, stage: 'stable' };
 };
 
 const LearningStyleProfile = mongoose.models.LearningStyleProfile || mongoose.model('LearningStyleProfile', learningStyleProfileSchema);

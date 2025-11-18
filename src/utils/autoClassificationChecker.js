@@ -45,6 +45,13 @@ export async function checkAndTriggerClassification() {
       console.log('📊 Total interactions:', statusData.data.totalInteractions);
       console.log('🎚️ Confidence:', statusData.data.confidenceLevel, `(${statusData.data.confidencePercentage}%)`);
       
+      // Check if minimum threshold met
+      const MINIMUM_INTERACTIONS = 50;
+      if (statusData.data.totalInteractions < MINIMUM_INTERACTIONS) {
+        console.log(`⏸️ Not enough interactions yet: ${statusData.data.totalInteractions}/${MINIMUM_INTERACTIONS}`);
+        return;
+      }
+      
       // Check if already classified
       const profileResponse = await fetch('/api/learning-style/profile');
       if (profileResponse.ok) {
@@ -63,7 +70,7 @@ export async function checkAndTriggerClassification() {
         }
       }
       
-      // Trigger classification (even with 1 interaction)
+      // Trigger classification (threshold met)
       console.log('🚀 Auto-triggering classification...');
       const classifyResponse = await fetch('/api/learning-style/classify', {
         method: 'POST'
