@@ -182,6 +182,19 @@ export default function FloatingAIAssistant() {
     }
   }, [buttonPosition.x, buttonPosition.y, isOpen]);
 
+  // Keyboard shortcut - Esc to close
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        e.preventDefault();
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   return (
     <>
       {/* Floating AI Assistant Panel - Follows button position */}
