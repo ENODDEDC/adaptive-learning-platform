@@ -280,6 +280,20 @@ export default function UnifiedFloatingAssistant() {
     }
   }, [buttonPosition.x, buttonPosition.y, selectedTool]);
 
+  // Keyboard shortcut - Esc to close
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && selectedTool) {
+        e.preventDefault();
+        setSelectedTool(null);
+        setIsExpanded(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedTool]);
+
   return (
     <>
       {/* AI Assistant Panel */}
@@ -494,10 +508,22 @@ export default function UnifiedFloatingAssistant() {
             isDragging ? '' : 'transition-all duration-500'
           }`}
         >
-        {/* Expanded Options */}
-        <div className={`flex flex-col gap-3 mb-3 transition-all duration-300 ${
-          isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-        }`}>
+        {/* Expanded Options - Positioned to the side based on screen position */}
+        <div 
+          className={`absolute flex flex-col gap-3 mb-3 transition-all duration-300 ${
+            isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+          }`}
+          style={{
+            bottom: '72px', // 56px (button height) + 16px gap
+            // If button is on right side, align buttons to the left of it
+            // If button is on left side, align buttons to the right of it
+            ...(buttonPosition.x !== null && buttonPosition.x > window.innerWidth / 2 ? {
+              right: '0', // Align to right edge of button
+            } : {
+              left: '0', // Align to left edge of button
+            })
+          }}
+        >
           <button
             onClick={() => {
               console.log('AI Assistant clicked');

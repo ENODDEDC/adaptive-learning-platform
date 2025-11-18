@@ -15,6 +15,7 @@ import UnifiedFloatingAssistant from '@/components/UnifiedFloatingAssistant';
 import { useLayout } from '../context/LayoutContext';
 import featureFlags from '../utils/featureFlags';
 import { api } from '../services/apiService';
+import '../utils/clearOldNotes'; // Auto-clear old localStorage notes
 
 const Layout = ({ children }) => {
   const pathname = usePathname();

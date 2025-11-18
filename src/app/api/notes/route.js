@@ -1,136 +1,114 @@
 import { NextResponse } from 'next/server';
-import connectMongoDB from '@/config/mongoConfig';
+import mongoose from 'mongoose';
+import dbConnect from '@/lib/mongodb';
 import Note from '@/models/Note';
-import { verifyToken } from '@/utils/auth';
+import { verifyToken } from '@/lib/auth';
 
-// GET /api/notes - Fetch notes for specific content
+// GET - Fetch all notes for a user (global or filtered by course/content)
 export async function GET(request) {
   try {
-    const payload = await verifyToken();
-    if (!payload) {
+    await dbConnect();
+
+    const token = request.cookies.get('token')?.value;
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectMongoDB();
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
 
     const { searchParams } = new URL(request.url);
-    const contentId = searchParams.get('contentId');
     const courseId = searchParams.get('courseId');
-    const includeShared = searchParams.get('includeShared') === 'true';
-    const excludeContentId = searchParams.get('excludeContentId');
+    const contentId = searchParams.get('contentId');
 
-    if (!courseId) {
-      return NextResponse.json({ error: 'courseId is required' }, { status: 400 });
+    // Build query - always filter by userId
+    const query = {
+      userId: decoded.userId,
+      isArchived: false
+    };
+
+    // If courseId is provided and not 'general', filter by it
+    if (courseId && courseId !== 'general') {
+      query.courseId = courseId;
     }
 
-    let response = { success: true };
-
-    // Fetch user's own notes for specific content
-    if (contentId) {
-      let query = {
-        contentId,
-        userId: payload.userId,
-        isArchived: false
-      };
-
-      if (courseId) {
-        query.courseId = courseId;
-      }
-
-      const notes = await Note.find(query).sort({ createdAt: -1 });
-      response.notes = notes;
+    // If contentId is provided and not 'all', filter by it
+    if (contentId && contentId !== 'all') {
+      query.contentId = contentId;
     }
 
-    // Fetch shared notes from other files in the course
-    if (includeShared && courseId) {
-      let sharedQuery = {
-        courseId,
-        isShared: true,
-        visibility: { $in: ['course', 'public'] },
-        isArchived: false
-      };
+    const notes = await Note.find(query).sort({ createdAt: -1 });
 
-      // Exclude notes from current content if specified
-      if (excludeContentId) {
-        sharedQuery.contentId = { $ne: excludeContentId };
-      }
-
-      const sharedNotes = await Note.find(sharedQuery)
-        .populate('userId', 'name email')
-        .populate('lastEditedBy', 'name email')
-        .sort({ createdAt: -1 });
-
-      response.sharedNotes = sharedNotes;
-    }
-
-    return NextResponse.json(response);
-
+    return NextResponse.json({ notes }, { status: 200 });
   } catch (error) {
     console.error('Error fetching notes:', error);
-    return NextResponse.json({ 
-      error: 'Failed to fetch notes',
-      details: error.message 
-    }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch notes' },
+      { status: 500 }
+    );
   }
 }
 
-// POST /api/notes - Create a new note
+// POST - Create a new note
 export async function POST(request) {
   try {
-    const payload = await verifyToken();
-    if (!payload) {
+    await dbConnect();
+
+    const token = request.cookies.get('token')?.value;
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectMongoDB();
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
 
     const body = await request.json();
-    const { contentId, courseId, content, position, type = 'floating', style, category, tags, priority, contextualText, contextualId, size } = body;
+    const { content, position, size, courseId, contentId, type = 'floating' } = body;
+
+    console.log('Creating note with data:', { content, position, size, courseId, contentId, type, userId: decoded.userId });
 
     // Validate required fields
-    if (!contentId || !content || !position) {
-      return NextResponse.json({
-        error: 'contentId, content, and position are required'
-      }, { status: 400 });
+    if (!position) {
+      return NextResponse.json(
+        { error: 'Missing position field' },
+        { status: 400 }
+      );
     }
 
-    // Validate position
-    if (typeof position.x !== 'number' || typeof position.y !== 'number') {
-      return NextResponse.json({ 
-        error: 'Position x and y must be numbers' 
-      }, { status: 400 });
+    // Prepare courseId - convert to ObjectId or null
+    let parsedCourseId = null;
+    if (courseId && courseId !== 'general') {
+      try {
+        parsedCourseId = new mongoose.Types.ObjectId(courseId);
+      } catch (e) {
+        console.log('Invalid courseId, setting to null:', courseId);
+        parsedCourseId = null;
+      }
     }
 
-    const noteData = {
-      contentId,
-      courseId,
-      userId: payload.userId,
-      content,
+    const note = await Note.create({
+      userId: decoded.userId,
+      courseId: parsedCourseId,
+      contentId: contentId || 'global',
+      content: content || ' ',
       position,
-      size,
+      size: size || { width: 280, height: 200 },
       type,
-      contextualText,
-      contextualId,
-      ...(style && { style }),
-      ...(category && { category }),
-      ...(tags && { tags }),
-      ...(priority && { priority })
-    };
+      lastEditedBy: decoded.userId
+    });
 
-    const note = new Note(noteData);
-    await note.save();
-
-    return NextResponse.json({
-      success: true,
-      note: note.toJSON(),
-      message: 'Note created successfully'
-    }, { status: 201 });
-
+    console.log('Note created successfully:', note);
+    return NextResponse.json({ note }, { status: 201 });
   } catch (error) {
     console.error('Error creating note:', error);
-    return NextResponse.json({ 
-      error: 'Failed to create note',
-      details: error.message 
-    }, { status: 500 });
+    console.error('Error details:', error.message, error.stack);
+    return NextResponse.json(
+      { error: 'Failed to create note', details: error.message },
+      { status: 500 }
+    );
   }
 }
