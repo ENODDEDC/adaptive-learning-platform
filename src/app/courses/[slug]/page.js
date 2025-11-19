@@ -8,6 +8,12 @@ import ClassworkTab from '@/components/ClassworkTab';
 import ContentViewer from '@/components/ContentViewer.client';
 import InviteModal from '@/components/InviteModal';
 import SidePanelDocumentViewer from '@/components/SidePanelDocumentViewer';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import { 
+  ArchiveBoxIcon, 
+  ArrowRightOnRectangleIcon, 
+  TrashIcon 
+} from '@heroicons/react/24/outline';
 
 const CourseDetailPage = ({
   params,
@@ -79,6 +85,47 @@ const CourseDetailPage = ({
   // Invite modal states
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [inviteRole, setInviteRole] = useState(''); // 'student' or 'coTeacher'
+
+  // Confirmation modal state
+  const [confirmationModal, setConfirmationModal] = useState({
+    isOpen: false,
+    type: null,
+    data: null
+  });
+
+  // Confirmation modal configurations
+  const CONFIRMATION_CONFIGS = {
+    'leave-course': {
+      title: 'Leave Course',
+      message: 'Are you sure you want to leave this course?',
+      confirmText: 'Leave Course',
+      variant: 'warning',
+      icon: <ArrowRightOnRectangleIcon className="w-6 h-6" />
+    },
+    'delete-course': {
+      title: 'Delete Course',
+      message: 'Are you sure you want to archive this course? Archived courses can be restored by administrators and will be hidden from students.',
+      confirmText: 'Delete Course',
+      variant: 'danger',
+      icon: <ArchiveBoxIcon className="w-6 h-6" />
+    },
+    'delete-classwork': {
+      title: 'Delete Classwork',
+      message: 'Are you sure you want to delete this classwork? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+      icon: <TrashIcon className="w-6 h-6" />
+    }
+  };
+
+  // Confirmation modal helpers
+  const openConfirmation = useCallback((type, data = null) => {
+    setConfirmationModal({ isOpen: true, type, data });
+  }, []);
+
+  const closeConfirmation = useCallback(() => {
+    setConfirmationModal({ isOpen: false, type: null, data: null });
+  }, []);
 
   const fetchCourseDetails = useCallback(async () => {
     console.log('🔍 DEBUG: fetchCourseDetails function called');
@@ -500,11 +547,11 @@ const CourseDetailPage = ({
     }
   }, [courseDetails, fetchPeople]);
 
-  const handleDeleteClasswork = useCallback(async (classworkId) => {
-    if (!window.confirm('Are you sure you want to delete this classwork?')) {
-      return;
-    }
+  const handleDeleteClasswork = useCallback((classworkId) => {
+    openConfirmation('delete-classwork', { classworkId });
+  }, [openConfirmation]);
 
+  const executeDeleteClasswork = useCallback(async (classworkId) => {
     try {
       const res = await fetch(`/api/classwork/${classworkId}`, {
         method: 'DELETE',
@@ -524,11 +571,11 @@ const CourseDetailPage = ({
     }
   }, [fetchAssignments, fetchStreamItems]);
 
-  const handleArchiveCourse = useCallback(async () => {
-    if (!window.confirm('Are you sure you want to archive this course? Archived courses can be restored by administrators and will be hidden from students.')) {
-      return;
-    }
+  const handleArchiveCourse = useCallback(() => {
+    openConfirmation('delete-course');
+  }, [openConfirmation]);
 
+  const executeArchiveCourse = useCallback(async () => {
     try {
       const res = await fetch(`/api/courses/${slug}`, {
         method: 'DELETE',
@@ -547,11 +594,11 @@ const CourseDetailPage = ({
     }
   }, [slug]);
 
-  const handleLeaveCourse = useCallback(async () => {
-    if (!window.confirm('Are you sure you want to leave this course?')) {
-      return;
-    }
+  const handleLeaveCourse = useCallback(() => {
+    openConfirmation('leave-course');
+  }, [openConfirmation]);
 
+  const executeLeaveCourse = useCallback(async () => {
     if (!user) {
       setError('User not authenticated');
       return;
@@ -579,6 +626,26 @@ const CourseDetailPage = ({
     }
   }, [slug, user]);
 
+  // Handle confirmation action - must be defined after execute functions
+  const handleConfirmAction = useCallback(async () => {
+    const { type, data } = confirmationModal;
+    
+    closeConfirmation();
+    
+    switch (type) {
+      case 'leave-course':
+        await executeLeaveCourse();
+        break;
+      case 'delete-course':
+        await executeArchiveCourse();
+        break;
+      case 'delete-classwork':
+        await executeDeleteClasswork(data.classworkId);
+        break;
+      default:
+        console.warn('Unknown confirmation type:', type);
+    }
+  }, [confirmationModal, executeLeaveCourse, executeArchiveCourse, executeDeleteClasswork, closeConfirmation]);
 
   // Callback function to refresh both assignments and stream items when new classwork is created
   const handleClassworkCreated = useCallback(async () => {
@@ -599,7 +666,29 @@ const CourseDetailPage = ({
   };
 
   if (loading) {
-    return <div className="flex-1 min-h-screen p-8 text-center bg-gray-100">Loading course details...</div>;
+    return (
+      <div className="flex items-center justify-center flex-1 min-h-screen p-8 bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+        <div className="text-center">
+          {/* Animated spinner with gradient */}
+          <div className="relative w-20 h-20 mx-auto mb-6">
+            <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-transparent rounded-full border-t-blue-600 border-r-blue-500 animate-spin"></div>
+            <div className="absolute inset-2 border-4 border-transparent rounded-full border-t-indigo-400 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
+          </div>
+          
+          {/* Loading text with animation */}
+          <h2 className="mb-2 text-xl font-semibold text-gray-800 animate-pulse">Loading Course Details</h2>
+          <p className="text-sm text-gray-600">Please wait while we prepare your content...</p>
+          
+          {/* Animated dots */}
+          <div className="flex justify-center gap-2 mt-4">
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
@@ -1661,6 +1750,21 @@ const CourseDetailPage = ({
         }}
         document={sidePanelDocument}
       />
+
+      {/* Confirmation Modal */}
+      {confirmationModal.isOpen && CONFIRMATION_CONFIGS[confirmationModal.type] && (
+        <ConfirmationModal
+          isOpen={confirmationModal.isOpen}
+          onClose={closeConfirmation}
+          onConfirm={handleConfirmAction}
+          title={CONFIRMATION_CONFIGS[confirmationModal.type].title}
+          message={CONFIRMATION_CONFIGS[confirmationModal.type].message}
+          confirmText={CONFIRMATION_CONFIGS[confirmationModal.type].confirmText}
+          cancelText="Cancel"
+          variant={CONFIRMATION_CONFIGS[confirmationModal.type].variant}
+          icon={CONFIRMATION_CONFIGS[confirmationModal.type].icon}
+        />
+      )}
 
     </>
   );

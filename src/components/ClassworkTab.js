@@ -11,6 +11,8 @@ import ContentViewer from '@/components/ContentViewer.client';
 import AttachmentPreview from '@/components/AttachmentPreview';
 import EnhancedDocxThumbnail from '@/components/EnhancedDocxThumbnail';
 import thumbnailCache from '@/utils/thumbnailGenerationCache';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import { TrashIcon } from '@heroicons/react/24/outline';
 
 // Completely Isolated Context Menu System (No React State)
 let globalContextMenu = null;
@@ -804,6 +806,12 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
 
   // Toast notification system
   const [toasts, setToasts] = useState([]);
+
+  // Confirmation modal state
+  const [confirmationModal, setConfirmationModal] = useState({
+    isOpen: false,
+    classworkId: null
+  });
 
   // Toast notification functions
   const showToast = (message, type = 'success', duration = 3000) => {
@@ -2274,11 +2282,11 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
     }
   }, [courseDetails, fetchAssignments, fetchForms, sortBy]);
 
-  const handleDeleteClasswork = useCallback(async (classworkId) => {
-    if (!window.confirm('Are you sure you want to delete this classwork? This action cannot be undone.')) {
-      return;
-    }
+  const handleDeleteClasswork = useCallback((classworkId) => {
+    setConfirmationModal({ isOpen: true, classworkId });
+  }, []);
 
+  const executeDeleteClasswork = useCallback(async (classworkId) => {
     try {
       showToast('Deleting classwork...', 'info', 2000);
 
@@ -3368,6 +3376,22 @@ const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkC
           </div>
         ))}
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        onClose={() => setConfirmationModal({ isOpen: false, classworkId: null })}
+        onConfirm={() => {
+          executeDeleteClasswork(confirmationModal.classworkId);
+          setConfirmationModal({ isOpen: false, classworkId: null });
+        }}
+        title="Delete Classwork"
+        message="Are you sure you want to delete this classwork? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        icon={<TrashIcon className="w-6 h-6" />}
+      />
     </div>
   );
 };
