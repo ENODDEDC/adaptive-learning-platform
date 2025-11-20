@@ -212,6 +212,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     <React.Fragment>
       <aside
         className={`bg-white/95 backdrop-blur-md border-r border-white/30 fixed top-0 left-0 h-screen z-30 flex flex-col shadow-2xl transition-all duration-500 ease-in-out ${isCollapsed ? 'w-20 items-center rounded-r-2xl' : 'w-64 rounded-r-3xl'}`}
+        style={{ boxShadow: '8px 0 16px rgba(0, 0, 0, 0.1)' }}
       >
         {/* Header Section */}
         <div className={`${isCollapsed ? 'p-4' : 'p-6'} border-b border-gray-100 flex-shrink-0`}>

@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import AITutorModal from './AITutorModal';
 import CleanPDFViewer from './CleanPDFViewer';
-import VisualContentModal from './VisualContentModal';
+import VisualDocxOverlay from './VisualDocxOverlay';
 import SequentialLearning from './SequentialLearning';
 import GlobalLearning from './GlobalLearning';
 import SensingLearning from './SensingLearning';
@@ -1256,12 +1256,14 @@ Reflective Learning works best with instructional content, lessons, or study mat
         docxContent={pdfContent}
       />
 
-      {/* Visual Content Modal */}
-      <VisualContentModal
-        isOpen={showVisualContent}
+      {/* Visual Content Overlay */}
+      <VisualDocxOverlay
+        isActive={showVisualContent}
         onClose={() => setShowVisualContent(false)}
         docxContent={pdfContent}
         fileName={fileName}
+        onVisualTypeChange={(type) => console.log('Visual type changed:', type)}
+        activeVisualType="diagram"
       />
 
       {/* Sequential Learning Modal */}

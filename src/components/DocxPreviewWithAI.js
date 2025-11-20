@@ -1321,7 +1321,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                       <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
                     </svg>
                   )}
-                  <span className="hidden sm:inline">Sequential</span>
+                  <span className="hidden sm:inline">Step-by-Step</span>
 
                   {/* Recommended Badge */}
                   {isRecommended('Sequential Learning') && (
@@ -1372,7 +1372,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
                     </svg>
                   )}
-                  <span className="hidden sm:inline">Global</span>
+                  <span className="hidden sm:inline">Big Picture</span>
 
                   {/* Recommended Badge */}
                   {isRecommended('Global Learning') && (
@@ -1423,7 +1423,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                       <path fillRule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414v3.758a1 1 0 01-.293.707l-4 4C.817 14.769 2.156 18 4.828 18h10.343c2.673 0 4.012-3.231 2.122-5.121l-4-4A1 1 0 0113 8.172V4.414l.707-.707A1 1 0 0013 2H7zm2 6.172V4h2v4.172a3 3 0 00.879 2.12l1.027 1.028a4 4 0 00-2.171.102l-.47.156a4 4 0 01-2.53 0l-.563-.187a1.993 1.993 0 00-.114-.035l1.063-1.063A3 3 0 009 8.172z" clipRule="evenodd" />
                     </svg>
                   )}
-                  <span className="hidden sm:inline">Lab</span>
+                  <span className="hidden sm:inline">Hands-On</span>
 
                   {/* Recommended Badge */}
                   {isRecommended('Hands-On Lab') && (
@@ -1472,7 +1472,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                   ) : (
                     <EyeIcon className="w-4 h-4" />
                   )}
-                  <span className="hidden sm:inline">Concepts</span>
+                  <span className="hidden sm:inline">Theory</span>
 
                   {/* Recommended Badge */}
                   {isRecommended('Concept Constellation') && (
@@ -1523,7 +1523,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   )}
-                  <span className="hidden sm:inline">Active</span>
+                  <span className="hidden sm:inline">Practice</span>
 
                   {/* Recommended Badge */}
                   {isRecommended('Active Learning Hub') && (
@@ -1572,7 +1572,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                   ) : (
                     <EyeIcon className="w-4 h-4" />
                   )}
-                  <span className="hidden sm:inline">Reflective</span>
+                  <span className="hidden sm:inline">Reflect</span>
 
                   {/* Recommended Badge */}
                   {isRecommended('Reflective Learning') && (
