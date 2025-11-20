@@ -346,7 +346,7 @@ const AnalyticsSettings = () => {
               (stats.mlConfidenceScore || 0) >= 0.50 ? 'bg-orange-100 text-orange-800 border-orange-400' :
               'bg-red-100 text-red-800 border-red-400'
             }`}>
-              {Math.round((stats.mlConfidenceScore || 0) * 100)}%
+              {((stats.mlConfidenceScore || 0) * 100).toFixed(1)}%
             </span>
           </div>
 
@@ -366,10 +366,10 @@ const AnalyticsSettings = () => {
                   (stats.mlConfidenceScore || 0) >= 0.50 ? 'bg-gradient-to-r from-orange-400 to-orange-600' :
                   'bg-gradient-to-r from-red-400 to-red-600'
                 }`}
-                style={{ width: `${Math.round((stats.mlConfidenceScore || 0) * 100)}%` }}
+                style={{ width: `${((stats.mlConfidenceScore || 0) * 100).toFixed(1)}%` }}
               >
                 <span className="text-xs font-bold text-white">
-                  {Math.round((stats.mlConfidenceScore || 0) * 100)}%
+                  {((stats.mlConfidenceScore || 0) * 100).toFixed(1)}%
                 </span>
               </div>
             </div>

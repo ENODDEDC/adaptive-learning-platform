@@ -466,7 +466,7 @@ const LearningPreferences = () => {
                       (profile.mlConfidenceScore || 0) >= 0.50 ? 'bg-orange-100 text-orange-800 border-orange-400' :
                         'bg-red-100 text-red-800 border-red-400'
                   }`}>
-                  {Math.round((profile.mlConfidenceScore || 0) * 100)}% ML Confidence
+                  {((profile.mlConfidenceScore || 0) * 100).toFixed(1)}% ML Confidence
                 </span>
               </div>
 
@@ -484,7 +484,7 @@ const LearningPreferences = () => {
                           (profile.mlConfidenceScore || 0) >= 0.50 ? 'bg-orange-500' :
                             'bg-red-500'
                       }`}
-                    style={{ width: `${Math.round((profile.mlConfidenceScore || 0) * 100)}%` }}
+                    style={{ width: `${((profile.mlConfidenceScore || 0) * 100).toFixed(1)}%` }}
                   ></div>
                 </div>
               </div>
@@ -500,7 +500,7 @@ const LearningPreferences = () => {
                   {(profile.mlConfidenceScore || 0) >= 0.50 && (profile.mlConfidenceScore || 0) < 0.65 && '📊 Moderate ML Confidence - '}
                   {(profile.mlConfidenceScore || 0) < 0.50 && '🌱 Low ML Confidence - '}
                 </strong>
-                The ML model is {Math.round((profile.mlConfidenceScore || 0) * 100)}% confident in this classification based on {profile.dataQuality.interactionCount || profile.dataQuality.totalInteractions || 0} interactions.
+                The ML model is {((profile.mlConfidenceScore || 0) * 100).toFixed(1)}% confident in this classification based on {profile.dataQuality.interactionCount || profile.dataQuality.totalInteractions || 0} interactions.
                 {profile.dataQuality.confidenceLevel !== 'high' && ` Keep learning to reach ${profile.dataQuality.confidenceLevel === 'medium' ? '30' :
                     profile.dataQuality.confidenceLevel === 'low-medium' ? '15' : '5'
                   } interactions for ${profile.dataQuality.confidenceLevel === 'medium' ? 'high' :

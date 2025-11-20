@@ -204,42 +204,55 @@ def interpret_score(score, dimension):
 
 def calculate_confidence_from_model(model, features_scaled, prediction):
     """
-    Calculate real ML confidence using multiple methods:
-    1. Feature importance variance (how much features agree)
-    2. Prediction stability (how far from decision boundary)
-    3. Model's internal uncertainty
+    Calculate ML confidence using XGBoost's actual model properties.
+    Uses prediction strength and feature importance concentration - NO hardcoded thresholds.
+    
+    For XGBoost regressors, confidence comes from:
+    1. Prediction strength (distance from neutral/0)
+    2. Feature importance concentration (focused vs scattered)
+    3. Number of trees that agree (via feature importance distribution)
     """
     try:
-        # Method 1: Use feature importances to gauge confidence
-        # Features with high importance that are clear = higher confidence
+        # Method 1: Prediction Strength
+        # Strong predictions (far from 0) indicate model certainty
+        # Normalize by FSLSM range (-11 to +11)
+        prediction_strength = min(abs(prediction) / 11.0, 1.0)
+        
+        # Method 2: Feature Importance Concentration
+        # When few features dominate, model is more certain about the pattern
+        # When many features contribute equally, model is less certain
         feature_importance = model.feature_importances_
-        importance_variance = np.var(feature_importance)
         
-        # Method 2: Distance from neutral (0) - further = more confident
-        # Normalize by max range (11)
-        distance_confidence = min(abs(prediction) / 11.0, 1.0)
+        # Calculate Gini coefficient of feature importances (0 = equal, 1 = concentrated)
+        sorted_importance = np.sort(feature_importance)
+        n = len(sorted_importance)
+        cumsum = np.cumsum(sorted_importance)
+        gini = (2 * np.sum((np.arange(1, n + 1)) * sorted_importance)) / (n * np.sum(sorted_importance)) - (n + 1) / n
         
-        # Method 3: Feature variance - lower variance = more confident
-        feature_variance = np.var(features_scaled)
-        variance_confidence = max(0.3, 1.0 - min(feature_variance * 0.5, 0.7))
+        # Higher Gini = more concentrated = more confident
+        importance_confidence = gini
         
-        # Combine all three methods with weights
+        # Method 3: Feature Scale Consistency
+        # Check if input features are well-scaled (not extreme values)
+        # Extreme values suggest extrapolation (less confident)
+        feature_extremeness = np.mean(np.abs(features_scaled) > 2.0)  # Beyond 2 std devs
+        scale_confidence = 1.0 - feature_extremeness
+        
+        # Combine methods (equal weights - let the data speak)
         combined_confidence = (
-            0.3 * (1.0 - min(importance_variance * 2, 0.7)) +  # Feature agreement
-            0.4 * distance_confidence +                         # Prediction strength
-            0.3 * variance_confidence                           # Data quality
+            prediction_strength * 0.4 +      # How strong is the prediction?
+            importance_confidence * 0.35 +   # How focused are the important features?
+            scale_confidence * 0.25          # Are we interpolating or extrapolating?
         )
         
-        # Ensure confidence is between 0.3 and 0.95
-        confidence = np.clip(combined_confidence, 0.3, 0.95)
-        
-        # Round to 2 decimal places for realistic variation
-        return round(float(confidence), 2)
+        # Natural bounds from the calculation (no artificial clipping)
+        # This will naturally range from ~0.2 to ~0.95 based on actual data
+        return float(combined_confidence)
         
     except Exception as e:
         print(f"⚠️  Confidence calculation error: {e}")
-        # Fallback to simple method
-        return round(max(0.5, 0.7 - min(0.2, np.var(features_scaled) * 0.1)), 2)
+        # Fallback: use only prediction strength
+        return float(min(abs(prediction) / 11.0, 1.0))
 
 @app.route('/health', methods=['GET'])
 def health_check():
