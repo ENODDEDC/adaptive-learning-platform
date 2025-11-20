@@ -9,6 +9,7 @@ import {
   XMarkIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
+import CacheIndicator from './CacheIndicator';
 
 const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, isModal = true }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -25,6 +26,10 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
   const [thumbnails, setThumbnails] = useState({});
   const [loadingThumbnails, setLoadingThumbnails] = useState({});
   const [showAINotification, setShowAINotification] = useState(false);
+  
+  // Cache indicator state
+  const [showCacheIndicator, setShowCacheIndicator] = useState(false);
+  const [isCached, setIsCached] = useState(false);
 
   const canvasRef = useRef(null);
   const viewerRef = useRef(null);
@@ -117,6 +122,40 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
 
     initializePdfJs();
   }, []);
+
+  // Detect cache status when PPTX loads
+  useEffect(() => {
+    if (!filePath && !contentId) return;
+
+    // Reset indicator state when file changes
+    setShowCacheIndicator(false);
+
+    // Get file key for localStorage tracking
+    const fileKey = contentId || filePath;
+    
+    // Check if file was previously opened
+    const wasPreviouslyOpened = fileKey && localStorage.getItem(`pptx_opened_${fileKey}`) === 'true';
+    
+    // Small delay for clean state transition
+    const timer = setTimeout(() => {
+      if (wasPreviouslyOpened) {
+        console.log(`📦 [CACHE CHECK] PPTX ${fileKey} was previously opened - should be cached`);
+        setIsCached(true);
+        setShowCacheIndicator(true);
+      } else {
+        console.log(`⬇️ [CACHE CHECK] PPTX ${fileKey} is new - will download`);
+        setIsCached(false);
+        setShowCacheIndicator(true);
+        
+        // Mark as opened for future reference
+        if (fileKey) {
+          localStorage.setItem(`pptx_opened_${fileKey}`, 'true');
+        }
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [filePath, contentId]);
 
   // Convert PowerPoint to PDF first
   useEffect(() => {
@@ -531,12 +570,20 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
   }
 
   return (
-    <div
-      ref={viewerRef}
-      className={`bg-black text-white h-full w-full overflow-hidden relative flex ${
-        isModal ? 'rounded-2xl' : ''
-      }`}
-    >
+    <>
+      {/* Cache Status Indicator */}
+      <CacheIndicator 
+        show={showCacheIndicator} 
+        isCached={isCached}
+        onHide={() => setShowCacheIndicator(false)}
+      />
+      
+      <div
+        ref={viewerRef}
+        className={`bg-black text-white h-full w-full overflow-hidden relative flex ${
+          isModal ? 'rounded-2xl' : ''
+        }`}
+      >
       {/* Thumbnail Sidebar */}
       {showThumbnails && (
         <div className="w-64 bg-gray-900 border-r border-gray-700 flex flex-col">
@@ -835,6 +882,7 @@ const CanvasBasedPowerPointViewer = ({ filePath, fileName, contentId, onClose, i
         </div>
       )}
     </div>
+    </>
   );
 };
 

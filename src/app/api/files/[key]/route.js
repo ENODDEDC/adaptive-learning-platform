@@ -6,7 +6,7 @@ export async function GET(request, { params }) {
   try {
     console.log('🔍 File access API called with params:', params);
     console.log('🔍 Request headers:', Object.fromEntries(request.headers.entries()));
-    
+
     // Verify authentication
     const payload = await verifyToken();
     if (!payload) {
@@ -17,7 +17,7 @@ export async function GET(request, { params }) {
 
     const { key } = params;
     console.log('🔑 File key received:', key);
-    
+
     if (!key) {
       return NextResponse.json({ message: 'File key is required' }, { status: 400 });
     }
@@ -30,7 +30,7 @@ export async function GET(request, { params }) {
     console.log('📁 Getting file data from Backblaze B2...');
     console.log('🔍 Attempting to fetch file with key:', decodedKey);
     console.log('🔍 Backblaze service available:', !!backblazeService);
-    
+
     const fileData = await backblazeService.getFileData(decodedKey);
     console.log('✅ File data retrieved successfully');
     console.log('🔍 File data details:', {
@@ -38,11 +38,11 @@ export async function GET(request, { params }) {
       contentType: fileData.ContentType,
       contentLength: fileData.ContentLength
     });
-    
+
     // Get file info to set proper headers
     const fileName = decodedKey.split('/').pop();
     const fileExtension = fileName.split('.').pop().toLowerCase();
-    
+
     // Use the content type from Backblaze or determine from file extension
     let contentType = fileData.ContentType || 'application/octet-stream';
     if (!fileData.ContentType) {
@@ -52,14 +52,15 @@ export async function GET(request, { params }) {
       else if (fileExtension === 'txt') contentType = 'text/plain';
       else if (fileExtension === 'docx') contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     }
-    
+
     console.log('📄 Serving file:', { fileName, contentType, contentLength: fileData.ContentLength });
-    
+
     return new NextResponse(fileData.Body, {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `inline; filename="${fileName}"`,
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'public, max-age=31536000', // 1 year cache
+        'X-Cache-Status': 'MISS', // First time download
         ...(fileData.ContentLength && { 'Content-Length': fileData.ContentLength.toString() }),
       },
     });

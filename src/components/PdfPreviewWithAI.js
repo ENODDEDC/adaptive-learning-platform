@@ -16,6 +16,7 @@ import SensingLearning from './SensingLearning';
 import IntuitiveLearning from './IntuitiveLearning';
 import ActiveLearning from './ActiveLearning';
 import ReflectiveLearning from './ReflectiveLearning';
+import CacheIndicator from './CacheIndicator';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 
 /**
@@ -63,12 +64,59 @@ const PdfPreviewWithAI = ({
   const [tutorMode, setTutorMode] = useState('');
   const [panelPosition, setPanelPosition] = useState({ x: 16, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
+  
+  // Cache indicator state
+  const [showCacheIndicator, setShowCacheIndicator] = useState(false);
+  const [isCached, setIsCached] = useState(false);
 
   // Automatic time tracking for ML classification
   useLearningModeTracking('aiNarrator', aiTutorActive);
   useLearningModeTracking('visualLearning', showVisualContent);
 
+  // Detect cache status when PDF loads - check localStorage FIRST
+  useEffect(() => {
+    if (!pdfUrl) return;
 
+    // IMPORTANT: Reset indicator state when PDF changes
+    setShowCacheIndicator(false);
+
+    // Extract file key from URL for localStorage tracking
+    const getFileKeyFromUrl = (url) => {
+      try {
+        const match = url.match(/\/api\/files\/([^?]+)/);
+        return match ? match[1] : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const fileKey = getFileKeyFromUrl(pdfUrl);
+    
+    // Check if file was previously opened (stored in localStorage)
+    const wasPreviouslyOpened = fileKey && localStorage.getItem(`pdf_opened_${fileKey}`) === 'true';
+    
+    // Small delay to ensure clean state transition between different PDFs
+    const timer = setTimeout(() => {
+      if (wasPreviouslyOpened) {
+        // File was opened before, so it should be cached
+        console.log(`📦 [CACHE CHECK] File ${fileKey} was previously opened - should be cached`);
+        setIsCached(true);
+        setShowCacheIndicator(true);
+      } else {
+        // First time opening - will download
+        console.log(`⬇️ [CACHE CHECK] File ${fileKey} is new - will download`);
+        setIsCached(false);
+        setShowCacheIndicator(true);
+        
+        // Mark as opened for future reference
+        if (fileKey) {
+          localStorage.setItem(`pdf_opened_${fileKey}`, 'true');
+        }
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [pdfUrl]);
 
   const extractPdfContent = async () => {
     if (pdfContent) return pdfContent;
@@ -790,6 +838,13 @@ Reflective Learning works best with instructional content, lessons, or study mat
 
   return (
     <>
+      {/* Cache Status Indicator */}
+      <CacheIndicator 
+        show={showCacheIndicator} 
+        isCached={isCached}
+        onHide={() => setShowCacheIndicator(false)}
+      />
+      
       <div className="w-full h-full flex relative">
         {/* Enhanced Error/Info Message - Professional Design */}
         {extractionError && (

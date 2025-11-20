@@ -15,6 +15,7 @@ import EnhancedPDFViewer from './EnhancedPDFViewer';
 import AITutorModal from './AITutorModal';
 import DocxPreviewWithAI from './DocxPreviewWithAI';
 import PdfPreviewWithAI from './PdfPreviewWithAI';
+import fileContentCache from '@/utils/fileContentCache';
 
 // --- Helper Functions ---
 const formatFileSize = (bytes) => {

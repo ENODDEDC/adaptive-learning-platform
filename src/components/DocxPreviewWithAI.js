@@ -18,6 +18,7 @@ import SensingLearning from './SensingLearning';
 import IntuitiveLearning from './IntuitiveLearning';
 import ActiveLearning from './ActiveLearning';
 import ReflectiveLearning from './ReflectiveLearning';
+import CacheIndicator from './CacheIndicator';
 import learningModeRecommendationService from '../services/learningModeRecommendationService';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 
@@ -97,6 +98,10 @@ const DocxPreviewWithAI = ({
   const [panelPosition, setPanelPosition] = useState({ x: 16, y: 16 }); // Initial position (top-left)
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  
+  // Cache indicator state
+  const [showCacheIndicator, setShowCacheIndicator] = useState(false);
+  const [isCached, setIsCached] = useState(false);
 
   // Note: Tracking is handled by individual modal components (SequentialLearning, GlobalLearning, etc.)
   // Each modal has its own useLearningModeTracking hook to avoid double-counting
@@ -105,6 +110,40 @@ const DocxPreviewWithAI = ({
   const [recommendations, setRecommendations] = useState([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [showTooltip, setShowTooltip] = useState(null);
+
+  // Detect cache status when DOCX loads
+  useEffect(() => {
+    if (!content?.filePath && !content?.cloudStorage?.key) return;
+
+    // Reset indicator state when file changes
+    setShowCacheIndicator(false);
+
+    // Get file key for localStorage tracking
+    const fileKey = content.cloudStorage?.key || content.filePath || content._id;
+    
+    // Check if file was previously opened
+    const wasPreviouslyOpened = fileKey && localStorage.getItem(`docx_opened_${fileKey}`) === 'true';
+    
+    // Small delay for clean state transition
+    const timer = setTimeout(() => {
+      if (wasPreviouslyOpened) {
+        console.log(`📦 [CACHE CHECK] DOCX ${fileKey} was previously opened - should be cached`);
+        setIsCached(true);
+        setShowCacheIndicator(true);
+      } else {
+        console.log(`⬇️ [CACHE CHECK] DOCX ${fileKey} is new - will download`);
+        setIsCached(false);
+        setShowCacheIndicator(true);
+        
+        // Mark as opened for future reference
+        if (fileKey) {
+          localStorage.setItem(`docx_opened_${fileKey}`, 'true');
+        }
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [content?.filePath, content?.cloudStorage?.key, content?._id]);
 
   // Auto-load recommendations when component mounts
   useEffect(() => {
@@ -1148,6 +1187,13 @@ Reflective Learning Processor works best with instructional content, lessons, or
 
   return (
     <>
+      {/* Cache Status Indicator */}
+      <CacheIndicator 
+        show={showCacheIndicator} 
+        isCached={isCached}
+        onHide={() => setShowCacheIndicator(false)}
+      />
+      
       {/* Learning Features Toolbar - Hide when overlays are active */}
       {!showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && !showIntuitiveLearning && !showActiveLearning && !showReflectiveLearning && (
         <div className="sticky top-0 z-10 w-full bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-200 px-6 py-4 backdrop-blur-sm bg-opacity-95">
