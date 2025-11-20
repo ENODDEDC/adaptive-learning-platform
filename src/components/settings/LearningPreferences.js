@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CogIcon, ChartBarIcon, ArrowPathIcon, CheckCircleIcon, SparklesIcon, AcademicCapIcon, LightBulbIcon, EyeIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 
 const LearningPreferences = () => {
@@ -444,8 +445,8 @@ const LearningPreferences = () => {
             </div>
           )}
 
-          {/* Confidence Level Banner */}
-          {profile.dataQuality && (
+          {/* Confidence Level Banner - Only show after classification */}
+          {profile.hasBeenClassified && profile.dataQuality && (
             <div className={`border-2 rounded-xl p-6 ${profile.dataQuality.confidenceLevel === 'high' ? 'bg-green-50 border-green-300' :
                 profile.dataQuality.confidenceLevel === 'medium' ? 'bg-yellow-50 border-yellow-300' :
                   profile.dataQuality.confidenceLevel === 'low-medium' ? 'bg-orange-50 border-orange-300' :
@@ -582,8 +583,8 @@ const LearningPreferences = () => {
       </div>
 
       {/* Custom Reset Confirmation Modal */}
-      {showResetModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      {showResetModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-red-100 rounded-full">
@@ -636,7 +637,8 @@ const LearningPreferences = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

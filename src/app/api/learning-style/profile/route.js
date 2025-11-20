@@ -35,8 +35,8 @@ export async function GET(request) {
     // Check if profile needs update
     const needsUpdate = profile.needsUpdate();
 
-    // Calculate overall ML confidence score (average of all dimension confidences)
-    const mlConfidenceScore = profile.confidence ? 
+    // Calculate overall ML confidence score ONLY if classification has happened
+    const mlConfidenceScore = profile.predictionCount > 0 && profile.confidence ? 
       (profile.confidence.activeReflective + 
        profile.confidence.sensingIntuitive + 
        profile.confidence.visualVerbal + 
@@ -48,12 +48,13 @@ export async function GET(request) {
         profile: {
           dimensions: profile.dimensions,
           confidence: profile.confidence,
-          mlConfidenceScore: mlConfidenceScore, // Add overall ML confidence
+          mlConfidenceScore: mlConfidenceScore, // Only non-zero after classification
           recommendedModes: profile.recommendedModes,
           dominantStyle: profile.getDominantStyle(),
           classificationMethod: profile.classificationMethod,
           lastPrediction: profile.lastPrediction,
-          predictionCount: profile.predictionCount
+          predictionCount: profile.predictionCount,
+          hasBeenClassified: profile.predictionCount > 0 // Explicit flag
         },
         dataQuality: profile.dataQuality,
         needsUpdate,

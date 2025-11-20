@@ -30,13 +30,14 @@ const AnalyticsSettings = () => {
       if (res.ok) {
         const data = await res.json();
         
-        // Also fetch ML confidence from profile
+        // Also fetch ML confidence from profile (only if classified)
         const profileRes = await fetch('/api/learning-style/profile');
         if (profileRes.ok) {
           const profileData = await profileRes.json();
           const profile = profileData.data?.profile || profileData.profile;
-          if (profile && profile.mlConfidenceScore !== undefined) {
+          if (profile && profile.hasBeenClassified && profile.mlConfidenceScore !== undefined) {
             data.data.mlConfidenceScore = profile.mlConfidenceScore;
+            data.data.hasBeenClassified = profile.hasBeenClassified;
           }
         }
         
@@ -322,7 +323,7 @@ const AnalyticsSettings = () => {
       )}
 
       {/* ML Classification Confidence - Only show if classification has happened */}
-      {stats?.mlConfidenceScore !== undefined && stats.mlConfidenceScore > 0 && (
+      {stats?.hasBeenClassified && stats?.mlConfidenceScore !== undefined && stats.mlConfidenceScore > 0 && (
         <div className={`rounded-lg border-2 p-6 ${
           (stats.mlConfidenceScore || 0) >= 0.80 ? 'bg-green-50 border-green-300' :
           (stats.mlConfidenceScore || 0) >= 0.65 ? 'bg-yellow-50 border-yellow-300' :
