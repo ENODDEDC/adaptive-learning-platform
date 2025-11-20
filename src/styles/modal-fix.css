@@ -1,9 +1,0 @@
-/* Fix for modals overlapping sidebar */
-.fixed.inset-0 {
-  left: 80px !important;
-}
-
-/* Ensure modal backdrops respect sidebar */
-[class*="fixed"][class*="inset-0"][class*="bg-black"] {
-  left: 80px !important;
-}

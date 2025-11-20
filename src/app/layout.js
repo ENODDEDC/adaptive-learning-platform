@@ -1,5 +1,4 @@
 import "./globals.css";
-import "../styles/modal-fix.css";
 import Layout from "../components/Layout";
 import { LayoutProvider } from "../context/LayoutContext";
 import { AdaptiveLayoutProvider } from "../context/AdaptiveLayoutContext";
