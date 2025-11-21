@@ -63,35 +63,35 @@ class PredictiveLoadingService {
   /**
     * Setup listeners for user interactions
     */
-   setupInteractionListeners() {
-     // Only add event listeners if running in browser
-     if (typeof window === 'undefined' || typeof document === 'undefined') {
-       return;
-     }
+  setupInteractionListeners() {
+    // Only add event listeners if running in browser
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
 
-     // Course card hovers
-     document.addEventListener('mouseover', (event) => {
-       if (event.target.closest('.course-card')) {
-         this.onCourseHover(event.target.closest('.course-card'));
-       }
-     });
+    // Course card hovers
+    document.addEventListener('mouseover', (event) => {
+      if (event.target.closest('.course-card')) {
+        this.onCourseHover(event.target.closest('.course-card'));
+      }
+    });
 
-     // Course clicks
-     document.addEventListener('click', (event) => {
-       if (event.target.closest('.course-card')) {
-         this.onCourseClick(event.target.closest('.course-card'));
-       }
-     });
+    // Course clicks
+    document.addEventListener('click', (event) => {
+      if (event.target.closest('.course-card')) {
+        this.onCourseClick(event.target.closest('.course-card'));
+      }
+    });
 
-     // Scroll events for viewport-based predictions
-     let scrollTimeout;
-     window.addEventListener('scroll', () => {
-       clearTimeout(scrollTimeout);
-       scrollTimeout = setTimeout(() => {
-         this.onScroll();
-       }, 150);
-     });
-   }
+    // Scroll events for viewport-based predictions
+    let scrollTimeout;
+    window.addEventListener('scroll', () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        this.onScroll();
+      }, 150);
+    });
+  }
 
   /**
    * Handle course card hover
@@ -192,41 +192,41 @@ class PredictiveLoadingService {
   /**
     * Predict courses that are about to come into viewport
     */
-   predictViewportCourses() {
-     // Only run in browser environment
-     if (typeof window === 'undefined' || typeof document === 'undefined') {
-       return;
-     }
+  predictViewportCourses() {
+    // Only run in browser environment
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
 
-     const viewportHeight = window.innerHeight;
-     const scrollTop = window.pageYOffset;
-     const buffer = viewportHeight * 0.5; // Load courses within 1.5 viewports
+    const viewportHeight = window.innerHeight;
+    const scrollTop = window.pageYOffset;
+    const buffer = viewportHeight * 0.5; // Load courses within 1.5 viewports
 
-     // Find course cards in the predicted viewport area
-     const courseCards = document.querySelectorAll('.course-card[data-course-id]');
-     const predictions = [];
+    // Find course cards in the predicted viewport area
+    const courseCards = document.querySelectorAll('.course-card[data-course-id]');
+    const predictions = [];
 
-     courseCards.forEach(card => {
-       const rect = card.getBoundingClientRect();
-       const cardTop = rect.top + scrollTop;
-       const cardBottom = cardTop + rect.height;
+    courseCards.forEach(card => {
+      const rect = card.getBoundingClientRect();
+      const cardTop = rect.top + scrollTop;
+      const cardBottom = cardTop + rect.height;
 
-       // Check if card is within prediction buffer
-       if (cardBottom > scrollTop - buffer && cardTop < scrollTop + viewportHeight + buffer) {
-         const courseId = card.dataset.courseId;
-         if (courseId && !cacheService.get(`course_${courseId}`)) {
-           predictions.push({
-             key: `course_${courseId}`,
-             type: 'viewport_course',
-             confidence: 0.8,
-             metadata: { courseId, position: rect.top }
-           });
-         }
-       }
-     });
+      // Check if card is within prediction buffer
+      if (cardBottom > scrollTop - buffer && cardTop < scrollTop + viewportHeight + buffer) {
+        const courseId = card.dataset.courseId;
+        if (courseId && !cacheService.get(`course_${courseId}`)) {
+          predictions.push({
+            key: `course_${courseId}`,
+            type: 'viewport_course',
+            confidence: 0.8,
+            metadata: { courseId, position: rect.top }
+          });
+        }
+      }
+    });
 
-     this.executePredictions(predictions, { trigger: 'viewport' });
-   }
+    this.executePredictions(predictions, { trigger: 'viewport' });
+  }
 
   /**
    * Predict content based on scroll patterns
@@ -260,27 +260,27 @@ class PredictiveLoadingService {
   /**
     * Calculate scroll velocity
     */
-   calculateScrollVelocity() {
-     // Only calculate in browser environment
-     if (typeof window === 'undefined') {
-       return 0;
-     }
+  calculateScrollVelocity() {
+    // Only calculate in browser environment
+    if (typeof window === 'undefined') {
+      return 0;
+    }
 
-     if (!this.lastScrollTime) {
-       this.lastScrollTime = Date.now();
-       this.lastScrollTop = window.pageYOffset;
-       return 0;
-     }
+    if (!this.lastScrollTime) {
+      this.lastScrollTime = Date.now();
+      this.lastScrollTop = window.pageYOffset;
+      return 0;
+    }
 
-     const now = Date.now();
-     const timeDelta = now - this.lastScrollTime;
-     const scrollDelta = window.pageYOffset - this.lastScrollTop;
+    const now = Date.now();
+    const timeDelta = now - this.lastScrollTime;
+    const scrollDelta = window.pageYOffset - this.lastScrollTop;
 
-     this.lastScrollTime = now;
-     this.lastScrollTop = window.pageYOffset;
+    this.lastScrollTime = now;
+    this.lastScrollTop = window.pageYOffset;
 
-     return scrollDelta / timeDelta; // pixels per millisecond
-   }
+    return scrollDelta / timeDelta; // pixels per millisecond
+  }
 
   /**
    * Predict related courses
@@ -558,90 +558,90 @@ class PredictiveLoadingService {
   /**
     * Save prediction state
     */
-   savePredictionState() {
-     // Only save to localStorage in browser environment
-     if (typeof localStorage === 'undefined') {
-       return;
-     }
+  savePredictionState() {
+    // Only save to localStorage in browser environment
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
 
-     try {
-       const state = {
-         activePredictions: Array.from(this.activePredictions.entries()),
-         predictionQueue: Array.from(this.predictionQueue),
-         performanceMetrics: this.performanceMetrics
-       };
+    try {
+      const state = {
+        activePredictions: Array.from(this.activePredictions.entries()),
+        predictionQueue: Array.from(this.predictionQueue),
+        performanceMetrics: this.performanceMetrics
+      };
 
-       localStorage.setItem('predictiveLoadingState', JSON.stringify(state));
-     } catch (error) {
-     }
-   }
+      localStorage.setItem('predictiveLoadingState', JSON.stringify(state));
+    } catch (error) {
+    }
+  }
 
   /**
     * Load prediction state
     */
-   loadPredictionState() {
-     // Only load from localStorage in browser environment
-     if (typeof localStorage === 'undefined') {
-       return;
-     }
+  loadPredictionState() {
+    // Only load from localStorage in browser environment
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
 
-     try {
-       const state = localStorage.getItem('predictiveLoadingState');
-       if (state) {
-         const parsed = JSON.parse(state);
-         this.activePredictions = new Map(parsed.activePredictions);
-         this.predictionQueue = new Set(parsed.predictionQueue);
-         this.performanceMetrics = { ...this.performanceMetrics, ...parsed.performanceMetrics };
-       }
-     } catch (error) {
-     }
-   }
+    try {
+      const state = localStorage.getItem('predictiveLoadingState');
+      if (state) {
+        const parsed = JSON.parse(state);
+        this.activePredictions = new Map(parsed.activePredictions);
+        this.predictionQueue = new Set(parsed.predictionQueue);
+        this.performanceMetrics = { ...this.performanceMetrics, ...parsed.performanceMetrics };
+      }
+    } catch (error) {
+    }
+  }
 
   /**
     * Initialize service for browser environment
     */
-   initializeForBrowser() {
-     if (typeof window === 'undefined' || typeof document === 'undefined') {
-       return;
-     }
+  initializeForBrowser() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
 
-     // Only initialize once
-     if (this.browserInitialized) {
-       return;
-     }
+    // Only initialize once
+    if (this.browserInitialized) {
+      return;
+    }
 
-     this.browserInitialized = true;
-     this.initializeEventListeners();
-   }
+    this.browserInitialized = true;
+    this.initializeEventListeners();
+  }
 
   /**
     * Start predictive prefetch for a given context
     */
-   startPredictivePrefetch(context, options = {}) {
-     try {
+  startPredictivePrefetch(context, options = {}) {
+    try {
 
-       // Initialize browser-specific functionality if not already done
-       this.initializeForBrowser();
+      // Initialize browser-specific functionality if not already done
+      this.initializeForBrowser();
 
-       // Load prediction state from previous session
-       this.loadPredictionState();
+      // Load prediction state from previous session
+      this.loadPredictionState();
 
-       // Start with initial predictions based on context
-       if (context === 'current_user') {
-         this.initializeUserContextPredictions(options);
-       }
+      // Start with initial predictions based on context
+      if (context === 'current_user') {
+        this.initializeUserContextPredictions(options);
+      }
 
-       // Start background prediction loop
-       this.startBackgroundPredictionLoop();
+      // Start background prediction loop
+      this.startBackgroundPredictionLoop();
 
-       // Start viewport-based predictions
-       this.startViewportPredictions();
+      // Start viewport-based predictions
+      this.startViewportPredictions();
 
-       return true;
-     } catch (error) {
-       return false;
-     }
-   }
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
 
   /**
    * Initialize predictions for user context

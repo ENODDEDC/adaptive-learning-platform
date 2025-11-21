@@ -22,7 +22,7 @@ class LearningModeRecommendationService {
   }
 
   /**
-   * Analyze document content and recommend 3-4 best learning modes
+   * Analyze document content and recommend EXACTLY 4 learning modes (one per FSLSM dimension)
    */
   async getRecommendedModes(docxContent, fileName = '') {
     await this.initialize();
@@ -32,36 +32,43 @@ class LearningModeRecommendationService {
     }
 
     const prompt = `
-Analyze this document content and recommend the 3-4 BEST learning modes for a student based on the content type and complexity.
+Analyze this document content and recommend EXACTLY 4 learning modes based on FSLSM (Felder-Silverman Learning Style Model) dimensions.
 
 Document: "${fileName}"
 Content: "${docxContent.substring(0, 2000)}..."
 
-Available Learning Modes:
-1. AI Narrator - Audio narration with explanations (good for complex concepts, definitions)
-2. Visual Learning - Creates diagrams, charts, wireframes (good for processes, data, relationships)
-3. Sequential Learning - Step-by-step breakdown (good for procedures, tutorials, how-to guides)
-4. Global Learning - Big picture overview (good for comprehensive topics, summaries)
-5. Hands-On Lab - Practical exercises (good for technical, scientific, hands-on content)
-6. Concept Constellation - Pattern discovery (good for theoretical, abstract concepts)
-7. Active Learning Hub - Interactive activities (good for collaborative, discussion-based content)
-8. Reflective Learning - Self-assessment (good for philosophical, analytical content)
+FSLSM 4 Dimensions - Choose ONE mode from EACH dimension:
+
+1. VISUAL/VERBAL Dimension:
+   - "Visual Learning" (diagrams, charts, visual content)
+   - "AI Narrator" (audio explanations, verbal content)
+
+2. ACTIVE/REFLECTIVE Dimension:
+   - "Active Learning Hub" (hands-on activities, immediate practice)
+   - "Reflective Learning" (observation, contemplation, analysis)
+
+3. SENSING/INTUITIVE Dimension:
+   - "Hands-On Lab" (concrete, practical, real-world examples)
+   - "Concept Constellation" (abstract, theoretical, patterns)
+
+4. SEQUENTIAL/GLOBAL Dimension:
+   - "Sequential Learning" (step-by-step, linear progression)
+   - "Global Learning" (big picture, holistic overview)
 
 Instructions:
-- Recommend exactly 3-4 modes that would be MOST helpful for THIS specific document
-- Consider content type, complexity, and learning objectives
-- Try to cover different learning dimensions (active/reflective, sensing/intuitive, visual/verbal, sequential/global)
-- Prioritize modes that match the document's nature
-- Return ONLY a JSON array with mode names and brief reasons
+- Recommend EXACTLY 4 modes (one from each dimension pair)
+- Base recommendations on document content type and learning objectives
+- Return ONLY a JSON array with exactly 4 objects
 
 Example response:
 [
-  {"mode": "AI Narrator", "reason": "Complex financial concepts need audio explanation"},
-  {"mode": "Visual Learning", "reason": "Data and processes benefit from visual diagrams"},
-  {"mode": "Sequential Learning", "reason": "Step-by-step procedures require structured approach"}
+  {"mode": "Visual Learning", "reason": "Document has data and processes that benefit from diagrams"},
+  {"mode": "Active Learning Hub", "reason": "Content requires hands-on practice and immediate application"},
+  {"mode": "Hands-On Lab", "reason": "Technical content needs concrete examples and practical exercises"},
+  {"mode": "Sequential Learning", "reason": "Step-by-step procedures require structured linear approach"}
 ]
 
-Response (JSON only):`;
+Response (JSON only, exactly 4 modes):`;
 
     try {
       const result = await this.model.generateContent(prompt);
@@ -72,66 +79,60 @@ Response (JSON only):`;
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         const recommendations = JSON.parse(jsonMatch[0]);
-        console.log('🎯 AI Recommendations:', recommendations);
-        return recommendations;
+        
+        // Convert database names to button display names
+        const convertedRecs = recommendations.map(rec => ({
+          mode: this.convertToButtonName(rec.mode),
+          reason: rec.reason
+        }));
+        
+        // Ensure exactly 4 recommendations
+        if (convertedRecs.length === 4) {
+          console.log('🎯 AI Recommendations (4 FSLSM dimensions):', convertedRecs);
+          return convertedRecs;
+        } else {
+          console.warn(`⚠️ AI returned ${recommendations.length} recommendations instead of 4, using fallback`);
+          return this.getFallbackRecommendations(docxContent, fileName);
+        }
       }
 
-      // Fallback recommendations (3-4 modes covering different dimensions)
-      return [
-        { "mode": "AI Narrator", "reason": "Great for understanding complex concepts" },
-        { "mode": "Visual Learning", "reason": "Helps visualize key information" },
-        { "mode": "Active Learning Hub", "reason": "Interactive engagement enhances retention" }
-      ];
+      // Fallback if JSON parsing fails
+      return this.getFallbackRecommendations(docxContent, fileName);
 
     } catch (error) {
       console.error('Error getting recommendations:', error);
-
-      // Smart fallback based on content analysis
       return this.getFallbackRecommendations(docxContent, fileName);
     }
   }
 
   /**
-   * Intelligent fallback recommendations using AI content analysis
+   * Convert database mode names to button display names
+   */
+  convertToButtonName(databaseName) {
+    const nameMap = {
+      'Active Learning Hub': 'Practice',
+      'Reflective Learning': 'Reflect',
+      'Hands-On Lab': 'Hands-On',
+      'Concept Constellation': 'Theory',
+      'Sequential Learning': 'Step-by-Step',
+      'Global Learning': 'Big Picture',
+      'Visual Learning': 'Visual Learning',
+      'AI Narrator': 'AI Narrator'
+    };
+    return nameMap[databaseName] || databaseName;
+  }
+
+  /**
+   * Intelligent fallback recommendations - ALWAYS returns exactly 4 modes (one per FSLSM dimension)
    */
   async getFallbackRecommendations(content, fileName) {
-    // If we have content, try a simplified AI analysis
-    if (content && content.length > 100) {
-      try {
-        await this.initialize();
-
-        const simplifiedPrompt = `
-Analyze this document content and recommend 3-4 learning modes based on content characteristics:
-
-Content: "${content.substring(0, 1500)}..."
-
-Available modes: AI Narrator, Visual Learning, Sequential Learning, Global Learning, Hands-On Lab, Concept Constellation, Active Learning Hub, Reflective Learning
-
-Return JSON array with mode and reason (3-4 modes covering different learning dimensions):
-[{"mode": "Mode Name", "reason": "Brief reason"}]
-`;
-
-        const result = await this.model.generateContent(simplifiedPrompt);
-        const response = await result.response;
-        const text = response.text();
-
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          const recommendations = JSON.parse(jsonMatch[0]);
-          console.log('🎯 Fallback AI recommendations:', recommendations);
-          return recommendations;
-        }
-      } catch (error) {
-        console.error('Fallback AI analysis failed:', error);
-      }
-    }
-
-    // Ultimate fallback - content-agnostic recommendations (covering all 4 FSLSM dimensions)
+    // Ultimate fallback - EXACTLY 4 recommendations covering all 4 FSLSM dimensions
+    // Return button display names for direct matching
     return [
-      { "mode": "AI Narrator", "reason": "Great starting point for understanding any document" },
-      { "mode": "Visual Learning", "reason": "Visual aids enhance comprehension" },
-      { "mode": "Active Learning Hub", "reason": "Interactive engagement improves retention" },
-      { "mode": "Sequential Learning", "reason": "Structured approach supports learning" }
+      { "mode": "Visual Learning", "reason": "Visual aids enhance comprehension for most content types" },
+      { "mode": "Practice", "reason": "Interactive engagement improves retention and understanding" },
+      { "mode": "Hands-On", "reason": "Practical examples help solidify learning concepts" },
+      { "mode": "Step-by-Step", "reason": "Structured step-by-step approach supports systematic learning" }
     ];
   }
 

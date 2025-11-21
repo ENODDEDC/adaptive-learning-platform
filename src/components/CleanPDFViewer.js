@@ -97,6 +97,21 @@ const CleanPDFViewer = ({
   const iframeRef = useRef(null);
   const containerRef = useRef(null);
 
+  // Convert button display names to database names for matching
+  const getButtonToDatabaseName = (buttonName) => {
+    const nameMap = {
+      'AI Narrator': 'AI Narrator',
+      'Visual Learning': 'Visual Learning',
+      'Step-by-Step': 'Sequential Learning',
+      'Big Picture': 'Global Learning',
+      'Hands-On': 'Hands-On Lab',
+      'Theory': 'Concept Constellation',
+      'Practice': 'Active Learning Hub',
+      'Reflect': 'Reflective Learning'
+    };
+    return nameMap[buttonName] || buttonName;
+  };
+
   // Fetch ML personalized recommendations
   useEffect(() => {
     async function fetchPersonalizedRecs() {
@@ -104,10 +119,18 @@ const CleanPDFViewer = ({
         const response = await fetch('/api/learning-style/profile');
         if (response.ok) {
           const data = await response.json();
-          if (data.profile && data.profile.recommendedModes) {
-            const modes = data.profile.recommendedModes.map(r => r.mode);
-            setPersonalizedRecommendations(modes);
+          
+          // Try different possible data structures
+          let modes = [];
+          if (data.profile?.recommendedModes) {
+            modes = data.profile.recommendedModes.map(r => r.mode);
+          } else if (data.data?.profile?.recommendedModes) {
+            modes = data.data.profile.recommendedModes.map(r => r.mode);
+          } else if (data.recommendedModes) {
+            modes = data.recommendedModes.map(r => r.mode);
           }
+          
+          setPersonalizedRecommendations(modes);
         }
       } catch (error) {
         console.log('No ML recommendations available yet');
@@ -117,24 +140,16 @@ const CleanPDFViewer = ({
   }, []);
 
   // Helper function to determine recommendation type and styling
-  const getRecommendationStyle = (modeName) => {
-    const isContentRecommended = recommendations && recommendations.some(rec => rec.mode === modeName);
-    const isPersonalized = personalizedRecommendations.includes(modeName);
+  const getRecommendationStyle = (buttonDisplayName) => {
+    // ONLY show ML personalized recommendations (no content-based)
+    // ML personalized recommendations use database names (e.g., "Sequential Learning", "Hands-On Lab")
+    const databaseName = getButtonToDatabaseName(buttonDisplayName);
+    const isPersonalized = personalizedRecommendations.includes(databaseName);
 
-    if (isContentRecommended && isPersonalized) {
-      return {
-        ring: 'ring-2 ring-emerald-600 ring-offset-2',
-        tooltip: '⭐ Perfect Match! Recommended by AI content analysis AND personalized for your learning style'
-      };
-    } else if (isPersonalized) {
+    if (isPersonalized) {
       return {
         ring: 'ring-2 ring-green-500 ring-offset-2',
         tooltip: '🎯 ML Personalized: This mode matches your learning style based on your behavior'
-      };
-    } else if (isContentRecommended) {
-      return {
-        ring: 'ring-2 ring-yellow-400 ring-offset-2',
-        tooltip: '✨ AI Recommended: Best for this document based on content analysis'
       };
     }
     return { ring: '', tooltip: '' };
@@ -248,38 +263,8 @@ const CleanPDFViewer = ({
     getPDFPageCount();
   }, [content]);
 
-  // Load AI recommendations when PDF content is available
-  useEffect(() => {
-    const loadRecommendations = async () => {
-      if (pdfTextContent && !isLoadingRecommendations) {
-        console.log('🎯 Starting AI recommendation analysis for PDF...');
-        console.log('📄 Document:', content.title || content.originalName || 'Document.pdf');
-        console.log('📝 Content length:', pdfTextContent.length);
-
-        setIsLoadingRecommendations(true);
-        try {
-          const fileName = content.title || content.originalName || 'Document.pdf';
-          const recs = await learningModeRecommendationService.getRecommendedModes(pdfTextContent, fileName);
-          setRecommendations(recs);
-          console.log('✅ AI Recommendations loaded successfully:', recs);
-          console.log('🎯 Recommended modes:', recs.map(r => r.mode).join(', '));
-        } catch (error) {
-          console.error('❌ Error loading recommendations:', error);
-          // Fallback recommendations
-          const fallbackRecs = [
-            { "mode": "AI Narrator", "reason": "Great starting point for any document" },
-            { "mode": "Visual Learning", "reason": "Visual aids enhance understanding" }
-          ];
-          setRecommendations(fallbackRecs);
-          console.log('🔄 Using fallback recommendations:', fallbackRecs);
-        } finally {
-          setIsLoadingRecommendations(false);
-        }
-      }
-    };
-
-    loadRecommendations();
-  }, [pdfTextContent, content.title, content.originalName]);
+  // Content-based recommendations DISABLED - only using ML personalized recommendations
+  // This ensures exactly 4 recommendations (from Settings) are shown
 
   // Keyboard shortcuts
   useEffect(() => {

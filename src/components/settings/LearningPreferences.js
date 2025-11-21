@@ -104,6 +104,21 @@ const LearningPreferences = () => {
     return preferences[dimension] || 'Unknown';
   };
 
+  // Convert database mode names to button display names
+  const getModeDisplayName = (modeName) => {
+    const nameMap = {
+      'Active Learning Hub': 'Practice',
+      'Reflective Learning': 'Reflect',
+      'Hands-On Lab': 'Hands-On',
+      'Concept Constellation': 'Theory',
+      'Sequential Learning': 'Step-by-Step',
+      'Global Learning': 'Big Picture',
+      'Visual Learning': 'Visual Learning',
+      'AI Narrator': 'AI Narrator'
+    };
+    return nameMap[modeName] || modeName;
+  };
+
   // Create segmented bar visualization
   const renderSegmentedBar = (value, leftColor, rightColor) => {
     const percentage = ((value + 11) / 22) * 100;
@@ -424,7 +439,7 @@ const LearningPreferences = () => {
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-900">{mode.mode}</p>
+                      <p className="font-semibold text-gray-900">{getModeDisplayName(mode.mode)}</p>
                       {mode.confidence && (
                         <div className="flex items-center gap-2 mt-1">
                           <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
