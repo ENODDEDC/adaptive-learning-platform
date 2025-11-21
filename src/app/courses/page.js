@@ -801,6 +801,35 @@ const CourseContent = () => {
                   )}
                 </button>
               </Tooltip>
+
+              <Tooltip
+                content={
+                  <div>
+                    <div className="font-semibold mb-1">Archived Courses</div>
+                    <div className="text-sm opacity-90">
+                      View courses you've archived. Restore them anytime to continue learning.
+                    </div>
+                  </div>
+                }
+                type="info"
+                position="bottom"
+              >
+                <button
+                  onClick={() => {
+                    router.push('/archive');
+                  }}
+                  className="group relative flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-2xl overflow-hidden text-gray-600 hover:text-gray-700 hover:bg-gray-50/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300/70"
+                  data-action="navigate"
+                  data-feature="archive"
+                >
+                  <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-xl transition-all duration-300 bg-gray-100 group-hover:bg-gray-200">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 transition-colors duration-300 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                  </div>
+                  <span className="relative whitespace-nowrap">Archive</span>
+                </button>
+              </Tooltip>
             </div>
 
             <div className="hidden sm:block h-8 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent mx-2"></div>

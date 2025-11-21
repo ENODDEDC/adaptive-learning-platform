@@ -24,6 +24,7 @@ export default function UnifiedFloatingAssistant() {
   const buttonRef = useRef(null);
   const panelRef = useRef(null);
   const expandTimeoutRef = useRef(null);
+  const collapseTimeoutRef = useRef(null);
   const notesRef = useRef(null);
 
   // Fetch user data - try multiple endpoints
@@ -119,42 +120,47 @@ export default function UnifiedFloatingAssistant() {
     const panelHeight = 450;
     const gap = 20;
     const margin = 20;
+    const expandedButtonsWidth = 200; // Approximate width of expanded buttons
+    const expandedButtonsHeight = 180; // Approximate height of expanded buttons (2 buttons + gap)
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
-    // Determine button's actual position
-    const buttonCenterX = btnX + buttonRect.width / 2;
-    const buttonCenterY = btnY + buttonRect.height / 2;
-    
     let panelX, panelY;
     
-    // Smart positioning based on available space
+    // Calculate available space, accounting for expanded buttons
+    const isOnRightSide = btnX > viewportWidth / 2;
     const spaceRight = viewportWidth - (btnX + buttonRect.width);
-    const spaceLeft = btnX;
-    const spaceTop = btnY;
+    const spaceLeft = isOnRightSide ? btnX - expandedButtonsWidth : btnX; // Account for buttons on left when on right side
+    const spaceTop = btnY - expandedButtonsHeight; // Account for buttons above
     const spaceBottom = viewportHeight - (btnY + buttonRect.height);
     
-    // Prefer horizontal placement (left or right)
-    if (spaceRight >= panelWidth + gap + margin) {
-      // Place on right
-      panelX = btnX + buttonRect.width + gap;
-      panelY = Math.max(margin, Math.min(btnY - (panelHeight / 2) + (buttonRect.height / 2), viewportHeight - panelHeight - margin));
-    } else if (spaceLeft >= panelWidth + gap + margin) {
-      // Place on left
+    // Prefer horizontal placement (left or right), avoiding expanded buttons
+    if (spaceLeft >= panelWidth + gap + margin && !isOnRightSide) {
+      // Place on left (when button is on left side)
       panelX = btnX - panelWidth - gap;
+      panelY = Math.max(margin, Math.min(btnY - (panelHeight / 2) + (buttonRect.height / 2), viewportHeight - panelHeight - margin));
+    } else if (spaceRight >= panelWidth + gap + margin && isOnRightSide) {
+      // Place on right (when button is on right side, buttons are on left)
+      panelX = btnX + buttonRect.width + gap;
       panelY = Math.max(margin, Math.min(btnY - (panelHeight / 2) + (buttonRect.height / 2), viewportHeight - panelHeight - margin));
     } else if (spaceBottom >= panelHeight + gap + margin) {
       // Place below
       panelY = btnY + buttonRect.height + gap;
       panelX = Math.max(margin, Math.min(btnX - (panelWidth / 2) + (buttonRect.width / 2), viewportWidth - panelWidth - margin));
     } else if (spaceTop >= panelHeight + gap + margin) {
-      // Place above
-      panelY = btnY - panelHeight - gap;
+      // Place above (but below the expanded buttons)
+      panelY = btnY - panelHeight - gap - expandedButtonsHeight - 20;
       panelX = Math.max(margin, Math.min(btnX - (panelWidth / 2) + (buttonRect.width / 2), viewportWidth - panelWidth - margin));
     } else {
-      // Fallback: center on screen
-      panelX = (viewportWidth - panelWidth) / 2;
-      panelY = (viewportHeight - panelHeight) / 2;
+      // Fallback: place to the side that has more space
+      if (isOnRightSide) {
+        // Button on right, place panel on right (expanded buttons are on left)
+        panelX = Math.min(btnX + buttonRect.width + gap, viewportWidth - panelWidth - margin);
+      } else {
+        // Button on left, place panel on left
+        panelX = Math.max(btnX - panelWidth - gap, margin);
+      }
+      panelY = Math.max(margin, Math.min(btnY, viewportHeight - panelHeight - margin));
     }
     
     return { x: panelX, y: panelY };
@@ -257,6 +263,11 @@ export default function UnifiedFloatingAssistant() {
 
   // Handle hover with delay
   const handleMouseEnter = () => {
+    // Clear any pending collapse
+    if (collapseTimeoutRef.current) {
+      clearTimeout(collapseTimeoutRef.current);
+    }
+    
     if (!isDraggingButton && !selectedTool) {
       expandTimeoutRef.current = setTimeout(() => {
         setIsExpanded(true);
@@ -264,12 +275,25 @@ export default function UnifiedFloatingAssistant() {
     }
   };
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = (e) => {
     if (expandTimeoutRef.current) {
       clearTimeout(expandTimeoutRef.current);
     }
+    
+    // Don't collapse if hovering over the expanded buttons
+    const relatedTarget = e.relatedTarget;
+    if (relatedTarget && (
+      relatedTarget.closest('.expanded-options') || 
+      relatedTarget.closest('.option-button')
+    )) {
+      return;
+    }
+    
+    // Add delay before collapsing to give time to move cursor to buttons
     if (!selectedTool) {
-      setIsExpanded(false);
+      collapseTimeoutRef.current = setTimeout(() => {
+        setIsExpanded(false);
+      }, 300); // 300ms delay
     }
   };
 
@@ -509,21 +533,26 @@ export default function UnifiedFloatingAssistant() {
           }`}
         >
         {/* Expanded Options - Positioned to the side based on screen position */}
-        <div 
-          className={`absolute flex flex-col gap-3 mb-3 transition-all duration-300 ${
-            isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-          }`}
-          style={{
-            bottom: '72px', // 56px (button height) + 16px gap
-            // If button is on right side, align buttons to the left of it
-            // If button is on left side, align buttons to the right of it
-            ...(buttonPosition.x !== null && buttonPosition.x > window.innerWidth / 2 ? {
-              right: '0', // Align to right edge of button
-            } : {
-              left: '0', // Align to left edge of button
-            })
-          }}
-        >
+        {/* Hide when a tool is selected to avoid overlap */}
+        {!selectedTool && (
+          <div 
+            className="expanded-options absolute flex flex-col gap-3 mb-3 transition-all duration-300"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            style={{
+              bottom: '72px', // 56px (button height) + 16px gap
+              // Default position (right side): show buttons on the left
+              // If button is on left side, show buttons on the right
+              ...(buttonPosition.x === null || buttonPosition.x > window.innerWidth / 2 ? {
+                right: '0', // Align to right edge of button (buttons appear on left)
+              } : {
+                left: '0', // Align to left edge of button (buttons appear on right)
+              }),
+              opacity: isExpanded ? 1 : 0,
+              transform: isExpanded ? 'translateY(0)' : 'translateY(16px)',
+              pointerEvents: isExpanded ? 'auto' : 'none'
+            }}
+          >
           <button
             onClick={() => {
               console.log('AI Assistant clicked');
@@ -560,6 +589,7 @@ export default function UnifiedFloatingAssistant() {
             <span className="text-sm font-medium whitespace-nowrap">Smart Notes</span>
           </button>
         </div>
+        )}
 
         {/* Main Button */}
         <button
