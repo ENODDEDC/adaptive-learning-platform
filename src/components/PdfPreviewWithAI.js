@@ -123,20 +123,29 @@ const PdfPreviewWithAI = ({
           if (modes.length > 0) {
             setAllRecommendations(modes);
             
-            // Filter out AI Narrator for carousel
-            const filtered = modes.filter(mode => mode.mode !== 'AI Narrator');
-            setFilteredRecommendations(filtered);
-            console.log('🎠 Carousel recommendations (excluding AI Narrator):', filtered.length);
+            // Include ALL modes in carousel (including AI Narrator)
+            setFilteredRecommendations(modes);
+            console.log('🎠 Carousel recommendations (including AI Narrator):', modes.length);
             
-            // Set top recommendation (first in filtered list)
-            if (filtered.length > 0) {
-              setTopRecommendation(filtered[0]);
+            // For auto-load, skip AI Narrator and use first non-AI-Narrator mode
+            const firstNonAudioMode = modes.find(mode => mode.mode !== 'AI Narrator');
+            
+            if (firstNonAudioMode) {
+              setTopRecommendation(firstNonAudioMode);
               setHasClassification(true);
-              setCurrentRecommendationIndex(0);
-              console.log('✅ Top recommendation:', filtered[0].mode, 'Confidence:', filtered[0].confidence);
+              // Find index of first non-audio mode in the full list
+              const autoLoadIndex = modes.findIndex(mode => mode.mode === firstNonAudioMode.mode);
+              setCurrentRecommendationIndex(autoLoadIndex);
+              console.log('✅ Top recommendation for auto-load:', firstNonAudioMode.mode, 'at index', autoLoadIndex);
               
               setWillAutoLoad(true);
-              console.log('🎬 Will auto-load:', filtered[0].mode);
+              console.log('🎬 Will auto-load:', firstNonAudioMode.mode);
+            } else if (modes.length > 0) {
+              // All modes are AI Narrator (unlikely but handle it)
+              setTopRecommendation(modes[0]);
+              setHasClassification(true);
+              setCurrentRecommendationIndex(0);
+              console.log('ℹ️ Only AI Narrator available, will show PDF view');
             }
           } else {
             console.log('ℹ️ No recommendations available (user not classified yet)');
@@ -971,6 +980,15 @@ Reflective Learning works best with instructional content, lessons, or study mat
     setShowActiveLearning(false);
     setShowReflectiveLearning(false);
     
+    // Special handling for AI Narrator - activate it automatically
+    if (nextRec.mode === 'AI Narrator') {
+      console.log('🎙️ AI Narrator selected - activating audio narration');
+      // All modes are already closed above, so PDF will be visible
+      // Trigger AI Narrator functionality
+      setTimeout(() => handleAITutorClick(), 100);
+      return;
+    }
+    
     // Trigger the next mode
     const modeHandlers = {
       'Visual Learning': handleVisualContentClick,
@@ -1007,6 +1025,15 @@ Reflective Learning works best with instructional content, lessons, or study mat
     setShowIntuitiveLearning(false);
     setShowActiveLearning(false);
     setShowReflectiveLearning(false);
+    
+    // Special handling for AI Narrator - activate it automatically
+    if (prevRec.mode === 'AI Narrator') {
+      console.log('🎙️ AI Narrator selected - activating audio narration');
+      // All modes are already closed above, so PDF will be visible
+      // Trigger AI Narrator functionality
+      setTimeout(() => handleAITutorClick(), 100);
+      return;
+    }
     
     // Trigger the previous mode
     const modeHandlers = {
