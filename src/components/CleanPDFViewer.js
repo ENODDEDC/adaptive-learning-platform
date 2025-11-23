@@ -10,7 +10,10 @@ import {
   MoonIcon,
   DocumentTextIcon,
   ArrowsPointingOutIcon,
-  ArrowsPointingInIcon
+  ArrowsPointingInIcon,
+  SparklesIcon,
+  XMarkIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import learningModeRecommendationService from '../services/learningModeRecommendationService';
 
@@ -75,7 +78,11 @@ const CleanPDFViewer = ({
   isSensingLearningLoading = false,
   isIntuitiveLearningLoading = false,
   isActiveLearningLoading = false,
-  isReflectiveLearningLoading = false
+  isReflectiveLearningLoading = false,
+  // ML Recommendations props
+  topRecommendation = null,
+  allRecommendations = [],
+  hasClassification = false
 }) => {
   // State management
   const [currentPage, setCurrentPage] = useState(1);
@@ -86,6 +93,8 @@ const CleanPDFViewer = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showTooltip, setShowTooltip] = useState({ mode: null, content: null });
+  const [showPersonalizationBanner, setShowPersonalizationBanner] = useState(true);
+  const [showMoreModes, setShowMoreModes] = useState(false);
 
   // Recommendation system state
   const [recommendations, setRecommendations] = useState([]);
@@ -110,6 +119,81 @@ const CleanPDFViewer = ({
       'Reflect': 'Reflective Learning'
     };
     return nameMap[buttonName] || buttonName;
+  };
+
+  // Convert database names to button display names
+  const getModeDisplayName = (databaseName) => {
+    const nameMap = {
+      'AI Narrator': 'AI Narrator',
+      'Visual Learning': 'Visual Learning',
+      'Sequential Learning': 'Step-by-Step',
+      'Global Learning': 'Big Picture',
+      'Hands-On Lab': 'Hands-On',
+      'Concept Constellation': 'Theory',
+      'Active Learning Hub': 'Practice',
+      'Reflective Learning': 'Reflect'
+    };
+    return nameMap[databaseName] || databaseName;
+  };
+
+  // Organize modes into recommended and other
+  const allModes = [
+    { name: 'AI Narrator', handler: onAITutorClick, loading: isAITutorLoading, color: 'from-purple-500 to-indigo-600' },
+    { name: 'Visual Learning', handler: onVisualLearningClick, loading: isVisualLearningLoading, color: 'from-green-500 to-emerald-600' },
+    { name: 'Step-by-Step', handler: onSequentialLearningClick, loading: isSequentialLearningLoading, color: 'from-blue-500 to-cyan-600' },
+    { name: 'Big Picture', handler: onGlobalLearningClick, loading: isGlobalLearningLoading, color: 'from-orange-500 to-red-600' },
+    { name: 'Hands-On', handler: onSensingLearningClick, loading: isSensingLearningLoading, color: 'from-teal-500 to-green-600' },
+    { name: 'Theory', handler: onIntuitiveLearningClick, loading: isIntuitiveLearningLoading, color: 'from-pink-500 to-rose-600' },
+    { name: 'Practice', handler: onActiveLearningClick, loading: isActiveLearningLoading, color: 'from-yellow-500 to-orange-600' },
+    { name: 'Reflect', handler: onReflectiveLearningClick, loading: isReflectiveLearningLoading, color: 'from-indigo-500 to-purple-600' }
+  ];
+
+  const recommendedModeNames = allRecommendations.map(r => getModeDisplayName(r.mode));
+  const recommendedButtons = allModes.filter(m => recommendedModeNames.includes(m.name));
+  const otherButtons = allModes.filter(m => !recommendedModeNames.includes(m.name));
+
+  // Render a single mode button
+  const renderModeButton = (mode, isRecommended = false) => {
+    const tooltipKey = mode.name === 'Step-by-Step' ? 'Sequential Learning' :
+                       mode.name === 'Big Picture' ? 'Global Learning' :
+                       mode.name === 'Hands-On' ? 'Hands-On Lab' :
+                       mode.name === 'Theory' ? 'Concept Constellation' :
+                       mode.name === 'Practice' ? 'Active Learning Hub' :
+                       mode.name === 'Reflect' ? 'Reflective Learning' :
+                       mode.name;
+
+    return (
+      <div key={mode.name} className="relative group">
+        <button
+          onClick={mode.handler}
+          disabled={mode.loading}
+          onMouseEnter={() => {
+            const tooltip = isRecommended 
+              ? '🎯 ML Personalized: This mode matches your learning style'
+              : tooltipData[tooltipKey]?.description || mode.name;
+            setShowTooltip({ mode: mode.name, content: tooltip });
+          }}
+          onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
+          className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r ${mode.color} text-white rounded-lg hover:opacity-90 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended ? 'ring-2 ring-green-500 ring-offset-2' : ''}`}
+        >
+          {mode.loading ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <span className="text-lg">{tooltipData[tooltipKey]?.icon || '📚'}</span>
+          )}
+          <span className="hidden sm:inline font-medium">{mode.name}</span>
+          {isRecommended && (
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+          )}
+        </button>
+        {showTooltip.mode === mode.name && (
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
+            <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   // Fetch ML personalized recommendations
@@ -383,6 +467,29 @@ const CleanPDFViewer = ({
       ref={containerRef}
       className={`flex flex-col h-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
     >
+      {/* Personalization Banner */}
+      {hasClassification && topRecommendation && showPersonalizationBanner && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <SparklesIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <p className="text-sm text-green-900">
+                <strong>Personalized for you:</strong> We've loaded{' '}
+                <span className="font-semibold">{getModeDisplayName(topRecommendation.mode)}</span>{' '}
+                based on your learning style. Try other modes below!
+              </p>
+            </div>
+            <button 
+              onClick={() => setShowPersonalizationBanner(false)} 
+              className="text-green-600 hover:text-green-800 transition-colors p-1"
+              title="Dismiss"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Custom Toolbar - Clean Design */}
       <div className={`flex items-center justify-between px-4 py-3 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
         }`}>
@@ -442,324 +549,52 @@ const CleanPDFViewer = ({
           </div>
         </div>
 
-        {/* Center Section - AI Learning Modes */}
+        {/* Center Section - Smart AI Learning Modes */}
         <div className="flex items-center space-x-2">
-          {/* AI Narrator */}
-          <div className="relative group">
-            <button
-              onClick={onAITutorClick}
-              disabled={isAITutorLoading}
-              onMouseEnter={() => {
-                const recStyle = getRecommendationStyle('AI Narrator');
-                setShowTooltip({ mode: 'AI Narrator', content: recStyle.tooltip || 'AI Narrator' });
-              }}
-              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('AI Narrator').ring}`}
-            >
-              {isAITutorLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l14 9-14 9V3z" />
-                </svg>
-              )}
-              <span className="hidden sm:inline">AI Narrator</span>
-            </button>
-            {showTooltip.mode === 'AI Narrator' && (
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{tooltipData['AI Narrator'].icon}</span>
-                      <span className="font-semibold">{tooltipData['AI Narrator'].title}</span>
+          {hasClassification && recommendedButtons.length > 0 ? (
+            <>
+              {/* Recommended Modes - Prominent */}
+              {recommendedButtons.map(mode => renderModeButton(mode, true))}
+              
+              {/* Other Modes - Dropdown */}
+              {otherButtons.length > 0 && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowMoreModes(!showMoreModes)}
+                    className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  >
+                    <span>More</span>
+                    <ChevronDownIcon className={`w-4 h-4 transition-transform ${showMoreModes ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showMoreModes && (
+                    <div className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[200px] z-50">
+                      {otherButtons.map(mode => (
+                        <button
+                          key={mode.name}
+                          onClick={() => {
+                            mode.handler();
+                            setShowMoreModes(false);
+                          }}
+                          disabled={mode.loading}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        >
+                          <span className="text-lg">{tooltipData[mode.name === 'Step-by-Step' ? 'Sequential Learning' : mode.name === 'Big Picture' ? 'Global Learning' : mode.name === 'Hands-On' ? 'Hands-On Lab' : mode.name === 'Theory' ? 'Concept Constellation' : mode.name === 'Practice' ? 'Active Learning Hub' : mode.name === 'Reflect' ? 'Reflective Learning' : mode.name]?.icon || '📚'}</span>
+                          <span className="font-medium">{mode.name}</span>
+                          {mode.loading && (
+                            <div className="ml-auto w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                          )}
+                        </button>
+                      ))}
                     </div>
-                    <p className="text-gray-300 leading-relaxed">{tooltipData['AI Narrator'].description}</p>
-                  </>
-                )}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-              </div>
-            )}
-          </div>
-
-          {/* Visual Learning */}
-          <div className="relative group">
-            <button
-              onClick={onVisualLearningClick}
-              disabled={isVisualLearningLoading}
-              onMouseEnter={() => {
-                const recStyle = getRecommendationStyle('Visual Learning');
-                setShowTooltip({ mode: 'Visual Learning', content: recStyle.tooltip || 'Visual Learning' });
-              }}
-              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Visual Learning').ring}`}
-            >
-              {isVisualLearningLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
+                  )}
+                </div>
               )}
-              <span className="hidden sm:inline">Visual Learning</span>
-            </button>
-            {showTooltip.mode === 'Visual Learning' && (
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{tooltipData['Visual Learning'].icon}</span>
-                      <span className="font-semibold">{tooltipData['Visual Learning'].title}</span>
-                    </div>
-                    <p className="text-gray-300 leading-relaxed">{tooltipData['Visual Learning'].description}</p>
-                  </>
-                )}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-              </div>
-            )}
-          </div>
-
-          {/* Sequential Learning */}
-          <div className="relative group">
-            <button
-              onClick={onSequentialLearningClick}
-              disabled={isSequentialLearningLoading}
-              onMouseEnter={() => {
-                const recStyle = getRecommendationStyle('Sequential Learning');
-                setShowTooltip({ mode: 'Sequential Learning', content: recStyle.tooltip || 'Sequential Learning' });
-              }}
-              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Sequential Learning').ring}`}
-            >
-              {isSequentialLearningLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              )}
-              <span className="hidden sm:inline">Step-by-Step</span>
-            </button>
-            {showTooltip.mode === 'Sequential Learning' && (
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{tooltipData['Sequential Learning'].icon}</span>
-                      <span className="font-semibold">{tooltipData['Sequential Learning'].title}</span>
-                    </div>
-                    <p className="text-gray-300 leading-relaxed">{tooltipData['Sequential Learning'].description}</p>
-                  </>
-                )}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-              </div>
-            )}
-          </div>
-
-          {/* Global Learning */}
-          <div className="relative group">
-            <button
-              onClick={() => {
-                console.log('🔘 Global Learning button clicked in CleanPDFViewer');
-                console.log('📞 Calling onGlobalLearningClick:', typeof onGlobalLearningClick);
-                onGlobalLearningClick?.();
-              }}
-              disabled={isGlobalLearningLoading}
-              onMouseEnter={() => {
-                const recStyle = getRecommendationStyle('Global Learning');
-                setShowTooltip({ mode: 'Global Learning', content: recStyle.tooltip || 'Global Learning' });
-              }}
-              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Global Learning').ring}`}
-            >
-              {isGlobalLearningLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              )}
-              <span className="hidden sm:inline">Big Picture</span>
-            </button>
-            {showTooltip.mode === 'Global Learning' && (
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{tooltipData['Global Learning'].icon}</span>
-                      <span className="font-semibold">{tooltipData['Global Learning'].title}</span>
-                    </div>
-                    <p className="text-gray-300 leading-relaxed">{tooltipData['Global Learning'].description}</p>
-                  </>
-                )}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-              </div>
-            )}
-          </div>
-
-          {/* Sensing Learning */}
-          <div className="relative group">
-            <button
-              onClick={onSensingLearningClick}
-              disabled={isSensingLearningLoading}
-              onMouseEnter={() => {
-                const recStyle = getRecommendationStyle('Hands-On Lab');
-                setShowTooltip({ mode: 'Hands-On Lab', content: recStyle.tooltip || 'Hands-On Lab' });
-              }}
-              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-green-600 text-white rounded-lg hover:from-teal-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Hands-On Lab').ring}`}
-            >
-              {isSensingLearningLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-              )}
-              <span className="hidden sm:inline">Hands-On</span>
-            </button>
-            {showTooltip.mode === 'Hands-On Lab' && (
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{tooltipData['Hands-On Lab'].icon}</span>
-                      <span className="font-semibold">{tooltipData['Hands-On Lab'].title}</span>
-                    </div>
-                    <p className="text-gray-300 leading-relaxed">{tooltipData['Hands-On Lab'].description}</p>
-                  </>
-                )}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-              </div>
-            )}
-          </div>
-
-          {/* Intuitive Learning */}
-          <div className="relative group">
-            <button
-              onClick={onIntuitiveLearningClick}
-              onMouseEnter={() => {
-                const recStyle = getRecommendationStyle('Concept Constellation');
-                setShowTooltip({ mode: 'Concept Constellation', content: recStyle.tooltip || 'Concept Constellation' });
-              }}
-              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-              disabled={isIntuitiveLearningLoading}
-              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Concept Constellation').ring}`}
-            >
-              {isIntuitiveLearningLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              )}
-              <span className="hidden sm:inline">Theory</span>
-            </button>
-            {showTooltip.mode === 'Concept Constellation' && (
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{tooltipData['Concept Constellation'].icon}</span>
-                      <span className="font-semibold">{tooltipData['Concept Constellation'].title}</span>
-                    </div>
-                    <p className="text-gray-300 leading-relaxed">{tooltipData['Concept Constellation'].description}</p>
-                  </>
-                )}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-              </div>
-            )}
-          </div>
-
-          {/* Active Learning */}
-          <div className="relative group">
-            <button
-              onClick={onActiveLearningClick}
-              disabled={isActiveLearningLoading}
-              onMouseEnter={() => {
-                const recStyle = getRecommendationStyle('Active Learning Hub');
-                setShowTooltip({ mode: 'Active Learning Hub', content: recStyle.tooltip || 'Active Learning Hub' });
-              }}
-              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-lg hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Active Learning Hub').ring}`}
-            >
-              {isActiveLearningLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-                </svg>
-              )}
-              <span className="hidden sm:inline">Practice</span>
-            </button>
-            {showTooltip.mode === 'Active Learning Hub' && (
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{tooltipData['Active Learning Hub'].icon}</span>
-                      <span className="font-semibold">{tooltipData['Active Learning Hub'].title}</span>
-                    </div>
-                    <p className="text-gray-300 leading-relaxed">{tooltipData['Active Learning Hub'].description}</p>
-                  </>
-                )}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-              </div>
-            )}
-          </div>
-
-          {/* Reflective Learning */}
-          <div className="relative group">
-            <button
-              onClick={onReflectiveLearningClick}
-              disabled={isReflectiveLearningLoading}
-              onMouseEnter={() => {
-                const recStyle = getRecommendationStyle('Reflective Learning');
-                setShowTooltip({ mode: 'Reflective Learning', content: recStyle.tooltip || 'Reflective Learning' });
-              }}
-              onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-              className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 text-sm ${getRecommendationStyle('Reflective Learning').ring}`}
-            >
-              {isReflectiveLearningLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              )}
-              <span className="hidden sm:inline">Reflect</span>
-            </button>
-            {showTooltip.mode === 'Reflective Learning' && (
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-                {showTooltip.content.includes('✨') || showTooltip.content.includes('🎯') || showTooltip.content.includes('⭐') ? (
-                  <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{tooltipData['Reflective Learning'].icon}</span>
-                      <span className="font-semibold">{tooltipData['Reflective Learning'].title}</span>
-                    </div>
-                    <p className="text-gray-300 leading-relaxed">{tooltipData['Reflective Learning'].description}</p>
-                  </>
-                )}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-              </div>
-            )}
-          </div>
+            </>
+          ) : (
+            /* No classification - Show all 8 modes equally */
+            allModes.map(mode => renderModeButton(mode, false))
+          )}
         </div>
 
         {/* Right Section - Zoom and Actions */}

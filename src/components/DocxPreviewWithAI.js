@@ -111,6 +111,14 @@ const DocxPreviewWithAI = ({
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [showTooltip, setShowTooltip] = useState(null);
 
+  // ML Recommendations state for auto-load
+  const [topRecommendation, setTopRecommendation] = useState(null);
+  const [allRecommendations, setAllRecommendations] = useState([]);
+  const [hasClassification, setHasClassification] = useState(false);
+  const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
+  const [showDocxView, setShowDocxView] = useState(true); // Start with DOCX view, switch to generated content when mode loads
+  const [willAutoLoad, setWillAutoLoad] = useState(false); // Track if we're going to auto-load a mode
+
   // Detect cache status when DOCX loads
   useEffect(() => {
     if (!content?.filePath && !content?.cloudStorage?.key) return;
@@ -144,6 +152,42 @@ const DocxPreviewWithAI = ({
 
     return () => clearTimeout(timer);
   }, [content?.filePath, content?.cloudStorage?.key, content?._id]);
+
+  // Fetch ML recommendations on mount
+  useEffect(() => {
+    async function fetchRecommendations() {
+      try {
+        console.log('🎯 Fetching ML recommendations for DOCX...');
+        const response = await fetch('/api/learning-style/profile');
+        if (response.ok) {
+          const data = await response.json();
+          const modes = data.profile?.recommendedModes || 
+                       data.data?.profile?.recommendedModes || 
+                       data.recommendedModes || [];
+          
+          console.log('📊 Recommendations received:', modes);
+          
+          if (modes.length > 0) {
+            setAllRecommendations(modes);
+            setTopRecommendation(modes[0]); // #1 recommendation
+            setHasClassification(true);
+            console.log('✅ Top recommendation:', modes[0].mode, 'Confidence:', modes[0].confidence);
+            
+            // Set flag to indicate we'll auto-load (except for AI Narrator)
+            if (modes[0].mode !== 'AI Narrator') {
+              setWillAutoLoad(true);
+              console.log('🎬 Will auto-load:', modes[0].mode);
+            }
+          } else {
+            console.log('ℹ️ No recommendations available (user not classified yet)');
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ Could not fetch ML recommendations:', error);
+      }
+    }
+    fetchRecommendations();
+  }, []);
 
   // Auto-load recommendations when component mounts
   useEffect(() => {
@@ -236,6 +280,70 @@ const DocxPreviewWithAI = ({
     const timer = setTimeout(tryInitialRecommendations, 1000);
     return () => clearTimeout(timer);
   }, [content]);
+
+  // Clear willAutoLoad flag when any mode starts loading
+  useEffect(() => {
+    if (isSequentialLearningLoading || isGlobalLearningLoading ||
+        isSensingLearningLoading || isIntuitiveLearningLoading || isActiveLearningLoading ||
+        isReflectiveLearningLoading) {
+      setWillAutoLoad(false);
+    }
+  }, [isSequentialLearningLoading, isGlobalLearningLoading,
+      isSensingLearningLoading, isIntuitiveLearningLoading, isActiveLearningLoading,
+      isReflectiveLearningLoading]);
+
+  // Proactively extract DOCX content when we know we'll auto-load
+  useEffect(() => {
+    if (willAutoLoad && !docxContent && topRecommendation) {
+      console.log('📄 Proactively extracting DOCX content for auto-load...');
+      extractDocxContent('general').catch(error => {
+        console.error('❌ Failed to extract DOCX content:', error);
+        setWillAutoLoad(false); // Clear flag on error
+      });
+    }
+  }, [willAutoLoad, docxContent, topRecommendation]);
+
+  // Auto-load top recommendation after DOCX content is extracted (EXCEPT AI Narrator)
+  useEffect(() => {
+    if (!topRecommendation || !docxContent || autoLoadAttempted) return;
+    
+    // Skip AI Narrator - it's audio-based and shouldn't auto-load
+    if (topRecommendation.mode === 'AI Narrator') {
+      console.log('⏭️ Skipping auto-load for AI Narrator (audio-based mode)');
+      setAutoLoadAttempted(true);
+      setShowDocxView(true); // Show DOCX view by default for AI Narrator
+      setWillAutoLoad(false); // Clear the flag
+      return;
+    }
+    
+    console.log('🚀 Auto-loading top recommendation:', topRecommendation.mode);
+    setAutoLoadAttempted(true);
+    setShowDocxView(false); // Show generated content by default for other modes
+    
+    // Map database names to handler functions (excluding AI Narrator)
+    const modeHandlers = {
+      'Visual Learning': handleVisualLearningClick,
+      'Sequential Learning': handleSequentialLearningClick,
+      'Global Learning': handleGlobalLearningClick,
+      'Hands-On Lab': handleSensingLearningClick,
+      'Concept Constellation': handleIntuitiveLearningClick,
+      'Active Learning Hub': handleActiveLearningClick,
+      'Reflective Learning': handleReflectiveLearningClick
+    };
+    
+    const handler = modeHandlers[topRecommendation.mode];
+    if (handler) {
+      console.log(`✨ Triggering ${topRecommendation.mode} automatically...`);
+      // Small delay to ensure UI is ready
+      setTimeout(() => {
+        handler();
+        setWillAutoLoad(false); // Clear the flag after triggering
+      }, 500);
+    } else {
+      console.warn('⚠️ No handler found for mode:', topRecommendation.mode);
+      setWillAutoLoad(false); // Clear the flag
+    }
+  }, [topRecommendation, docxContent, autoLoadAttempted]);
 
   const extractDocxContent = async (toolType = 'general') => {
     if (docxContent) return docxContent;
@@ -2877,9 +2985,29 @@ Reflective Learning Processor works best with instructional content, lessons, or
 
 
 
-        {/* Main content - Hide when Sequential Learning is active */}
-        <div className={`flex-1 relative ${showSequentialLearning ? 'hidden' : ''}`}>
-          {htmlContent ? (
+        {/* Loading State - Show when loading a mode OR planning to auto-load */}
+        {(isSequentialLearningLoading || isGlobalLearningLoading || isSensingLearningLoading || 
+          isIntuitiveLearningLoading || isActiveLearningLoading || isReflectiveLearningLoading || willAutoLoad) && 
+         !(showVisualOverlay || showSequentialLearning || showGlobalLearning || showSensingLearning || 
+           showIntuitiveLearning || showActiveLearning || showReflectiveLearning) && (
+          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-lg font-medium text-gray-900 mb-2">Preparing Your Personalized Learning Experience</p>
+              <p className="text-sm text-gray-600">
+                {willAutoLoad ? 'Extracting content and preparing your recommended learning mode...' : 'Generating content based on your learning style...'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Main content - Hide when any learning mode is active OR when loading */}
+        {!(showVisualOverlay || showSequentialLearning || showGlobalLearning || showSensingLearning || 
+           showIntuitiveLearning || showActiveLearning || showReflectiveLearning) && 
+         !(isSequentialLearningLoading || isGlobalLearningLoading || isSensingLearningLoading || 
+           isIntuitiveLearningLoading || isActiveLearningLoading || isReflectiveLearningLoading || willAutoLoad) && (
+          <div className="flex-1 relative">
+            {htmlContent ? (
             <iframe
               ref={(iframe) => {
                 if (iframe) {
@@ -2920,16 +3048,18 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 minHeight: '800px'
               }}
             />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="w-8 h-8 border-4 border-sky-200 border-t-sky-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading document...</p>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="w-8 h-8 border-4 border-sky-200 border-t-sky-600 rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading document...</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        )}
 
-          {/* AI Narrator Mode Selection - Platform Aligned */}
+        {/* AI Narrator Mode Selection - Platform Aligned */}
           {showModeSelection && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
               <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -3133,12 +3263,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
               </div>
             </div>
           )}
-
-
         </div>
-
-
-      </div>
 
       {/* AI Narrator Modal */}
       <AITutorModal

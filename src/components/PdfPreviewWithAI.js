@@ -5,7 +5,8 @@ import {
   SparklesIcon,
   AcademicCapIcon,
   XMarkIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import AITutorModal from './AITutorModal';
 import CleanPDFViewer from './CleanPDFViewer';
@@ -69,9 +70,126 @@ const PdfPreviewWithAI = ({
   const [showCacheIndicator, setShowCacheIndicator] = useState(false);
   const [isCached, setIsCached] = useState(false);
 
+  // ML Recommendations state
+  const [topRecommendation, setTopRecommendation] = useState(null);
+  const [allRecommendations, setAllRecommendations] = useState([]);
+  const [hasClassification, setHasClassification] = useState(false);
+  const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
+  const [showPdfView, setShowPdfView] = useState(false); // Start with generated content view when mode is active
+  const [willAutoLoad, setWillAutoLoad] = useState(false); // Track if we're going to auto-load a mode
+  const [currentRecommendationIndex, setCurrentRecommendationIndex] = useState(0); // Track current position in carousel
+  const [filteredRecommendations, setFilteredRecommendations] = useState([]); // Recommendations excluding AI Narrator
+
   // Automatic time tracking for ML classification
   useLearningModeTracking('aiNarrator', aiTutorActive);
   useLearningModeTracking('visualLearning', showVisualContent);
+
+  // Clear willAutoLoad flag when any mode starts loading
+  useEffect(() => {
+    if (isVisualLearningLoading || isSequentialLearningLoading || isGlobalLearningLoading ||
+        isSensingLearningLoading || isIntuitiveLearningLoading || isActiveLearningLoading ||
+        isReflectiveLearningLoading) {
+      setWillAutoLoad(false);
+    }
+  }, [isVisualLearningLoading, isSequentialLearningLoading, isGlobalLearningLoading,
+      isSensingLearningLoading, isIntuitiveLearningLoading, isActiveLearningLoading,
+      isReflectiveLearningLoading]);
+
+  // Proactively extract PDF content when we know we'll auto-load
+  useEffect(() => {
+    if (willAutoLoad && !pdfContent && topRecommendation) {
+      console.log('📄 Proactively extracting PDF content for auto-load...');
+      extractPdfContent().catch(error => {
+        console.error('❌ Failed to extract PDF content:', error);
+        setWillAutoLoad(false); // Clear flag on error
+      });
+    }
+  }, [willAutoLoad, pdfContent, topRecommendation]);
+
+  // Fetch ML recommendations on mount
+  useEffect(() => {
+    async function fetchRecommendations() {
+      try {
+        console.log('🎯 Fetching ML recommendations...');
+        const response = await fetch('/api/learning-style/profile');
+        if (response.ok) {
+          const data = await response.json();
+          const modes = data.profile?.recommendedModes || 
+                       data.data?.profile?.recommendedModes || 
+                       data.recommendedModes || [];
+          
+          console.log('📊 Recommendations received:', modes);
+          
+          if (modes.length > 0) {
+            setAllRecommendations(modes);
+            
+            // Filter out AI Narrator for carousel
+            const filtered = modes.filter(mode => mode.mode !== 'AI Narrator');
+            setFilteredRecommendations(filtered);
+            console.log('🎠 Carousel recommendations (excluding AI Narrator):', filtered.length);
+            
+            // Set top recommendation (first in filtered list)
+            if (filtered.length > 0) {
+              setTopRecommendation(filtered[0]);
+              setHasClassification(true);
+              setCurrentRecommendationIndex(0);
+              console.log('✅ Top recommendation:', filtered[0].mode, 'Confidence:', filtered[0].confidence);
+              
+              setWillAutoLoad(true);
+              console.log('🎬 Will auto-load:', filtered[0].mode);
+            }
+          } else {
+            console.log('ℹ️ No recommendations available (user not classified yet)');
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ Could not fetch ML recommendations:', error);
+      }
+    }
+    fetchRecommendations();
+  }, []);
+
+  // Auto-load top recommendation after PDF content is extracted (EXCEPT AI Narrator)
+  useEffect(() => {
+    if (!topRecommendation || !pdfContent || autoLoadAttempted) return;
+    
+    // Skip AI Narrator - it's audio-based and shouldn't auto-load
+    if (topRecommendation.mode === 'AI Narrator') {
+      console.log('⏭️ Skipping auto-load for AI Narrator (audio-based mode)');
+      setAutoLoadAttempted(true);
+      setShowPdfView(true); // Show PDF view by default for AI Narrator
+      setWillAutoLoad(false); // Clear the flag
+      return;
+    }
+    
+    console.log('🚀 Auto-loading top recommendation:', topRecommendation.mode);
+    setAutoLoadAttempted(true);
+    setShowPdfView(false); // Show generated content by default for other modes
+    
+    // Map database names to handler functions (excluding AI Narrator)
+    const modeHandlers = {
+      'Visual Learning': handleVisualContentClick,
+      'Sequential Learning': handleSequentialLearningClick,
+      'Global Learning': handleGlobalLearningClick,
+      'Hands-On Lab': handleSensingLearningClick,
+      'Concept Constellation': handleIntuitiveLearningClick,
+      'Active Learning Hub': handleActiveLearningClick,
+      'Reflective Learning': handleReflectiveLearningClick
+    };
+    
+    const handler = modeHandlers[topRecommendation.mode];
+    if (handler) {
+      console.log(`✨ Triggering ${topRecommendation.mode} automatically...`);
+      // Small delay to ensure UI is ready
+      setTimeout(() => {
+        handler();
+        setWillAutoLoad(false); // Clear the flag after triggering
+      }, 500);
+    } else {
+      console.warn('⚠️ No handler found for mode:', topRecommendation.mode);
+      setWillAutoLoad(false); // Clear the flag
+    }
+  }, [topRecommendation, pdfContent, autoLoadAttempted]);
 
   // Detect cache status when PDF loads - check localStorage FIRST
   useEffect(() => {
@@ -834,7 +952,85 @@ Reflective Learning works best with instructional content, lessons, or study mat
     }
   };
 
+  // Carousel Navigation Functions
+  const handleNextRecommendation = () => {
+    if (filteredRecommendations.length === 0) return;
+    
+    const nextIndex = (currentRecommendationIndex + 1) % filteredRecommendations.length;
+    setCurrentRecommendationIndex(nextIndex);
+    const nextRec = filteredRecommendations[nextIndex];
+    
+    console.log(`🎠 Navigating to recommendation ${nextIndex + 1}/${filteredRecommendations.length}:`, nextRec.mode);
+    
+    // Close current mode
+    setShowVisualContent(false);
+    setShowSequentialLearning(false);
+    setShowGlobalLearning(false);
+    setShowSensingLearning(false);
+    setShowIntuitiveLearning(false);
+    setShowActiveLearning(false);
+    setShowReflectiveLearning(false);
+    
+    // Trigger the next mode
+    const modeHandlers = {
+      'Visual Learning': handleVisualContentClick,
+      'Sequential Learning': handleSequentialLearningClick,
+      'Global Learning': handleGlobalLearningClick,
+      'Hands-On Lab': handleSensingLearningClick,
+      'Concept Constellation': handleIntuitiveLearningClick,
+      'Active Learning Hub': handleActiveLearningClick,
+      'Reflective Learning': handleReflectiveLearningClick
+    };
+    
+    const handler = modeHandlers[nextRec.mode];
+    if (handler) {
+      setTimeout(() => handler(), 100);
+    }
+  };
+
+  const handlePrevRecommendation = () => {
+    if (filteredRecommendations.length === 0) return;
+    
+    const prevIndex = currentRecommendationIndex === 0 
+      ? filteredRecommendations.length - 1 
+      : currentRecommendationIndex - 1;
+    setCurrentRecommendationIndex(prevIndex);
+    const prevRec = filteredRecommendations[prevIndex];
+    
+    console.log(`🎠 Navigating to recommendation ${prevIndex + 1}/${filteredRecommendations.length}:`, prevRec.mode);
+    
+    // Close current mode
+    setShowVisualContent(false);
+    setShowSequentialLearning(false);
+    setShowGlobalLearning(false);
+    setShowSensingLearning(false);
+    setShowIntuitiveLearning(false);
+    setShowActiveLearning(false);
+    setShowReflectiveLearning(false);
+    
+    // Trigger the previous mode
+    const modeHandlers = {
+      'Visual Learning': handleVisualContentClick,
+      'Sequential Learning': handleSequentialLearningClick,
+      'Global Learning': handleGlobalLearningClick,
+      'Hands-On Lab': handleSensingLearningClick,
+      'Concept Constellation': handleIntuitiveLearningClick,
+      'Active Learning Hub': handleActiveLearningClick,
+      'Reflective Learning': handleReflectiveLearningClick
+    };
+    
+    const handler = modeHandlers[prevRec.mode];
+    if (handler) {
+      setTimeout(() => handler(), 100);
+    }
+  };
+
   const fileName = content.title || content.originalName || 'Document.pdf';
+
+  // Check if any learning mode is active
+  const hasActiveLearningMode = showVisualContent || showSequentialLearning || showGlobalLearning || 
+                                showSensingLearning || showIntuitiveLearning || showActiveLearning || 
+                                showReflectiveLearning;
 
   return (
     <>
@@ -1031,44 +1227,317 @@ Reflective Learning works best with instructional content, lessons, or study mat
 
 
 
-        {/* Main content - PDF Viewer */}
-        <div className="flex-1 relative flex flex-col">
+        {/* Main content - Split View */}
+        <div className="flex-1 relative flex">
+          {/* Determine if any learning mode is active (except AI Narrator) */}
+          {(() => {
+            const hasActiveLearningMode = showVisualContent || showSequentialLearning || showGlobalLearning || 
+                                         showSensingLearning || showIntuitiveLearning || showActiveLearning || 
+                                         showReflectiveLearning;
+            
+            const isLoadingAnyMode = isVisualLearningLoading || isSequentialLearningLoading || isGlobalLearningLoading ||
+                                    isSensingLearningLoading || isIntuitiveLearningLoading || isActiveLearningLoading ||
+                                    isReflectiveLearningLoading;
+            
+            return (
+              <>
+                {/* PDF Viewer - Show when no mode active AND not loading AND not planning to auto-load, OR when user explicitly toggles to PDF view */}
+                {((!hasActiveLearningMode && !isLoadingAnyMode && !willAutoLoad) || (hasActiveLearningMode && showPdfView)) && (
+                  <div className="flex-1 flex flex-col">
+                    {/* Toggle Button - Only show when learning mode is active */}
+                    {hasActiveLearningMode && (
+                      <div className="bg-gray-100 border-b border-gray-200 px-4 py-2 flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Currently viewing: PDF Document</span>
+                        <button
+                          onClick={() => setShowPdfView(false)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                          <SparklesIcon className="w-4 h-4" />
+                          <span>View Generated Content</span>
+                        </button>
+                      </div>
+                    )}
+                    
+                    <div className="flex-1">
+                      {pdfUrl ? (
+                        <CleanPDFViewer 
+                          content={{
+                            ...content,
+                            filePath: pdfUrl,
+                            url: pdfUrl
+                          }}
+                          onAITutorClick={handleAITutorClick}
+                          onVisualLearningClick={handleVisualContentClick}
+                          onSequentialLearningClick={handleSequentialLearningClick}
+                          onGlobalLearningClick={handleGlobalLearningClick}
+                          onSensingLearningClick={handleSensingLearningClick}
+                          onIntuitiveLearningClick={handleIntuitiveLearningClick}
+                          onActiveLearningClick={handleActiveLearningClick}
+                          onReflectiveLearningClick={handleReflectiveLearningClick}
+                          isAITutorLoading={isAITutorLoading}
+                          isVisualLearningLoading={isVisualLearningLoading}
+                          isSequentialLearningLoading={isSequentialLearningLoading}
+                          isGlobalLearningLoading={isGlobalLearningLoading}
+                          isSensingLearningLoading={isSensingLearningLoading}
+                          isIntuitiveLearningLoading={isIntuitiveLearningLoading}
+                          isActiveLearningLoading={isActiveLearningLoading}
+                          isReflectiveLearningLoading={isReflectiveLearningLoading}
+                          // ML Recommendations
+                          topRecommendation={topRecommendation}
+                          allRecommendations={allRecommendations}
+                          hasClassification={hasClassification}
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center">
+                            <div className="w-8 h-8 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4"></div>
+                            <p className="text-gray-600">Loading PDF...</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
-          {/* Clean PDF Viewer */}
-          <div className="flex-1">
-            {pdfUrl ? (
-              <CleanPDFViewer 
-                content={{
-                  ...content,
-                  filePath: pdfUrl,
-                  url: pdfUrl
-                }}
-                onAITutorClick={handleAITutorClick}
-                onVisualLearningClick={handleVisualContentClick}
-                onSequentialLearningClick={handleSequentialLearningClick}
-                onGlobalLearningClick={handleGlobalLearningClick}
-                onSensingLearningClick={handleSensingLearningClick}
-                onIntuitiveLearningClick={handleIntuitiveLearningClick}
-                onActiveLearningClick={handleActiveLearningClick}
-                onReflectiveLearningClick={handleReflectiveLearningClick}
-                isAITutorLoading={isAITutorLoading}
-                isVisualLearningLoading={isVisualLearningLoading}
-                isSequentialLearningLoading={isSequentialLearningLoading}
-                isGlobalLearningLoading={isGlobalLearningLoading}
-                isSensingLearningLoading={isSensingLearningLoading}
-                isIntuitiveLearningLoading={isIntuitiveLearningLoading}
-                isActiveLearningLoading={isActiveLearningLoading}
-                isReflectiveLearningLoading={isReflectiveLearningLoading}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="w-8 h-8 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading PDF...</p>
-                </div>
+                {/* Loading State - Show when loading a mode OR planning to auto-load */}
+                {(isLoadingAnyMode || willAutoLoad) && !hasActiveLearningMode && (
+                  <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
+                    <div className="text-center">
+                      <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-lg font-medium text-gray-900 mb-2">Preparing Your Personalized Learning Experience</p>
+                      <p className="text-sm text-gray-600">
+                        {willAutoLoad ? 'Extracting content and preparing your recommended learning mode...' : 'Generating content based on your learning style...'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Generated Content View - Show when mode is active AND not viewing PDF */}
+                {hasActiveLearningMode && !showPdfView && (
+                  <div className="flex-1 flex flex-col">
+                    {/* Header with Carousel Navigation */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200 px-4 py-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <SparklesIcon className="w-5 h-5 text-blue-600" />
+                          <div>
+                            <span className="text-sm font-medium text-blue-900 block">
+                              Currently viewing: {
+                                showVisualContent ? 'Visual Learning' :
+                                showSequentialLearning ? 'Sequential Learning' :
+                                showGlobalLearning ? 'Global Learning' :
+                                showSensingLearning ? 'Hands-On Lab' :
+                                showIntuitiveLearning ? 'Concept Constellation' :
+                                showActiveLearning ? 'Active Learning Hub' :
+                                showReflectiveLearning ? 'Reflective Learning' : 'Generated Content'
+                              }
+                            </span>
+                            {filteredRecommendations.length > 1 && (
+                              <span className="text-xs text-blue-700">
+                                Recommendation {currentRecommendationIndex + 1} of {filteredRecommendations.length}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          {/* Carousel Navigation - Only show if multiple recommendations */}
+                          {filteredRecommendations.length > 1 && (
+                            <div className="flex items-center gap-1 mr-2">
+                              <button
+                                onClick={handlePrevRecommendation}
+                                className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                title="Previous recommendation"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={handleNextRecommendation}
+                                className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                title="Next recommendation"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                          
+                          <button
+                            onClick={() => setShowPdfView(true)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                          >
+                            <DocumentTextIcon className="w-4 h-4" />
+                            <span>View PDF</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Learning Mode Content */}
+                    <div className="flex-1 overflow-auto bg-gray-50">
+                      {showVisualContent && (
+                        <VisualDocxOverlay
+                          isActive={true}
+                          onClose={() => {
+                            setShowVisualContent(false);
+                            setShowPdfView(false);
+                          }}
+                          docxContent={pdfContent}
+                          fileName={fileName}
+                          onVisualTypeChange={(type) => console.log('Visual type changed:', type)}
+                          activeVisualType="diagram"
+                        />
+                      )}
+                      
+                      {showSequentialLearning && (
+                        <SequentialLearning
+                          isActive={true}
+                          onClose={() => {
+                            setShowSequentialLearning(false);
+                            setShowPdfView(false);
+                          }}
+                          docxContent={pdfContent}
+                          fileName={fileName}
+                        />
+                      )}
+                      
+                      {showGlobalLearning && (
+                        <GlobalLearning
+                          isActive={true}
+                          onClose={() => {
+                            setShowGlobalLearning(false);
+                            setShowPdfView(false);
+                          }}
+                          docxContent={pdfContent}
+                          fileName={fileName}
+                        />
+                      )}
+                      
+                      {showSensingLearning && (
+                        <SensingLearning
+                          isActive={true}
+                          onClose={() => {
+                            setShowSensingLearning(false);
+                            setShowPdfView(false);
+                          }}
+                          docxContent={pdfContent}
+                          fileName={fileName}
+                        />
+                      )}
+                      
+                      {showIntuitiveLearning && (
+                        <IntuitiveLearning
+                          isActive={true}
+                          onClose={() => {
+                            setShowIntuitiveLearning(false);
+                            setShowPdfView(false);
+                          }}
+                          docxContent={pdfContent}
+                          fileName={fileName}
+                        />
+                      )}
+                      
+                      {showActiveLearning && (
+                        <ActiveLearning
+                          isActive={true}
+                          onClose={() => {
+                            setShowActiveLearning(false);
+                            setShowPdfView(false);
+                          }}
+                          docxContent={pdfContent}
+                          fileName={fileName}
+                        />
+                      )}
+                      
+                      {showReflectiveLearning && (
+                        <ReflectiveLearning
+                          isActive={true}
+                          onClose={() => {
+                            setShowReflectiveLearning(false);
+                            setShowPdfView(false);
+                          }}
+                          docxContent={pdfContent}
+                          fileName={fileName}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
+
+        {/* Floating Carousel Navigation - Shows on top of learning modes */}
+        {hasActiveLearningMode && (
+          <div className="fixed top-20 right-4 z-[10002] bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-3">
+            <div className="flex flex-col gap-2">
+              <div className="text-xs font-semibold text-gray-700 text-center mb-1">
+                Learning Mode Carousel
               </div>
-            )}
+              {filteredRecommendations.length > 0 ? (
+                <>
+                  <div className="text-xs text-gray-600 text-center">
+                    Recommendation {currentRecommendationIndex + 1} of {filteredRecommendations.length}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handlePrevRecommendation}
+                      disabled={filteredRecommendations.length <= 1}
+                      className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Previous recommendation"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <div className="text-xs text-gray-600 font-medium min-w-[100px] text-center">
+                      {filteredRecommendations[currentRecommendationIndex]?.mode || 'Loading...'}
+                    </div>
+                    <button
+                      onClick={handleNextRecommendation}
+                      disabled={filteredRecommendations.length <= 1}
+                      className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Next recommendation"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  {/* View PDF Button */}
+                  <button
+                    onClick={() => {
+                      // Close all learning modes to show PDF
+                      setShowVisualContent(false);
+                      setShowSequentialLearning(false);
+                      setShowGlobalLearning(false);
+                      setShowSensingLearning(false);
+                      setShowIntuitiveLearning(false);
+                      setShowActiveLearning(false);
+                      setShowReflectiveLearning(false);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all shadow-md text-xs font-medium"
+                    title="View original PDF document"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>View PDF</span>
+                  </button>
+                </>
+              ) : (
+                <div className="text-xs text-gray-500 text-center">
+                  No recommendations available
+                </div>
+              )}
+            </div>
           </div>
+        )}
 
           {/* AI Narrator Mode Selection - Platform Aligned */}
           {showModeSelection && (
@@ -1191,130 +1660,73 @@ Reflective Learning works best with instructional content, lessons, or study mat
             </div>
           )}
 
-          {/* AI Narrator Active Control Panel - Draggable */}
-          {aiTutorActive && (
-            <div
-              data-draggable-panel
-              className="absolute z-20"
-              style={{
-                left: `${panelPosition.x}px`,
-                top: `${panelPosition.y}px`,
-                userSelect: 'none',
-              }}
-            >
-              <div className="bg-white border border-gray-200 rounded-xl shadow-xl p-4 min-w-[300px] max-w-[400px]">
-                <div
-                  className="cursor-move"
-                  onMouseDown={handleMouseDown}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-semibold text-gray-900">🤖 AI Narrator Active</span>
-                    <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                      Drag to move
-                    </div>
+        {/* AI Narrator Active Control Panel - Draggable */}
+        {aiTutorActive && (
+          <div
+            data-draggable-panel
+            className="absolute z-20"
+            style={{
+              left: `${panelPosition.x}px`,
+              top: `${panelPosition.y}px`,
+              userSelect: 'none',
+            }}
+          >
+            <div className="bg-white border border-gray-200 rounded-xl shadow-xl p-4 min-w-[300px] max-w-[400px]">
+              <div
+                className="cursor-move"
+                onMouseDown={handleMouseDown}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-semibold text-gray-900">🤖 AI Narrator Active</span>
+                  <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    Drag to move
                   </div>
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">{currentConcept}</span>
-                    <button
-                      onClick={handleAITutorClick}
-                      className="text-red-500 hover:text-red-700 text-sm font-medium"
-                    >
-                      Stop
-                    </button>
-                  </div>
-
-                  {isPlaying && (
-                    <div className="space-y-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${audioProgress}%` }}
-                        ></div>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>Playing narration...</span>
-                        <span>{Math.round(audioProgress)}%</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
+
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">{currentConcept}</span>
+                  <button
+                    onClick={handleAITutorClick}
+                    className="text-red-500 hover:text-red-700 text-sm font-medium"
+                  >
+                    Stop
+                  </button>
+                </div>
+
+                {isPlaying && (
+                  <div className="space-y-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${audioProgress}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>Playing narration...</span>
+                      <span>{Math.round(audioProgress)}%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* AI Narrator Modal */}
+      {/* AI Narrator Modal - Keep as modal since it's audio-based */}
       <AITutorModal
         isOpen={showAITutor}
         onClose={() => setShowAITutor(false)}
         fileName={fileName}
         docxContent={pdfContent}
       />
-
-      {/* Visual Content Overlay */}
-      <VisualDocxOverlay
-        isActive={showVisualContent}
-        onClose={() => setShowVisualContent(false)}
-        docxContent={pdfContent}
-        fileName={fileName}
-        onVisualTypeChange={(type) => console.log('Visual type changed:', type)}
-        activeVisualType="diagram"
-      />
-
-      {/* Sequential Learning Modal */}
-      <SequentialLearning
-        isActive={showSequentialLearning}
-        onClose={() => setShowSequentialLearning(false)}
-        docxContent={pdfContent}
-        fileName={fileName}
-      />
-
-      {/* Global Learning Modal */}
-      <GlobalLearning
-        isActive={showGlobalLearning}
-        onClose={() => setShowGlobalLearning(false)}
-        docxContent={pdfContent}
-        fileName={fileName}
-      />
-
-      {/* Sensing Learning Modal */}
-      <SensingLearning
-        isActive={showSensingLearning}
-        onClose={() => setShowSensingLearning(false)}
-        docxContent={pdfContent}
-        fileName={fileName}
-      />
-
-      {/* Intuitive Learning Modal */}
-      <IntuitiveLearning
-        isActive={showIntuitiveLearning}
-        onClose={() => setShowIntuitiveLearning(false)}
-        docxContent={pdfContent}
-        fileName={fileName}
-      />
-
-      {/* Active Learning Modal */}
-      <ActiveLearning
-        isActive={showActiveLearning}
-        onClose={() => setShowActiveLearning(false)}
-        docxContent={pdfContent}
-        fileName={fileName}
-      />
-
-      {/* Reflective Learning Modal */}
-      <ReflectiveLearning
-        isActive={showReflectiveLearning}
-        onClose={() => setShowReflectiveLearning(false)}
-        docxContent={pdfContent}
-        fileName={fileName}
-      />
     </>
   );
 };
 
 export default PdfPreviewWithAI;
+
+
