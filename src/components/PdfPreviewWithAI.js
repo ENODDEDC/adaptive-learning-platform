@@ -1471,70 +1471,66 @@ Reflective Learning works best with instructional content, lessons, or study mat
           })()}
         </div>
 
-        {/* Floating Carousel Navigation - Shows on top of learning modes */}
-        {hasActiveLearningMode && (
-          <div className="fixed top-20 right-4 z-[10002] bg-white rounded-xl shadow-2xl border-2 border-blue-200 p-3">
-            <div className="flex flex-col gap-2">
-              <div className="text-xs font-semibold text-gray-700 text-center mb-1">
-                Learning Mode Carousel
-              </div>
-              {filteredRecommendations.length > 0 ? (
-                <>
-                  <div className="text-xs text-gray-600 text-center">
-                    Recommendation {currentRecommendationIndex + 1} of {filteredRecommendations.length}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handlePrevRecommendation}
-                      disabled={filteredRecommendations.length <= 1}
-                      className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Previous recommendation"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <div className="text-xs text-gray-600 font-medium min-w-[100px] text-center">
-                      {filteredRecommendations[currentRecommendationIndex]?.mode || 'Loading...'}
-                    </div>
-                    <button
-                      onClick={handleNextRecommendation}
-                      disabled={filteredRecommendations.length <= 1}
-                      className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Next recommendation"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
-                  
-                  {/* View PDF Button */}
-                  <button
-                    onClick={() => {
-                      // Close all learning modes to show PDF
-                      setShowVisualContent(false);
-                      setShowSequentialLearning(false);
-                      setShowGlobalLearning(false);
-                      setShowSensingLearning(false);
-                      setShowIntuitiveLearning(false);
-                      setShowActiveLearning(false);
-                      setShowReflectiveLearning(false);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all shadow-md text-xs font-medium"
-                    title="View original PDF document"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>View PDF</span>
-                  </button>
-                </>
-              ) : (
-                <div className="text-xs text-gray-500 text-center">
-                  No recommendations available
+        {/* Bottom Navigation Bar - Learning Mode Carousel */}
+        {hasActiveLearningMode && filteredRecommendations.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 z-[10002] bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-t border-gray-300 shadow-xl backdrop-blur-sm">
+            <div className="max-w-7xl mx-auto px-6 py-3.5">
+              <div className="flex items-center justify-between gap-6">
+                {/* Left: Mode Info */}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-gray-800">
+                    {filteredRecommendations[currentRecommendationIndex]?.mode || 'Loading...'}
+                  </span>
+                  <span className="text-xs text-gray-600 px-2.5 py-1 bg-white/80 border border-gray-200 rounded-md shadow-sm">
+                    {currentRecommendationIndex + 1} of {filteredRecommendations.length}
+                  </span>
                 </div>
-              )}
+
+                {/* Center: Navigation Controls */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrevRecommendation}
+                    disabled={filteredRecommendations.length <= 1}
+                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
+                    title="Previous recommendation"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={handleNextRecommendation}
+                    disabled={filteredRecommendations.length <= 1}
+                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
+                    title="Next recommendation"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Right: View PDF Button */}
+                <button
+                  onClick={() => {
+                    // Close all learning modes to show PDF
+                    setShowVisualContent(false);
+                    setShowSequentialLearning(false);
+                    setShowGlobalLearning(false);
+                    setShowSensingLearning(false);
+                    setShowIntuitiveLearning(false);
+                    setShowActiveLearning(false);
+                    setShowReflectiveLearning(false);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-medium shadow-md hover:shadow-lg"
+                  title="View original PDF document"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>View PDF</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
