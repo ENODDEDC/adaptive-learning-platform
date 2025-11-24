@@ -84,6 +84,18 @@ const PdfPreviewWithAI = ({
   useLearningModeTracking('aiNarrator', aiTutorActive);
   useLearningModeTracking('visualLearning', showVisualContent);
 
+  // Set data attribute for conditional styling based on ML recommendations
+  useEffect(() => {
+    if (hasClassification && filteredRecommendations.length > 0) {
+      document.body.setAttribute('data-has-ml-nav', 'true');
+    } else {
+      document.body.removeAttribute('data-has-ml-nav');
+    }
+    return () => {
+      document.body.removeAttribute('data-has-ml-nav');
+    };
+  }, [hasClassification, filteredRecommendations.length]);
+
   // Clear willAutoLoad flag when any mode starts loading
   useEffect(() => {
     if (isVisualLearningLoading || isSequentialLearningLoading || isGlobalLearningLoading ||
@@ -1342,61 +1354,59 @@ Reflective Learning works best with instructional content, lessons, or study mat
                 {/* Generated Content View - Show when mode is active AND not viewing PDF */}
                 {hasActiveLearningMode && !showPdfView && (
                   <div className="flex-1 flex flex-col">
-                    {/* Header with Carousel Navigation */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200 px-4 py-2">
-                      <div className="flex items-center justify-between">
+                    {/* Top Navigation Bar - Learning Mode Carousel */}
+                    <div className="bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-b border-gray-300 shadow-sm px-6 py-3">
+                      <div className="flex items-center justify-between gap-6">
+                        {/* Left: Mode Info */}
                         <div className="flex items-center gap-3">
-                          <SparklesIcon className="w-5 h-5 text-blue-600" />
-                          <div>
-                            <span className="text-sm font-medium text-blue-900 block">
-                              Currently viewing: {
-                                showVisualContent ? 'Visual Learning' :
-                                showSequentialLearning ? 'Sequential Learning' :
-                                showGlobalLearning ? 'Global Learning' :
-                                showSensingLearning ? 'Hands-On Lab' :
-                                showIntuitiveLearning ? 'Concept Constellation' :
-                                showActiveLearning ? 'Active Learning Hub' :
-                                showReflectiveLearning ? 'Reflective Learning' : 'Generated Content'
-                              }
-                            </span>
-                            {filteredRecommendations.length > 1 && (
-                              <span className="text-xs text-blue-700">
-                                Recommendation {currentRecommendationIndex + 1} of {filteredRecommendations.length}
-                              </span>
-                            )}
-                          </div>
+                          <span className="text-sm font-semibold text-gray-800">
+                            Currently viewing: {filteredRecommendations[currentRecommendationIndex]?.mode || 'Loading...'}
+                          </span>
+                          <span className="text-xs text-gray-600 px-2.5 py-1 bg-white/80 border border-gray-200 rounded-md shadow-sm">
+                            Recommendation {currentRecommendationIndex + 1} of {filteredRecommendations.length}
+                          </span>
                         </div>
-                        
+
+                        {/* Right: Navigation Controls + View PDF */}
                         <div className="flex items-center gap-2">
-                          {/* Carousel Navigation - Only show if multiple recommendations */}
-                          {filteredRecommendations.length > 1 && (
-                            <div className="flex items-center gap-1 mr-2">
-                              <button
-                                onClick={handlePrevRecommendation}
-                                className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                                title="Previous recommendation"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={handleNextRecommendation}
-                                className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                                title="Next recommendation"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                              </button>
-                            </div>
-                          )}
+                          <button
+                            onClick={handlePrevRecommendation}
+                            disabled={filteredRecommendations.length <= 1}
+                            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
+                            title="Previous recommendation"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={handleNextRecommendation}
+                            disabled={filteredRecommendations.length <= 1}
+                            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
+                            title="Next recommendation"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
                           
                           <button
-                            onClick={() => setShowPdfView(true)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                            onClick={() => {
+                              // Close all learning modes to show PDF
+                              setShowVisualContent(false);
+                              setShowSequentialLearning(false);
+                              setShowGlobalLearning(false);
+                              setShowSensingLearning(false);
+                              setShowIntuitiveLearning(false);
+                              setShowActiveLearning(false);
+                              setShowReflectiveLearning(false);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-medium shadow-md hover:shadow-lg ml-2"
+                            title="View original PDF document"
                           >
-                            <DocumentTextIcon className="w-4 h-4" />
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                             <span>View PDF</span>
                           </button>
                         </div>
@@ -1498,65 +1508,64 @@ Reflective Learning works best with instructional content, lessons, or study mat
           })()}
         </div>
 
-        {/* Bottom Navigation Bar - Learning Mode Carousel */}
-        {hasActiveLearningMode && filteredRecommendations.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-[10002] bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-t border-gray-300 shadow-xl backdrop-blur-sm">
-            <div className="max-w-7xl mx-auto px-6 py-3.5">
+        {/* Fixed Top Navigation Bar - Shows above all learning modes ONLY when user has ML recommendations */}
+        {hasActiveLearningMode && filteredRecommendations.length > 0 && hasClassification && (
+          <div className="fixed top-0 left-0 right-0 z-[10003] bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-b border-gray-300 shadow-md" style={{ height: '48px' }}>
+            <div className="max-w-full mx-auto px-6 py-2.5">
               <div className="flex items-center justify-between gap-6">
                 {/* Left: Mode Info */}
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold text-gray-800">
-                    {filteredRecommendations[currentRecommendationIndex]?.mode || 'Loading...'}
+                    Currently viewing: {filteredRecommendations[currentRecommendationIndex]?.mode || 'Loading...'}
                   </span>
                   <span className="text-xs text-gray-600 px-2.5 py-1 bg-white/80 border border-gray-200 rounded-md shadow-sm">
-                    {currentRecommendationIndex + 1} of {filteredRecommendations.length}
+                    Recommendation {currentRecommendationIndex + 1} of {filteredRecommendations.length}
                   </span>
                 </div>
 
-                {/* Center: Navigation Controls */}
+                {/* Right: Navigation Controls + View PDF */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handlePrevRecommendation}
                     disabled={filteredRecommendations.length <= 1}
-                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
+                    className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
                     title="Previous recommendation"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
                   <button
                     onClick={handleNextRecommendation}
                     disabled={filteredRecommendations.length <= 1}
-                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
+                    className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
                     title="Next recommendation"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
+                  
+                  <button
+                    onClick={() => {
+                      // Close all learning modes to show PDF
+                      setShowVisualContent(false);
+                      setShowSequentialLearning(false);
+                      setShowGlobalLearning(false);
+                      setShowSensingLearning(false);
+                      setShowIntuitiveLearning(false);
+                      setShowActiveLearning(false);
+                      setShowReflectiveLearning(false);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-medium shadow-md hover:shadow-lg ml-2"
+                    title="View original PDF document"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>View PDF</span>
+                  </button>
                 </div>
-
-                {/* Right: View PDF Button */}
-                <button
-                  onClick={() => {
-                    // Close all learning modes to show PDF
-                    setShowVisualContent(false);
-                    setShowSequentialLearning(false);
-                    setShowGlobalLearning(false);
-                    setShowSensingLearning(false);
-                    setShowIntuitiveLearning(false);
-                    setShowActiveLearning(false);
-                    setShowReflectiveLearning(false);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-medium shadow-md hover:shadow-lg"
-                  title="View original PDF document"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span>View PDF</span>
-                </button>
               </div>
             </div>
           </div>

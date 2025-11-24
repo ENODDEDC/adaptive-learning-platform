@@ -718,7 +718,7 @@ const GlobalLearning = ({
   console.log('✅ GlobalLearning IS rendering!');
 
   return (
-    <div className="fixed inset-0 bg-white z-[10001] flex flex-col">
+    <div className="fixed inset-0 bg-white z-[10001] flex flex-col" style={{ paddingTop: document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0' }}>
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50">
         <div className="flex items-center space-x-4">

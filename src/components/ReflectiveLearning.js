@@ -194,7 +194,7 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
     if (!isActive) return null;
 
     return (
-        <div className="fixed inset-0 z-50 bg-white overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 bg-white overflow-hidden flex flex-col" style={{ paddingTop: document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0' }}>
             <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-6 shadow-lg">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

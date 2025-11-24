@@ -1072,7 +1072,7 @@ const IntuitiveLearning = ({
   if (!isActive) return null;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-indigo-900 to-purple-900 z-[10001] flex flex-col">
+    <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-indigo-900 to-purple-900 z-[10001] flex flex-col" style={{ paddingTop: document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0' }}>
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white border-opacity-20 bg-black bg-opacity-20 backdrop-blur-sm">
         <div className="flex items-center space-x-4">
