@@ -74,6 +74,7 @@ const DocxPreviewWithAI = ({
   const [docxContent, setDocxContent] = useState('');
   const [isExtractingContent, setIsExtractingContent] = useState(false);
   const [isAINarratorLoading, setIsAINarratorLoading] = useState(false);
+  const [isVisualLearningLoading, setIsVisualLearningLoading] = useState(false);
   const [isSequentialLearningLoading, setIsSequentialLearningLoading] = useState(false);
   const [isGlobalLearningLoading, setIsGlobalLearningLoading] = useState(false);
   const [isSensingLearningLoading, setIsSensingLearningLoading] = useState(false);
@@ -118,6 +119,8 @@ const DocxPreviewWithAI = ({
   const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
   const [showDocxView, setShowDocxView] = useState(true); // Start with DOCX view, switch to generated content when mode loads
   const [willAutoLoad, setWillAutoLoad] = useState(false); // Track if we're going to auto-load a mode
+  const [currentRecommendationIndex, setCurrentRecommendationIndex] = useState(0); // Track current position in carousel
+  const [filteredRecommendations, setFilteredRecommendations] = useState([]); // All recommendations including AI Narrator
 
   // Detect cache status when DOCX loads
   useEffect(() => {
@@ -153,6 +156,18 @@ const DocxPreviewWithAI = ({
     return () => clearTimeout(timer);
   }, [content?.filePath, content?.cloudStorage?.key, content?._id]);
 
+  // Set data attribute for conditional styling based on ML recommendations
+  useEffect(() => {
+    if (hasClassification && filteredRecommendations.length > 0) {
+      document.body.setAttribute('data-has-ml-nav', 'true');
+    } else {
+      document.body.removeAttribute('data-has-ml-nav');
+    }
+    return () => {
+      document.body.removeAttribute('data-has-ml-nav');
+    };
+  }, [hasClassification, filteredRecommendations.length]);
+
   // Fetch ML recommendations on mount
   useEffect(() => {
     async function fetchRecommendations() {
@@ -169,14 +184,30 @@ const DocxPreviewWithAI = ({
           
           if (modes.length > 0) {
             setAllRecommendations(modes);
-            setTopRecommendation(modes[0]); // #1 recommendation
-            setHasClassification(true);
-            console.log('✅ Top recommendation:', modes[0].mode, 'Confidence:', modes[0].confidence);
             
-            // Set flag to indicate we'll auto-load (except for AI Narrator)
-            if (modes[0].mode !== 'AI Narrator') {
+            // Include ALL modes in carousel (including AI Narrator)
+            setFilteredRecommendations(modes);
+            console.log('🎠 Carousel recommendations (including AI Narrator):', modes.length);
+            
+            // For auto-load, skip AI Narrator and use first non-audio mode
+            const firstNonAudioMode = modes.find(mode => mode.mode !== 'AI Narrator');
+            
+            if (firstNonAudioMode) {
+              setTopRecommendation(firstNonAudioMode);
+              setHasClassification(true);
+              // Find index of first non-audio mode in the full list
+              const autoLoadIndex = modes.findIndex(mode => mode.mode === firstNonAudioMode.mode);
+              setCurrentRecommendationIndex(autoLoadIndex);
+              console.log('✅ Top recommendation for auto-load:', firstNonAudioMode.mode, 'at index', autoLoadIndex);
+              
               setWillAutoLoad(true);
-              console.log('🎬 Will auto-load:', modes[0].mode);
+              console.log('🎬 Will auto-load:', firstNonAudioMode.mode);
+            } else if (modes.length > 0) {
+              // All modes are AI Narrator (unlikely but handle it)
+              setTopRecommendation(modes[0]);
+              setHasClassification(true);
+              setCurrentRecommendationIndex(0);
+              console.log('ℹ️ Only AI Narrator available, will show DOCX view');
             }
           } else {
             console.log('ℹ️ No recommendations available (user not classified yet)');
@@ -322,7 +353,7 @@ const DocxPreviewWithAI = ({
     
     // Map database names to handler functions (excluding AI Narrator)
     const modeHandlers = {
-      'Visual Learning': handleVisualLearningClick,
+      'Visual Learning': handleVisualContentClick,
       'Sequential Learning': handleSequentialLearningClick,
       'Global Learning': handleGlobalLearningClick,
       'Hands-On Lab': handleSensingLearningClick,
@@ -788,15 +819,102 @@ AI Narrator works best with instructional content, lessons, or study materials.`
     }
   };
 
+  // Carousel Navigation Functions
+  const handleNextRecommendation = () => {
+    if (filteredRecommendations.length === 0) return;
+    
+    const nextIndex = (currentRecommendationIndex + 1) % filteredRecommendations.length;
+    setCurrentRecommendationIndex(nextIndex);
+    const nextRec = filteredRecommendations[nextIndex];
+    
+    console.log(`🎠 Navigating to recommendation ${nextIndex + 1}/${filteredRecommendations.length}:`, nextRec.mode);
+    
+    // Close current mode
+    setShowVisualOverlay(false);
+    setShowSequentialLearning(false);
+    setShowGlobalLearning(false);
+    setShowSensingLearning(false);
+    setShowIntuitiveLearning(false);
+    setShowActiveLearning(false);
+    setShowReflectiveLearning(false);
+    
+    // Special handling for AI Narrator - activate it automatically
+    if (nextRec.mode === 'AI Narrator') {
+      console.log('🎙️ AI Narrator selected - activating audio narration');
+      setTimeout(() => handleAINarratorClick(), 100);
+      return;
+    }
+    
+    // Trigger the next mode
+    const modeHandlers = {
+      'Visual Learning': handleVisualContentClick,
+      'Sequential Learning': handleSequentialLearningClick,
+      'Global Learning': handleGlobalLearningClick,
+      'Hands-On Lab': handleSensingLearningClick,
+      'Concept Constellation': handleIntuitiveLearningClick,
+      'Active Learning Hub': handleActiveLearningClick,
+      'Reflective Learning': handleReflectiveLearningClick
+    };
+    
+    const handler = modeHandlers[nextRec.mode];
+    if (handler) {
+      setTimeout(() => handler(), 100);
+    }
+  };
+
+  const handlePrevRecommendation = () => {
+    if (filteredRecommendations.length === 0) return;
+    
+    const prevIndex = currentRecommendationIndex === 0 
+      ? filteredRecommendations.length - 1 
+      : currentRecommendationIndex - 1;
+    setCurrentRecommendationIndex(prevIndex);
+    const prevRec = filteredRecommendations[prevIndex];
+    
+    console.log(`🎠 Navigating to recommendation ${prevIndex + 1}/${filteredRecommendations.length}:`, prevRec.mode);
+    
+    // Close current mode
+    setShowVisualOverlay(false);
+    setShowSequentialLearning(false);
+    setShowGlobalLearning(false);
+    setShowSensingLearning(false);
+    setShowIntuitiveLearning(false);
+    setShowActiveLearning(false);
+    setShowReflectiveLearning(false);
+    
+    // Special handling for AI Narrator - activate it automatically
+    if (prevRec.mode === 'AI Narrator') {
+      console.log('🎙️ AI Narrator selected - activating audio narration');
+      setTimeout(() => handleAINarratorClick(), 100);
+      return;
+    }
+    
+    // Trigger the previous mode
+    const modeHandlers = {
+      'Visual Learning': handleVisualContentClick,
+      'Sequential Learning': handleSequentialLearningClick,
+      'Global Learning': handleGlobalLearningClick,
+      'Hands-On Lab': handleSensingLearningClick,
+      'Concept Constellation': handleIntuitiveLearningClick,
+      'Active Learning Hub': handleActiveLearningClick,
+      'Reflective Learning': handleReflectiveLearningClick
+    };
+    
+    const handler = modeHandlers[prevRec.mode];
+    if (handler) {
+      setTimeout(() => handler(), 100);
+    }
+  };
+
   const handleVisualContentClick = async () => {
     // First, extract and analyze content BEFORE opening visual overlay
     try {
-      setIsExtractingContent(true);
+      setIsVisualLearningLoading(true);
       const extractedContent = docxContent || await extractDocxContent('visual');
 
       if (!extractedContent || !extractedContent.trim()) {
         setVisualLearningError('Failed to extract document content for visual generation.');
-        setIsExtractingContent(false);
+        setIsVisualLearningLoading(false);
         return;
       }
 
@@ -825,7 +943,7 @@ Confidence: ${Math.round(analysisResult.confidence * 100)}%
 Visual Learning works best with instructional content, lessons, or study materials.`;
 
         setVisualLearningError(errorMessage);
-        setIsExtractingContent(false);
+        setIsVisualLearningLoading(false);
         return;
       }
 
@@ -843,7 +961,7 @@ Visual Learning works best with instructional content, lessons, or study materia
       console.error('Error analyzing content for visual learning:', error);
       setExtractionError(`Error analyzing document: ${error.message}`);
     } finally {
-      setIsExtractingContent(false);
+      setIsVisualLearningLoading(false);
     }
   };
 
@@ -1302,8 +1420,9 @@ Reflective Learning Processor works best with instructional content, lessons, or
         onHide={() => setShowCacheIndicator(false)}
       />
       
-      {/* Learning Features Toolbar - Hide when overlays are active */}
-      {!showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && !showIntuitiveLearning && !showActiveLearning && !showReflectiveLearning && (
+      {/* Learning Features Toolbar - Hide when overlays are active OR when loading */}
+      {!showVisualOverlay && !showSequentialLearning && !showGlobalLearning && !showSensingLearning && !showIntuitiveLearning && !showActiveLearning && !showReflectiveLearning && 
+       !isAINarratorLoading && !isVisualLearningLoading && !isSequentialLearningLoading && !isGlobalLearningLoading && !isSensingLearningLoading && !isIntuitiveLearningLoading && !isActiveLearningLoading && !isReflectiveLearningLoading && (
         <div className="sticky top-0 z-10 w-full bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-200 px-6 py-4 backdrop-blur-sm bg-opacity-95">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -3058,6 +3177,75 @@ Reflective Learning Processor works best with instructional content, lessons, or
             )}
           </div>
         )}
+
+        {/* Fixed Top Navigation Bar - Shows above all learning modes ONLY when user has ML recommendations */}
+        {(() => {
+          const hasActiveLearningMode = showVisualOverlay || showSequentialLearning || showGlobalLearning || 
+                                       showSensingLearning || showIntuitiveLearning || showActiveLearning || 
+                                       showReflectiveLearning;
+          
+          return hasActiveLearningMode && filteredRecommendations.length > 0 && hasClassification && (
+            <div className="fixed top-0 left-0 right-0 z-[10003] bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-b border-gray-300 shadow-md" style={{ height: '48px' }}>
+              <div className="max-w-full mx-auto px-6 py-2.5">
+                <div className="flex items-center justify-between gap-6">
+                  {/* Left: Mode Info */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold text-gray-800">
+                      Currently viewing: {filteredRecommendations[currentRecommendationIndex]?.mode || 'Loading...'}
+                    </span>
+                    <span className="text-xs text-gray-600 px-2.5 py-1 bg-white/80 border border-gray-200 rounded-md shadow-sm">
+                      Recommendation {currentRecommendationIndex + 1} of {filteredRecommendations.length}
+                    </span>
+                  </div>
+
+                  {/* Right: Navigation Controls + View DOCX */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handlePrevRecommendation}
+                      disabled={filteredRecommendations.length <= 1}
+                      className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
+                      title="Previous recommendation"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={handleNextRecommendation}
+                      disabled={filteredRecommendations.length <= 1}
+                      className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
+                      title="Next recommendation"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        // Close all learning modes to show DOCX
+                        setShowVisualOverlay(false);
+                        setShowSequentialLearning(false);
+                        setShowGlobalLearning(false);
+                        setShowSensingLearning(false);
+                        setShowIntuitiveLearning(false);
+                        setShowActiveLearning(false);
+                        setShowReflectiveLearning(false);
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-medium shadow-md hover:shadow-lg ml-2"
+                      title="View original DOCX document"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>View DOCX</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* AI Narrator Mode Selection - Platform Aligned */}
           {showModeSelection && (
