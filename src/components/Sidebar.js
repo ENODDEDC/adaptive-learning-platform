@@ -14,8 +14,7 @@ import {
   Cog6ToothIcon,
   DocumentTextIcon,
   AcademicCapIcon,
-  PlusIcon,
-  ArchiveBoxIcon
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { Dialog, Transition } from '@headlessui/react';
 import CourseBrowserModal from './CourseBrowserModal';
@@ -202,7 +201,6 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   const links = [
     { href: "/home", label: "Home" },
     { href: "/courses", label: "Course" },
-    { href: "/archive", label: "Archive" },
     { href: "/todo", label: "To-Do" },
     { href: "/schedule", label: "Schedule" },
     { href: "/settings", label: "Settings" },
@@ -731,8 +729,6 @@ const getIconForLink = (label) => {
       return BellIcon;
     case 'Course':
       return BookOpenIcon;
-    case 'Archive':
-      return ArchiveBoxIcon;
     case 'Text to Docs':
       return DocumentTextIcon;
     case 'To-Do':
