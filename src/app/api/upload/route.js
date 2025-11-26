@@ -4,6 +4,40 @@ import { verifyToken } from '@/utils/auth';
 import connectMongoDB from '@/config/mongoConfig';
 import Content from '@/models/Content';
 
+// Async thumbnail generation - don't wait for it
+async function generateThumbnailAsync(contentId, fileKey, mimeType) {
+  try {
+    let thumbnailEndpoint;
+    
+    if (mimeType === 'application/pdf') {
+      thumbnailEndpoint = '/api/pdf-thumbnail';
+    } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      thumbnailEndpoint = '/api/docx-thumbnail';
+    } else if (mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+      thumbnailEndpoint = '/api/pptx-thumbnail';
+    } else {
+      return; // No thumbnail generation for this file type
+    }
+    
+    console.log(`🖼️ Triggering thumbnail generation for ${contentId} via ${thumbnailEndpoint}`);
+    
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}${thumbnailEndpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileKey, contentId })
+    });
+    
+    if (response.ok) {
+      console.log(`✅ Thumbnail generated successfully for ${contentId}`);
+    } else {
+      console.warn(`⚠️ Thumbnail generation failed for ${contentId}:`, await response.text());
+    }
+  } catch (error) {
+    console.error('Thumbnail generation error:', error);
+  }
+}
+
 export async function POST(request) {
   try {
     console.log('🚀 Upload API called');
@@ -92,6 +126,12 @@ export async function POST(request) {
               cloudStorageUrl: contentRecord.cloudStorage?.url,
               filePath: contentRecord.filePath
             });
+
+            // Trigger thumbnail generation asynchronously (don't wait for it)
+            if (contentRecord._id && result.key) {
+              const thumbnailPromise = generateThumbnailAsync(contentRecord._id.toString(), result.key, file.type);
+              thumbnailPromise.catch(err => console.error('Thumbnail generation failed:', err));
+            }
           } catch (dbError) {
             console.error('⚠️ Failed to create Content record:', dbError);
             console.error('⚠️ Error details:', {

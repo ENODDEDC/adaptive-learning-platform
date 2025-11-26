@@ -70,5 +70,10 @@
     "eslint-config-next": "15.4.6",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17"
+  },
+  "optionalDependencies": {
+    "pdf-poppler": "^0.2.1",
+    "pdf2pic": "^2.1.4",
+    "libreoffice-convert": "^1.6.1"
   }
 }
