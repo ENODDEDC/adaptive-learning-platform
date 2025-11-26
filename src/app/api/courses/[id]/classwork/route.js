@@ -10,7 +10,7 @@ import fs from 'fs/promises';
 
 export async function POST(request, { params }) {
   console.log('🚀 Classwork POST API called');
-  
+
   try {
     console.log('🔐 Verifying token...');
     const payload = await verifyToken();
@@ -60,15 +60,15 @@ export async function POST(request, { params }) {
     console.log('✅ Permission granted');
 
     const attachmentIds = [];
-    
+
     // Handle Backblaze B2 attachments
     if (attachments && attachments.length > 0) {
       console.log('📎 Processing', attachments.length, 'attachments...');
-      
+
       for (let i = 0; i < attachments.length; i++) {
         const attachment = attachments[i];
         console.log(`📎 Processing attachment ${i + 1}:`, attachment);
-        
+
         try {
           // If it's already a saved Content document (has _id), just use it
           if (attachment._id) {
@@ -80,7 +80,7 @@ export async function POST(request, { params }) {
           // If it's a new Backblaze upload, create a Content document
           if (attachment.url && attachment.key) {
             console.log('🔄 Creating new Content document for Backblaze file...');
-            
+
             // Determine content type based on MIME type
             let contentType = 'material'; // default
             if (attachment.contentType) {
@@ -115,19 +115,19 @@ export async function POST(request, { params }) {
 
             console.log('📄 Content data to save:', contentData);
             const newContent = new Content(contentData);
-            
+
             console.log('💾 Saving content to database...');
             await newContent.save();
             console.log('✅ Content saved, ID:', newContent._id);
             attachmentIds.push(newContent._id);
-            
+
             // Trigger thumbnail generation for supported file types
-            if (attachment.contentType === 'application/pdf' || 
-                attachment.contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                attachment.contentType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
-              
+            if (attachment.contentType === 'application/pdf' ||
+              attachment.contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+              attachment.contentType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+
               console.log('🖼️ Triggering thumbnail generation for:', newContent._id);
-              
+
               // Fire and forget - don't wait for thumbnail
               const generateThumbnail = async () => {
                 try {
@@ -139,17 +139,19 @@ export async function POST(request, { params }) {
                   } else if (attachment.contentType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
                     endpoint = '/api/pptx-thumbnail';
                   }
-                  
-                  const baseUrl = process.env.VERCEL_URL 
-                    ? `https://${process.env.VERCEL_URL}` 
-                    : (process.env.RENDER_EXTERNAL_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
-                  
+
+                  const baseUrl = process.env.RENDER_EXTERNAL_URL
+                    ? `https://${process.env.RENDER_EXTERNAL_URL}`
+                    : (process.env.VERCEL_URL
+                      ? `https://${process.env.VERCEL_URL}`
+                      : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'));
+
                   await fetch(`${baseUrl}${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                      fileKey: attachment.key, 
-                      contentId: newContent._id.toString() 
+                    body: JSON.stringify({
+                      fileKey: attachment.key,
+                      contentId: newContent._id.toString()
                     }),
                     signal: AbortSignal.timeout(30000)
                   });
@@ -157,7 +159,7 @@ export async function POST(request, { params }) {
                   console.error('Thumbnail generation failed:', err.message);
                 }
               };
-              
+
               generateThumbnail().catch(err => console.error('Thumbnail error:', err));
             }
           } else {
@@ -171,7 +173,7 @@ export async function POST(request, { params }) {
     } else {
       console.log('📎 No attachments to process');
     }
-    
+
     console.log('📎 Final attachment IDs:', attachmentIds);
 
     console.log('📝 Creating new Assignment...');
@@ -185,14 +187,14 @@ export async function POST(request, { params }) {
       attachments: attachmentIds,
     };
     console.log('📋 Assignment data:', assignmentData);
-    
+
     const newClasswork = await Assignment.create(assignmentData);
     console.log('✅ Assignment created, ID:', newClasswork._id);
 
     console.log('🔄 Populating assignment with attachments...');
     const populatedClasswork = await Assignment.findById(newClasswork._id).populate('attachments');
     console.log('✅ Assignment populated successfully');
-    
+
     console.log('🎉 Classwork created successfully:', {
       id: populatedClasswork._id,
       title: populatedClasswork.title,
@@ -200,17 +202,17 @@ export async function POST(request, { params }) {
       createdAt: populatedClasswork.createdAt,
       attachmentsCount: populatedClasswork.attachments?.length || 0
     });
-    
+
     return NextResponse.json(populatedClasswork, { status: 201 });
-    
+
   } catch (error) {
     console.error('❌ Create Classwork Error:', error);
     console.error('❌ Error stack:', error.stack);
     console.error('❌ Error name:', error.name);
     console.error('❌ Error message:', error.message);
-    
-    return NextResponse.json({ 
-      message: 'Internal server error', 
+
+    return NextResponse.json({
+      message: 'Internal server error',
       details: error.message,
       errorType: error.name,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
@@ -309,26 +311,26 @@ export async function DELETE(request, { params }) {
 
     // Connect to database
     await connectMongoDB();
-    
+
     // Find the classwork item
     const classwork = await Assignment.findById(classworkId);
     if (!classwork) {
       return NextResponse.json({ error: 'Classwork not found' }, { status: 404 });
     }
-    
+
     // Verify user has access to this course
     const course = await Course.findById(courseId);
     if (!course) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
-    
+
     // Check if user is admin, course creator, classwork creator, or co-teacher
     const isAdmin = userRole === 'admin';
     const isCreator = course.createdBy.toString() === userId;
     const isPoster = classwork.postedBy.toString() === userId;
     const isCoTeacher = course.coTeachers?.includes(userId);
     const hasAccess = isAdmin || isCreator || isPoster || isCoTeacher;
-    
+
     console.log('🔒 Access check:', {
       isAdmin,
       isCreator,
@@ -336,7 +338,7 @@ export async function DELETE(request, { params }) {
       isCoTeacher,
       hasAccess
     });
-    
+
     if (!hasAccess) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
@@ -351,7 +353,7 @@ export async function DELETE(request, { params }) {
     // Delete associated attachments from Content collection
     if (classwork.attachments && classwork.attachments.length > 0) {
       console.log('🗑️ Deleting', classwork.attachments.length, 'associated attachments...');
-      
+
       for (const attachmentId of classwork.attachments) {
         try {
           const content = await Content.findById(attachmentId);
@@ -378,7 +380,7 @@ export async function DELETE(request, { params }) {
                 console.warn('⚠️ Local file deletion failed:', fileError.message);
               }
             }
-            
+
             // Delete Content document
             await Content.findByIdAndDelete(attachmentId);
             console.log('✅ Content document deleted:', attachmentId);
@@ -393,7 +395,7 @@ export async function DELETE(request, { params }) {
     // Delete the classwork/assignment document
     await Assignment.findByIdAndDelete(classworkId);
     console.log('✅ Classwork deleted from database');
-    
+
     return NextResponse.json({
       success: true,
       message: 'Classwork and associated files deleted successfully'

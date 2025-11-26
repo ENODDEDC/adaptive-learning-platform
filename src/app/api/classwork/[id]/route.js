@@ -132,9 +132,11 @@ export async function PUT(request, { params }) {
                 endpoint = '/api/pptx-thumbnail';
               }
               
-              const baseUrl = process.env.VERCEL_URL 
-                ? `https://${process.env.VERCEL_URL}` 
-                : (process.env.RENDER_EXTERNAL_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+              const baseUrl = process.env.RENDER_EXTERNAL_URL 
+                ? `https://${process.env.RENDER_EXTERNAL_URL}`
+                : (process.env.VERCEL_URL 
+                  ? `https://${process.env.VERCEL_URL}` 
+                  : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'));
               
               await fetch(`${baseUrl}${endpoint}`, {
                 method: 'POST',

@@ -25,9 +25,11 @@ async function generateThumbnailAsync(contentId, fileKey, mimeType) {
     
     // Use localhost for internal API calls to avoid external network issues
     // In production, Next.js can handle internal API routes without external HTTP
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : (process.env.RENDER_EXTERNAL_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+    const baseUrl = process.env.RENDER_EXTERNAL_URL 
+      ? `https://${process.env.RENDER_EXTERNAL_URL}`
+      : (process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'));
     
     const fullUrl = `${baseUrl}${thumbnailEndpoint}`;
     console.log(`🌐 Thumbnail API URL: ${fullUrl}`);
