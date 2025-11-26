@@ -77,11 +77,28 @@ class BackblazeService {
 
       // Since your bucket is private, we'll use our API endpoint to generate fresh presigned URLs
       // This ensures files are always accessible even if presigned URLs expire
-      const baseUrl = process.env.RENDER_EXTERNAL_URL 
-        ? `https://${process.env.RENDER_EXTERNAL_URL}`
-        : (process.env.VERCEL_URL 
-          ? `https://${process.env.VERCEL_URL}` 
-          : (process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'));
+      console.log('🔍 Environment variables:', {
+        RENDER_EXTERNAL_URL: process.env.RENDER_EXTERNAL_URL,
+        VERCEL_URL: process.env.VERCEL_URL,
+        NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+        NEXT_PUBLIC_URL: process.env.NEXT_PUBLIC_URL
+      });
+      
+      let baseUrl;
+      if (process.env.RENDER_EXTERNAL_URL) {
+        // Check if it already has https://, if so use as-is, otherwise add it
+        baseUrl = process.env.RENDER_EXTERNAL_URL.startsWith('http') 
+          ? process.env.RENDER_EXTERNAL_URL 
+          : `https://${process.env.RENDER_EXTERNAL_URL}`;
+      } else if (process.env.VERCEL_URL) {
+        baseUrl = process.env.VERCEL_URL.startsWith('http')
+          ? process.env.VERCEL_URL
+          : `https://${process.env.VERCEL_URL}`;
+      } else {
+        baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
+      }
+      
+      console.log('🌐 Base URL constructed:', baseUrl);
       
       const apiUrl = `${baseUrl}/api/files/${encodeURIComponent(fileKey)}`;
 
