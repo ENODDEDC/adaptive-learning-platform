@@ -20,7 +20,7 @@ async function generatePdfThumbnail(filePath, outputDir, contentId) {
         const command = isWindows
             ? `pdftoppm -png -f 1 -l 1 -scale-to 300 -singlefile "${filePath}" "${path.join(outputDir, contentId)}"`
             : `pdftoppm -png -f 1 -l 1 -scale-to 300 -singlefile "${filePath}" "${path.join(outputDir, contentId)}"`;
-        
+
         await execAsync(command);
         await fs.access(outputPath);
         return `/uploads/thumbnails/${contentId}.png`;
