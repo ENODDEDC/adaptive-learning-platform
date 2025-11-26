@@ -25,7 +25,7 @@ const NotificationSettings = () => {
             </h3>
             <p className="text-sm text-blue-800">
               Notification preferences and email alerts will be available in future updates.
-              Currently, you'll receive important system notifications through the platform.
+              Currently, you&apos;ll receive important system notifications through the platform.
             </p>
           </div>
         </div>

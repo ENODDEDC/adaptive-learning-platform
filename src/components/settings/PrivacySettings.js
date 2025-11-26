@@ -28,7 +28,7 @@ const PrivacySettings = () => {
             </p>
             <ul className="text-sm text-green-800 space-y-2">
               <li>• Your learning behavior data is used for ML personalization</li>
-              <li>• We don't share your personal data with third parties</li>
+              <li>• We don&apos;t share your personal data with third parties</li>
               <li>• You can reset your learning profile at any time</li>
               <li>• All data is encrypted and stored securely</li>
             </ul>

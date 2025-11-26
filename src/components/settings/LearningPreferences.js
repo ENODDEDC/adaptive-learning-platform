@@ -571,7 +571,7 @@ const LearningPreferences = () => {
             <ChartBarIcon className="w-8 h-8 text-gray-500" />
           </div>
           <p className="text-gray-800 font-semibold mb-2 text-lg">
-            Your learning style hasn't been classified yet
+            Your learning style hasn&apos;t been classified yet
           </p>
           <p className="text-gray-600 mb-1">
             Reach 50 interactions to unlock ML classification!
