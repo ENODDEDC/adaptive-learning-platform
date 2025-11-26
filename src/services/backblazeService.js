@@ -86,10 +86,14 @@ class BackblazeService {
       
       let baseUrl;
       if (process.env.RENDER_EXTERNAL_URL) {
+        const renderUrl = process.env.RENDER_EXTERNAL_URL;
+        console.log('🔍 RENDER_EXTERNAL_URL value:', renderUrl);
+        console.log('🔍 Starts with http?', renderUrl.startsWith('http'));
+        
         // Check if it already has https://, if so use as-is, otherwise add it
-        baseUrl = process.env.RENDER_EXTERNAL_URL.startsWith('http') 
-          ? process.env.RENDER_EXTERNAL_URL 
-          : `https://${process.env.RENDER_EXTERNAL_URL}`;
+        baseUrl = renderUrl.startsWith('http') 
+          ? renderUrl 
+          : `https://${renderUrl}`;
       } else if (process.env.VERCEL_URL) {
         baseUrl = process.env.VERCEL_URL.startsWith('http')
           ? process.env.VERCEL_URL
