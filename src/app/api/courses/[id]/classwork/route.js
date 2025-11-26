@@ -120,6 +120,46 @@ export async function POST(request, { params }) {
             await newContent.save();
             console.log('✅ Content saved, ID:', newContent._id);
             attachmentIds.push(newContent._id);
+            
+            // Trigger thumbnail generation for supported file types
+            if (attachment.contentType === 'application/pdf' || 
+                attachment.contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                attachment.contentType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+              
+              console.log('🖼️ Triggering thumbnail generation for:', newContent._id);
+              
+              // Fire and forget - don't wait for thumbnail
+              const generateThumbnail = async () => {
+                try {
+                  let endpoint;
+                  if (attachment.contentType === 'application/pdf') {
+                    endpoint = '/api/pdf-thumbnail';
+                  } else if (attachment.contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                    endpoint = '/api/docx-thumbnail';
+                  } else if (attachment.contentType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+                    endpoint = '/api/pptx-thumbnail';
+                  }
+                  
+                  const baseUrl = process.env.VERCEL_URL 
+                    ? `https://${process.env.VERCEL_URL}` 
+                    : (process.env.RENDER_EXTERNAL_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+                  
+                  await fetch(`${baseUrl}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      fileKey: attachment.key, 
+                      contentId: newContent._id.toString() 
+                    }),
+                    signal: AbortSignal.timeout(30000)
+                  });
+                } catch (err) {
+                  console.error('Thumbnail generation failed:', err.message);
+                }
+              };
+              
+              generateThumbnail().catch(err => console.error('Thumbnail error:', err));
+            }
           } else {
             console.warn('⚠️ Attachment missing url or key:', attachment);
           }
