@@ -59,8 +59,11 @@ services:
     name: intelevo-ml-service
     env: python
     plan: free
-    buildCommand: "pip install -r ml-service/requirements.txt"
-    startCommand: "python ml-service/app.py"
+    rootDir: ml-service
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
     envVars:
       - key: PORT
         value: 10000
+      - key: PYTHONUNBUFFERED
+        value: 1
