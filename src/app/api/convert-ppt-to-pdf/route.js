@@ -143,30 +143,30 @@ export async function GET(request) {
         }
       }
 
-      // Use libreoffice-convert directly - it should preserve exact PowerPoint visuals
-      console.log('🔄 Converting PowerPoint to PDF using libreoffice-convert...');
+      // Use LibreOffice system command to convert PowerPoint to PDF
+      console.log('🔄 Converting PowerPoint to PDF using LibreOffice system command...');
       
       try {
-        const libreOfficeConvert = (await import('libreoffice-convert')).default;
+        const { exec } = await import('child_process');
+        const { promisify } = await import('util');
+        const execAsync = promisify(exec);
         
         console.log('📄 Converting PowerPoint to PDF with exact visuals...');
-        console.log('🔧 LibreOffice path: C:\\Program Files\\LibreOffice\\program\\soffice.exe');
         
-        // Use the correct method - it's convert, not convertAsync
-        const pdfBuffer = await new Promise((resolve, reject) => {
-          libreOfficeConvert.convert(fileBuffer, '.pdf', undefined, (err, done) => {
-            if (err) {
-              console.error('❌ LibreOffice conversion error:', err);
-              reject(err);
-            } else {
-              console.log('✅ LibreOffice conversion successful');
-              resolve(done);
-            }
-          });
-        });
+        const tempDir = path.dirname(tempInputFile);
+        const command = `soffice --headless --convert-to pdf --outdir "${tempDir}" "${tempInputFile}"`;
+        await execAsync(command);
         
-        // Write PDF directly to temp file - this should contain the exact PowerPoint slides
-        fs.writeFileSync(tempOutputFile, pdfBuffer);
+        // Read the generated PDF
+        const pdfFileName = `ppt_${uniqueId}.pdf`;
+        const generatedPdfPath = path.join(tempDir, pdfFileName);
+        
+        // Rename to expected output file
+        if (fs.existsSync(generatedPdfPath)) {
+          fs.renameSync(generatedPdfPath, tempOutputFile);
+        }
+        
+        const pdfBuffer = fs.readFileSync(tempOutputFile);
         
         console.log('✅ PowerPoint converted to PDF successfully');
         console.log('📄 PDF file size:', pdfBuffer.length, 'bytes');
@@ -187,11 +187,11 @@ export async function GET(request) {
         }
         
         // Upload PDF to Backblaze
-        const pdfFileName = `converted_${uniqueId}.pdf`;
+        const uploadPdfFileName = `converted_${uniqueId}.pdf`;
         
         const uploadResult = await backblazeService.uploadFile(
           pdfBuffer,
-          pdfFileName,
+          uploadPdfFileName,
           'application/pdf',
           'temp/ppt-conversions'
         );
@@ -208,12 +208,12 @@ export async function GET(request) {
           pageCount: slides.length,
           originalFile: filePath,
           convertedFile: uploadResult.key,
-          method: 'libreoffice-convert',
+          method: 'libreoffice-system',
           conversionMethod: 'LibreOffice (Real PowerPoint Conversion)'
         });
         
       } catch (libreOfficeError) {
-        console.log('⚠️ libreoffice-convert failed, trying fallback method...');
+        console.log('⚠️ LibreOffice system command failed, trying fallback method...');
         console.log('Error:', libreOfficeError.message);
         
         const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');

@@ -123,21 +123,25 @@ export async function POST(request) {
     fs.writeFileSync(tempDocxFile, docxBuffer);
     console.log('📁 Temporary DOCX file created:', tempDocxFile);
 
-    // Convert DOCX to PDF using libreoffice-convert
-    const libreOfficeConvert = (await import('libreoffice-convert')).default;
-
-    const pdfBuffer = await new Promise((resolve, reject) => {
-      libreOfficeConvert.convert(docxBuffer, '.pdf', undefined, (err, done) => {
-        if (err) {
-          console.error('❌ LibreOffice conversion error:', err);
-          reject(err);
-        } else {
-          console.log('✅ LibreOffice DOCX conversion successful');
-          resolve(done);
-        }
-      });
-    });
-
+    // Convert DOCX to PDF using LibreOffice system command
+    console.log('🔄 Converting DOCX to PDF using LibreOffice...');
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    const command = `soffice --headless --convert-to pdf --outdir "${tempDir}" "${tempDocxFile}"`;
+    await execAsync(command);
+    
+    // Read the generated PDF
+    const pdfFileName = `docx_${uniqueId}.pdf`;
+    const generatedPdfPath = path.join(tempDir, pdfFileName);
+    
+    // Rename to expected temp file name
+    if (fs.existsSync(generatedPdfPath)) {
+      fs.renameSync(generatedPdfPath, tempPdfFile);
+    }
+    
+    const pdfBuffer = fs.readFileSync(tempPdfFile);
     console.log('📄 DOCX converted to PDF successfully, size:', pdfBuffer.length, 'bytes');
 
     // Step 2: Create thumbnail from the PDF (reuse PDF thumbnail logic)

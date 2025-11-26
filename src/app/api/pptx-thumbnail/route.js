@@ -122,21 +122,21 @@ export async function POST(request) {
     fs.writeFileSync(tempInputFile, pptxBuffer);
     console.log('📁 Temporary PPTX file created:', tempInputFile);
 
-    // Convert PPTX to PDF using libreoffice-convert
-    const libreOfficeConvert = (await import('libreoffice-convert')).default;
-
-    const pdfBuffer = await new Promise((resolve, reject) => {
-      libreOfficeConvert.convert(pptxBuffer, '.pdf', undefined, (err, done) => {
-        if (err) {
-          console.error('❌ LibreOffice conversion error:', err);
-          reject(err);
-        } else {
-          console.log('✅ LibreOffice PPTX conversion successful');
-          resolve(done);
-        }
-      });
-    });
-
+    // Convert PPTX to PDF using LibreOffice system command
+    console.log('🔄 Converting PPTX to PDF using LibreOffice...');
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    const conversionTempDir = path.dirname(tempInputFile);
+    const command = `soffice --headless --convert-to pdf --outdir "${conversionTempDir}" "${tempInputFile}"`;
+    await execAsync(command);
+    
+    // Read the generated PDF
+    const pdfFileName = `pptx_${uniqueId}.pdf`;
+    const generatedPdfPath = path.join(conversionTempDir, pdfFileName);
+    
+    const pdfBuffer = fs.readFileSync(generatedPdfPath);
     console.log('📄 PPTX converted to PDF successfully, size:', pdfBuffer.length, 'bytes');
 
     // Step 2: Create thumbnail from the FIRST PAGE of the PDF
