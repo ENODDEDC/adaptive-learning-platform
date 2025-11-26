@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-const FormNewPage = () => {
+// Wrap the component that uses useSearchParams in Suspense
+function FormNewPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const courseId = searchParams.get('courseId');
@@ -1097,6 +1098,20 @@ const FormPreview = ({ title, description, questions }) => {
       ))}
     </div>
   );
-};
+}
 
-export default FormNewPage;
+// Wrap with Suspense to handle useSearchParams
+export default function FormNewPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+        <div className="text-center">
+          <div className="w-12 h-12 mx-auto mb-4 border-b-2 border-indigo-600 rounded-full animate-spin"></div>
+          <p className="text-gray-600">Loading form builder...</p>
+        </div>
+      </div>
+    }>
+      <FormNewPageContent />
+    </Suspense>
+  );
+}
