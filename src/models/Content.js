@@ -51,6 +51,9 @@ const contentSchema = new Schema({
   thumbnailUrl: {
     type: String,
   },
+  thumbnailKey: {
+    type: String, // Cloud storage key for the thumbnail
+  },
   // PowerPoint specific fields
   slidesData: {
     type: [{

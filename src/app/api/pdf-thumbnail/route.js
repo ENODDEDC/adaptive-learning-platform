@@ -106,12 +106,21 @@ export async function POST(request) {
     } else {
       // Download from Backblaze B2
       console.log('📥 Downloading original PDF from Backblaze...');
+      console.log('🔑 Using file key:', finalFileKey);
+      console.log('🪣 Bucket:', process.env.B2_BUCKET_NAME);
+      console.log('🌐 Endpoint:', process.env.B2_ENDPOINT);
+      
       try {
         pdfBuffer = await backblazeService.getFileBuffer(finalFileKey);
         console.log('✅ Original PDF downloaded successfully, size:', pdfBuffer.length, 'bytes');
       } catch (downloadError) {
-        console.error('❌ Failed to download PDF:', downloadError);
-        throw new Error(`Failed to download PDF: ${downloadError.message}`);
+        console.error('❌ Failed to download PDF from Backblaze:', {
+          error: downloadError.message,
+          fileKey: finalFileKey,
+          bucket: process.env.B2_BUCKET_NAME,
+          hasCredentials: !!(process.env.B2_KEY_ID && process.env.B2_APPLICATION_KEY)
+        });
+        throw new Error(`Failed to download PDF from Backblaze: ${downloadError.message}`);
       }
     }
 
@@ -168,6 +177,7 @@ export async function POST(request) {
           contentId,
           { 
             thumbnailUrl: uploadResult.url,
+            thumbnailKey: uploadResult.key,
             'cloudStorage.thumbnailKey': uploadResult.key
           },
           { new: true }

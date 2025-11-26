@@ -70,35 +70,91 @@ export async function PUT(request, { params }) {
     // Handle new file uploads
     if (attachmentFiles && attachmentFiles.length > 0) {
       const Content = (await import('@/models/Content')).default;
-      const path = (await import('path')).default;
-      const fs = (await import('fs/promises')).default;
+      const backblazeService = (await import('@/services/backblazeService')).default;
 
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'courses', classwork.courseId.toString());
-      await fs.mkdir(uploadDir, { recursive: true });
+      console.log('📤 Uploading', attachmentFiles.length, 'files to Backblaze B2...');
 
       for (const file of attachmentFiles) {
-        const fileName = `${Date.now()}_${file.name}`;
-        const filePath = path.join(uploadDir, fileName);
-        const fileUrl = `/uploads/courses/${classwork.courseId}/${fileName}`;
-
+        console.log('📁 Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
+        
         const fileBuffer = Buffer.from(await file.arrayBuffer());
-        await fs.writeFile(filePath, fileBuffer);
+        
+        // Upload to Backblaze B2
+        const uploadResult = await backblazeService.uploadFile(
+          fileBuffer,
+          file.name,
+          file.type,
+          `classwork/${classwork.courseId}`
+        );
+
+        console.log('✅ File uploaded to Backblaze:', uploadResult.url);
 
         const newContent = new Content({
           courseId: classwork.courseId,
-          title: fileName,
+          title: uploadResult.originalName || file.name,
           originalName: file.name,
-          filename: fileName,
-          filePath: fileUrl,
+          filename: uploadResult.fileName,
+          filePath: uploadResult.url,
           contentType: 'material',
           fileSize: file.size,
           mimeType: file.type,
           uploadedBy: userId,
+          cloudStorage: {
+            provider: 'backblaze-b2',
+            key: uploadResult.key,
+            url: uploadResult.url,
+            bucket: process.env.B2_BUCKET_NAME,
+            metadata: {},
+          },
         });
         
         await newContent.save();
+        console.log('💾 Content record saved:', newContent._id);
+        
         attachmentIds.push(newContent._id);
+        
+        // Trigger thumbnail generation asynchronously for supported file types
+        if (file.type === 'application/pdf' || 
+            file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+            file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+          
+          console.log('🖼️ Triggering thumbnail generation for:', newContent._id);
+          
+          // Fire and forget - don't wait for thumbnail
+          const generateThumbnail = async () => {
+            try {
+              let endpoint;
+              if (file.type === 'application/pdf') {
+                endpoint = '/api/pdf-thumbnail';
+              } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                endpoint = '/api/docx-thumbnail';
+              } else if (file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+                endpoint = '/api/pptx-thumbnail';
+              }
+              
+              const baseUrl = process.env.VERCEL_URL 
+                ? `https://${process.env.VERCEL_URL}` 
+                : (process.env.RENDER_EXTERNAL_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+              
+              await fetch(`${baseUrl}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  fileKey: uploadResult.key, 
+                  contentId: newContent._id.toString() 
+                }),
+                signal: AbortSignal.timeout(30000)
+              });
+            } catch (err) {
+              console.error('Thumbnail generation failed:', err.message);
+            }
+          };
+          
+          generateThumbnail().catch(err => console.error('Thumbnail error:', err));
+        }
       }
+      
+      console.log('✅ All files uploaded successfully');
     }
 
     const updatedClasswork = await Assignment.findByIdAndUpdate(

@@ -16,25 +16,46 @@ async function generateThumbnailAsync(contentId, fileKey, mimeType) {
     } else if (mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
       thumbnailEndpoint = '/api/pptx-thumbnail';
     } else {
+      console.log(`⏭️ No thumbnail generation for file type: ${mimeType}`);
       return; // No thumbnail generation for this file type
     }
     
     console.log(`🖼️ Triggering thumbnail generation for ${contentId} via ${thumbnailEndpoint}`);
+    console.log(`📋 Thumbnail request data:`, { fileKey, contentId, mimeType });
     
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}${thumbnailEndpoint}`, {
+    // Use localhost for internal API calls to avoid external network issues
+    // In production, Next.js can handle internal API routes without external HTTP
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : (process.env.RENDER_EXTERNAL_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+    
+    const fullUrl = `${baseUrl}${thumbnailEndpoint}`;
+    console.log(`🌐 Thumbnail API URL: ${fullUrl}`);
+    
+    const response = await fetch(fullUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileKey, contentId })
+      headers: { 
+        'Content-Type': 'application/json',
+        'User-Agent': 'IntelEvo-Internal'
+      },
+      body: JSON.stringify({ fileKey, contentId }),
+      // Add timeout to prevent hanging
+      signal: AbortSignal.timeout(30000) // 30 second timeout
     });
     
     if (response.ok) {
-      console.log(`✅ Thumbnail generated successfully for ${contentId}`);
+      const result = await response.json();
+      console.log(`✅ Thumbnail generated successfully for ${contentId}:`, result.thumbnailUrl);
     } else {
-      console.warn(`⚠️ Thumbnail generation failed for ${contentId}:`, await response.text());
+      const errorText = await response.text();
+      console.error(`❌ Thumbnail generation failed for ${contentId} (${response.status}):`, errorText);
     }
   } catch (error) {
-    console.error('Thumbnail generation error:', error);
+    console.error(`❌ Thumbnail generation error for ${contentId}:`, {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
   }
 }
 

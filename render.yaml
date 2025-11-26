@@ -51,6 +51,8 @@ services:
         sync: false
       - key: ML_SERVICE_URL
         value: https://intelevo-ml-service.onrender.com
+      - key: RENDER_EXTERNAL_URL
+        sync: false
   
   # ML Classification Service (Python/Flask)
   - type: web
