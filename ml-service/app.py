@@ -15,7 +15,7 @@ CORS(app)  # Enable CORS for Next.js frontend
 
 # Configuration
 MODEL_PATH = Path(__file__).parent / 'models'
-PORT = int(os.getenv('PORT', 5000))
+PORT = int(os.getenv('PORT', 10000))  # Render uses port 10000
 
 # Global variables for models
 models = {}

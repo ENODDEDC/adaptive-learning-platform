@@ -5,29 +5,50 @@
 
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5000';
 
+console.log('🔧 ML Service Configuration:', {
+  url: ML_SERVICE_URL,
+  isProduction: process.env.NODE_ENV === 'production',
+  hasEnvVar: !!process.env.ML_SERVICE_URL
+});
+
 /**
  * Check if ML service is available
  */
 export async function checkMLServiceHealth() {
   try {
+    console.log(`🏥 Checking ML service health at: ${ML_SERVICE_URL}/health`);
+    
     const response = await fetch(`${ML_SERVICE_URL}/health`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(10000) // 10 second timeout
     });
     
     if (!response.ok) {
-      return { available: false, error: 'Service unhealthy' };
+      console.error(`❌ ML service returned status: ${response.status}`);
+      return { available: false, error: `Service unhealthy (${response.status})` };
     }
     
     const data = await response.json();
+    console.log('✅ ML service is healthy:', data);
+    
     return {
       available: data.models_loaded,
       status: data.status,
-      version: data.version
+      version: data.version,
+      url: ML_SERVICE_URL
     };
   } catch (error) {
-    console.error('ML service health check failed:', error);
-    return { available: false, error: error.message };
+    console.error('❌ ML service health check failed:', {
+      message: error.message,
+      url: ML_SERVICE_URL,
+      cause: error.cause
+    });
+    return { 
+      available: false, 
+      error: error.message,
+      url: ML_SERVICE_URL
+    };
   }
 }
 
