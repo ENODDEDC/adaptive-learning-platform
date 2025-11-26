@@ -2,13 +2,19 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
 import { promises as fsPromises } from 'fs';
-import pdf from 'pdf-poppler';
-import libre from 'libreoffice-convert';
 import util from 'util';
 import Content from '@/models/Content';
 import mongoConfig from '@/config/mongoConfig';
 
-const libreConvert = util.promisify(libre.convert);
+// Optional dependencies - only available on Windows/local development
+let pdf, libre, libreConvert;
+try {
+  pdf = require('pdf-poppler');
+  libre = require('libreoffice-convert');
+  libreConvert = util.promisify(libre.convert);
+} catch (error) {
+  console.warn('Optional thumbnail generation packages not available (pdf-poppler, libreoffice-convert). Thumbnail generation will be disabled.');
+}
 
 async function generatePdfThumbnail(filePath, outputDir, contentId) {
     const opts = {
@@ -31,6 +37,14 @@ async function generatePdfThumbnail(filePath, outputDir, contentId) {
 export async function POST(request) {
     await mongoConfig();
     try {
+        // Check if thumbnail generation is available
+        if (!pdf || !libre) {
+            return NextResponse.json({ 
+                message: 'Thumbnail generation not available on this platform',
+                note: 'This feature requires Windows-specific packages (pdf-poppler, libreoffice-convert)'
+            }, { status: 501 });
+        }
+
         const { contentId } = await request.json();
 
         if (!contentId) {
