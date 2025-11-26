@@ -35,8 +35,8 @@ env/
 *.swo
 
 # Models
-models/*.pkl
-models/*.joblib
+# models/*.pkl  # COMMENTED OUT - We need these for deployment!
+# models/*.joblib  # COMMENTED OUT - We need these for deployment!
 !models/.gitkeep
 
 # Data
