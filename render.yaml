@@ -1,9 +1,10 @@
 services:
+  # Main Next.js Application
   - type: web
     name: assistive-learning-platform
     env: node
     plan: free
-    buildCommand: "apt-get update && apt-get install -y pandoc libreoffice && npm install && npm run build"
+    buildCommand: "apt-get update && apt-get install -y pandoc libreoffice poppler-utils && npm install && npm run build"
     startCommand: "npm start"
     envVars:
       - key: MONGODB_URI
@@ -22,5 +23,42 @@ services:
         sync: false
       - key: FROM_EMAIL
         sync: false
-      - key: NEXT_PUBLIC_URL
+      - key: NEXT_PUBLIC_BASE_URL
         sync: false
+      - key: NEXT_PUBLIC_FIREBASE_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_APP_ID
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: B2_KEY_ID
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+      - key: B2_BUCKET_NAME
+        sync: false
+      - key: B2_ENDPOINT
+        sync: false
+      - key: ML_SERVICE_URL
+        value: https://intelevo-ml-service.onrender.com
+  
+  # ML Classification Service (Python/Flask)
+  - type: web
+    name: intelevo-ml-service
+    env: python
+    plan: free
+    buildCommand: "pip install -r ml-service/requirements.txt"
+    startCommand: "python ml-service/app.py"
+    envVars:
+      - key: PORT
+        value: 10000

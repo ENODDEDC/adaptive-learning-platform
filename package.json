@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "check-deps": "node scripts/check-system-deps.js",
+    "test-deployment": "node scripts/test-deployment.js",
     "postinstall": "node scripts/check-system-deps.js || echo 'Warning: Some system dependencies may be missing. See README.md'",
     "setup-ml": "scripts\\setup-ml.bat",
     "start-ml": "scripts\\start-ml-service.bat",

@@ -328,9 +328,39 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 🌐 Deployment
 
-The project is deployed on [Render](https://render.com).
+The project supports both **production deployment** and **local development**.
 
-**Live Demo:** [https://intelevo.onrender.com](https://intelevo.onrender.com)
+### Production Deployment (Render.com)
+
+The system is deployed as **2 microservices** on Render.com:
+
+1. **Next.js Application:** [https://intelevo.onrender.com](https://intelevo.onrender.com)
+2. **ML Classification Service:** [https://intelevo-ml-service.onrender.com](https://intelevo-ml-service.onrender.com)
+
+**Architecture:**
+- Next.js handles frontend, API routes, authentication, and course management
+- ML Service handles learning style classification using XGBoost models
+- Services communicate via HTTP REST API
+- Independent scaling and deployment
+
+**Deployment Guide:** See [RENDER_DEPLOYMENT_GUIDE.md](RENDER_DEPLOYMENT_GUIDE.md) for complete instructions.
+
+### Local Development
+
+For development and testing, run both services locally:
+
+```bash
+# Start everything (Next.js + ML Service)
+.\start-all.bat
+
+# Access:
+# - Next.js App: http://localhost:3000
+# - ML Service: http://localhost:5000
+```
+
+**Benefits of Dual Setup:**
+- Production: Professional deployment for demos and defense
+- Local: Fast iteration and development without deployment delays
 
 ## 📞 Support
 
