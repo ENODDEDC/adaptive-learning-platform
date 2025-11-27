@@ -1,0 +1,7 @@
+# Treat model files as binary (don't modify during git operations)
+*.pkl binary
+*.joblib binary
+*.h5 binary
+*.pb binary
+*.pth binary
+*.onnx binary

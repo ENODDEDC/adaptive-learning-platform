@@ -4,7 +4,7 @@ services:
     name: assistive-learning-platform
     env: node
     plan: free
-    buildCommand: "apt-get update && apt-get install -y pandoc libreoffice poppler-utils && npm install && npm run build"
+    buildCommand: "npm install && npm run build"
     startCommand: "npm start"
     envVars:
       - key: MONGODB_URI
