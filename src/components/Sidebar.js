@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useEffect } from "react";
+import React, { Fragment, useState, useEffect, useCallback } from "react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -94,80 +94,98 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     }
   };
 
+  const fetchUserProfile = useCallback(async () => {
+    try {
+      // Force fresh fetch by bypassing cache
+      const response = await fetch('/api/auth/profile', {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+      const userData = await response.json();
+      console.log('👤 Sidebar - User data fetched:', userData);
+      console.log('🖼️ Sidebar - Profile picture:', userData.profilePicture);
+      console.log('🔍 Sidebar - Has profile picture?', !!userData.profilePicture);
+      setUser(userData);
+    } catch (error) {
+      console.error('❌ Sidebar - Failed to fetch user:', error);
+      setUser(null);
+    }
+  }, []);
+
+  // Fetch user profile once on mount
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const response = await api.getUserProfile();
-        if (!response.ok) {
-          throw new Error('Failed to fetch user profile');
-        }
-        const userData = await response.json();
-        setUser(userData);
-      } catch (error) {
-        setUser(null);
-      }
-    };
-
-    const fetchCourses = async () => {
-      if (!user) return;
-
-      try {
-        const response = await api.getCourses();
-        if (!response.ok) {
-          throw new Error('Failed to fetch courses');
-        }
-
-        const data = await response.json();
-        const created = [];
-        const enrolled = [];
-
-        data.courses.forEach(course => {
-          const formattedCourse = {
-            id: course._id,
-            title: course.subject,
-            code: course.section,
-            instructor: course.teacherName,
-            progress: 0,
-            color: course.coverColor,
-            createdBy: course.createdBy,
-            enrolledUsers: course.enrolledUsers,
-          };
-
-          if (course.createdBy === user._id) {
-            created.push(formattedCourse);
-          } else if (course.enrolledUsers.includes(user._id)) {
-            enrolled.push(formattedCourse);
-          }
-        });
-
-        setCourses({ created, enrolled });
-      } catch (error) {
-        // Silent fail for course fetching
-      }
-    };
-
-    const fetchScheduledCount = async () => {
-      if (!user) return;
-
-      try {
-        const response = await api.getSchedule();
-        if (!response.ok) {
-          throw new Error('Failed to fetch scheduled courses');
-        }
-
-        const data = await response.json();
-        setScheduledCount(data.scheduledCourses.length);
-      } catch (error) {
-        setScheduledCount(0);
-      }
-    };
-
     fetchUserProfile();
+  }, [fetchUserProfile]); // Only run once on mount
+
+  // Separate useEffect for courses and scheduled count that depends on user
+  useEffect(() => {
     if (user) {
+      const fetchCourses = async () => {
+        try {
+          const response = await api.getCourses();
+          if (!response.ok) {
+            throw new Error('Failed to fetch courses');
+          }
+
+          const data = await response.json();
+          const created = [];
+          const enrolled = [];
+
+          data.courses.forEach(course => {
+            const formattedCourse = {
+              id: course._id,
+              title: course.subject,
+              code: course.section,
+              instructor: course.teacherName,
+              progress: 0,
+              color: course.coverColor,
+              createdBy: course.createdBy,
+              enrolledUsers: course.enrolledUsers,
+            };
+
+            if (course.createdBy === user._id) {
+              created.push(formattedCourse);
+            } else if (course.enrolledUsers.includes(user._id)) {
+              enrolled.push(formattedCourse);
+            }
+          });
+
+          setCourses({ created, enrolled });
+        } catch (error) {
+          // Silent fail for course fetching
+        }
+      };
+
+      const fetchScheduledCount = async () => {
+        try {
+          const response = await api.getSchedule();
+          if (!response.ok) {
+            throw new Error('Failed to fetch scheduled courses');
+          }
+
+          const data = await response.json();
+          setScheduledCount(data.scheduledCourses.length);
+        } catch (error) {
+          setScheduledCount(0);
+        }
+      };
+
       fetchCourses();
       fetchScheduledCount();
     }
-  }, [user]); // Empty dependency array to run once on mount
+  }, [user]); // This will run when user is set
+
+  // Refetch user profile when pathname changes (navigation) - REMOVED to prevent infinite loop
+  // The user profile is fetched once on mount, which is sufficient
 
   // Clear navigation loading state when pathname changes
   useEffect(() => {
@@ -233,12 +251,26 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
               className="flex items-center justify-between w-full p-3 transition-all duration-200 border border-gray-200 bg-gray-50 rounded-xl hover:bg-gray-100 hover:scale-102"
             >
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full shadow-sm bg-gradient-to-br from-blue-500 to-blue-600">
+                <div className="flex items-center justify-center w-10 h-10 overflow-hidden rounded-full shadow-sm bg-gradient-to-br from-blue-500 to-blue-600">
                   {user?.profilePicture ? (
-                    <Image src={user.profilePicture} alt="Profile" width={40} height={40} className="rounded-full" />
-                  ) : (
-                    <span className="text-sm font-semibold text-white">{user?.fullName ? user.fullName.charAt(0) : 'U'}</span>
-                  )}
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img 
+                      src={user.profilePicture} 
+                      alt="Profile" 
+                      className="object-cover w-full h-full"
+                      onLoad={() => {
+                        console.log('✅ Sidebar - Profile picture loaded successfully');
+                      }}
+                      onError={(e) => {
+                        console.error('❌ Sidebar - Profile picture failed to load:', user.profilePicture);
+                        e.target.style.display = 'none';
+                        e.target.nextElementSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <span className={`text-sm font-semibold text-white ${user?.profilePicture ? 'hidden' : ''}`}>
+                    {user?.name ? user.name.charAt(0).toUpperCase() : user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                  </span>
                 </div>
                 <div className="text-left">
                   <div className="text-lg font-bold text-gray-900 capitalize">{user?.role || "Student"}</div>
@@ -286,12 +318,26 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
         {/* Collapsed user avatar */}
         {isCollapsed && (
           <div className="flex justify-center">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full shadow-sm bg-gradient-to-br from-blue-500 to-blue-600">
+            <div className="flex items-center justify-center w-10 h-10 overflow-hidden rounded-full shadow-sm bg-gradient-to-br from-blue-500 to-blue-600">
               {user?.profilePicture ? (
-                <Image src={user.profilePicture} alt="Profile" width={40} height={40} className="rounded-full" />
-              ) : (
-                <span className="text-sm font-semibold text-white">{user?.fullName ? user.fullName.charAt(0) : 'U'}</span>
-              )}
+                // eslint-disable-next-line @next/next/no-img-element
+                <img 
+                  src={user.profilePicture} 
+                  alt="Profile" 
+                  className="object-cover w-full h-full"
+                  onLoad={() => {
+                    console.log('✅ Sidebar (collapsed) - Profile picture loaded successfully');
+                  }}
+                  onError={(e) => {
+                    console.error('❌ Sidebar (collapsed) - Profile picture failed to load:', user.profilePicture);
+                    e.target.style.display = 'none';
+                    e.target.nextElementSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <span className={`text-sm font-semibold text-white ${user?.profilePicture ? 'hidden' : ''}`}>
+                {user?.name ? user.name.charAt(0).toUpperCase() : user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+              </span>
             </div>
           </div>
         )}

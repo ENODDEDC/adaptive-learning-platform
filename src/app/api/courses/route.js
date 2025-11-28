@@ -83,23 +83,31 @@ const monitoredGET = withPerformanceMonitoring(async (request) => {
   }
   const userId = payload.userId;
 
-  // Check cache first
+  // Check cache first (TEMPORARILY DISABLED FOR DEBUGGING)
   const cacheKey = `courses:${userId}`;
-  const cachedData = getCachedCourses(cacheKey);
-  if (cachedData) {
-    return NextResponse.json(cachedData);
-  }
+  // const cachedData = getCachedCourses(cacheKey);
+  // if (cachedData) {
+  //   return NextResponse.json(cachedData);
+  // }
+  console.log('🔄 Fetching fresh courses data (cache disabled for debugging)');
 
   await connectMongoDB();
 
-  // Optimize query with lean() for better performance
+  // Optimize query with lean() for better performance and populate creator info
+  console.log('🔍 Fetching courses for user:', userId);
+  
   const courses = await Course.find({
     $or: [
       { createdBy: userId },
       { enrolledUsers: userId }
     ],
     isArchived: { $ne: true } // Exclude archived courses
-  }).lean();
+  })
+  .populate('createdBy', 'name surname profilePicture') // Populate creator with profile picture
+  .lean();
+  
+  console.log('📊 Found', courses.length, 'courses');
+  console.log('🔍 First course createdBy:', courses[0]?.createdBy);
 
   // Get student count, module count, and assignment count for each course
   const coursesWithStats = await Promise.all(courses.map(async (course) => {
@@ -121,12 +129,22 @@ const monitoredGET = withPerformanceMonitoring(async (request) => {
       type: 'assignment'
     });
 
-    return {
+    const result = {
       ...course,
       studentCount,
       moduleCount,
-      assignmentCount
+      assignmentCount,
+      // Add instructor profile picture from createdBy
+      instructorProfilePicture: course.createdBy?.profilePicture || null
     };
+    
+    // Debug logging
+    console.log('📚 Course:', course.subject);
+    console.log('👤 Created by:', course.createdBy);
+    console.log('🖼️ Profile picture:', course.createdBy?.profilePicture);
+    console.log('✅ Result instructorProfilePicture:', result.instructorProfilePicture);
+    
+    return result;
   }));
 
   const responseData = { courses: coursesWithStats };

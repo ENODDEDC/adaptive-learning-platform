@@ -206,6 +206,7 @@ export default function Home() {
           title: course.subject,
           code: course.section,
           instructor: course.teacherName,
+          instructorProfilePicture: course.instructorProfilePicture || null,
           progress: 0,
           color: course.coverColor,
           progressColor: course.coverColor,
@@ -666,10 +667,27 @@ export default function Home() {
                               <div className="flex-1 px-5 py-5 flex flex-col">
                                 {/* Instructor - Better Visual Weight */}
                                 <div className="flex items-center gap-3 mb-4">
-                                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex-shrink-0 shadow-sm">
-                                    <span className="text-sm font-bold text-white">
-                                      {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                    </span>
+                                  <div className="relative flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex-shrink-0 shadow-sm overflow-hidden">
+                                    {course.instructorProfilePicture ? (
+                                      <>
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img 
+                                          src={course.instructorProfilePicture} 
+                                          alt={course.instructor}
+                                          className="absolute inset-0 w-full h-full object-cover"
+                                          onError={(e) => {
+                                            e.target.style.display = 'none';
+                                          }}
+                                        />
+                                        <span className="text-sm font-bold text-white">
+                                          {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <span className="text-sm font-bold text-white">
+                                        {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="text-xs font-medium text-gray-500 mb-0.5">Instructor</div>
