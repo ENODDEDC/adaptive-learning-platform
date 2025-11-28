@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import ProfilePictureUpload from './ProfilePictureUpload';
 
 const ProfileSettings = ({ user, onUpdate }) => {
   const [formData, setFormData] = useState({
     name: '',
     middleName: '',
     surname: '',
-    email: ''
+    email: '',
+    profilePicture: ''
   });
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -19,10 +21,39 @@ const ProfileSettings = ({ user, onUpdate }) => {
         name: user.name || '',
         middleName: user.middleName || '',
         surname: user.surname || '',
-        email: user.email || ''
+        email: user.email || '',
+        profilePicture: user.profilePicture || ''
       });
     }
   }, [user]);
+
+  const handleImageUpdate = async (imageUrl) => {
+    console.log('🎯 Image update callback received:', imageUrl);
+    
+    // Update local state immediately
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        profilePicture: imageUrl
+      };
+      console.log('📝 Updated formData:', updated);
+      return updated;
+    });
+    
+    setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
+    
+    // Refresh user data from server to ensure sync
+    console.log('🔄 Refreshing user data from server...');
+    if (onUpdate) {
+      await onUpdate();
+      console.log('✅ User data refreshed');
+    }
+    
+    // Force a small delay to ensure state updates
+    setTimeout(() => {
+      console.log('🔍 Current formData after update:', formData);
+    }, 100);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -84,6 +115,11 @@ const ProfileSettings = ({ user, onUpdate }) => {
           {message.text}
         </div>
       )}
+
+      <ProfilePictureUpload 
+        currentImage={formData.profilePicture} 
+        onImageUpdate={handleImageUpdate}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -153,7 +189,8 @@ const ProfileSettings = ({ user, onUpdate }) => {
                   name: user.name || '',
                   middleName: user.middleName || '',
                   surname: user.surname || '',
-                  email: user.email || ''
+                  email: user.email || '',
+                  profilePicture: user.profilePicture || ''
                 });
               }
               setMessage({ type: '', text: '' });

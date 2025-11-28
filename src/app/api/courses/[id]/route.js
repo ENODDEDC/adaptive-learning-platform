@@ -13,7 +13,7 @@ export async function GET(request, { params }) {
 
     const { id } = await params;
     await connectMongoDB();
-    const course = await Course.findById(id);
+    const course = await Course.findById(id).populate('createdBy', 'name email profilePicture');
 
     if (!course) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });

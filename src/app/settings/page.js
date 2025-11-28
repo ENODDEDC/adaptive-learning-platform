@@ -17,6 +17,7 @@ import LearningPreferences from '@/components/settings/LearningPreferences';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import PrivacySettings from '@/components/settings/PrivacySettings';
 import AnalyticsSettings from '@/components/settings/AnalyticsSettings';
+import { Toaster } from 'react-hot-toast';
 
 const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState('profile');
@@ -127,6 +128,7 @@ const SettingsPage = () => {
 
   return (
     <div className="bg-gray-50">
+      <Toaster position="top-right" />
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -144,10 +146,18 @@ const SettingsPage = () => {
                 </p>
                 <p className="text-sm text-gray-600">{user?.email}</p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
-                <span className="text-sm font-medium text-white">
-                  {(user?.name?.[0] || 'U').toUpperCase()}
-                </span>
+              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center overflow-hidden">
+                {user?.profilePicture ? (
+                  <img 
+                    src={user.profilePicture} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-medium text-white">
+                    {(user?.name?.[0] || 'U').toUpperCase()}
+                  </span>
+                )}
               </div>
             </div>
           </div>

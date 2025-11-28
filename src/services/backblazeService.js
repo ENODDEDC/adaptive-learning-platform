@@ -77,7 +77,8 @@ class BackblazeService {
 
       // Since your bucket is private, we'll use our API endpoint to generate fresh presigned URLs
       // This ensures files are always accessible even if presigned URLs expire
-      const apiUrl = `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/files/${encodeURIComponent(fileKey)}`;
+      const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
+      const apiUrl = `${baseUrl}/api/files/${encodeURIComponent(fileKey)}`;
 
       console.log('🔗 Generated file URL:', apiUrl);
       console.log('🔑 File key:', fileKey);

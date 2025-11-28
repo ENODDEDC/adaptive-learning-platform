@@ -70,8 +70,8 @@ export async function GET(request, { params }) {
     const { id } = params;
 
     const course = await Course.findById(id)
-      .populate('enrolledUsers', 'name email')
-      .populate('coTeachers', 'name email');
+      .populate('enrolledUsers', 'name email profilePicture createdAt')
+      .populate('coTeachers', 'name email profilePicture createdAt');
 
     if (!course) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
