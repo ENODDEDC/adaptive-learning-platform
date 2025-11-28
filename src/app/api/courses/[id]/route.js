@@ -20,8 +20,10 @@ export async function GET(request, { params }) {
     }
 
     // Check if the user is either the creator or enrolled in the course
-    const isCreator = course.createdBy.toString() === userId;
-    const isEnrolled = course.enrolledUsers.includes(userId);
+    // course.createdBy is populated, so we need to access _id
+    const creatorId = course.createdBy._id ? course.createdBy._id.toString() : course.createdBy.toString();
+    const isCreator = creatorId === userId;
+    const isEnrolled = course.enrolledUsers.some(enrolledId => enrolledId.toString() === userId);
 
     // If course is archived, only creator can access it
     if (course.isArchived && !isCreator) {
@@ -56,7 +58,8 @@ export async function DELETE(request, { params }) {
     }
 
     // Only the course creator can archive the course
-    if (course.createdBy.toString() !== userId) {
+    const creatorId = course.createdBy._id ? course.createdBy._id.toString() : course.createdBy.toString();
+    if (creatorId !== userId) {
       return NextResponse.json({ message: 'Forbidden: Only course creator can archive the course' }, { status: 403 });
     }
 
