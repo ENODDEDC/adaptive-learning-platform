@@ -110,8 +110,21 @@ const Layout = ({ children }) => {
   const isAdminLoginPage = pathname === '/admin/login';
   const isAdminPage = pathname?.startsWith('/admin') && !isAdminLoginPage;
 
+  // Set body background color based on page
+  useEffect(() => {
+    if (pathname === '/') {
+      document.body.style.backgroundColor = '#0a0a0a';
+    } else {
+      document.body.style.backgroundColor = '#F0F2F5';
+    }
+    
+    return () => {
+      document.body.style.backgroundColor = '#F0F2F5';
+    };
+  }, [pathname]);
+
   if (isAuthPage || isAdminLoginPage) {
-    return <div className="min-h-screen bg-base-light">{children}</div>;
+    return <div>{children}</div>;
   }
 
   if (isAdminPage) {
@@ -133,11 +146,6 @@ const Layout = ({ children }) => {
   // Prevent hydration mismatch by using consistent initial state
   const sidebarState = isSidebarCollapsed;
   const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-64';
-
-  // Determine if current page needs scrolling - Enable scrolling for all pages
-  const needsScrolling = true; // Enable scrolling globally
-  const containerOverflow = 'overflow-y-auto';
-  const contentOverflow = 'overflow-y-auto';
 
   return (
     <div className="min-h-screen bg-base-light">
@@ -252,9 +260,9 @@ const Layout = ({ children }) => {
           }
         }}
       />
-      <div className={`transition-all duration-500 ease-in-out ${mainContentMargin} min-h-screen ${containerOverflow}`}>
+      <div className={`transition-all duration-500 ease-in-out ${mainContentMargin} min-h-screen`}>
         <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
-        <main className={`min-h-screen ${contentOverflow}`}>
+        <main className="min-h-screen">
           {React.isValidElement(children) && typeof children.type !== 'string'
             ? React.cloneElement(children, {
                 upcomingTasksExpanded,

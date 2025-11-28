@@ -128,7 +128,7 @@ export default function LandingPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-indigo-900 text-white overflow-x-hidden">
+    <div className="bg-gradient-to-br from-gray-900 via-black to-indigo-900 text-white overflow-x-hidden w-full">
       {/* Animated Background Grid */}
       <div className="fixed inset-0 opacity-20 pointer-events-none">
         <div className="absolute inset-0" style={{
@@ -778,7 +778,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 py-12 px-6">
+      <footer className="border-t border-white/10 py-12 px-6 bg-gradient-to-br from-gray-900 via-black to-indigo-900">
         <div className="max-w-7xl mx-auto text-center text-white/50">
           <p>&copy; 2025 Intelevo. Powered by Advanced AI Technology.</p>
         </div>
