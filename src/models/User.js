@@ -46,6 +46,9 @@ const userSchema = new mongoose.Schema({
   photoURL: {
     type: String,
   },
+  profilePicture: {
+    type: String,
+  },
   authProvider: {
     type: String,
     enum: ['email', 'google'],

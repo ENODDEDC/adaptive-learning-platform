@@ -789,8 +789,22 @@ const CourseDetailPage = ({
               <div className="items-center hidden gap-4 ml-6 sm:flex">
                 <div className="flex items-center -space-x-2">
                   {teachers.slice(0, 3).map((teacher) => (
-                    <div key={teacher._id} className="flex items-center justify-center w-10 h-10 bg-blue-600 border-2 border-white rounded-full shadow-sm">
-                      <span className="text-sm font-semibold text-white">{teacher.name ? teacher.name.charAt(0).toUpperCase() : 'T'}</span>
+                    <div key={teacher._id} className="flex items-center justify-center w-10 h-10 overflow-hidden bg-blue-600 border-2 border-white rounded-full shadow-sm">
+                      {teacher.profilePicture ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img 
+                          src={teacher.profilePicture} 
+                          alt={teacher.name || 'Teacher'} 
+                          className="object-cover w-full h-full"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextElementSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <span className={`text-sm font-semibold text-white ${teacher.profilePicture ? 'hidden' : ''}`}>
+                        {teacher.name ? teacher.name.charAt(0).toUpperCase() : 'T'}
+                      </span>
                     </div>
                   ))}
                   {teachers.length > 3 && (
@@ -1080,8 +1094,20 @@ const CourseDetailPage = ({
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 w-10 h-10">
-                                  <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full">
-                                    <span className="text-sm font-medium text-white">
+                                  <div className="flex items-center justify-center w-10 h-10 overflow-hidden bg-blue-600 rounded-full">
+                                    {teacher.profilePicture ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img 
+                                        src={teacher.profilePicture} 
+                                        alt={teacher.name || 'Teacher'} 
+                                        className="object-cover w-full h-full"
+                                        onError={(e) => {
+                                          e.target.style.display = 'none';
+                                          e.target.nextElementSibling.style.display = 'flex';
+                                        }}
+                                      />
+                                    ) : null}
+                                    <span className={`text-sm font-medium text-white ${teacher.profilePicture ? 'hidden' : ''}`}>
                                       {teacher.name ? teacher.name.charAt(0).toUpperCase() : 'T'}
                                     </span>
                                   </div>
@@ -1136,8 +1162,20 @@ const CourseDetailPage = ({
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 w-10 h-10">
-                                  <div className="flex items-center justify-center w-10 h-10 bg-green-600 rounded-full">
-                                    <span className="text-sm font-medium text-white">
+                                  <div className="flex items-center justify-center w-10 h-10 overflow-hidden bg-green-600 rounded-full">
+                                    {student.profilePicture ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img 
+                                        src={student.profilePicture} 
+                                        alt={student.name || 'Student'} 
+                                        className="object-cover w-full h-full"
+                                        onError={(e) => {
+                                          e.target.style.display = 'none';
+                                          e.target.nextElementSibling.style.display = 'flex';
+                                        }}
+                                      />
+                                    ) : null}
+                                    <span className={`text-sm font-medium text-white ${student.profilePicture ? 'hidden' : ''}`}>
                                       {student.name ? student.name.charAt(0).toUpperCase() : 'S'}
                                     </span>
                                   </div>
