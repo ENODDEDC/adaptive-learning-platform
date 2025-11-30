@@ -191,7 +191,7 @@ export default function AdminUserManagementPage() {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-transparent bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text">
+            <h1 className="text-3xl font-bold text-gray-900">
               User Management
             </h1>
             <p className="mt-2 text-gray-600">
@@ -201,7 +201,7 @@ export default function AdminUserManagementPage() {
           <div className="mt-4 lg:mt-0">
             <button
               onClick={() => setIsCreateUserModalOpen(true)}
-              className="flex items-center px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 rounded-lg shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl"
+              className="flex items-center px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -341,7 +341,7 @@ export default function AdminUserManagementPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 w-10 h-10">
-                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-blue-400">
+                              <div className="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full">
                                 <span className="text-sm font-medium text-white">
                                   {editFormData.name.charAt(0)}{editFormData.surname.charAt(0)}
                                 </span>
@@ -418,7 +418,7 @@ export default function AdminUserManagementPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 w-10 h-10">
-                              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-blue-400">
+                              <div className="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full">
                                 <span className="text-sm font-medium text-white">
                                   {user.name.charAt(0)}{user.surname.charAt(0)}
                                 </span>

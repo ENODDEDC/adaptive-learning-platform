@@ -20,7 +20,6 @@ import {
   BellIcon as BellIconSolid,
   UserIcon,
 } from '@heroicons/react/24/solid';
-import Image from 'next/image';
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
@@ -30,6 +29,31 @@ export default function AdminNavbar({ toggleSidebar }) {
   const pathname = usePathname();
   const [darkMode, setDarkMode] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [adminData, setAdminData] = React.useState({
+    name: 'Admin User',
+    email: 'admin@example.com',
+    photoURL: null
+  });
+
+  React.useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        const response = await fetch('/api/admin/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setAdminData({
+            name: data.name || 'Admin User',
+            email: data.email || 'admin@example.com',
+            photoURL: data.photoURL
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching admin profile:', error);
+      }
+    };
+
+    fetchAdminProfile();
+  }, []);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -61,7 +85,7 @@ export default function AdminNavbar({ toggleSidebar }) {
           {/* Page-specific header */}
           {isDashboard && (
             <div className="ml-6">
-              <h1 className="text-2xl font-bold text-transparent bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text">
+              <h1 className="text-2xl font-bold text-gray-900">
                 Dashboard Overview
               </h1>
               <p className="text-sm text-gray-500">Welcome back! Here's what's happening with your platform today.</p>
@@ -71,7 +95,7 @@ export default function AdminNavbar({ toggleSidebar }) {
           {/* Other page headers can be added here */}
           {pathname.includes('/courses') && !isDashboard && (
             <div className="ml-6">
-              <h1 className="text-2xl font-bold text-transparent bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text">
+              <h1 className="text-2xl font-bold text-gray-900">
                 Course Management
               </h1>
               <p className="text-sm text-gray-500">Manage courses, instructors, and student enrollments.</p>
@@ -80,7 +104,7 @@ export default function AdminNavbar({ toggleSidebar }) {
 
           {pathname.includes('/users') && (
             <div className="ml-6">
-              <h1 className="text-2xl font-bold text-transparent bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text">
+              <h1 className="text-2xl font-bold text-gray-900">
                 User Management
               </h1>
               <p className="text-sm text-gray-500">Manage user accounts and permissions.</p>
@@ -89,7 +113,7 @@ export default function AdminNavbar({ toggleSidebar }) {
 
           {pathname.includes('/settings') && (
             <div className="ml-6">
-              <h1 className="text-2xl font-bold text-transparent bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text">
+              <h1 className="text-2xl font-bold text-gray-900">
                 Settings
               </h1>
               <p className="text-sm text-gray-500">Configure your admin preferences and system settings.</p>
@@ -98,7 +122,7 @@ export default function AdminNavbar({ toggleSidebar }) {
 
           {/* Course Management Actions */}
           {pathname.includes('/courses') && !isDashboard && (
-            <button className="px-4 py-2 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl">
+            <button className="px-4 py-2 text-sm font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
@@ -121,7 +145,7 @@ export default function AdminNavbar({ toggleSidebar }) {
                 </svg>
                 <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
               </button>
-              <button className="px-6 py-3 font-medium text-white transition-all duration-200 rounded-lg shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl">
+              <button className="px-6 py-3 font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl">
                 Generate Report
               </button>
             </>
@@ -167,18 +191,22 @@ export default function AdminNavbar({ toggleSidebar }) {
               <Menu.Button className="flex items-center max-w-xs p-1 bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
                 <span className="sr-only">Open user menu</span>
                 <div className="relative">
-                  <Image
-                    className="object-cover w-10 h-10 rounded-full ring-2 ring-gray-200"
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                    alt="Admin profile"
-                    width={40}
-                    height={40}
-                  />
+                  {adminData.photoURL ? (
+                    <img
+                      className="object-cover w-10 h-10 rounded-full ring-2 ring-gray-200"
+                      src={adminData.photoURL}
+                      alt="Admin profile"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center w-10 h-10 text-sm font-semibold text-white bg-blue-500 rounded-full ring-2 ring-gray-200">
+                      {adminData.name.charAt(0)}
+                    </div>
+                  )}
                   <div className="absolute w-4 h-4 bg-green-400 rounded-full -bottom-1 -right-1 ring-2 ring-white"></div>
                 </div>
                 <div className="hidden ml-3 md:block">
-                  <p className="text-sm font-medium text-gray-900">Admin User</p>
-                  <p className="text-xs text-gray-500">admin@example.com</p>
+                  <p className="text-sm font-medium text-gray-900">{adminData.name}</p>
+                  <p className="text-xs text-gray-500">{adminData.email}</p>
                 </div>
                 <ChevronDownIcon className="w-5 h-5 ml-2 text-gray-400" aria-hidden="true" />
               </Menu.Button>
@@ -194,8 +222,8 @@ export default function AdminNavbar({ toggleSidebar }) {
             >
               <Menu.Items className="absolute right-0 z-10 w-56 mt-2 origin-top-right bg-white shadow-lg rounded-xl ring-1 ring-black ring-opacity-5 focus:outline-none">
                 <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-900">Admin User</p>
-                  <p className="text-sm text-gray-500">admin@example.com</p>
+                  <p className="text-sm font-medium text-gray-900">{adminData.name}</p>
+                  <p className="text-sm text-gray-500">{adminData.email}</p>
                 </div>
                 <div className="py-1">
                   <Menu.Item>

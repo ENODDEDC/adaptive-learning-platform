@@ -658,76 +658,64 @@ export default function AdminCourseManagementPage() {
         <>
           {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
-        <div className="relative p-6 overflow-hidden transition-all duration-300 bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 group animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <div className="absolute inset-0 transition-opacity duration-200 opacity-0 bg-gradient-to-br from-blue-500/5 to-blue-600/5 group-hover:opacity-100"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Courses</p>
-                <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">{courses.length}</p>
-              </div>
-              <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 animate-icon-bounce">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
+        <div className="p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-blue-300 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Courses</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">{courses.length}</p>
+            </div>
+            <div className="p-3 bg-blue-500 rounded-lg shadow-lg animate-icon-bounce">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
             </div>
           </div>
         </div>
 
-        <div className="relative p-6 overflow-hidden transition-all duration-300 bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 group animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-          <div className="absolute inset-0 transition-opacity duration-200 opacity-0 bg-gradient-to-br from-green-500/5 to-green-600/5 group-hover:opacity-100"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Courses</p>
-                <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">
-                  {courses.filter(c => c.status === 'active').length}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-green-500 to-green-600 animate-icon-bounce">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
+        <div className="p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-green-300 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Active Courses</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">
+                {courses.filter(c => c.status === 'active').length}
+              </p>
+            </div>
+            <div className="p-3 bg-green-500 rounded-lg shadow-lg animate-icon-bounce">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
           </div>
         </div>
 
-        <div className="relative p-6 overflow-hidden transition-all duration-300 bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 group animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-          <div className="absolute inset-0 transition-opacity duration-200 opacity-0 bg-gradient-to-br from-purple-500/5 to-purple-600/5 group-hover:opacity-100"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Students</p>
-                <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">
-                  {courses.reduce((acc, course) => acc + (course.enrolledUsersCount || 0), 0)}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-purple-500 to-purple-600 animate-icon-bounce">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
+        <div className="p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-purple-300 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Students</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">
+                {courses.reduce((acc, course) => acc + (course.enrolledUsersCount || 0), 0)}
+              </p>
+            </div>
+            <div className="p-3 bg-purple-500 rounded-lg shadow-lg animate-icon-bounce">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
             </div>
           </div>
         </div>
 
-        <div className="relative p-6 overflow-hidden transition-all duration-300 bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 group animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-          <div className="absolute inset-0 transition-opacity duration-200 opacity-0 bg-gradient-to-br from-orange-500/5 to-orange-600/5 group-hover:opacity-100"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Avg. Enrollment</p>
-                <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">
-                  {courses.length > 0 ? Math.round(courses.reduce((acc, course) => acc + (course.enrolledUsersCount || 0), 0) / courses.length) : 0}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-orange-500 to-orange-600 animate-icon-bounce">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
+        <div className="p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-orange-300 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Avg. Enrollment</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">
+                {courses.length > 0 ? Math.round(courses.reduce((acc, course) => acc + (course.enrolledUsersCount || 0), 0) / courses.length) : 0}
+              </p>
+            </div>
+            <div className="p-3 bg-orange-500 rounded-lg shadow-lg animate-icon-bounce">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
             </div>
           </div>
         </div>
@@ -905,7 +893,7 @@ export default function AdminCourseManagementPage() {
                   <div className="flex items-center mb-4">
                     <div className="flex-shrink-0 w-12 h-12">
                       <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-white text-lg font-semibold shadow-lg ${
-                        editFormData.coverColor || 'bg-gradient-to-br from-blue-500 to-blue-600'
+                        editFormData.coverColor || 'bg-blue-500'
                       }`}>
                         {editFormData.subject?.charAt(0) || 'C'}
                       </div>
@@ -986,15 +974,13 @@ export default function AdminCourseManagementPage() {
               </div>
             ) : (
               /* View Mode Card */
-              <div className="relative transition-all duration-300 bg-white border border-gray-200 shadow-sm group rounded-xl hover:shadow-xl animate-admin-card-entrance hover:-translate-y-1 hover:scale-[1.02]">
-                <div className="absolute inset-0 transition-opacity duration-300 opacity-0 bg-gradient-to-br from-purple-500/5 to-blue-500/5 group-hover:opacity-100 rounded-xl"></div>
-                <div className="relative p-6">
+              <div className="relative p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm group rounded-xl hover:shadow-xl animate-admin-card-entrance hover:-translate-y-1 hover:scale-[1.02] hover:border-blue-300">
                   {/* Card Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center flex-1 min-w-0">
                       <div className="flex-shrink-0 w-12 h-12">
-                        <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-white text-lg font-semibold shadow-lg bg-gradient-to-br transition-all duration-300 group-hover:scale-110 ${
-                          course.coverColor || 'from-blue-500 to-blue-600'
+                        <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-white text-lg font-semibold shadow-lg transition-all duration-300 group-hover:scale-110 ${
+                          course.coverColor || 'bg-blue-500'
                         }`}>
                           {course.subject?.charAt(0) || 'C'}
                         </div>
@@ -1146,7 +1132,6 @@ export default function AdminCourseManagementPage() {
                     </button>
                   </div>
                 </div>
-              </div>
             )}
           </div>
         ))}
@@ -1154,7 +1139,7 @@ export default function AdminCourseManagementPage() {
         {filteredCourses.length === 0 && (
           <div className="py-16 text-center col-span-full">
             <div className="max-w-md mx-auto">
-              <div className="flex items-center justify-center w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200">
+              <div className="flex items-center justify-center w-24 h-24 mx-auto mb-6 bg-gray-200 rounded-full">
                 <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
@@ -1163,7 +1148,7 @@ export default function AdminCourseManagementPage() {
               <p className="mb-6 text-gray-500">Try adjusting your search criteria or create a new course to get started.</p>
               <button
                 onClick={() => setIsCreateCourseModalOpen(true)}
-                className="inline-flex items-center px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 rounded-lg shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl"
+                className="inline-flex items-center px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1186,12 +1171,12 @@ export default function AdminCourseManagementPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black bg-opacity-50 sm:p-4 animate-admin-modal-backdrop-fade">
           <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white shadow-2xl rounded-2xl animate-modal-appear">
             {/* Modal Header */}
-            <div className="relative px-8 py-6 bg-gradient-to-r from-purple-600 to-blue-600 rounded-t-2xl">
+            <div className="relative px-8 py-6 bg-blue-600 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center justify-center w-16 h-16 bg-white shadow-lg rounded-2xl">
-                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-white text-xl font-bold bg-gradient-to-br ${
-                      selectedCourse.coverColor || 'from-blue-500 to-blue-600'
+                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-white text-xl font-bold ${
+                      selectedCourse.coverColor || 'bg-blue-500'
                     }`}>
                       {selectedCourse.subject?.charAt(0) || 'C'}
                     </div>
@@ -1526,7 +1511,7 @@ export default function AdminCourseManagementPage() {
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       {selectedCourse.enrolledUsers.map(user => (
                         <div key={user._id} className="flex items-center p-4 space-x-4 bg-gray-50 rounded-xl">
-                          <div className="flex items-center justify-center w-12 h-12 font-semibold text-white rounded-full bg-gradient-to-br from-purple-400 to-purple-600">
+                          <div className="flex items-center justify-center w-12 h-12 font-semibold text-white bg-purple-500 rounded-full">
                             {user.name?.charAt(0) || 'U'}
                           </div>
                           <div className="flex-1">
@@ -1610,7 +1595,7 @@ export default function AdminCourseManagementPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-admin-modal-backdrop-fade">
           <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white shadow-2xl rounded-2xl animate-modal-appear">
             {/* Modal Header */}
-            <div className="sticky top-0 z-10 px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-t-2xl">
+            <div className="sticky top-0 z-10 px-6 py-4 bg-blue-600 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-white">
                   {viewingContent.type === 'content' ? 'Course Material' : 'Activity Details'}
