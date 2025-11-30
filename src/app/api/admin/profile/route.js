@@ -38,7 +38,7 @@ export async function PUT(req) {
   }
 
   try {
-    const admin = await User.findById(adminId);
+    const admin = await User.findById(adminInfo.userId);
     if (!admin) {
       return NextResponse.json({ message: 'Admin not found' }, { status: 404 });
     }
@@ -46,12 +46,13 @@ export async function PUT(req) {
     admin.name = name;
     admin.surname = surname;
     admin.email = email;
-    if (photoURL) {
+    if (photoURL !== undefined) {
       admin.photoURL = photoURL;
     }
     await admin.save();
 
-    return NextResponse.json({ message: 'Profile updated successfully', admin });
+    const { password, ...adminData } = admin.toObject();
+    return NextResponse.json({ message: 'Profile updated successfully', admin: adminData });
   } catch (error) {
     console.error('Error updating admin profile:', error);
     return NextResponse.json({ message: 'Server error' }, { status: 500 });

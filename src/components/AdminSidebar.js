@@ -36,20 +36,43 @@ const navigation = [
 
 export default function AdminSidebar({ isCollapsed, toggleSidebar }) {
   const pathname = usePathname();
+  const [adminData, setAdminData] = React.useState({
+    name: 'Admin User',
+    photoURL: null
+  });
+
+  React.useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        const response = await fetch('/api/admin/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setAdminData({
+            name: data.name || 'Admin User',
+            photoURL: data.photoURL
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching admin profile:', error);
+      }
+    };
+
+    fetchAdminProfile();
+  }, []);
 
   return (
     <div
-      className={`fixed inset-y-0 left-0 z-50 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white transition-all duration-300 ease-in-out shadow-2xl ${
+      className={`fixed inset-y-0 left-0 z-50 bg-slate-900 text-white transition-all duration-300 ease-in-out shadow-2xl ${
         isCollapsed ? 'w-20' : 'w-64'
       } flex flex-col border-r border-slate-700/50`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between h-20 px-6 shadow-lg bg-gradient-to-r from-purple-600 to-blue-600">
+      <div className="flex items-center justify-between h-20 px-6 bg-blue-600 shadow-lg">
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
           <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl backdrop-blur-sm">
             <AcademicCapIcon className="w-6 h-6 text-white" />
           </div>
-          <span className={`ml-3 text-xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent ${isCollapsed ? 'hidden' : 'block'}`}>
+          <span className={`ml-3 text-xl font-bold text-white ${isCollapsed ? 'hidden' : 'block'}`}>
             Admin Panel
           </span>
         </div>
@@ -77,13 +100,13 @@ export default function AdminSidebar({ isCollapsed, toggleSidebar }) {
               href={item.href}
               className={`group relative flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                 isActive
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-600/25'
+                  ? 'bg-blue-600 text-white shadow-lg'
                   : 'text-gray-300 hover:text-white hover:bg-white/5 hover:shadow-md'
               }`}
             >
               {/* Active indicator */}
               {isActive && (
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-xl blur-sm"></div>
+                <div className="absolute inset-0 bg-blue-600/20 rounded-xl blur-sm"></div>
               )}
 
               <IconComponent
@@ -110,11 +133,19 @@ export default function AdminSidebar({ isCollapsed, toggleSidebar }) {
       {/* Footer */}
       <div className="p-4 border-t border-slate-700/50">
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-purple-400 to-pink-400">
-            <span className="text-sm font-semibold text-white">A</span>
-          </div>
+          {adminData.photoURL ? (
+            <img
+              src={adminData.photoURL}
+              alt="Admin profile"
+              className="object-cover w-8 h-8 rounded-full"
+            />
+          ) : (
+            <div className="flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full">
+              <span className="text-sm font-semibold text-white">{adminData.name.charAt(0)}</span>
+            </div>
+          )}
           <div className={`ml-3 ${isCollapsed ? 'hidden' : 'block'}`}>
-            <p className="text-sm font-medium text-white">Admin User</p>
+            <p className="text-sm font-medium text-white">{adminData.name}</p>
             <p className="text-xs text-gray-400">Super Admin</p>
           </div>
         </div>

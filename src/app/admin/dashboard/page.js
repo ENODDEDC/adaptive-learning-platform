@@ -193,79 +193,67 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <div className="relative p-6 overflow-hidden transition-all duration-200 bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-lg group">
-          <div className="absolute inset-0 transition-opacity duration-200 opacity-0 bg-gradient-to-br from-blue-500/5 to-blue-600/5 group-hover:opacity-100"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between">
-              <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-blue-500 to-blue-600">
-                <UsersIcon className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex items-center text-sm text-green-600">
-                <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
-                {dashboardData.stats.userGrowth}
-              </div>
+        <div className="p-6 transition-all duration-200 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:border-blue-300">
+          <div className="flex items-center justify-between">
+            <div className="p-3 bg-blue-500 rounded-lg shadow-lg">
+              <UsersIcon className="w-6 h-6 text-white" />
             </div>
-            <div className="mt-4">
-              <p className="text-sm font-medium text-gray-600">Total Users</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardData.stats.totalUsers.toLocaleString()}</p>
+            <div className="flex items-center text-sm text-green-600">
+              <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
+              {dashboardData.stats.userGrowth}
             </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm font-medium text-gray-600">Total Users</p>
+            <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardData.stats.totalUsers.toLocaleString()}</p>
           </div>
         </div>
 
-        <div className="relative p-6 overflow-hidden transition-all duration-200 bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-lg group">
-          <div className="absolute inset-0 transition-opacity duration-200 opacity-0 bg-gradient-to-br from-green-500/5 to-green-600/5 group-hover:opacity-100"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between">
-              <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-green-500 to-green-600">
-                <AcademicCapIcon className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex items-center text-sm text-green-600">
-                <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
-                {dashboardData.stats.courseGrowth}
-              </div>
+        <div className="p-6 transition-all duration-200 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:border-green-300">
+          <div className="flex items-center justify-between">
+            <div className="p-3 bg-green-500 rounded-lg shadow-lg">
+              <AcademicCapIcon className="w-6 h-6 text-white" />
             </div>
-            <div className="mt-4">
-              <p className="text-sm font-medium text-gray-600">Active Courses</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardData.stats.activeCourses}</p>
+            <div className="flex items-center text-sm text-green-600">
+              <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
+              {dashboardData.stats.courseGrowth}
             </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm font-medium text-gray-600">Active Courses</p>
+            <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardData.stats.activeCourses}</p>
           </div>
         </div>
 
-        <div className="relative p-6 overflow-hidden transition-all duration-200 bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-lg group">
-          <div className="absolute inset-0 transition-opacity duration-200 opacity-0 bg-gradient-to-br from-purple-500/5 to-purple-600/5 group-hover:opacity-100"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between">
-              <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-purple-500 to-purple-600">
-                <ChartBarIcon className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex items-center text-sm text-green-600">
-                <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
-                {dashboardData.stats.revenueGrowth}
-              </div>
+        <div className="p-6 transition-all duration-200 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:border-purple-300">
+          <div className="flex items-center justify-between">
+            <div className="p-3 bg-purple-500 rounded-lg shadow-lg">
+              <ChartBarIcon className="w-6 h-6 text-white" />
             </div>
-            <div className="mt-4">
-              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">{formatCurrency(dashboardData.stats.totalRevenue)}</p>
+            <div className="flex items-center text-sm text-green-600">
+              <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
+              {dashboardData.stats.revenueGrowth}
             </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+            <p className="mt-1 text-3xl font-bold text-gray-900">{formatCurrency(dashboardData.stats.totalRevenue)}</p>
           </div>
         </div>
 
-        <div className="relative p-6 overflow-hidden transition-all duration-200 bg-white border border-gray-100 shadow-sm rounded-xl hover:shadow-lg group">
-          <div className="absolute inset-0 transition-opacity duration-200 opacity-0 bg-gradient-to-br from-orange-500/5 to-orange-600/5 group-hover:opacity-100"></div>
-          <div className="relative">
-            <div className="flex items-center justify-between">
-              <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-orange-500 to-orange-600">
-                <ClockIcon className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex items-center text-sm text-red-600">
-                <ArrowTrendingDownIcon className="w-4 h-4 mr-1" />
-                {dashboardData.stats.taskGrowth}
-              </div>
+        <div className="p-6 transition-all duration-200 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:border-orange-300">
+          <div className="flex items-center justify-between">
+            <div className="p-3 bg-orange-500 rounded-lg shadow-lg">
+              <ClockIcon className="w-6 h-6 text-white" />
             </div>
-            <div className="mt-4">
-              <p className="text-sm font-medium text-gray-600">Pending Tasks</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardData.stats.pendingTasks}</p>
+            <div className="flex items-center text-sm text-red-600">
+              <ArrowTrendingDownIcon className="w-4 h-4 mr-1" />
+              {dashboardData.stats.taskGrowth}
             </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm font-medium text-gray-600">Pending Tasks</p>
+            <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardData.stats.pendingTasks}</p>
           </div>
         </div>
       </div>
@@ -290,11 +278,11 @@ export default function AdminDashboard() {
               <div key={data.month} className="flex flex-col items-center flex-1">
                 <div className="relative flex flex-col-reverse w-full">
                   <div
-                    className="mx-1 rounded-t-sm bg-gradient-to-t from-purple-500 to-purple-400"
+                    className="mx-1 bg-purple-500 rounded-t-sm"
                     style={{ height: `${Math.max((data.users / Math.max(...dashboardData.chartData.map(d => d.users))) * 100, 10)}%` }}
                   ></div>
                   <div
-                    className="mx-1 mt-1 rounded-t-sm bg-gradient-to-t from-blue-500 to-blue-400"
+                    className="mx-1 mt-1 bg-blue-500 rounded-t-sm"
                     style={{ height: `${Math.max((data.courses / Math.max(...dashboardData.chartData.map(d => d.courses))) * 100, 10)}%` }}
                   ></div>
                 </div>
@@ -397,7 +385,7 @@ export default function AdminDashboard() {
           <div className="space-y-3">
             <button
               onClick={() => router.push('/admin/users')}
-              className="w-full p-3 text-left transition-all duration-200 border border-blue-200 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 hover:border-blue-300 group"
+              className="w-full p-3 text-left transition-all duration-200 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 group"
             >
               <div className="flex items-center space-x-3">
                 <div className="p-2 transition-colors duration-200 bg-blue-500 rounded-lg group-hover:bg-blue-600">
@@ -412,7 +400,7 @@ export default function AdminDashboard() {
 
             <button
               onClick={() => router.push('/admin/courses')}
-              className="w-full p-3 text-left transition-all duration-200 border border-green-200 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 hover:border-green-300 group"
+              className="w-full p-3 text-left transition-all duration-200 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 group"
             >
               <div className="flex items-center space-x-3">
                 <div className="p-2 transition-colors duration-200 bg-green-500 rounded-lg group-hover:bg-green-600">

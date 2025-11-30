@@ -16,6 +16,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: '*.backblazeb2.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+      },
     ],
   },
 

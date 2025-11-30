@@ -212,7 +212,7 @@ export default function AdminFeedManagementPage() {
               <p className="text-sm font-medium text-gray-600">Total Announcements</p>
               <p className="mt-1 text-3xl font-bold text-gray-900">{announcements.length}</p>
             </div>
-            <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-blue-500 to-blue-600">
+            <div className="p-3 bg-blue-500 rounded-lg shadow-lg">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
@@ -226,7 +226,7 @@ export default function AdminFeedManagementPage() {
               <p className="text-sm font-medium text-gray-600">Course Activities</p>
               <p className="mt-1 text-3xl font-bold text-gray-900">{activities.length}</p>
             </div>
-            <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-green-500 to-green-600">
+            <div className="p-3 bg-green-500 rounded-lg shadow-lg">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -240,7 +240,7 @@ export default function AdminFeedManagementPage() {
               <p className="text-sm font-medium text-gray-600">Active Courses</p>
               <p className="mt-1 text-3xl font-bold text-gray-900">{courses.length}</p>
             </div>
-            <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-purple-500 to-purple-600">
+            <div className="p-3 bg-purple-500 rounded-lg shadow-lg">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>

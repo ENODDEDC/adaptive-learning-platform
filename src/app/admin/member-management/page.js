@@ -260,7 +260,7 @@ export default function AdminMemberManagementPage() {
                   <p className="text-sm font-medium text-gray-600">Total Students</p>
                   <p className="mt-1 text-3xl font-bold text-gray-900">{courseMembers.summary.totalEnrolled}</p>
                 </div>
-                <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-blue-500 to-blue-600">
+                <div className="p-3 bg-blue-500 rounded-lg shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -274,7 +274,7 @@ export default function AdminMemberManagementPage() {
                   <p className="text-sm font-medium text-gray-600">Co-Teachers</p>
                   <p className="mt-1 text-3xl font-bold text-gray-900">{courseMembers.summary.totalCoTeachers}</p>
                 </div>
-                <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-green-500 to-green-600">
+                <div className="p-3 bg-green-500 rounded-lg shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                   </svg>
@@ -288,7 +288,7 @@ export default function AdminMemberManagementPage() {
                   <p className="text-sm font-medium text-gray-600">Instructors</p>
                   <p className="mt-1 text-3xl font-bold text-gray-900">{courseMembers.summary.totalInstructors}</p>
                 </div>
-                <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-purple-500 to-purple-600">
+                <div className="p-3 bg-purple-500 rounded-lg shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
@@ -302,7 +302,7 @@ export default function AdminMemberManagementPage() {
                   <p className="text-sm font-medium text-gray-600">Total Members</p>
                   <p className="mt-1 text-3xl font-bold text-gray-900">{courseMembers.summary.totalMembers}</p>
                 </div>
-                <div className="p-3 rounded-lg shadow-lg bg-gradient-to-r from-orange-500 to-orange-600">
+                <div className="p-3 bg-orange-500 rounded-lg shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -358,7 +358,7 @@ export default function AdminMemberManagementPage() {
                     <div key={member.id} className="p-6 transition-colors duration-200 border border-gray-200 bg-gray-50 rounded-xl hover:bg-gray-100">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                          <div className="flex items-center justify-center w-12 h-12 font-semibold text-white rounded-full bg-gradient-to-br from-purple-400 to-purple-600">
+                          <div className="flex items-center justify-center w-12 h-12 font-semibold text-white bg-purple-500 rounded-full">
                             {member.name.charAt(0)}
                           </div>
                           <div className="flex-1">
@@ -416,7 +416,7 @@ export default function AdminMemberManagementPage() {
       {showRoleModal && selectedMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black bg-opacity-50 sm:p-4">
           <div className="w-full max-w-md bg-white shadow-2xl rounded-2xl">
-            <div className="px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-t-2xl">
+            <div className="px-6 py-4 bg-blue-600 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">Change Member Role</h3>
                 <button
@@ -433,7 +433,7 @@ export default function AdminMemberManagementPage() {
             <div className="p-6">
               <div className="mb-6">
                 <div className="flex items-center mb-4 space-x-3">
-                  <div className="flex items-center justify-center w-12 h-12 font-semibold text-white rounded-full bg-gradient-to-br from-purple-400 to-purple-600">
+                  <div className="flex items-center justify-center w-12 h-12 font-semibold text-white bg-purple-500 rounded-full">
                     {selectedMember.name.charAt(0)}
                   </div>
                   <div>

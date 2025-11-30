@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import AdminProfilePictureUpload from '@/components/settings/AdminProfilePictureUpload';
+import { Toaster } from 'react-hot-toast';
 
 export default function AdminSettingsPage() {
   const [adminData, setAdminData] = useState({
@@ -46,7 +47,7 @@ export default function AdminSettingsPage() {
         name: data.name,
         surname: data.surname,
         email: data.email,
-        photoURL: data.photoURL || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+        photoURL: data.photoURL || null,
       });
     } catch (err) {
       setError(err.message);
@@ -141,65 +142,23 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handleProfilePictureChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setError('');
-    setSuccess('');
-    setLoading(true);
-
-    const formData = new FormData();
-    formData.append('profilePicture', file);
-
-    try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
-
-      const res = await fetch('/api/admin/profile/photo', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          router.push('/admin/login');
-        }
-        throw new Error(`Error: ${res.status} ${res.statusText}`);
-      }
-
-      const data = await res.json();
-      setAdminData((prevData) => ({ ...prevData, photoURL: data.photoURL }));
-      setSuccess('Profile picture updated successfully!');
-    } catch (err) {
-      setError(err.message);
-      console.error('Failed to upload profile picture:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (loading) {
     return <div className="py-8 text-center">Loading settings...</div>;
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center lg:text-left">
-        <h1 className="text-3xl font-bold text-transparent bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text">
-          Admin Settings
-        </h1>
-        <p className="mt-2 text-gray-600">
-          Manage your account settings and preferences.
-        </p>
-      </div>
+    <>
+      <Toaster position="top-right" />
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="text-center lg:text-left">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Admin Settings
+          </h1>
+          <p className="mt-2 text-gray-600">
+            Manage your account settings and preferences.
+          </p>
+        </div>
 
       {/* Alerts */}
       {error && (
@@ -284,7 +243,7 @@ export default function AdminSettingsPage() {
 
             <button
               type="submit"
-              className="w-full px-6 py-3 font-medium text-white transition-all duration-200 rounded-lg shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl"
+              className="w-full px-6 py-3 font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl"
             >
               Update Profile
             </button>
@@ -335,7 +294,7 @@ export default function AdminSettingsPage() {
 
             <button
               type="submit"
-              className="w-full px-6 py-3 font-medium text-white transition-all duration-200 rounded-lg shadow-lg bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:shadow-xl"
+              className="w-full px-6 py-3 font-medium text-white transition-all duration-200 bg-green-600 rounded-lg shadow-lg hover:bg-green-700 hover:shadow-xl"
             >
               Change Password
             </button>
@@ -345,47 +304,22 @@ export default function AdminSettingsPage() {
         {/* Profile Picture */}
         <div className="p-8 bg-white border border-gray-100 shadow-sm rounded-xl">
           <div className="flex items-center mb-6">
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-3 bg-blue-100 rounded-lg">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <h2 className="ml-3 text-xl font-semibold text-gray-900">Profile Picture</h2>
           </div>
 
-          <div className="flex items-center mb-6">
-            <div className="relative">
-              <Image
-                className="object-cover w-24 h-24 rounded-full ring-4 ring-gray-100"
-                src={adminData.photoURL || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'}
-                alt="Admin Profile"
-                width={96}
-                height={96}
-              />
-              <div className="absolute flex items-center justify-center w-8 h-8 bg-purple-600 rounded-full -bottom-1 -right-1 ring-2 ring-white">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </div>
-            </div>
-            <div className="ml-6">
-              <label htmlFor="profile-picture-upload" className="inline-flex items-center px-6 py-3 font-medium text-white transition-all duration-200 rounded-lg shadow-lg cursor-pointer bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                </svg>
-                Upload New Picture
-              </label>
-              <input
-                id="profile-picture-upload"
-                type="file"
-                className="hidden"
-                accept="image/*"
-                onChange={handleProfilePictureChange}
-              />
-            </div>
-          </div>
+          <AdminProfilePictureUpload
+            currentImage={adminData.photoURL}
+            onImageUpdate={(newPhotoURL) => {
+              setAdminData(prev => ({ ...prev, photoURL: newPhotoURL }));
+            }}
+          />
 
-          <div className="p-4 rounded-lg bg-gray-50">
+          <div className="p-4 mt-6 rounded-lg bg-gray-50">
             <h4 className="mb-2 text-sm font-medium text-gray-900">Upload Guidelines</h4>
             <ul className="space-y-1 text-sm text-gray-600">
               <li>• Maximum file size: 5MB</li>
@@ -441,6 +375,7 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
