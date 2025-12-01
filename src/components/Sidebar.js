@@ -635,10 +635,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
             );
           })}
 
-          {/* Platform Name and Sign Out - After Settings */}
+          {/* Platform Name and Sign Out - After Settings with more spacing */}
           {!isCollapsed && (
             <>
-              <li className="mt-6 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+              <li className="pt-16 mt-8 border-t border-gray-100 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
                 <div className="px-3 py-2 mx-1 transition-shadow duration-300 border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg animate-pulse">
@@ -652,7 +652,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                 </div>
               </li>
 
-              <li className="animate-fade-in-up" style={{ animationDelay: '0.85s' }}>
+              <li className="mt-3 animate-fade-in-up" style={{ animationDelay: '0.85s' }}>
                 <button
                   onClick={handleSignOut}
                   className="flex items-center justify-center w-full gap-2 px-4 py-2 mx-1 text-sm font-medium text-red-600 transition-all duration-200 border border-red-200 rounded-xl bg-red-50 hover:bg-red-100 hover:border-red-300 hover:shadow-md hover:scale-105"
@@ -704,7 +704,21 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                       </Dialog.Title>
                       <div className="mt-2">
                         {notifications.length === 0 ? (
-                          <p className="text-sm text-gray-500">No notifications to display.</p>
+                          <div className="flex flex-col items-center justify-center py-8 text-center">
+                            {/* Friendly Bell Icon */}
+                            <div className="flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-blue-50">
+                              <BellIcon className="w-8 h-8 text-blue-500" />
+                            </div>
+                            
+                            {/* Messages */}
+                            <h4 className="mb-2 text-lg font-semibold text-gray-900">You're all caught up!</h4>
+                            <p className="mb-6 text-sm text-gray-500">We'll notify you when there's something new</p>
+                            
+                            {/* Static Notification Settings Link */}
+                            <div className="text-sm text-blue-600">
+                              Notification settings
+                            </div>
+                          </div>
                         ) : (
                           <ul className="divide-y divide-gray-200">
                             {notifications.map((notification) => (
