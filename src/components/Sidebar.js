@@ -3,7 +3,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-  ChevronDownIcon,
   Bars3Icon,
   HomeIcon,
   BellIcon,
@@ -14,7 +13,8 @@ import {
   Cog6ToothIcon,
   DocumentTextIcon,
   AcademicCapIcon,
-  PlusIcon
+  PlusIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { Dialog, Transition } from '@headlessui/react';
 import CourseBrowserModal from './CourseBrowserModal';
@@ -26,7 +26,6 @@ function classNames(...classes) {
 }
 
 const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
-  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [user, setUser] = useState(null);
   const router = useRouter();
   const [notifications, setNotifications] = useState([]);
@@ -245,11 +244,9 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
 
         {/* User profile section - only when expanded */}
         {!isCollapsed && (
-          <div className="relative animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <button
-              onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-              className="flex items-center justify-between w-full p-3 transition-all duration-200 border border-gray-200 bg-gray-50 rounded-xl hover:bg-gray-100 hover:scale-102"
-            >
+          <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            {/* User Profile Display */}
+            <div className="flex items-center justify-between w-full p-3 transition-all duration-200 border border-gray-200 bg-gray-50 rounded-xl">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 overflow-hidden rounded-full shadow-sm bg-gradient-to-br from-blue-500 to-blue-600">
                   {user?.profilePicture ? (
@@ -277,41 +274,20 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                   <div className="text-xs text-gray-500">Active Learning</div>
                 </div>
               </div>
-              <ChevronDownIcon
-                className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isUserDropdownOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
-
-            {isUserDropdownOpen && (
-              <div className="absolute top-0 z-50 w-64 ml-2 overflow-hidden bg-white border border-gray-200 shadow-xl left-full rounded-xl">
-                <div className="py-2">
-                  <button
-                    onClick={() => setIsNotificationModalOpen(true)}
-                    className="w-full px-4 py-3 text-sm text-left text-gray-700 transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <BellIcon className="w-5 h-5 text-gray-500" /> {/* Using BellIcon for notifications */}
-                      Notifications
-                      {unreadCount > 0 && (
-                        <span className="inline-flex items-center justify-center px-2 py-1 ml-auto text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
-                          {unreadCount}
-                        </span>
-                      )}
-                    </div>
-                  </button>
- 
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full px-4 py-3 text-sm text-left text-red-600 transition-colors hover:bg-red-50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 bg-red-300 rounded-full"></div>
-                      Sign Out
-                    </div>
-                  </button>
-                </div>
-              </div>
-            )}
+              {/* Notification Bell Icon */}
+              <button
+                onClick={() => setIsNotificationModalOpen(true)}
+                className="relative p-2 transition-all duration-200 rounded-lg hover:bg-gray-200 group"
+                aria-label="View notifications"
+              >
+                <BellIcon className="w-5 h-5 text-gray-600 transition-colors group-hover:text-blue-600" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-600 rounded-full animate-pulse">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         )}
 
@@ -344,8 +320,8 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
       </div>
 
       {/* Navigation Section */}
-      <nav className={`flex-1 ${isCollapsed ? 'p-2' : 'p-6'} pt-6`} role="navigation" aria-label="Main navigation">
-        <div className={`${isCollapsed ? 'h-full' : 'h-[calc(100vh-200px)] overflow-y-auto elegant-scrollbar relative pr-1'}`}>
+      <nav className={`flex-1 overflow-y-auto ${isCollapsed ? 'p-2' : 'p-6'} pt-6`} role="navigation" aria-label="Main navigation">
+        <div className={`${isCollapsed ? 'h-full' : 'elegant-scrollbar relative pr-1'}`}>
         {!isCollapsed && (
           <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
             <h3 className="px-3 mb-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">Navigation</h3>
@@ -658,24 +634,38 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
               </li>
             );
           })}
-        </ul>
 
-        {/* Footer section */}
-        {!isCollapsed && (
-          <div className="pt-6 mt-8 border-t border-gray-100 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
-            <div className="px-3 py-2 transition-shadow duration-300 border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:shadow-md">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg animate-pulse">
-                  <span className="text-xs font-bold text-blue-600">AI</span>
+          {/* Platform Name and Sign Out - After Settings */}
+          {!isCollapsed && (
+            <>
+              <li className="mt-6 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+                <div className="px-3 py-2 mx-1 transition-shadow duration-300 border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg animate-pulse">
+                      <span className="text-xs font-bold text-blue-600">AI</span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-blue-900">Intelevo AI</div>
+                      <div className="text-xs text-blue-600">Your learning assistant</div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm font-semibold text-blue-900">Intelevo AI</div>
-                  <div className="text-xs text-blue-600">Your learning assistant</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+              </li>
+
+              <li className="animate-fade-in-up" style={{ animationDelay: '0.85s' }}>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center justify-center w-full gap-2 px-4 py-2 mx-1 text-sm font-medium text-red-600 transition-all duration-200 border border-red-200 rounded-xl bg-red-50 hover:bg-red-100 hover:border-red-300 hover:shadow-md hover:scale-105"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Sign Out
+                </button>
+              </li>
+            </>
+          )}
+        </ul>
         </div>
       </nav>
       </aside>
