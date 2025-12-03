@@ -120,7 +120,9 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
             />
             <label
               htmlFor="subject"
-              className="absolute left-4 top-4 text-gray-500 text-sm transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-blue-600 peer-valid:top-2 peer-valid:text-xs peer-valid:text-blue-600"
+              className={`absolute left-4 text-gray-500 text-sm transition-all duration-200 pointer-events-none ${
+                subject ? 'top-2 text-xs text-blue-600' : 'top-4 text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-blue-600'
+              }`}
             >
               Course Subject *
             </label>
@@ -137,7 +139,9 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
             />
             <label
               htmlFor="section"
-              className="absolute left-4 top-4 text-gray-500 text-sm transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-blue-600"
+              className={`absolute left-4 text-gray-500 text-sm transition-all duration-200 pointer-events-none ${
+                section ? 'top-2 text-xs text-blue-600' : 'top-4 text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-blue-600'
+              }`}
             >
               Section
             </label>

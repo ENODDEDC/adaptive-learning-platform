@@ -12,6 +12,7 @@ import JoinCourseModal from '@/components/JoinCourseModal';
 import CreateClusterModal from '@/components/CreateClusterModal';
 import JoinClusterModal from '@/components/JoinClusterModal';
 import UnifiedFloatingAssistant from '@/components/UnifiedFloatingAssistant';
+import ConfirmationModal from '@/components/ConfirmationModal';
 import { useLayout } from '../context/LayoutContext';
 import featureFlags from '../utils/featureFlags';
 import { api } from '../services/apiService';
@@ -34,6 +35,7 @@ const Layout = ({ children }) => {
     closeJoinClusterModal,
   } = useLayout();
   const [user, setUser] = useState(null);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
  
    // State to prevent hydration mismatch
    const [isMounted, setIsMounted] = useState(false);
@@ -169,10 +171,8 @@ const Layout = ({ children }) => {
             }
             const result = await res.json();
             closeCreateCourseModal();
-            // Show success message
-            alert('Course created successfully!');
-            // Refresh the page to show the new course
-            window.location.reload();
+            // Show success modal
+            setIsSuccessModalOpen(true);
           } catch (error) {
             console.error('Error creating course:', error);
             alert(`Failed to create course: ${error.message}`);
@@ -276,6 +276,21 @@ const Layout = ({ children }) => {
         {/* Global Unified Assistant Button - Fixed to bottom viewport */}
         <UnifiedFloatingAssistant />
       </div>
+
+      {/* Success Modal for Course Creation */}
+      <ConfirmationModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        onConfirm={() => {
+          setIsSuccessModalOpen(false);
+          window.location.reload();
+        }}
+        title="Course Created Successfully!"
+        message="Your course has been created and is now ready for students to join."
+        confirmText="OK"
+        variant="success"
+        showCancel={false}
+      />
     </div>
   );
 };
