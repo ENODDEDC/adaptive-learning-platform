@@ -17,11 +17,13 @@ const SidePanelDocumentViewer = ({
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(35);
 
-
-
   useEffect(() => {
     if (isOpen) {
       setIsAnimating(true);
+      // Scroll to top to show course header
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   }, [isOpen]);
 
@@ -104,20 +106,25 @@ const SidePanelDocumentViewer = ({
       {/* Resize Overlay - Covers entire screen during resize to capture mouse events */}
       {isResizing && (
         <div
-          className="fixed inset-0 z-[9998] cursor-ew-resize"
+          className="fixed inset-0 cursor-ew-resize"
           style={{
             background: 'rgba(59, 130, 246, 0.1)',
-            backdropFilter: 'blur(1px)'
+            backdropFilter: 'blur(1px)',
+            zIndex: 99998
           }}
         />
       )}
 
       {/* Side Panel */}
       <div
-        className={`fixed top-0 right-0 h-screen bg-white shadow-2xl transition-all duration-300 ease-in-out border-l border-gray-200 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`side-panel-document-viewer bg-white shadow-2xl transition-all duration-300 ease-in-out border-l border-gray-200 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'
           } ${className}`}
         style={{
-          zIndex: 9999,
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 99999,
           width: `${panelWidth}%`,
           transition: isResizing ? 'none' : 'all 300ms ease-in-out'
         }}
@@ -169,12 +176,12 @@ const SidePanelDocumentViewer = ({
         </div>
 
         {/* Document Content */}
-        <div className="flex-1 min-h-0 overflow-hidden bg-gray-50 side-panel-document-viewer">
+        <div className="flex-1 bg-gray-50" style={{ minHeight: 0, overflow: 'hidden' }}>
           {document && (
             <div className="h-full w-full">
               {/* PDF Documents - Use Enhanced PDF Viewer */}
               {(document.fileType === 'pdf' || document.mimeType === 'application/pdf') && (
-                <div className="h-full w-full relative">
+                <div className="h-full w-full relative overflow-auto">
                   {/* Quick Preview Message */}
                   <div className="absolute top-4 left-4 right-4 z-10">
                     <div className="bg-red-50 border border-red-200 rounded-lg p-3 shadow-sm">
@@ -207,14 +214,13 @@ const SidePanelDocumentViewer = ({
                     </div>
                   </div>
 
-                  <div className="h-full w-full overflow-auto" style={{ width: '100%', maxWidth: '100%' }}>
+                  <div className="h-full w-full overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
                     <iframe
                       src={document.filePath}
                       className="w-full h-full border-0"
                       style={{
                         width: '100%',
-                        height: 'calc(100vh - 80px)',
-                        minHeight: '600px'
+                        height: '100%'
                       }}
                       title="PDF Preview"
                     />
@@ -227,7 +233,7 @@ const SidePanelDocumentViewer = ({
                 document.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                 document.originalName?.toLowerCase().endsWith('.docx') ||
                 document.title?.toLowerCase().endsWith('.docx')) && (
-                  <div className="h-full w-full relative">
+                  <div className="h-full w-full relative overflow-auto">
                     {/* Quick Preview Message */}
                     <div className="absolute top-4 left-4 right-4 z-10">
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
@@ -274,7 +280,7 @@ const SidePanelDocumentViewer = ({
                 document.mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
                 document.originalName?.toLowerCase().endsWith('.pptx') ||
                 document.title?.toLowerCase().endsWith('.pptx')) && (
-                  <div className="h-full w-full relative">
+                  <div className="h-full w-full relative overflow-auto">
                     {/* Quick Preview Message */}
                     <div className="absolute top-4 left-4 right-4 z-10">
                       <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 shadow-sm">
