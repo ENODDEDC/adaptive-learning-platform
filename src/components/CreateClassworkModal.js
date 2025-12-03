@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { format } from 'date-fns';
 import FileUpload from './FileUpload';
-import { 
-  XMarkIcon, 
-  DocumentTextIcon, 
-  QuestionMarkCircleIcon, 
+import {
+  XMarkIcon,
+  DocumentTextIcon,
+  QuestionMarkCircleIcon,
   BookOpenIcon,
   CalendarIcon,
   PaperClipIcon,
@@ -157,13 +158,52 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
     return title.trim() && type;
   };
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Store original overflow and scroll position
+      const originalOverflow = document.body.style.overflow;
+      const scrollY = window.scrollY;
+
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+
+      // Cleanup function to restore original state
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  return (
-    <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
-        <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl max-h-[95vh] flex flex-col overflow-hidden">
-          
+  const modalContent = (
+    <div
+      className="fixed z-[9999] bg-black bg-opacity-60 backdrop-blur-sm"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem'
+      }}
+    >
+      <div
+        className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        style={{ maxHeight: '90vh' }}
+      >
+
           {/* Clean Header */}
           <div className="px-6 py-5 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -193,13 +233,12 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
             <div className="flex items-center justify-center mt-5 space-x-2">
               {[1, 2, 3].map((step) => (
                 <div key={step} className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors duration-200 ${
-                    currentStep === step 
-                      ? 'bg-blue-600 text-white' 
-                      : currentStep > step 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-gray-200 text-gray-600'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors duration-200 ${currentStep === step
+                    ? 'bg-blue-600 text-white'
+                    : currentStep > step
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-200 text-gray-600'
+                    }`}>
                     {currentStep > step ? (
                       <CheckCircleIcon className="w-4 h-4" />
                     ) : (
@@ -207,14 +246,13 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                     )}
                   </div>
                   {step < 3 && (
-                    <div className={`w-12 h-0.5 mx-2 transition-colors duration-200 ${
-                      currentStep > step ? 'bg-green-500' : 'bg-gray-200'
-                    }`} />
+                    <div className={`w-12 h-0.5 mx-2 transition-colors duration-200 ${currentStep > step ? 'bg-green-500' : 'bg-gray-200'
+                      }`} />
                   )}
                 </div>
               ))}
             </div>
-            
+
             {/* Step Labels */}
             <div className="flex justify-center mt-2 space-x-16">
               <span className={`text-xs font-medium ${currentStep === 1 ? 'text-blue-600' : 'text-gray-500'}`}>
@@ -240,11 +278,11 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
           {/* Form Content */}
           <div className="flex-1 overflow-y-auto">
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              
+
               {/* Step 1: Basic Details */}
               {currentStep === 1 && (
                 <div className="space-y-5">
-                  
+
                   {/* Type Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-900 mb-3">Classwork Type</label>
@@ -258,23 +296,20 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                           key={option.value}
                           type="button"
                           onClick={() => setType(option.value)}
-                          className={`p-3 rounded-lg border transition-all duration-200 text-left ${
-                            type === option.value
-                              ? `border-${option.color}-300 bg-${option.color}-50 shadow-sm`
-                              : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                          }`}
+                          className={`p-3 rounded-lg border transition-all duration-200 text-left ${type === option.value
+                            ? `border-${option.color}-300 bg-${option.color}-50 shadow-sm`
+                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                            }`}
                         >
                           <div className="flex items-center space-x-2 mb-1">
-                            <div className={`p-1.5 rounded ${
-                              type === option.value 
-                                ? `bg-${option.color}-100 text-${option.color}-600` 
-                                : 'bg-gray-100 text-gray-600'
-                            }`}>
+                            <div className={`p-1.5 rounded ${type === option.value
+                              ? `bg-${option.color}-100 text-${option.color}-600`
+                              : 'bg-gray-100 text-gray-600'
+                              }`}>
                               <option.icon className="w-4 h-4" />
                             </div>
-                            <span className={`font-medium text-sm ${
-                              type === option.value ? `text-${option.color}-900` : 'text-gray-900'
-                            }`}>
+                            <span className={`font-medium text-sm ${type === option.value ? `text-${option.color}-900` : 'text-gray-900'
+                              }`}>
                               {option.label}
                             </span>
                           </div>
@@ -354,13 +389,13 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                     <h3 className="text-lg font-medium text-gray-900 mb-1">Add Attachments</h3>
                     <p className="text-sm text-gray-600">Upload files, documents, or resources for this classwork</p>
                   </div>
-                  
+
                   <FileUpload
                     onFilesReady={handleFilesReady}
                     initialFiles={files}
                     folder={`classwork/${courseId}`}
                   />
-                  
+
                   {files.length > 0 && (
                     <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex items-center space-x-2">
@@ -396,18 +431,18 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                             {type.charAt(0).toUpperCase() + type.slice(1)}
                           </span>
                         </div>
-                        
+
                         {description && (
                           <p className="text-gray-700 mb-3 text-sm leading-relaxed">{description}</p>
                         )}
-                        
+
                         {dueDate && (
                           <div className="flex items-center space-x-1 text-sm text-gray-600 mb-2">
                             <CalendarIcon className="w-4 h-4" />
                             <span>Due: {formatDueDate()}</span>
                           </div>
                         )}
-                        
+
                         {files.length > 0 && (
                           <div className="flex items-center space-x-1 text-sm text-gray-600">
                             <PaperClipIcon className="w-4 h-4" />
@@ -447,7 +482,7 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                 >
                   Cancel
                 </button>
-                
+
                 {currentStep < 3 ? (
                   <button
                     type="button"
@@ -481,8 +516,12 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
           </div>
         </div>
       </div>
-    </>
   );
+
+  // Use portal to render modal at document body level, outside all parent containers
+  return typeof document !== 'undefined' 
+    ? ReactDOM.createPortal(modalContent, document.body)
+    : null;
 };
 
 export default CreateClassworkModal;
