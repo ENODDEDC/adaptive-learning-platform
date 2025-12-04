@@ -34,10 +34,16 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
   const setIsDocumentPanelOpen = setDocumentPanelOpen || setSidePanelOpen;
   
   // Handle document setting - use parent's setter if available
-  const handleSetDocument = (document) => {
-    setSidePanelDocument(document);
+  const handleSetDocument = (doc) => {
+    // Force scroll to top using multiple methods
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      window.scrollTo(0, 0);
+    }
+    setSidePanelDocument(doc);
     if (setParentSidePanelDocument) {
-      setParentSidePanelDocument(document);
+      setParentSidePanelDocument(doc);
     }
   };
 

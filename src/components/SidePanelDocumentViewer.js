@@ -20,9 +20,16 @@ const SidePanelDocumentViewer = ({
   useEffect(() => {
     if (isOpen) {
       setIsAnimating(true);
-      // Scroll to top to show course header
+      // Force scroll to top to show course header
       if (typeof window !== 'undefined') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Use requestAnimationFrame to ensure scroll happens after render
+        requestAnimationFrame(() => {
+          window.scrollTo(0, 0);
+          // Double-check with a small delay
+          setTimeout(() => {
+            window.scrollTo(0, 0);
+          }, 50);
+        });
       }
     }
   }, [isOpen]);
