@@ -3,6 +3,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { 
   ExclamationTriangleIcon, 
   InformationCircleIcon,
+  CheckCircleIcon,
   XMarkIcon 
 } from '@heroicons/react/24/outline';
 
@@ -20,7 +21,8 @@ import {
  * @param {string} props.message - Descriptive message explaining the action
  * @param {string} [props.confirmText='Confirm'] - Custom text for confirm button
  * @param {string} [props.cancelText='Cancel'] - Custom text for cancel button
- * @param {'danger'|'warning'|'info'} [props.variant='danger'] - Visual style variant
+ * @param {boolean} [props.showCancel=true] - Whether to show the cancel button
+ * @param {'danger'|'warning'|'info'|'success'} [props.variant='danger'] - Visual style variant
  * @param {React.ReactNode} [props.icon] - Optional custom icon component
  * @param {boolean} [props.loading=false] - Shows loading state on confirm button
  */
@@ -34,7 +36,8 @@ export default function ConfirmationModal({
   cancelText = 'Cancel',
   variant = 'danger',
   icon,
-  loading = false
+  loading = false,
+  showCancel = true
 }) {
   // Validate required props
   if (!title || !message || !onConfirm || !onClose) {
@@ -61,6 +64,12 @@ export default function ConfirmationModal({
       iconColor: 'text-blue-600',
       confirmButton: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
       defaultIcon: <InformationCircleIcon className="w-6 h-6" />
+    },
+    success: {
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-600',
+      confirmButton: 'bg-green-600 hover:bg-green-700 focus:ring-green-500',
+      defaultIcon: <CheckCircleIcon className="w-6 h-6" />
     }
   };
 
@@ -137,18 +146,20 @@ export default function ConfirmationModal({
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex gap-3 mt-6">
+                <div className={`flex gap-3 mt-6 ${!showCancel ? 'justify-center' : ''}`}>
+                  {showCancel && (
+                    <button
+                      type="button"
+                      className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                      onClick={onClose}
+                      disabled={loading}
+                    >
+                      {cancelText}
+                    </button>
+                  )}
                   <button
                     type="button"
-                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                    onClick={onClose}
-                    disabled={loading}
-                  >
-                    {cancelText}
-                  </button>
-                  <button
-                    type="button"
-                    className={`flex-1 px-4 py-2 text-sm font-medium text-white transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${styles.confirmButton}`}
+                    className={`${showCancel ? 'flex-1' : 'w-full'} px-4 py-2 text-sm font-medium text-white transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${styles.confirmButton}`}
                     onClick={handleConfirm}
                     disabled={loading}
                   >
