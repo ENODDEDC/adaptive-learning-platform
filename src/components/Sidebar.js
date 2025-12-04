@@ -425,7 +425,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                       >
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>My Created Courses</span>
+                          <span>Created Courses</span>
                           {courses.created?.length > 0 && (
                             <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
                               {courses.created.length}
@@ -500,7 +500,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                       >
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                          <span>My Enrolled Courses</span>
+                          <span>Enrolled Courses</span>
                           {courses.enrolled?.length > 0 && (
                             <span className="px-1.5 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full">
                               {courses.enrolled.length}

@@ -205,7 +205,7 @@ const CourseFilterSort = ({
             placeholder="Search courses, instructors, or codes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+            className="block w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
           />
           {isFiltering && (
             <div className="absolute inset-y-0 right-0 pr-4 flex items-center">

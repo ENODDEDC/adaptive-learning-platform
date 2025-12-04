@@ -541,7 +541,7 @@ export default function Home() {
                       </svg>
                     </div>
                     <div className="flex flex-col flex-shrink-0">
-                      <h2 className="text-base font-bold text-gray-800 tracking-tight">My Courses</h2>
+                      <h2 className="text-base font-bold text-gray-800 tracking-tight">Courses</h2>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs font-medium text-gray-500">
                           {allCourses.length} total

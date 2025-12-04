@@ -56,7 +56,7 @@ export default function CourseBrowserModal({ open, setOpen, courses, type, onNav
                       </div>
                       <div>
                         <Dialog.Title as="h3" className="text-lg font-semibold text-gray-900">
-                          {type === 'created' ? 'My Created Courses' : 'My Enrolled Courses'}
+                          {type === 'created' ? 'Created Courses' : 'Enrolled Courses'}
                         </Dialog.Title>
                         <p className="text-sm text-gray-600">
                           {(courses || []).length} courses • Browse and manage your courses
