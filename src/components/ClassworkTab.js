@@ -121,7 +121,8 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit }) => {
     setHasError(true);
   };
 
-  const handleClick = () => {
+  const handleClick = (e) => {
+    e.stopPropagation();
     if (isInstructor && onEdit) {
       // For instructors: open form editor
       onEdit(form);
@@ -401,7 +402,10 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
 
   return (
     <button
-      onClick={() => onPreview ? onPreview(attachment) : null}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onPreview) onPreview(attachment);
+      }}
       className="w-full group"
     >
       {/* PDF Thumbnail Container */}
@@ -741,7 +745,10 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
             {fileName}
           </h4>
           <button
-            onClick={() => onPreview ? onPreview(attachment) : null}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onPreview) onPreview(attachment);
+            }}
             className={`inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md ${isPdfFile(attachment)
               ? 'bg-red-500 hover:bg-red-600'
               : isDocxFile(attachment)
@@ -767,10 +774,10 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
   );
 });
 
-const ClassworkTab = ({ 
-  courseDetails, 
-  isInstructor, 
-  onOpenContent, 
+const ClassworkTab = ({
+  courseDetails,
+  isInstructor,
+  onOpenContent,
   onClassworkCreated,
   // Props from parent for create classwork panel
   isCreateClassworkModalOpen,
@@ -1412,36 +1419,8 @@ const ClassworkTab = ({
     if (viewMode === 'grid') {
       return (
         <div
-          className="group relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px] cursor-pointer"
+          className="group relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px]"
           onContextMenu={(e) => handleContextMenu(e, item)}
-          onClick={() => {
-            // Handle assignment clicks with modal
-            if (itemType === 'assignment') {
-              handleAssignmentClick(item);
-            } else if (itemType === 'form') {
-              // Forms open in new tab or edit mode
-              if (isInstructor) {
-                handleEditForm(item);
-              } else {
-                window.open(`/forms/${item._id}`, '_blank');
-              }
-            } else {
-              // Fallback to opening attachments
-              if (item.attachments && item.attachments.length > 0) {
-                if (item.attachments.length === 1) {
-                  onOpenContent(item.attachments[0]);
-                } else {
-                  const multiAttachmentContent = {
-                    title: item.title,
-                    contentType: 'multi-attachment',
-                    attachments: item.attachments,
-                    currentIndex: 0
-                  };
-                  onOpenContent(multiAttachmentContent);
-                }
-              }
-            }
-          }}
         >
           {/* Clean Header */}
           <div className="p-6 pb-4">
@@ -1518,7 +1497,10 @@ const ClassworkTab = ({
                   return (
                     <button
                       key={attachment._id || index}
-                      onClick={() => onOpenContent ? onOpenContent(attachment) : null}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onOpenContent) onOpenContent(attachment);
+                      }}
                       className="w-full flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 group"
                       title={`Click to preview ${fileName}`}
                     >
@@ -1551,7 +1533,22 @@ const ClassworkTab = ({
             <div className="text-xs text-gray-500">
               {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
             </div>
-            {/* Right-click context menu replaces dropdown */}
+
+            {/* View Details Button for Assignments */}
+            {itemType === 'assignment' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAssignmentClick(item);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-all duration-200 hover:border-gray-400 hover:shadow-sm active:scale-95"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                View Details
+              </button>
+            )}
           </div>
         </div>
       );
@@ -1886,7 +1883,10 @@ const ClassworkTab = ({
                       return (
                         <button
                           key={attachment._id || index}
-                          onClick={() => onOpenContent ? onOpenContent(attachment) : null}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onOpenContent) onOpenContent(attachment);
+                          }}
                           className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 group cursor-pointer"
                           title={`Click to preview ${fileName}`}
                         >

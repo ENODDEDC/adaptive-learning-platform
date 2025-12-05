@@ -106,7 +106,8 @@ const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "" }) => {
     extractDocxContent();
   };
 
-  const handlePreviewClick = () => {
+  const handlePreviewClick = (e) => {
+    e.stopPropagation();
     if (onPreview) {
       onPreview(attachment);
     }
