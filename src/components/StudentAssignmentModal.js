@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { format, isPast } from 'date-fns';
 import ContentViewer from './ContentViewer.client';
 import FileUpload from './FileUpload';
@@ -158,9 +159,9 @@ const StudentAssignmentModal = ({ isOpen, onClose, assignment, courseId, onSubmi
   const hasSubmitted = submission && submission.status === 'submitted';
   const hasGrade = submission && submission.grade !== null && submission.grade !== undefined;
 
-  return (
+  const modalContent = (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
         <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl max-h-[95vh] flex flex-col overflow-hidden">
           
           {/* Header */}
@@ -439,6 +440,10 @@ const StudentAssignmentModal = ({ isOpen, onClose, assignment, courseId, onSubmi
       )}
     </>
   );
+
+  return typeof document !== 'undefined' 
+    ? createPortal(modalContent, document.body)
+    : null;
 };
 
 export default StudentAssignmentModal;
