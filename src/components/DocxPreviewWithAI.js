@@ -375,6 +375,14 @@ const DocxPreviewWithAI = ({
   // Auto-load top recommendation after DOCX content is extracted (EXCEPT AI Narrator)
   useEffect(() => {
     if (!topRecommendation || !docxContent || autoLoadAttempted) return;
+    
+    // Don't auto-load if AI is unavailable
+    if (!isAIAvailable) {
+      console.log('⚠️ Skipping auto-load: AI service is unavailable');
+      setAutoLoadAttempted(true);
+      setShowDocxView(true); // Show DOCX view by default
+      return;
+    }
 
     // Skip AI Narrator - it's audio-based and shouldn't auto-load
     if (topRecommendation.mode === 'AI Narrator') {

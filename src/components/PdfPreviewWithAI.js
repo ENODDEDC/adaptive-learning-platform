@@ -175,6 +175,14 @@ const PdfPreviewWithAI = ({
   // Auto-load top recommendation after PDF content is extracted (EXCEPT AI Narrator)
   useEffect(() => {
     if (!topRecommendation || !pdfContent || autoLoadAttempted) return;
+    
+    // Don't auto-load if AI is unavailable
+    if (!isAIAvailable) {
+      console.log('⚠️ Skipping auto-load: AI service is unavailable');
+      setAutoLoadAttempted(true);
+      setShowPdfView(true); // Show PDF view by default
+      return;
+    }
 
     // Skip AI Narrator - it's audio-based and shouldn't auto-load
     if (topRecommendation.mode === 'AI Narrator') {
