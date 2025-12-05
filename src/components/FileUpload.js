@@ -37,16 +37,7 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork', cou
   const handleFileChange = async (e) => {
     const selectedFiles = Array.from(e.target.files);
     setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
-    
-    // Auto-upload files when selected
-    if (selectedFiles.length > 0) {
-      try {
-        await uploadToBackblaze(selectedFiles);
-      } catch (error) {
-        console.error('Auto-upload failed:', error);
-        // Keep files in pending state if auto-upload fails
-      }
-    }
+    // Files are now added to pending state, user must click "Upload Files" button
   };
 
   const handleRemoveFile = (fileIdentifier, isUploaded = false) => {
@@ -150,18 +141,9 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork', cou
       const droppedFiles = Array.from(e.dataTransfer.files);
       setFiles((prevFiles) => [...prevFiles, ...droppedFiles]);
       e.dataTransfer.clearData();
-      
-      // Auto-upload dropped files
-      if (droppedFiles.length > 0) {
-        try {
-          await uploadToBackblaze(droppedFiles);
-        } catch (error) {
-          console.error('Auto-upload failed for dropped files:', error);
-          // Keep files in pending state if auto-upload fails
-        }
-      }
+      // Files are now added to pending state, user must click "Upload Files" button
     }
-  }, [uploadToBackblaze]);
+  }, []);
 
   const handleUploadFiles = async () => {
     if (files.length === 0) return;
@@ -199,9 +181,6 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork', cou
             </svg>
             <p className="text-gray-500">
               {isUploading ? 'Uploading...' : 'Drag and drop files here, or click to select files'}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              Files will be uploaded to Backblaze B2 cloud storage
             </p>
           </div>
         </label>
@@ -302,14 +281,14 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork', cou
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Uploading to Backblaze B2...
+              Uploading...
             </>
           ) : (
             <>
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              Upload to Cloud Storage
+              Upload Files
             </>
           )}
         </button>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { format } from 'date-fns';
 import FileUpload from './FileUpload';
+import SmartThumbnail from './SmartThumbnail';
 import {
   XMarkIcon,
   DocumentTextIcon,
@@ -27,11 +28,64 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
   const [panelWidth, setPanelWidth] = useState(35); // Default 35% width
   const [isResizing, setIsResizing] = useState(false);
   const [startX, setStartX] = useState(0);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+  const fileUploadRef = useState(null);
   const [startWidth, setStartWidth] = useState(35);
 
   const handleFilesReady = useCallback((newFiles) => {
     setFiles(newFiles);
   }, []);
+
+  // Function to handle Next Step - auto-upload files on Step 2
+  const handleNextStep = async () => {
+    // If on Step 2 and there are pending files, upload them first
+    if (currentStep === 2) {
+      const pendingFiles = files.filter(file => !file.url && !file._id);
+      if (pendingFiles.length > 0) {
+        setIsUploadingFiles(true);
+        setError('');
+        
+        try {
+          // Trigger file upload via FileUpload component
+          const formData = new FormData();
+          pendingFiles.forEach(file => {
+            formData.append('files', file);
+          });
+          formData.append('folder', `classwork/${courseId}`);
+          if (courseId) {
+            formData.append('courseId', courseId);
+          }
+
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to upload files');
+          }
+
+          const result = await response.json();
+          
+          // Update files with uploaded data
+          const uploadedFiles = files.filter(file => file.url || file._id);
+          setFiles([...uploadedFiles, ...result.files]);
+          
+          // Move to next step
+          setCurrentStep(currentStep + 1);
+        } catch (err) {
+          setError('Failed to upload files. Please try again.');
+          console.error('Upload error:', err);
+        } finally {
+          setIsUploadingFiles(false);
+        }
+        return;
+      }
+    }
+    
+    // Otherwise, just move to next step
+    setCurrentStep(currentStep + 1);
+  };
 
   // Handle mouse down on resize handle
   const handleResizeStart = (e) => {
@@ -502,36 +556,57 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
 
               {/* Step 2: Attachments - Modern Design */}
               {currentStep === 2 && (
-                <div className="space-y-4">
-                  <div className="text-center py-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-dashed border-blue-200">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <PaperClipIcon className="w-8 h-8 text-blue-600" />
+                <div className="space-y-6">
+                  {/* Header Section */}
+                  <div className="text-center py-8 px-6 bg-white border border-gray-200 rounded-lg">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-lg mb-4">
+                      <PaperClipIcon className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">Add Attachments</h3>
-                    <p className="text-sm text-gray-600 max-w-sm mx-auto">
-                      Upload files, documents, or resources to share with students
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      Attach Your Resources
+                    </h3>
+                    <p className="text-sm text-gray-600 max-w-md mx-auto">
+                      Share documents, presentations, videos, and more with your students.
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Supports PDF, DOCX, PPTX, images, and videos
                     </p>
                   </div>
 
+                  {/* File Upload Component */}
                   <FileUpload
                     onFilesReady={handleFilesReady}
                     initialFiles={files}
                     folder={`classwork/${courseId}`}
                   />
 
+                  {/* Success Message */}
                   {files.length > 0 && (
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <CheckCircleIcon className="w-6 h-6 text-white" />
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                            <CheckCircleIcon className="w-6 h-6 text-white" />
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-green-900">
-                            {files.length} file{files.length !== 1 ? 's' : ''} ready
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 mb-1">
+                            {files.length} {files.length === 1 ? 'file' : 'files'} ready to share
                           </p>
-                          <p className="text-xs text-green-700">All files uploaded successfully</p>
+                          <p className="text-xs text-gray-600">
+                            Students will be able to view and download these attachments
+                          </p>
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* No Files State */}
+                  {files.length === 0 && (
+                    <div className="text-center py-4 px-4 bg-gray-50 border border-gray-200 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        No attachments yet — you can skip this step if you'd like
+                      </p>
                     </div>
                   )}
                 </div>
@@ -576,29 +651,49 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                         </div>
                       )}
 
-                      <div className="grid grid-cols-2 gap-3">
-                        {dueDate && (
-                          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <CalendarIcon className="w-4 h-4 text-blue-600" />
-                              <span className="text-xs font-semibold text-blue-900">Due Date</span>
-                            </div>
-                            <p className="text-xs text-blue-700 font-medium">{formatDueDate()}</p>
+                      {dueDate && (
+                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <CalendarIcon className="w-4 h-4 text-blue-600" />
+                            <span className="text-xs font-semibold text-blue-900">Due Date</span>
                           </div>
-                        )}
+                          <p className="text-xs text-blue-700 font-medium">{formatDueDate()}</p>
+                        </div>
+                      )}
 
-                        {files.length > 0 && (
-                          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <PaperClipIcon className="w-4 h-4 text-green-600" />
-                              <span className="text-xs font-semibold text-green-900">Attachments</span>
-                            </div>
-                            <p className="text-xs text-green-700 font-medium">
-                              {files.length} file{files.length !== 1 ? 's' : ''}
-                            </p>
+                      {/* Attachments with Thumbnails */}
+                      {files.length > 0 && (
+                        <div>
+                          <div className="flex items-center space-x-2 mb-3">
+                            <PaperClipIcon className="w-5 h-5 text-gray-600" />
+                            <h4 className="text-sm font-semibold text-gray-900">
+                              Attachments ({files.length})
+                            </h4>
                           </div>
-                        )}
-                      </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            {files.map((file, index) => {
+                              console.log('📎 File data for thumbnail:', file);
+                              return (
+                                <SmartThumbnail
+                                  key={file._id || file.key || index}
+                                  attachment={{
+                                    _id: file._id,
+                                    cloudStorage: file.cloudStorage || (file.key ? { key: file.key } : null),
+                                    filePath: file.url || file.filePath,
+                                    originalName: file.originalName || file.fileName || file.name,
+                                    title: file.originalName || file.fileName || file.name,
+                                    mimeType: file.mimeType || file.type,
+                                    fileSize: file.fileSize || file.size,
+                                    thumbnailUrl: file.thumbnailUrl
+                                  }}
+                                  onPreview={() => {}}
+                                  className="w-full"
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -635,11 +730,18 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                 {currentStep < 3 ? (
                   <button
                     type="button"
-                    onClick={() => setCurrentStep(currentStep + 1)}
-                    disabled={currentStep === 1 && !isFormValid()}
-                    className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
+                    onClick={handleNextStep}
+                    disabled={(currentStep === 1 && !isFormValid()) || isUploadingFiles}
+                    className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-2"
                   >
-                    Next Step →
+                    {isUploadingFiles ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Uploading files...</span>
+                      </>
+                    ) : (
+                      <span>Next Step →</span>
+                    )}
                   </button>
                 ) : (
                   <button
