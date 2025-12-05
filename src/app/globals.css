@@ -2362,3 +2362,34 @@ Slide-up animation for bottom notifications */
 .animate-slide-in-right {
   animation: slideInRight 0.3s ease-out;
 }
+
+/* Immersive Full-Screen Animation - Apple Music Style */
+@keyframes scale-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes blur-in {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-blur-in {
+  animation: blur-in 0.3s ease-out forwards;
+}
