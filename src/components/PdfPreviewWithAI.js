@@ -1157,7 +1157,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                      {errorSource === 'auto-load' ? 'AI Learning Features Not Available' : 'AI Narrator Not Available'}
+                      AI Learning Features Not Available
                     </h3>
                     <p className="text-xs text-gray-600 leading-relaxed mb-2">
                       This document doesn't contain educational content. AI features work best with lessons, tutorials, and study materials.
