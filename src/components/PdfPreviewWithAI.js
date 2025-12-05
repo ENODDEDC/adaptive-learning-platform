@@ -65,7 +65,7 @@ const PdfPreviewWithAI = ({
   const [tutorMode, setTutorMode] = useState('');
   const [panelPosition, setPanelPosition] = useState({ x: 16, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
-  
+
   // Cache indicator state
   const [showCacheIndicator, setShowCacheIndicator] = useState(false);
   const [isCached, setIsCached] = useState(false);
@@ -79,6 +79,8 @@ const PdfPreviewWithAI = ({
   const [willAutoLoad, setWillAutoLoad] = useState(false); // Track if we're going to auto-load a mode
   const [currentRecommendationIndex, setCurrentRecommendationIndex] = useState(0); // Track current position in carousel
   const [filteredRecommendations, setFilteredRecommendations] = useState([]); // Recommendations excluding AI Narrator
+  const [errorSource, setErrorSource] = useState('manual'); // Track if error is from 'auto-load' or 'manual' click
+  const [isContentEducational, setIsContentEducational] = useState(true); // Track if content is educational (default true until analyzed)
 
   // Automatic time tracking for ML classification
   useLearningModeTracking('aiNarrator', aiTutorActive);
@@ -99,13 +101,13 @@ const PdfPreviewWithAI = ({
   // Clear willAutoLoad flag when any mode starts loading
   useEffect(() => {
     if (isVisualLearningLoading || isSequentialLearningLoading || isGlobalLearningLoading ||
-        isSensingLearningLoading || isIntuitiveLearningLoading || isActiveLearningLoading ||
-        isReflectiveLearningLoading) {
+      isSensingLearningLoading || isIntuitiveLearningLoading || isActiveLearningLoading ||
+      isReflectiveLearningLoading) {
       setWillAutoLoad(false);
     }
   }, [isVisualLearningLoading, isSequentialLearningLoading, isGlobalLearningLoading,
-      isSensingLearningLoading, isIntuitiveLearningLoading, isActiveLearningLoading,
-      isReflectiveLearningLoading]);
+    isSensingLearningLoading, isIntuitiveLearningLoading, isActiveLearningLoading,
+    isReflectiveLearningLoading]);
 
   // Proactively extract PDF content when we know we'll auto-load
   useEffect(() => {
@@ -126,22 +128,22 @@ const PdfPreviewWithAI = ({
         const response = await fetch('/api/learning-style/profile');
         if (response.ok) {
           const data = await response.json();
-          const modes = data.profile?.recommendedModes || 
-                       data.data?.profile?.recommendedModes || 
-                       data.recommendedModes || [];
-          
+          const modes = data.profile?.recommendedModes ||
+            data.data?.profile?.recommendedModes ||
+            data.recommendedModes || [];
+
           console.log('📊 Recommendations received:', modes);
-          
+
           if (modes.length > 0) {
             setAllRecommendations(modes);
-            
+
             // Include ALL modes in carousel (including AI Narrator)
             setFilteredRecommendations(modes);
             console.log('🎠 Carousel recommendations (including AI Narrator):', modes.length);
-            
+
             // For auto-load, skip AI Narrator and use first non-AI-Narrator mode
             const firstNonAudioMode = modes.find(mode => mode.mode !== 'AI Narrator');
-            
+
             if (firstNonAudioMode) {
               setTopRecommendation(firstNonAudioMode);
               setHasClassification(true);
@@ -149,7 +151,7 @@ const PdfPreviewWithAI = ({
               const autoLoadIndex = modes.findIndex(mode => mode.mode === firstNonAudioMode.mode);
               setCurrentRecommendationIndex(autoLoadIndex);
               console.log('✅ Top recommendation for auto-load:', firstNonAudioMode.mode, 'at index', autoLoadIndex);
-              
+
               setWillAutoLoad(true);
               console.log('🎬 Will auto-load:', firstNonAudioMode.mode);
             } else if (modes.length > 0) {
@@ -173,7 +175,7 @@ const PdfPreviewWithAI = ({
   // Auto-load top recommendation after PDF content is extracted (EXCEPT AI Narrator)
   useEffect(() => {
     if (!topRecommendation || !pdfContent || autoLoadAttempted) return;
-    
+
     // Skip AI Narrator - it's audio-based and shouldn't auto-load
     if (topRecommendation.mode === 'AI Narrator') {
       console.log('⏭️ Skipping auto-load for AI Narrator (audio-based mode)');
@@ -182,34 +184,79 @@ const PdfPreviewWithAI = ({
       setWillAutoLoad(false); // Clear the flag
       return;
     }
-    
+
     console.log('🚀 Auto-loading top recommendation:', topRecommendation.mode);
     setAutoLoadAttempted(true);
     setShowPdfView(false); // Show generated content by default for other modes
-    
-    // Map database names to handler functions (excluding AI Narrator)
-    const modeHandlers = {
-      'Visual Learning': handleVisualContentClick,
-      'Sequential Learning': handleSequentialLearningClick,
-      'Global Learning': handleGlobalLearningClick,
-      'Hands-On Lab': handleSensingLearningClick,
-      'Concept Constellation': handleIntuitiveLearningClick,
-      'Active Learning Hub': handleActiveLearningClick,
-      'Reflective Learning': handleReflectiveLearningClick
+
+    // IMPORTANT: Analyze content FIRST before auto-loading
+    const autoLoadWithAnalysis = async () => {
+      try {
+        console.log('🔍 Analyzing content before auto-load...');
+        const analysisResult = await analyzeContentForEducational(pdfContent);
+
+        console.log('📊 Auto-load analysis result:', {
+          isEducational: analysisResult.isEducational,
+          confidence: analysisResult.confidence,
+          mode: topRecommendation.mode
+        });
+
+        // If NOT educational, show the modal immediately
+        if (!analysisResult.isEducational) {
+          console.log('⚠️ Non-educational content detected during auto-load - showing notification');
+
+          const errorMessage = `This document does not appear to contain educational or learning material suitable for AI learning features.
+
+AI Analysis: ${analysisResult.reasoning}
+Content Type: ${analysisResult.contentType}
+Confidence: ${Math.round(analysisResult.confidence * 100)}%
+
+AI learning features work best with instructional content, lessons, or study materials.`;
+
+          setIsContentEducational(false); // Mark content as non-educational - hide AI buttons
+          setErrorSource('auto-load'); // Mark this error as coming from auto-load
+          setExtractionError(errorMessage);
+          setShowPdfView(true); // Show PDF view since AI features won't work
+          setWillAutoLoad(false);
+          return;
+        }
+
+        // Content is educational - proceed with auto-load
+        setIsContentEducational(true); // Mark content as educational - show AI buttons
+        console.log('✅ Content is educational - proceeding with auto-load');
+
+        // Map database names to handler functions (excluding AI Narrator)
+        const modeHandlers = {
+          'Visual Learning': handleVisualContentClick,
+          'Sequential Learning': handleSequentialLearningClick,
+          'Global Learning': handleGlobalLearningClick,
+          'Hands-On Lab': handleSensingLearningClick,
+          'Concept Constellation': handleIntuitiveLearningClick,
+          'Active Learning Hub': handleActiveLearningClick,
+          'Reflective Learning': handleReflectiveLearningClick
+        };
+
+        const handler = modeHandlers[topRecommendation.mode];
+        if (handler) {
+          console.log(`✨ Triggering ${topRecommendation.mode} automatically...`);
+          // Small delay to ensure UI is ready
+          setTimeout(() => {
+            handler();
+            setWillAutoLoad(false); // Clear the flag after triggering
+          }, 500);
+        } else {
+          console.warn('⚠️ No handler found for mode:', topRecommendation.mode);
+          setWillAutoLoad(false); // Clear the flag
+        }
+      } catch (error) {
+        console.error('❌ Error during auto-load analysis:', error);
+        setExtractionError(`Error analyzing document: ${error.message}`);
+        setShowPdfView(true);
+        setWillAutoLoad(false);
+      }
     };
-    
-    const handler = modeHandlers[topRecommendation.mode];
-    if (handler) {
-      console.log(`✨ Triggering ${topRecommendation.mode} automatically...`);
-      // Small delay to ensure UI is ready
-      setTimeout(() => {
-        handler();
-        setWillAutoLoad(false); // Clear the flag after triggering
-      }, 500);
-    } else {
-      console.warn('⚠️ No handler found for mode:', topRecommendation.mode);
-      setWillAutoLoad(false); // Clear the flag
-    }
+
+    autoLoadWithAnalysis();
   }, [topRecommendation, pdfContent, autoLoadAttempted]);
 
   // Detect cache status when PDF loads - check localStorage FIRST
@@ -230,10 +277,10 @@ const PdfPreviewWithAI = ({
     };
 
     const fileKey = getFileKeyFromUrl(pdfUrl);
-    
+
     // Check if file was previously opened (stored in localStorage)
     const wasPreviouslyOpened = fileKey && localStorage.getItem(`pdf_opened_${fileKey}`) === 'true';
-    
+
     // Small delay to ensure clean state transition between different PDFs
     const timer = setTimeout(() => {
       if (wasPreviouslyOpened) {
@@ -246,7 +293,7 @@ const PdfPreviewWithAI = ({
         console.log(`⬇️ [CACHE CHECK] File ${fileKey} is new - will download`);
         setIsCached(false);
         setShowCacheIndicator(true);
-        
+
         // Mark as opened for future reference
         if (fileKey) {
           localStorage.setItem(`pdf_opened_${fileKey}`, 'true');
@@ -626,9 +673,9 @@ const PdfPreviewWithAI = ({
       console.log('📝 Content length:', extractedContent.length);
       console.log('📄 First 200 chars:', extractedContent.substring(0, 200));
       console.log('📊 Word count:', extractedContent.split(/\s+/).length);
-      
+
       const analysisResult = await analyzeContentForEducational(extractedContent);
-      
+
       console.log('🤖 AI Analysis Result for PDF:', {
         isEducational: analysisResult.isEducational,
         confidence: analysisResult.confidence,
@@ -650,11 +697,15 @@ DEBUG INFO:
 - Word Count: ${extractedContent.split(/\s+/).length} words
 - First 100 chars: "${extractedContent.substring(0, 100)}..."`;
 
+        setIsContentEducational(false); // Mark content as non-educational
+        setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage);
         setIsAITutorLoading(false);
         setShowModeSelection(false);
         return;
       }
+
+      setIsContentEducational(true); // Mark content as educational
 
       console.log('✅ Content approved for AI narration:', {
         contentType: analysisResult.contentType,
@@ -684,7 +735,7 @@ DEBUG INFO:
       const extractedContent = pdfContent || await extractPdfContent();
 
       if (!extractedContent || !extractedContent.trim()) {
-        setVisualLearningError('Failed to extract PDF content for visual generation.');
+        setExtractionError('Failed to extract PDF content for visual generation.');
         setIsVisualLearningLoading(false);
         return;
       }
@@ -701,7 +752,8 @@ Confidence: ${Math.round(analysisResult.confidence * 100)}%
 
 Visual Learning works best with instructional content, lessons, or study materials.`;
 
-        setVisualLearningError(errorMessage);
+        setErrorSource('manual'); // Mark as manual click
+        setExtractionError(errorMessage); // Use extractionError to show modal
         setIsVisualLearningLoading(false);
         return;
       }
@@ -712,7 +764,7 @@ Visual Learning works best with instructional content, lessons, or study materia
 
     } catch (error) {
       console.error('Error analyzing content for visual learning:', error);
-      setVisualLearningError(`Error analyzing document: ${error.message}`);
+      setExtractionError(`Error analyzing document: ${error.message}`);
     } finally {
       setIsVisualLearningLoading(false);
     }
@@ -725,7 +777,7 @@ Visual Learning works best with instructional content, lessons, or study materia
       const extractedContent = pdfContent || await extractPdfContent();
 
       if (!extractedContent || !extractedContent.trim()) {
-        setSequentialLearningError('Failed to extract PDF content for sequential learning.');
+        setExtractionError('Failed to extract PDF content for sequential learning.');
         setIsSequentialLearningLoading(false);
         return;
       }
@@ -741,7 +793,8 @@ Confidence: ${Math.round(analysisResult.confidence * 100)}%
 
 Sequential Learning works best with instructional content, lessons, or study materials.`;
 
-        setSequentialLearningError(errorMessage);
+        setErrorSource('manual'); // Mark as manual click
+        setExtractionError(errorMessage); // Use extractionError to show modal
         setIsSequentialLearningLoading(false);
         return;
       }
@@ -751,7 +804,7 @@ Sequential Learning works best with instructional content, lessons, or study mat
 
     } catch (error) {
       console.error('Error analyzing content for sequential learning:', error);
-      setSequentialLearningError(`Error analyzing document: ${error.message}`);
+      setExtractionError(`Error analyzing document: ${error.message}`);
     } finally {
       setIsSequentialLearningLoading(false);
     }
@@ -765,11 +818,11 @@ Sequential Learning works best with instructional content, lessons, or study mat
       pdfContent: pdfContent?.length || 0,
       isGlobalLearningLoading
     });
-    
+
     try {
       console.log('🔄 Step 1: Setting loading state...');
       setIsGlobalLearningLoading(true);
-      
+
       console.log('📄 Step 2: Extracting PDF content...');
       const extractedContent = pdfContent || await extractPdfContent();
       console.log('✅ Content extracted, length:', extractedContent?.length);
@@ -795,22 +848,23 @@ Confidence: ${Math.round(analysisResult.confidence * 100)}%
 
 Global Learning works best with instructional content, lessons, or study materials.`;
 
-        setGlobalLearningError(errorMessage);
+        setErrorSource('manual'); // Mark as manual click
+        setExtractionError(errorMessage); // Use extractionError to show modal
         setIsGlobalLearningLoading(false);
         return;
       }
 
       console.log('✅ Step 4: Content approved! Setting PDF content...');
       setPdfContent(extractedContent);
-      
+
       console.log('🎯 Step 5: Setting showGlobalLearning to TRUE...');
       setShowGlobalLearning(true);
-      
+
       console.log('✅ === GLOBAL LEARNING SHOULD NOW BE VISIBLE ===');
 
     } catch (error) {
       console.error('❌ Error in handleGlobalLearningClick:', error);
-      setGlobalLearningError(`Error analyzing document: ${error.message}`);
+      setExtractionError(`Error analyzing document: ${error.message}`);
     } finally {
       console.log('🏁 Step 6: Clearing loading state...');
       setIsGlobalLearningLoading(false);
@@ -824,7 +878,7 @@ Global Learning works best with instructional content, lessons, or study materia
       const extractedContent = pdfContent || await extractPdfContent();
 
       if (!extractedContent || !extractedContent.trim()) {
-        setSensingLearningError('Failed to extract PDF content for sensing learning.');
+        setExtractionError('Failed to extract PDF content for sensing learning.');
         setIsSensingLearningLoading(false);
         return;
       }
@@ -840,7 +894,8 @@ Confidence: ${Math.round(analysisResult.confidence * 100)}%
 
 Sensing Learning works best with instructional content, lessons, or study materials.`;
 
-        setSensingLearningError(errorMessage);
+        setErrorSource('manual'); // Mark as manual click
+        setExtractionError(errorMessage); // Use extractionError to show modal
         setIsSensingLearningLoading(false);
         return;
       }
@@ -850,7 +905,7 @@ Sensing Learning works best with instructional content, lessons, or study materi
 
     } catch (error) {
       console.error('Error analyzing content for sensing learning:', error);
-      setSensingLearningError(`Error analyzing document: ${error.message}`);
+      setExtractionError(`Error analyzing document: ${error.message}`);
     } finally {
       setIsSensingLearningLoading(false);
     }
@@ -863,7 +918,7 @@ Sensing Learning works best with instructional content, lessons, or study materi
       const extractedContent = pdfContent || await extractPdfContent();
 
       if (!extractedContent || !extractedContent.trim()) {
-        setIntuitiveLearningError('Failed to extract PDF content for intuitive learning.');
+        setExtractionError('Failed to extract PDF content for intuitive learning.');
         setIsIntuitiveLearningLoading(false);
         return;
       }
@@ -879,7 +934,8 @@ Confidence: ${Math.round(analysisResult.confidence * 100)}%
 
 Intuitive Learning works best with instructional content, lessons, or study materials.`;
 
-        setIntuitiveLearningError(errorMessage);
+        setErrorSource('manual'); // Mark as manual click
+        setExtractionError(errorMessage); // Use extractionError to show modal
         setIsIntuitiveLearningLoading(false);
         return;
       }
@@ -889,7 +945,7 @@ Intuitive Learning works best with instructional content, lessons, or study mate
 
     } catch (error) {
       console.error('Error analyzing content for intuitive learning:', error);
-      setIntuitiveLearningError(`Error analyzing document: ${error.message}`);
+      setExtractionError(`Error analyzing document: ${error.message}`);
     } finally {
       setIsIntuitiveLearningLoading(false);
     }
@@ -902,7 +958,7 @@ Intuitive Learning works best with instructional content, lessons, or study mate
       const extractedContent = pdfContent || await extractPdfContent();
 
       if (!extractedContent || !extractedContent.trim()) {
-        setActiveLearningError('Failed to extract PDF content for active learning.');
+        setExtractionError('Failed to extract PDF content for active learning.');
         setIsActiveLearningLoading(false);
         return;
       }
@@ -918,7 +974,8 @@ Confidence: ${Math.round(analysisResult.confidence * 100)}%
 
 Active Learning works best with instructional content, lessons, or study materials.`;
 
-        setActiveLearningError(errorMessage);
+        setErrorSource('manual'); // Mark as manual click
+        setExtractionError(errorMessage); // Use extractionError to show modal
         setIsActiveLearningLoading(false);
         return;
       }
@@ -928,7 +985,7 @@ Active Learning works best with instructional content, lessons, or study materia
 
     } catch (error) {
       console.error('Error analyzing content for active learning:', error);
-      setActiveLearningError(`Error analyzing document: ${error.message}`);
+      setExtractionError(`Error analyzing document: ${error.message}`);
     } finally {
       setIsActiveLearningLoading(false);
     }
@@ -941,7 +998,7 @@ Active Learning works best with instructional content, lessons, or study materia
       const extractedContent = pdfContent || await extractPdfContent();
 
       if (!extractedContent || !extractedContent.trim()) {
-        setReflectiveLearningError('Failed to extract PDF content for reflective learning.');
+        setExtractionError('Failed to extract PDF content for reflective learning.');
         setIsReflectiveLearningLoading(false);
         return;
       }
@@ -957,7 +1014,8 @@ Confidence: ${Math.round(analysisResult.confidence * 100)}%
 
 Reflective Learning works best with instructional content, lessons, or study materials.`;
 
-        setReflectiveLearningError(errorMessage);
+        setErrorSource('manual'); // Mark as manual click
+        setExtractionError(errorMessage); // Use extractionError to show modal
         setIsReflectiveLearningLoading(false);
         return;
       }
@@ -967,7 +1025,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
 
     } catch (error) {
       console.error('Error analyzing content for reflective learning:', error);
-      setReflectiveLearningError(`Error analyzing document: ${error.message}`);
+      setExtractionError(`Error analyzing document: ${error.message}`);
     } finally {
       setIsReflectiveLearningLoading(false);
     }
@@ -976,13 +1034,13 @@ Reflective Learning works best with instructional content, lessons, or study mat
   // Carousel Navigation Functions
   const handleNextRecommendation = () => {
     if (filteredRecommendations.length === 0) return;
-    
+
     const nextIndex = (currentRecommendationIndex + 1) % filteredRecommendations.length;
     setCurrentRecommendationIndex(nextIndex);
     const nextRec = filteredRecommendations[nextIndex];
-    
+
     console.log(`🎠 Navigating to recommendation ${nextIndex + 1}/${filteredRecommendations.length}:`, nextRec.mode);
-    
+
     // Close current mode
     setShowVisualContent(false);
     setShowSequentialLearning(false);
@@ -991,7 +1049,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
     setShowIntuitiveLearning(false);
     setShowActiveLearning(false);
     setShowReflectiveLearning(false);
-    
+
     // Special handling for AI Narrator - activate it automatically
     if (nextRec.mode === 'AI Narrator') {
       console.log('🎙️ AI Narrator selected - activating audio narration');
@@ -1000,7 +1058,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
       setTimeout(() => handleAITutorClick(), 100);
       return;
     }
-    
+
     // Trigger the next mode
     const modeHandlers = {
       'Visual Learning': handleVisualContentClick,
@@ -1011,7 +1069,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
       'Active Learning Hub': handleActiveLearningClick,
       'Reflective Learning': handleReflectiveLearningClick
     };
-    
+
     const handler = modeHandlers[nextRec.mode];
     if (handler) {
       setTimeout(() => handler(), 100);
@@ -1020,15 +1078,15 @@ Reflective Learning works best with instructional content, lessons, or study mat
 
   const handlePrevRecommendation = () => {
     if (filteredRecommendations.length === 0) return;
-    
-    const prevIndex = currentRecommendationIndex === 0 
-      ? filteredRecommendations.length - 1 
+
+    const prevIndex = currentRecommendationIndex === 0
+      ? filteredRecommendations.length - 1
       : currentRecommendationIndex - 1;
     setCurrentRecommendationIndex(prevIndex);
     const prevRec = filteredRecommendations[prevIndex];
-    
+
     console.log(`🎠 Navigating to recommendation ${prevIndex + 1}/${filteredRecommendations.length}:`, prevRec.mode);
-    
+
     // Close current mode
     setShowVisualContent(false);
     setShowSequentialLearning(false);
@@ -1037,7 +1095,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
     setShowIntuitiveLearning(false);
     setShowActiveLearning(false);
     setShowReflectiveLearning(false);
-    
+
     // Special handling for AI Narrator - activate it automatically
     if (prevRec.mode === 'AI Narrator') {
       console.log('🎙️ AI Narrator selected - activating audio narration');
@@ -1046,7 +1104,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
       setTimeout(() => handleAITutorClick(), 100);
       return;
     }
-    
+
     // Trigger the previous mode
     const modeHandlers = {
       'Visual Learning': handleVisualContentClick,
@@ -1057,7 +1115,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
       'Active Learning Hub': handleActiveLearningClick,
       'Reflective Learning': handleReflectiveLearningClick
     };
-    
+
     const handler = modeHandlers[prevRec.mode];
     if (handler) {
       setTimeout(() => handler(), 100);
@@ -1067,183 +1125,79 @@ Reflective Learning works best with instructional content, lessons, or study mat
   const fileName = content.title || content.originalName || 'Document.pdf';
 
   // Check if any learning mode is active
-  const hasActiveLearningMode = showVisualContent || showSequentialLearning || showGlobalLearning || 
-                                showSensingLearning || showIntuitiveLearning || showActiveLearning || 
-                                showReflectiveLearning;
+  const hasActiveLearningMode = showVisualContent || showSequentialLearning || showGlobalLearning ||
+    showSensingLearning || showIntuitiveLearning || showActiveLearning ||
+    showReflectiveLearning;
 
   return (
     <>
       {/* Cache Status Indicator */}
-      <CacheIndicator 
-        show={showCacheIndicator} 
+      <CacheIndicator
+        show={showCacheIndicator}
         isCached={isCached}
         onHide={() => setShowCacheIndicator(false)}
       />
-      
+
       <div className="w-full h-full flex relative">
-        {/* Enhanced Error/Info Message - Professional Design */}
+        {/* Toast Notification - Compact Design */}
         {extractionError && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
-              {/* Header */}
-              <div className={`px-6 py-4 ${extractionError.includes('not appear to contain educational')
-                ? 'bg-gradient-to-r from-amber-500 to-orange-500'
-                : 'bg-gradient-to-r from-red-500 to-pink-500'
-                }`}>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-xl">
-                    {extractionError.includes('not appear to contain educational') ? (
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <div className="fixed bottom-6 left-6 z-50 pointer-events-auto animate-slide-up">
+            <div className="bg-white rounded-xl shadow-2xl max-w-sm border-l-4 border-amber-500 overflow-hidden">
+              <div className="p-4">
+                <div className="flex items-start gap-3">
+                  {/* Icon */}
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
-                    ) : (
-                      <XMarkIcon className="w-6 h-6 text-white" />
-                    )}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">
-                      {extractionError.includes('not appear to contain educational')
-                        ? 'AI Narrator Not Available'
-                        : 'AI Narrator Error'
-                      }
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                      {errorSource === 'auto-load' ? 'AI Learning Features Not Available' : 'AI Narrator Not Available'}
                     </h3>
-                    <p className="text-sm text-white text-opacity-90">
-                      {extractionError.includes('not appear to contain educational')
-                        ? 'Document analysis complete'
-                        : 'Something went wrong'
-                      }
+                    <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                      This document doesn't contain educational content. AI features work best with lessons, tutorials, and study materials.
                     </p>
-                  </div>
-                </div>
-              </div>
 
-              {/* Content */}
-              <div className="p-6">
-                {extractionError.includes('not appear to contain educational') ? (
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 bg-amber-100 rounded-lg flex-shrink-0 mt-0.5">
-                        <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                    {/* Quick Info */}
+                    <div className="flex items-center gap-3 text-xs">
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-500">Type:</span>
+                        <span className="font-medium text-gray-700">Personal Document</span>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 mb-2">
-                          This PDF doesn't contain educational content suitable for AI narration.
-                        </p>
-                        <p className="text-xs text-gray-600 leading-relaxed">
-                          Our AI analyzed the document and determined it's not instructional material. 
-                          AI Narrator works best with lessons, tutorials, study guides, and educational content.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Analysis Details */}
-                    <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                      <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Analysis Results</h4>
-                      
-                      {/* AI Analysis Summary */}
-                      <div className="bg-white rounded-lg p-3 border border-gray-200">
-                        <div className="flex items-start gap-2 mb-2">
-                          <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <svg className="w-2.5 h-2.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-700 mb-1">AI Analysis</p>
-                            <p className="text-xs text-gray-600 leading-relaxed">
-                              The PDF appears to be a personal document rather than instructional content suitable for educational narration.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Structured Analysis Data */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white rounded-lg p-3 border border-gray-200">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-3 h-3 bg-red-100 rounded-full flex items-center justify-center">
-                              <svg className="w-2 h-2 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                            <span className="text-xs font-medium text-gray-700">Content Type</span>
-                          </div>
-                          <p className="text-xs text-gray-900 font-medium">Personal Document</p>
-                        </div>
-
-                        <div className="bg-white rounded-lg p-3 border border-gray-200">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-3 h-3 bg-green-100 rounded-full flex items-center justify-center">
-                              <svg className="w-2 h-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                            <span className="text-xs font-medium text-gray-700">Confidence</span>
-                          </div>
-                          <p className="text-xs text-gray-900 font-medium">100%</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Suggestions */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                      <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                        </svg>
-                        Try AI Narrator with:
-                      </h4>
-                      <ul className="text-xs text-blue-800 space-y-1">
-                        <li>• Educational PDF documents and textbooks</li>
-                        <li>• Research papers and academic articles</li>
-                        <li>• Course materials and study guides</li>
-                        <li>• Tutorial documents and how-to guides</li>
-                      </ul>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg flex-shrink-0">
-                        <XMarkIcon className="w-4 h-4 text-red-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 mb-2">
-                          Unable to process PDF for AI narration
-                        </p>
-                        <p className="text-xs text-gray-600 leading-relaxed">
-                          {extractionError}
-                        </p>
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-500">Confidence:</span>
+                        <span className="font-medium text-green-600">100%</span>
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
 
-              {/* Footer */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Powered by AI content analysis</span>
-                </div>
-                <div className="flex gap-2">
-                  {!extractionError.includes('not appear to contain educational') && (
-                    <button
-                      onClick={handleAITutorClick}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-                    >
-                      Try Again
-                    </button>
-                  )}
+                  {/* Close Button */}
                   <button
                     onClick={() => setExtractionError('')}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    Close
+                    <XMarkIcon className="w-5 h-5" />
                   </button>
                 </div>
+              </div>
+
+              {/* Footer with AI badge */}
+              <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                  <span>AI Analysis</span>
+                </div>
+                <button
+                  onClick={() => setExtractionError('')}
+                  className="text-xs font-medium text-amber-600 hover:text-amber-700 transition-colors"
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
           </div>
@@ -1270,14 +1224,14 @@ Reflective Learning works best with instructional content, lessons, or study mat
         <div className="flex-1 relative flex">
           {/* Determine if any learning mode is active (except AI Narrator) */}
           {(() => {
-            const hasActiveLearningMode = showVisualContent || showSequentialLearning || showGlobalLearning || 
-                                         showSensingLearning || showIntuitiveLearning || showActiveLearning || 
-                                         showReflectiveLearning;
-            
+            const hasActiveLearningMode = showVisualContent || showSequentialLearning || showGlobalLearning ||
+              showSensingLearning || showIntuitiveLearning || showActiveLearning ||
+              showReflectiveLearning;
+
             const isLoadingAnyMode = isVisualLearningLoading || isSequentialLearningLoading || isGlobalLearningLoading ||
-                                    isSensingLearningLoading || isIntuitiveLearningLoading || isActiveLearningLoading ||
-                                    isReflectiveLearningLoading;
-            
+              isSensingLearningLoading || isIntuitiveLearningLoading || isActiveLearningLoading ||
+              isReflectiveLearningLoading;
+
             return (
               <>
                 {/* PDF Viewer - Show when no mode active AND not loading AND not planning to auto-load, OR when user explicitly toggles to PDF view */}
@@ -1296,10 +1250,10 @@ Reflective Learning works best with instructional content, lessons, or study mat
                         </button>
                       </div>
                     )}
-                    
+
                     <div className="flex-1">
                       {pdfUrl ? (
-                        <CleanPDFViewer 
+                        <CleanPDFViewer
                           content={{
                             ...content,
                             filePath: pdfUrl,
@@ -1325,6 +1279,8 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           topRecommendation={topRecommendation}
                           allRecommendations={allRecommendations}
                           hasClassification={hasClassification}
+                          // Content Educational Status
+                          isContentEducational={isContentEducational}
                         />
                       ) : (
                         <div className="flex items-center justify-center h-full">
@@ -1389,7 +1345,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </button>
-                          
+
                           <button
                             onClick={() => {
                               // Close all learning modes to show PDF
@@ -1428,7 +1384,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           activeVisualType="diagram"
                         />
                       )}
-                      
+
                       {showSequentialLearning && (
                         <SequentialLearning
                           isActive={true}
@@ -1440,7 +1396,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           fileName={fileName}
                         />
                       )}
-                      
+
                       {showGlobalLearning && (
                         <GlobalLearning
                           isActive={true}
@@ -1452,7 +1408,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           fileName={fileName}
                         />
                       )}
-                      
+
                       {showSensingLearning && (
                         <SensingLearning
                           isActive={true}
@@ -1464,7 +1420,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           fileName={fileName}
                         />
                       )}
-                      
+
                       {showIntuitiveLearning && (
                         <IntuitiveLearning
                           isActive={true}
@@ -1476,7 +1432,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           fileName={fileName}
                         />
                       )}
-                      
+
                       {showActiveLearning && (
                         <ActiveLearning
                           isActive={true}
@@ -1488,7 +1444,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           fileName={fileName}
                         />
                       )}
-                      
+
                       {showReflectiveLearning && (
                         <ReflectiveLearning
                           isActive={true}
@@ -1545,7 +1501,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-                  
+
                   <button
                     onClick={() => {
                       // Close all learning modes to show PDF
@@ -1571,126 +1527,126 @@ Reflective Learning works best with instructional content, lessons, or study mat
           </div>
         )}
 
-          {/* AI Narrator Mode Selection - Platform Aligned */}
-          {showModeSelection && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-              <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl">
-                      <SparklesIcon className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900">AI Narrator</h2>
-                      <p className="text-sm text-gray-600">Choose your narration mode</p>
-                    </div>
+        {/* AI Narrator Mode Selection - Platform Aligned */}
+        {showModeSelection && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+            <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl">
+                    <SparklesIcon className="w-6 h-6 text-white" />
                   </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">AI Narrator</h2>
+                    <p className="text-sm text-gray-600">Choose your narration mode</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowModeSelection(false)}
+                  className="p-2 transition-colors rounded-lg hover:bg-gray-100"
+                >
+                  <XMarkIcon className="w-6 h-6 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span>Auto-starting Complete Narration in 3 seconds...</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1">
+                    <div className="bg-purple-500 h-1 rounded-full animate-pulse" style={{ width: '33%' }}></div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4">
+                  {/* Complete Narration */}
                   <button
-                    onClick={() => setShowModeSelection(false)}
-                    className="p-2 transition-colors rounded-lg hover:bg-gray-100"
+                    onClick={() => startDirectAITeaching('complete')}
+                    className="w-full group relative overflow-hidden bg-white border-2 border-gray-200 rounded-xl p-4 transition-all duration-300 hover:border-blue-300 hover:shadow-md"
                   >
-                    <XMarkIcon className="w-6 h-6 text-gray-500" />
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                        <BookOpenIcon className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="font-semibold text-gray-900 mb-1">Complete Narration</div>
+                        <div className="text-sm text-gray-600">Full explanation with examples and detailed concepts</div>
+                        <div className="text-xs text-blue-600 mt-1 font-medium">📚 Recommended for deep learning</div>
+                      </div>
+                      <div className="text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
                   </button>
-                </div>
 
-                {/* Content */}
-                <div className="p-6">
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span>Auto-starting Complete Narration in 3 seconds...</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1">
-                      <div className="bg-purple-500 h-1 rounded-full animate-pulse" style={{ width: '33%' }}></div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4">
-                    {/* Complete Narration */}
-                    <button
-                      onClick={() => startDirectAITeaching('complete')}
-                      className="w-full group relative overflow-hidden bg-white border-2 border-gray-200 rounded-xl p-4 transition-all duration-300 hover:border-blue-300 hover:shadow-md"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                          <BookOpenIcon className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <div className="font-semibold text-gray-900 mb-1">Complete Narration</div>
-                          <div className="text-sm text-gray-600">Full explanation with examples and detailed concepts</div>
-                          <div className="text-xs text-blue-600 mt-1 font-medium">📚 Recommended for deep learning</div>
-                        </div>
-                        <div className="text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Quick Overview */}
-                    <button
-                      onClick={() => startDirectAITeaching('quick')}
-                      className="w-full group relative overflow-hidden bg-white border-2 border-gray-200 rounded-xl p-4 transition-all duration-300 hover:border-green-300 hover:shadow-md"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center group-hover:bg-green-100 transition-colors">
-                          <SparklesIcon className="w-6 h-6 text-green-600" />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <div className="font-semibold text-gray-900 mb-1">Quick Overview</div>
-                          <div className="text-sm text-gray-600">Essential points covered in 5 minutes</div>
-                          <div className="text-xs text-green-600 mt-1 font-medium">⚡ Perfect for quick review</div>
-                        </div>
-                        <div className="text-gray-400 group-hover:text-green-500 group-hover:translate-x-1 transition-all">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Key Concepts */}
-                    <button
-                      onClick={() => startDirectAITeaching('keypoints')}
-                      className="w-full group relative overflow-hidden bg-white border-2 border-gray-200 rounded-xl p-4 transition-all duration-300 hover:border-purple-300 hover:shadow-md"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center group-hover:bg-purple-100 transition-colors">
-                          <AcademicCapIcon className="w-6 h-6 text-purple-600" />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <div className="font-semibold text-gray-900 mb-1">Key Concepts</div>
-                          <div className="text-sm text-gray-600">Focus on the most important ideas only</div>
-                          <div className="text-xs text-purple-600 mt-1 font-medium">🎯 Great for exam preparation</div>
-                        </div>
-                        <div className="text-gray-400 group-hover:text-purple-500 group-hover:translate-x-1 transition-all">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>AI-powered learning in Taglish</span>
-                  </div>
+                  {/* Quick Overview */}
                   <button
-                    onClick={() => setShowModeSelection(false)}
-                    className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                    onClick={() => startDirectAITeaching('quick')}
+                    className="w-full group relative overflow-hidden bg-white border-2 border-gray-200 rounded-xl p-4 transition-all duration-300 hover:border-green-300 hover:shadow-md"
                   >
-                    Cancel
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center group-hover:bg-green-100 transition-colors">
+                        <SparklesIcon className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="font-semibold text-gray-900 mb-1">Quick Overview</div>
+                        <div className="text-sm text-gray-600">Essential points covered in 5 minutes</div>
+                        <div className="text-xs text-green-600 mt-1 font-medium">⚡ Perfect for quick review</div>
+                      </div>
+                      <div className="text-gray-400 group-hover:text-green-500 group-hover:translate-x-1 transition-all">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Key Concepts */}
+                  <button
+                    onClick={() => startDirectAITeaching('keypoints')}
+                    className="w-full group relative overflow-hidden bg-white border-2 border-gray-200 rounded-xl p-4 transition-all duration-300 hover:border-purple-300 hover:shadow-md"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                        <AcademicCapIcon className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="font-semibold text-gray-900 mb-1">Key Concepts</div>
+                        <div className="text-sm text-gray-600">Focus on the most important ideas only</div>
+                        <div className="text-xs text-purple-600 mt-1 font-medium">🎯 Great for exam preparation</div>
+                      </div>
+                      <div className="text-gray-400 group-hover:text-purple-500 group-hover:translate-x-1 transition-all">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
                   </button>
                 </div>
               </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>AI-powered learning in Taglish</span>
+                </div>
+                <button
+                  onClick={() => setShowModeSelection(false)}
+                  className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          )}
+          </div>
+        )}
 
         {/* AI Narrator Active Control Panel - Draggable */}
         {aiTutorActive && (

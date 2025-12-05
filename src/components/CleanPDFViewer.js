@@ -82,7 +82,9 @@ const CleanPDFViewer = ({
   // ML Recommendations props
   topRecommendation = null,
   allRecommendations = [],
-  hasClassification = false
+  hasClassification = false,
+  // Content Educational Status
+  isContentEducational = true
 }) => {
   // State management
   const [currentPage, setCurrentPage] = useState(1);
@@ -468,7 +470,7 @@ const CleanPDFViewer = ({
       className={`flex flex-col h-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
     >
       {/* Personalization Banner */}
-      {hasClassification && topRecommendation && showPersonalizationBanner && (
+      {isContentEducational && hasClassification && topRecommendation && showPersonalizationBanner && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -493,109 +495,55 @@ const CleanPDFViewer = ({
       {/* Custom Toolbar - Clean Design */}
       <div className={`flex items-center justify-between px-4 py-3 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
         }`}>
-        {/* Left Section - Document Info (NO FILE PATH) */}
-        <div className="flex items-center space-x-4">
+        {/* Left/Center Section - Smart AI Learning Modes */}
+        {isContentEducational && (
           <div className="flex items-center space-x-2">
-            <DocumentTextIcon className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
-            <span className={`font-medium truncate max-w-xs ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              {content.title || content.originalName || 'PDF Document'}
-            </span>
+            {hasClassification && recommendedButtons.length > 0 ? (
+              <>
+                {/* Recommended Modes - Prominent */}
+                {recommendedButtons.map(mode => renderModeButton(mode, true))}
+                
+                {/* Other Modes - Dropdown */}
+                {otherButtons.length > 0 && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowMoreModes(!showMoreModes)}
+                      className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                    >
+                      <span>More</span>
+                      <ChevronDownIcon className={`w-4 h-4 transition-transform ${showMoreModes ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {showMoreModes && (
+                      <div className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[200px] z-50">
+                        {otherButtons.map(mode => (
+                          <button
+                            key={mode.name}
+                            onClick={() => {
+                              mode.handler();
+                              setShowMoreModes(false);
+                            }}
+                            disabled={mode.loading}
+                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                          >
+                            <span className="text-lg">{tooltipData[mode.name === 'Step-by-Step' ? 'Sequential Learning' : mode.name === 'Big Picture' ? 'Global Learning' : mode.name === 'Hands-On' ? 'Hands-On Lab' : mode.name === 'Theory' ? 'Concept Constellation' : mode.name === 'Practice' ? 'Active Learning Hub' : mode.name === 'Reflect' ? 'Reflective Learning' : mode.name]?.icon || '📚'}</span>
+                            <span className="font-medium">{mode.name}</span>
+                            {mode.loading && (
+                              <div className="ml-auto w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              /* No classification - Show all 8 modes equally */
+              allModes.map(mode => renderModeButton(mode, false))
+            )}
           </div>
-
-          {/* Page Navigation */}
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handlePreviousPage}
-              disabled={currentPage <= 1}
-              className={`p-1.5 rounded-md transition-colors ${currentPage <= 1
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'text-gray-300 hover:bg-gray-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-            >
-              <ChevronLeftIcon className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center space-x-1">
-              <input
-                type="number"
-                min="1"
-                max={totalPages}
-                value={currentPage}
-                onChange={(e) => handlePageJump(e.target.value)}
-                className={`w-12 px-2 py-1 text-sm text-center border rounded ${isDarkMode
-                    ? 'bg-gray-700 border-gray-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-              />
-              <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                / {totalPages}
-              </span>
-            </div>
-
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage >= totalPages}
-              className={`p-1.5 rounded-md transition-colors ${currentPage >= totalPages
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'text-gray-300 hover:bg-gray-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-            >
-              <ChevronRightIcon className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Center Section - Smart AI Learning Modes */}
-        <div className="flex items-center space-x-2">
-          {hasClassification && recommendedButtons.length > 0 ? (
-            <>
-              {/* Recommended Modes - Prominent */}
-              {recommendedButtons.map(mode => renderModeButton(mode, true))}
-              
-              {/* Other Modes - Dropdown */}
-              {otherButtons.length > 0 && (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowMoreModes(!showMoreModes)}
-                    className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                  >
-                    <span>More</span>
-                    <ChevronDownIcon className={`w-4 h-4 transition-transform ${showMoreModes ? 'rotate-180' : ''}`} />
-                  </button>
-                  
-                  {showMoreModes && (
-                    <div className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[200px] z-50">
-                      {otherButtons.map(mode => (
-                        <button
-                          key={mode.name}
-                          onClick={() => {
-                            mode.handler();
-                            setShowMoreModes(false);
-                          }}
-                          disabled={mode.loading}
-                          className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                        >
-                          <span className="text-lg">{tooltipData[mode.name === 'Step-by-Step' ? 'Sequential Learning' : mode.name === 'Big Picture' ? 'Global Learning' : mode.name === 'Hands-On' ? 'Hands-On Lab' : mode.name === 'Theory' ? 'Concept Constellation' : mode.name === 'Practice' ? 'Active Learning Hub' : mode.name === 'Reflect' ? 'Reflective Learning' : mode.name]?.icon || '📚'}</span>
-                          <span className="font-medium">{mode.name}</span>
-                          {mode.loading && (
-                            <div className="ml-auto w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            /* No classification - Show all 8 modes equally */
-            allModes.map(mode => renderModeButton(mode, false))
-          )}
-        </div>
+        )}
 
         {/* Right Section - Zoom and Actions */}
         <div className="flex items-center space-x-2">

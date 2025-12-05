@@ -13,39 +13,81 @@
 
 /* Enhanced Animations */
 @keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(-10px) rotate(1deg); }
-  66% { transform: translateY(-5px) rotate(-1deg); }
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  33% {
+    transform: translateY(-10px) rotate(1deg);
+  }
+
+  66% {
+    transform: translateY(-5px) rotate(-1deg);
+  }
 }
 
 @keyframes float-reverse {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(10px) rotate(-1deg); }
-  66% { transform: translateY(5px) rotate(1deg); }
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  33% {
+    transform: translateY(10px) rotate(-1deg);
+  }
+
+  66% {
+    transform: translateY(5px) rotate(1deg);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { 
+
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
     transform: scale(1);
   }
-  50% { 
+
+  50% {
     box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
     transform: scale(1.05);
   }
 }
 
 @keyframes rotate-3d {
-  0% { transform: rotateY(0deg) rotateX(0deg); }
-  25% { transform: rotateY(90deg) rotateX(10deg); }
-  50% { transform: rotateY(180deg) rotateX(0deg); }
-  75% { transform: rotateY(270deg) rotateX(-10deg); }
-  100% { transform: rotateY(360deg) rotateX(0deg); }
+  0% {
+    transform: rotateY(0deg) rotateX(0deg);
+  }
+
+  25% {
+    transform: rotateY(90deg) rotateX(10deg);
+  }
+
+  50% {
+    transform: rotateY(180deg) rotateX(0deg);
+  }
+
+  75% {
+    transform: rotateY(270deg) rotateX(-10deg);
+  }
+
+  100% {
+    transform: rotateY(360deg) rotateX(0deg);
+  }
 }
 
 @keyframes expand-width {
-  0% { width: 0%; }
-  100% { width: 100%; }
+  0% {
+    width: 0%;
+  }
+
+  100% {
+    width: 100%;
+  }
 }
 
 /* Text Animations for Course Header */
@@ -54,6 +96,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -65,6 +108,7 @@
     opacity: 0;
     transform: translateX(-20px);
   }
+
   100% {
     opacity: 1;
     transform: translateX(0);
@@ -76,6 +120,7 @@
     opacity: 0;
     transform: translateX(20px);
   }
+
   100% {
     opacity: 1;
     transform: translateX(0);
@@ -87,6 +132,7 @@
     opacity: 0;
     transform: scale(0.9);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);
@@ -95,28 +141,37 @@
 
 /* Continuous Animations for Course Header */
 @keyframes textGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
   }
+
   50% {
     text-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
   }
 }
 
 @keyframes subtleFloat {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-3px);
   }
 }
 
 @keyframes subtlePulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
+
   50% {
     transform: scale(1.02);
     opacity: 0.95;
@@ -127,6 +182,7 @@
   0% {
     background-position: -200% center;
   }
+
   100% {
     background-position: 200% center;
   }
@@ -173,6 +229,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -184,6 +241,7 @@
     opacity: 0;
     transform: translateX(-30px);
   }
+
   100% {
     opacity: 1;
     transform: translateX(0);
@@ -191,8 +249,13 @@
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* Custom Utilities */
@@ -225,7 +288,7 @@
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
@@ -247,7 +310,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
   opacity: 0;
   transition: opacity 0.3s;
   pointer-events: none;
@@ -325,14 +388,14 @@
 
 /* Custom Gradients */
 .gradient-mesh {
-  background: 
-    radial-gradient(at 40% 20%, hsla(228,100%,74%,1) 0px, transparent 50%),
-    radial-gradient(at 80% 0%, hsla(189,100%,56%,1) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, hsla(355,100%,93%,1) 0px, transparent 50%),
-    radial-gradient(at 80% 50%, hsla(340,100%,76%,1) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, hsla(22,100%,77%,1) 0px, transparent 50%),
-    radial-gradient(at 80% 100%, hsla(242,100%,70%,1) 0px, transparent 50%),
-    radial-gradient(at 0% 0%, hsla(343,100%,76%,1) 0px, transparent 50%);
+  background:
+    radial-gradient(at 40% 20%, hsla(228, 100%, 74%, 1) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(355, 100%, 93%, 1) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, hsla(340, 100%, 76%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(22, 100%, 77%, 1) 0px, transparent 50%),
+    radial-gradient(at 80% 100%, hsla(242, 100%, 70%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, hsla(343, 100%, 76%, 1) 0px, transparent 50%);
 }
 
 /* Loading States */
@@ -396,7 +459,7 @@ html::-webkit-scrollbar {
 }
 
 body {
-  background-color: #F0F2F5; 
+  background-color: #F0F2F5;
   color: #1a202c;
   font-family: 'Inter', sans-serif;
   margin: 0;
@@ -411,6 +474,7 @@ body {
 body:has(.side-panel-document-viewer) {
   overflow: hidden !important;
 }
+
 @layer components {
   .input-field {
     @apply block w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm;
@@ -430,13 +494,13 @@ body:has(.side-panel-document-viewer) {
     -webkit-scrollbar: none !important;
     -webkit-scrollbar-track: none !important;
     -webkit-scrollbar-thumb: none !important;
-    
+
     /* Hide scrollbar for Firefox */
     scrollbar-width: none !important;
-    
+
     /* Hide scrollbar for IE/Edge */
     -ms-overflow-style: none !important;
-    
+
     /* Ensure no overflow */
     overflow: hidden !important;
   }
@@ -454,6 +518,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: translateY(20px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -464,6 +529,7 @@ body:has(.side-panel-document-viewer) {
     from {
       width: 0%;
     }
+
     to {
       width: 100%;
     }
@@ -478,9 +544,12 @@ body:has(.side-panel-document-viewer) {
   }
 
   @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: translateY(0px);
     }
+
     50% {
       transform: translateY(-10px);
     }
@@ -495,9 +564,11 @@ body:has(.side-panel-document-viewer) {
       transform: scale(0.8);
       opacity: 0;
     }
+
     50% {
       transform: scale(1.05);
     }
+
     100% {
       transform: scale(1);
       opacity: 1;
@@ -510,6 +581,7 @@ body:has(.side-panel-document-viewer) {
 
   /* Accessibility: Respect user's motion preferences */
   @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -525,6 +597,7 @@ body:has(.side-panel-document-viewer) {
       transform: translateX(100%);
       opacity: 0;
     }
+
     to {
       transform: translateX(0);
       opacity: 1;
@@ -536,18 +609,24 @@ body:has(.side-panel-document-viewer) {
   }
 
   @keyframes float-slow {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: translateY(0px) rotate(0deg);
     }
+
     50% {
       transform: translateY(-20px) rotate(5deg);
     }
   }
 
   @keyframes float-slower {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: translateY(0px) rotate(0deg);
     }
+
     50% {
       transform: translateY(-15px) rotate(-3deg);
     }
@@ -574,6 +653,7 @@ body:has(.side-panel-document-viewer) {
     from {
       opacity: 0;
     }
+
     to {
       opacity: 1;
     }
@@ -584,6 +664,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: scale(0.9);
     }
+
     to {
       opacity: 1;
       transform: scale(1);
@@ -594,6 +675,7 @@ body:has(.side-panel-document-viewer) {
     0% {
       transform: translateX(-100%) skewX(-12deg);
     }
+
     100% {
       transform: translateX(200%) skewX(-12deg);
     }
@@ -609,6 +691,7 @@ body:has(.side-panel-document-viewer) {
       transform: translateY(0) rotate(0deg);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.12);
     }
+
     100% {
       transform: translateY(-12px) rotate(1deg);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
@@ -619,21 +702,30 @@ body:has(.side-panel-document-viewer) {
     0% {
       background-position: 0% 50%;
     }
+
     50% {
       background-position: 100% 50%;
     }
+
     100% {
       background-position: 0% 50%;
     }
   }
 
   @keyframes icon-bounce {
-    0%, 20%, 50%, 80%, 100% {
+
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
       transform: translateY(0) scale(1);
     }
+
     40% {
       transform: translateY(-8px) scale(1.1);
     }
+
     60% {
       transform: translateY(-4px) scale(1.05);
     }
@@ -643,16 +735,20 @@ body:has(.side-panel-document-viewer) {
     0% {
       transform: translateX(-100%);
     }
+
     100% {
       transform: translateX(100%);
     }
   }
 
   @keyframes status-glow {
-    0%, 100% {
+
+    0%,
+    100% {
       opacity: 1;
       transform: scale(1);
     }
+
     50% {
       opacity: 0.6;
       transform: scale(1.1);
@@ -697,6 +793,7 @@ body:has(.side-panel-document-viewer) {
     0% {
       transform: scale(1) rotate(0deg);
     }
+
     100% {
       transform: scale(1.02) rotate(1deg);
     }
@@ -706,6 +803,7 @@ body:has(.side-panel-document-viewer) {
     0% {
       transform: scale(1) rotate(0deg);
     }
+
     100% {
       transform: scale(1.05) rotate(1deg);
     }
@@ -715,6 +813,7 @@ body:has(.side-panel-document-viewer) {
     0% {
       transform: scaleX(1);
     }
+
     100% {
       transform: scaleX(1.1);
     }
@@ -724,6 +823,7 @@ body:has(.side-panel-document-viewer) {
     0% {
       transform: translateY(0) scale(1);
     }
+
     100% {
       transform: translateY(-2px) scale(1.05);
     }
@@ -733,6 +833,7 @@ body:has(.side-panel-document-viewer) {
     0% {
       transform: translateX(0) scale(1);
     }
+
     100% {
       transform: translateX(4px) scale(1.1);
     }
@@ -742,6 +843,7 @@ body:has(.side-panel-document-viewer) {
     0% {
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.12);
     }
+
     100% {
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
     }
@@ -752,6 +854,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: translateY(10px);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0);
@@ -788,9 +891,12 @@ body:has(.side-panel-document-viewer) {
 
   /* Progressive Loading Skeleton Screens */
   @keyframes skeleton-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
       opacity: 1;
     }
+
     50% {
       opacity: 0.6;
     }
@@ -800,6 +906,7 @@ body:has(.side-panel-document-viewer) {
     0% {
       transform: translateX(-100%);
     }
+
     100% {
       transform: translateX(100%);
     }
@@ -810,6 +917,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: translateY(20px);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0);
@@ -881,18 +989,22 @@ body:has(.side-panel-document-viewer) {
       transform: scale(1) rotate(0deg);
       opacity: 1;
     }
+
     25% {
       transform: scale(0.95) rotate(-1deg);
       opacity: 0.8;
     }
+
     50% {
       transform: scale(1.02) rotate(1deg);
       opacity: 0.6;
     }
+
     75% {
       transform: scale(0.98) rotate(-0.5deg);
       opacity: 0.9;
     }
+
     100% {
       transform: scale(1) rotate(0deg);
       opacity: 1;
@@ -904,18 +1016,22 @@ body:has(.side-panel-document-viewer) {
       transform: scale(1) rotate(0deg);
       opacity: 1;
     }
+
     25% {
       transform: scale(1.05) rotate(1deg);
       opacity: 0.8;
     }
+
     50% {
       transform: scale(0.95) rotate(-1deg);
       opacity: 0.6;
     }
+
     75% {
       transform: scale(1.02) rotate(0.5deg);
       opacity: 0.9;
     }
+
     100% {
       transform: scale(1) rotate(0deg);
       opacity: 1;
@@ -927,18 +1043,22 @@ body:has(.side-panel-document-viewer) {
       transform: translateX(0) scale(1);
       opacity: 1;
     }
+
     25% {
       transform: translateX(-10px) scale(0.98);
       opacity: 0.7;
     }
+
     50% {
       transform: translateX(10px) scale(1.02);
       opacity: 0.5;
     }
+
     75% {
       transform: translateX(-5px) scale(0.99);
       opacity: 0.8;
     }
+
     100% {
       transform: translateX(0) scale(1);
       opacity: 1;
@@ -950,18 +1070,22 @@ body:has(.side-panel-document-viewer) {
       transform: scale(1) rotateY(0deg);
       opacity: 1;
     }
+
     25% {
       transform: scale(0.95) rotateY(-5deg);
       opacity: 0.7;
     }
+
     50% {
       transform: scale(1.05) rotateY(5deg);
       opacity: 0.5;
     }
+
     75% {
       transform: scale(0.98) rotateY(-2deg);
       opacity: 0.8;
     }
+
     100% {
       transform: scale(1) rotateY(0deg);
       opacity: 1;
@@ -973,18 +1097,22 @@ body:has(.side-panel-document-viewer) {
       transform: translateY(0);
       opacity: 1;
     }
+
     25% {
       transform: translateY(-5px);
       opacity: 0.8;
     }
+
     50% {
       transform: translateY(5px);
       opacity: 0.6;
     }
+
     75% {
       transform: translateY(-2px);
       opacity: 0.9;
     }
+
     100% {
       transform: translateY(0);
       opacity: 1;
@@ -1046,7 +1174,7 @@ body:has(.side-panel-document-viewer) {
   }
 
   /* Professional grid alignment */
-  .masonry-grid > * {
+  .masonry-grid>* {
     align-self: stretch;
     justify-self: stretch;
     width: 100%;
@@ -1055,9 +1183,9 @@ body:has(.side-panel-document-viewer) {
     /* Smooth transition for items */
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   /* Ensure card content fills height */
-  .masonry-grid > * > div {
+  .masonry-grid>*>div {
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -1071,7 +1199,8 @@ body:has(.side-panel-document-viewer) {
       padding: 0;
       max-width: 100%;
     }
-    .masonry-grid > * {
+
+    .masonry-grid>* {
       max-width: 100%;
     }
   }
@@ -1148,13 +1277,14 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: translateY(30px) scale(0.95);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0) scale(1);
     }
   }
 
-  .masonry-grid > * {
+  .masonry-grid>* {
     animation: masonry-appear 0.6s ease-out forwards;
   }
 
@@ -1166,17 +1296,49 @@ body:has(.side-panel-document-viewer) {
   }
 
   /* Staggered animation delays for masonry items with smart timing */
-  .masonry-grid > *:nth-child(1) { animation-delay: 0ms; }
-  .masonry-grid > *:nth-child(2) { animation-delay: 100ms; }
-  .masonry-grid > *:nth-child(3) { animation-delay: 200ms; }
-  .masonry-grid > *:nth-child(4) { animation-delay: 300ms; }
-  .masonry-grid > *:nth-child(5) { animation-delay: 400ms; }
-  .masonry-grid > *:nth-child(6) { animation-delay: 500ms; }
-  .masonry-grid > *:nth-child(7) { animation-delay: 600ms; }
-  .masonry-grid > *:nth-child(8) { animation-delay: 700ms; }
-  .masonry-grid > *:nth-child(9) { animation-delay: 800ms; }
-  .masonry-grid > *:nth-child(10) { animation-delay: 900ms; }
-  .masonry-grid > *:nth-child(n+11) { animation-delay: 1000ms; }
+  .masonry-grid>*:nth-child(1) {
+    animation-delay: 0ms;
+  }
+
+  .masonry-grid>*:nth-child(2) {
+    animation-delay: 100ms;
+  }
+
+  .masonry-grid>*:nth-child(3) {
+    animation-delay: 200ms;
+  }
+
+  .masonry-grid>*:nth-child(4) {
+    animation-delay: 300ms;
+  }
+
+  .masonry-grid>*:nth-child(5) {
+    animation-delay: 400ms;
+  }
+
+  .masonry-grid>*:nth-child(6) {
+    animation-delay: 500ms;
+  }
+
+  .masonry-grid>*:nth-child(7) {
+    animation-delay: 600ms;
+  }
+
+  .masonry-grid>*:nth-child(8) {
+    animation-delay: 700ms;
+  }
+
+  .masonry-grid>*:nth-child(9) {
+    animation-delay: 800ms;
+  }
+
+  .masonry-grid>*:nth-child(10) {
+    animation-delay: 900ms;
+  }
+
+  .masonry-grid>*:nth-child(n+11) {
+    animation-delay: 1000ms;
+  }
 
   /* Smart spacing for different card priorities */
   .masonry-item:has([style*="height: 600px"]) {
@@ -1224,6 +1386,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: scale(0.9) translateY(20px);
     }
+
     100% {
       opacity: 1;
       transform: scale(1) translateY(0);
@@ -1235,6 +1398,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: translateY(-10px);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0);
@@ -1273,6 +1437,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: translateX(20px) scale(0.95);
     }
+
     100% {
       opacity: 1;
       transform: translateX(0) scale(1);
@@ -1289,6 +1454,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: translateY(5px) scale(0.95);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0) scale(1);
@@ -1300,6 +1466,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: translateY(20px) scale(0.9);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0) scale(1);
@@ -1310,6 +1477,7 @@ body:has(.side-panel-document-viewer) {
     0% {
       transform: rotate(0deg);
     }
+
     100% {
       transform: rotate(360deg);
     }
@@ -1361,10 +1529,13 @@ body:has(.side-panel-document-viewer) {
 
   /* Help indicator pulse animation */
   @keyframes help-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: scale(1);
       opacity: 1;
     }
+
     50% {
       transform: scale(1.1);
       opacity: 0.8;
@@ -1408,6 +1579,7 @@ body:has(.side-panel-document-viewer) {
       transform: rotate(0deg) scale(1);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.12);
     }
+
     100% {
       transform: rotate(5deg) scale(1.05);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), 0 8px 16px rgba(0, 0, 0, 0.15);
@@ -1419,6 +1591,7 @@ body:has(.side-panel-document-viewer) {
       transform: scale(1);
       box-shadow: inset 0 0 0 0 rgba(59, 130, 246, 0);
     }
+
     100% {
       transform: scale(1.05);
       box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5);
@@ -1498,6 +1671,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: translateY(8px) scale(0.95);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0) scale(1);
@@ -1532,6 +1706,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: translateY(20px) scale(0.95);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0) scale(1);
@@ -1542,6 +1717,7 @@ body:has(.side-panel-document-viewer) {
     0% {
       transform: translateX(-100%);
     }
+
     100% {
       transform: translateX(0);
     }
@@ -1552,6 +1728,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       transform: translateY(-10px);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0);
@@ -1559,9 +1736,12 @@ body:has(.side-panel-document-viewer) {
   }
 
   @keyframes admin-button-glow {
-    0%, 100% {
+
+    0%,
+    100% {
       box-shadow: 0 0 0 rgba(139, 92, 246, 0);
     }
+
     50% {
       box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
     }
@@ -1572,6 +1752,7 @@ body:has(.side-panel-document-viewer) {
       background-color: transparent;
       transform: scale(1);
     }
+
     100% {
       background-color: rgba(139, 92, 246, 0.05);
       transform: scale(1.01);
@@ -1579,10 +1760,13 @@ body:has(.side-panel-document-viewer) {
   }
 
   @keyframes admin-loading-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
       opacity: 1;
       transform: scale(1);
     }
+
     50% {
       opacity: 0.7;
       transform: scale(1.05);
@@ -1594,9 +1778,11 @@ body:has(.side-panel-document-viewer) {
       stroke-dasharray: 0, 100;
       opacity: 0;
     }
+
     50% {
       opacity: 1;
     }
+
     100% {
       stroke-dasharray: 100, 0;
       opacity: 1;
@@ -1608,6 +1794,7 @@ body:has(.side-panel-document-viewer) {
       opacity: 0;
       backdrop-filter: blur(0px);
     }
+
     100% {
       opacity: 1;
       backdrop-filter: blur(8px);
@@ -1644,9 +1831,12 @@ body:has(.side-panel-document-viewer) {
 
   /* Enhanced pulse animation for stats */
   @keyframes pulse-gentle {
-    0%, 100% {
+
+    0%,
+    100% {
       opacity: 1;
     }
+
     50% {
       opacity: 0.8;
     }
@@ -1666,11 +1856,25 @@ body:has(.side-panel-document-viewer) {
   }
 
   /* Staggered animations for admin cards */
-  .admin-card:nth-child(1) { animation-delay: 0.1s; }
-  .admin-card:nth-child(2) { animation-delay: 0.2s; }
-  .admin-card:nth-child(3) { animation-delay: 0.3s; }
-  .admin-card:nth-child(4) { animation-delay: 0.4s; }
-  .admin-card:nth-child(n+5) { animation-delay: 0.5s; }
+  .admin-card:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+
+  .admin-card:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .admin-card:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  .admin-card:nth-child(4) {
+    animation-delay: 0.4s;
+  }
+
+  .admin-card:nth-child(n+5) {
+    animation-delay: 0.5s;
+  }
 
   /* Enhanced admin button interactions */
   .admin-btn {
@@ -1749,10 +1953,13 @@ body:has(.side-panel-document-viewer) {
   }
 
   @keyframes admin-notification-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: scale(1);
       opacity: 0.6;
     }
+
     50% {
       transform: scale(1.2);
       opacity: 0.3;
@@ -1858,7 +2065,8 @@ body:has(.side-panel-document-viewer) {
 
   /* Show fade indicators only when scrolling is possible */
   .elegant-scrollbar:has(> div) {
-    padding-right: 4px; /* Make room for the thin scrollbar */
+    padding-right: 4px;
+    /* Make room for the thin scrollbar */
   }
 
   /* Scroll indicator - shows when content can be scrolled */
@@ -1870,12 +2078,16 @@ body:has(.side-panel-document-viewer) {
     opacity: 0.6;
   }
 }
+
 /*
  AI Assistant Toggle Animations */
 @keyframes ai-button-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
   }
+
   50% {
     box-shadow: 0 15px 35px rgba(139, 92, 246, 0.5);
   }
@@ -1887,6 +2099,7 @@ body:has(.side-panel-document-viewer) {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   100% {
     max-height: 500px;
     opacity: 1;
@@ -1900,6 +2113,7 @@ body:has(.side-panel-document-viewer) {
     opacity: 1;
     transform: translateY(0);
   }
+
   100% {
     max-height: 0;
     opacity: 0;
@@ -1908,10 +2122,13 @@ body:has(.side-panel-document-viewer) {
 }
 
 @keyframes ai-glow-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.3;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.6;
     transform: scale(1.1);
@@ -1919,22 +2136,29 @@ body:has(.side-panel-document-viewer) {
 }
 
 @keyframes ai-icon-bounce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg);
   }
+
   25% {
     transform: translateY(-5px) rotate(5deg);
   }
+
   75% {
     transform: translateY(-3px) rotate(-5deg);
   }
 }
 
 @keyframes ai-sparkle {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0;
     transform: scale(0) rotate(0deg);
   }
+
   50% {
     opacity: 1;
     transform: scale(1) rotate(180deg);
@@ -1968,8 +2192,8 @@ body:has(.side-panel-document-viewer) {
 /* Smooth height transition for collapsible sections */
 .transition-max-height {
   transition: max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -1979,8 +2203,10 @@ body:has(.side-panel-document-viewer) {
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 /* Prevent flash of content on initial load - Critical CSS */
@@ -1998,6 +2224,7 @@ body:has(.side-panel-document-viewer) {
     opacity: 0;
     transform: translateY(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -2014,6 +2241,7 @@ body:has(.side-panel-document-viewer) {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -2051,7 +2279,7 @@ body {
   .page-transition-wrapper {
     animation: none;
   }
-  
+
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
@@ -2093,5 +2321,28 @@ body {
   background: #555;
 }
 
+/* Fo
+rce scroll reset when document panel opens */
+body:has(.side-panel-document-viewer) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+}
+/* 
+Slide-up animation for bottom notifications */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 
-
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
