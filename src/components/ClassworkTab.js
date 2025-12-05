@@ -767,16 +767,31 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
   );
 });
 
-const ClassworkTab = ({ courseDetails, isInstructor, onOpenContent, onClassworkCreated }) => {
+const ClassworkTab = ({ 
+  courseDetails, 
+  isInstructor, 
+  onOpenContent, 
+  onClassworkCreated,
+  // Props from parent for create classwork panel
+  isCreateClassworkModalOpen,
+  setIsCreateClassworkModalOpen,
+  editingClasswork,
+  setEditingClasswork,
+  classworkType,
+  setClassworkType,
+  compactMode = false
+}) => {
   const [assignments, setAssignments] = useState([]);
   const [forms, setForms] = useState([]);
   const [submissions, setSubmissions] = useState([]);
-  const [isCreateClassworkModalOpen, setIsCreateClassworkModalOpen] = useState(false);
+  // Removed local state - now using props from parent
+  // const [isCreateClassworkModalOpen, setIsCreateClassworkModalOpen] = useState(false);
   // Removed form builder modal state - now using full-page editor
   const [isClassworkMenuOpen, setIsClassworkMenuOpen] = useState(false);
-  const [editingClasswork, setEditingClasswork] = useState(null);
+  // Removed local state - now using props from parent
+  // const [editingClasswork, setEditingClasswork] = useState(null);
   const [editingForm, setEditingForm] = useState(null);
-  const [classworkType, setClassworkType] = useState('assignment');
+  // const [classworkType, setClassworkType] = useState('assignment');
   const [isSubmitAssignmentModalOpen, setIsSubmitAssignmentModalOpen] = useState(false);
   const [submittingAssignmentId, setSubmittingAssignmentId] = useState(null);
   const [isCreatingForm, setIsCreatingForm] = useState(false);

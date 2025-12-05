@@ -2346,3 +2346,19 @@ Slide-up animation for bottom notifications */
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+/* Slide-in-right animation for side panels */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}

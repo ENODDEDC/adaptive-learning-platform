@@ -63,6 +63,11 @@ const CourseDetailPage = ({
   const [documentPanelOpen, setDocumentPanelOpen] = useState(false);
   const [sidePanelDocument, setSidePanelDocument] = useState(null);
 
+  // Create Classwork panel state
+  const [isCreateClassworkModalOpen, setIsCreateClassworkModalOpen] = useState(false);
+  const [editingClasswork, setEditingClasswork] = useState(null);
+  const [classworkType, setClassworkType] = useState('assignment');
+
   // Auto-collapse course sidebar when document panel opens
   useEffect(() => {
     if (documentPanelOpen) {
@@ -744,17 +749,8 @@ const CourseDetailPage = ({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg animate-subtlePulse">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-blue-700">{teachers.length} Teacher{teachers.length === 1 ? '' : 's'}</span>
-                  </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg animate-subtlePulse" style={{ animationDelay: '0.2s' }}>
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-green-700">{students.length} Student{students.length === 1 ? '' : 's'}</span>
-                  </div>
-
-                  {/* Course Access Code - Moved from sidebar */}
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg animate-shimmer" style={{ animationDelay: '0.4s' }}>
+                  {/* Course Access Code */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg animate-shimmer">
                     <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                     </svg>
@@ -881,15 +877,53 @@ const CourseDetailPage = ({
             </div>
           )}
 
+          {/* Classwork Sidebar - Shows when create classwork panel is open */}
+          {isCreateClassworkModalOpen && (
+            <div className="w-[60%] bg-white border border-gray-200/60 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-md">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <h2 className="text-lg font-semibold text-gray-900">Activities</h2>
+                </div>
+                <div className="max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden">
+                  <ClassworkTab
+                    courseDetails={courseDetails}
+                    isInstructor={isInstructor}
+                    onOpenContent={(content) => {
+                      try {
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new Event('collapseSidebar'));
+                        }
+                      } catch (error) {
+                        console.log('Error dispatching event:', error);
+                      }
+                      setTimeout(() => setSelectedContent(content), 180);
+                    }}
+                    onClassworkCreated={handleClassworkCreated}
+                    isCreateClassworkModalOpen={isCreateClassworkModalOpen}
+                    setIsCreateClassworkModalOpen={setIsCreateClassworkModalOpen}
+                    editingClasswork={editingClasswork}
+                    setEditingClasswork={setEditingClasswork}
+                    classworkType={classworkType}
+                    setClassworkType={setClassworkType}
+                    compactMode={true}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
 
-          {/* Main Content Area - Enhanced Layout - Hidden when document panel is open */}
-          {!documentPanelOpen && (
+
+          {/* Main Content Area - Enhanced Layout - Hidden when document panel or create classwork panel is open */}
+          {!documentPanelOpen && !isCreateClassworkModalOpen && (
             <div className="flex-1 space-y-8">
               {/* Hidden button to open content viewer from custom events */}
               <button id="__openContentViewerBtn" type="button" className="hidden" />
-              {/* Enhanced Navigation Tabs - Hidden when document panel is open */}
-              {!documentPanelOpen && (
+              {/* Enhanced Navigation Tabs - Hidden when document panel or create classwork panel is open */}
+              {!documentPanelOpen && !isCreateClassworkModalOpen && (
                 <div className="flex justify-between mb-10 overflow-hidden transition-shadow duration-200 bg-white border shadow-sm border-gray-200/60 rounded-xl hover:shadow-md">
                   <button
                     className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'stream'
@@ -1017,6 +1051,12 @@ const CourseDetailPage = ({
                     setTimeout(() => setSelectedContent(content), 180);
                   }}
                   onClassworkCreated={handleClassworkCreated}
+                  isCreateClassworkModalOpen={isCreateClassworkModalOpen}
+                  setIsCreateClassworkModalOpen={setIsCreateClassworkModalOpen}
+                  editingClasswork={editingClasswork}
+                  setEditingClasswork={setEditingClasswork}
+                  classworkType={classworkType}
+                  setClassworkType={setClassworkType}
                 />
               )}
               {activeTab === 'people' && (
@@ -1362,8 +1402,8 @@ const CourseDetailPage = ({
             </div>
           )}
 
-          {/* Right Sidebar - Upcoming Tasks - Hidden when document panel is open */}
-          {!documentPanelOpen && (
+          {/* Right Sidebar - Upcoming Tasks - Hidden when document panel or create classwork panel is open */}
+          {!documentPanelOpen && !isCreateClassworkModalOpen && (
             <div className={`bg-white border border-gray-200/60 rounded-xl shadow-sm min-w-[280px] max-w-[320px] w-full h-fit sticky top-6 overflow-hidden transition-all duration-300 hover:shadow-md ${upcomingTasksExpanded ? 'opacity-100 max-h-screen' : 'opacity-60 max-h-16 hover:opacity-100'
               }`}>
               <div className="px-5 py-4 border-b border-gray-200/60 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
