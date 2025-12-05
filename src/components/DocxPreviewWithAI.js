@@ -1522,8 +1522,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                     disabled={isExtractingContent}
                     onMouseEnter={() => setShowTooltip('Visual Learning')}
                     onMouseLeave={() => setShowTooltip(null)}
-                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Visual Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
-                      }`}
+                    className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm"
                   >
                     {isExtractingContent ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1533,13 +1532,6 @@ Reflective Learning Processor works best with instructional content, lessons, or
                       </svg>
                     )}
                     <span className="hidden sm:inline">Visual</span>
-
-                    {/* Recommended Badge */}
-                    {isRecommended('Visual Learning') && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full border-2 border-white shadow-lg">
-                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full animate-pulse opacity-75"></div>
-                      </div>
-                    )}
                   </button>
 
                   {/* Quick Preview Tooltip */}
@@ -1553,13 +1545,6 @@ Reflective Learning Processor works best with instructional content, lessons, or
                           <div className="text-xs text-gray-500">
                             <strong>Best for:</strong> {tooltips['Visual Learning'].bestFor}
                           </div>
-                          {isRecommended('Visual Learning') && (
-                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                              <div className="text-xs text-yellow-800">
-                                <strong>🎯 Why recommended:</strong> {getRecommendationReason('Visual Learning')}
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
