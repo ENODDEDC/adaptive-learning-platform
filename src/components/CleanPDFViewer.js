@@ -98,6 +98,11 @@ const CleanPDFViewer = ({
   const [showPersonalizationBanner, setShowPersonalizationBanner] = useState(true);
   const [showMoreModes, setShowMoreModes] = useState(false);
 
+  // AI Health Check state
+  const [isAIAvailable, setIsAIAvailable] = useState(true);
+  const [aiHealthError, setAiHealthError] = useState(null);
+  const [isCheckingAIHealth, setIsCheckingAIHealth] = useState(true);
+
   // Recommendation system state
   const [recommendations, setRecommendations] = useState([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
@@ -154,6 +159,37 @@ const CleanPDFViewer = ({
   const recommendedButtons = allModes.filter(m => recommendedModeNames.includes(m.name));
   const otherButtons = allModes.filter(m => !recommendedModeNames.includes(m.name));
 
+  // Check AI Health on component mount
+  useEffect(() => {
+    const checkAIHealth = async () => {
+      try {
+        setIsCheckingAIHealth(true);
+        console.log('🏥 [PDF Viewer] Checking AI service health...');
+        
+        const response = await fetch('/api/ai-health-check');
+        const data = await response.json();
+        
+        if (data.available) {
+          console.log('✅ [PDF Viewer] AI service is available and working');
+          setIsAIAvailable(true);
+          setAiHealthError(null);
+        } else {
+          console.warn('⚠️ [PDF Viewer] AI service is unavailable:', data.error);
+          setIsAIAvailable(false);
+          setAiHealthError(data.error);
+        }
+      } catch (error) {
+        console.error('❌ [PDF Viewer] Failed to check AI health:', error);
+        setIsAIAvailable(false);
+        setAiHealthError('Unable to connect to AI service');
+      } finally {
+        setIsCheckingAIHealth(false);
+      }
+    };
+
+    checkAIHealth();
+  }, []);
+
   // Render a single mode button
   const renderModeButton = (mode, isRecommended = false) => {
     const tooltipKey = mode.name === 'Step-by-Step' ? 'Sequential Learning' :
@@ -168,15 +204,18 @@ const CleanPDFViewer = ({
       <div key={mode.name} className="relative group">
         <button
           onClick={mode.handler}
-          disabled={mode.loading}
+          disabled={mode.loading || !isAIAvailable}
+          title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
           onMouseEnter={() => {
-            const tooltip = isRecommended 
+            const tooltip = !isAIAvailable
+              ? `⚠️ AI Unavailable: ${aiHealthError}`
+              : isRecommended 
               ? '🎯 ML Personalized: This mode matches your learning style'
               : tooltipData[tooltipKey]?.description || mode.name;
             setShowTooltip({ mode: mode.name, content: tooltip });
           }}
           onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-          className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r ${mode.color} text-white rounded-lg hover:opacity-90 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended ? 'ring-2 ring-green-500 ring-offset-2' : ''}`}
+          className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r ${mode.color} text-white rounded-lg hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale text-sm ${isRecommended ? 'ring-2 ring-green-500 ring-offset-2' : ''}`}
         >
           {mode.loading ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -508,7 +547,9 @@ const CleanPDFViewer = ({
                   <div className="relative">
                     <button
                       onClick={() => setShowMoreModes(!showMoreModes)}
-                      className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                      disabled={!isAIAvailable}
+                      title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : 'More AI modes'}
+                      className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
                     >
                       <span>More</span>
                       <ChevronDownIcon className={`w-4 h-4 transition-transform ${showMoreModes ? 'rotate-180' : ''}`} />
@@ -523,8 +564,9 @@ const CleanPDFViewer = ({
                               mode.handler();
                               setShowMoreModes(false);
                             }}
-                            disabled={mode.loading}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                            disabled={mode.loading || !isAIAvailable}
+                            title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
+                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
                           >
                             <span className="text-lg">{tooltipData[mode.name === 'Step-by-Step' ? 'Sequential Learning' : mode.name === 'Big Picture' ? 'Global Learning' : mode.name === 'Hands-On' ? 'Hands-On Lab' : mode.name === 'Theory' ? 'Concept Constellation' : mode.name === 'Practice' ? 'Active Learning Hub' : mode.name === 'Reflect' ? 'Reflective Learning' : mode.name]?.icon || '📚'}</span>
                             <span className="font-medium">{mode.name}</span>

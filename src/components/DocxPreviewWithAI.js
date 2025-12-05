@@ -112,6 +112,11 @@ const DocxPreviewWithAI = ({
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [showTooltip, setShowTooltip] = useState(null);
 
+  // AI Health Check state
+  const [isAIAvailable, setIsAIAvailable] = useState(true); // Assume available until proven otherwise
+  const [aiHealthError, setAiHealthError] = useState(null);
+  const [isCheckingAIHealth, setIsCheckingAIHealth] = useState(true);
+
   // ML Recommendations state for auto-load
   const [topRecommendation, setTopRecommendation] = useState(null);
   const [allRecommendations, setAllRecommendations] = useState([]);
@@ -157,6 +162,37 @@ const DocxPreviewWithAI = ({
 
     return () => clearTimeout(timer);
   }, [content?.filePath, content?.cloudStorage?.key, content?._id]);
+
+  // Check AI Health on component mount
+  useEffect(() => {
+    const checkAIHealth = async () => {
+      try {
+        setIsCheckingAIHealth(true);
+        console.log('🏥 Checking AI service health...');
+        
+        const response = await fetch('/api/ai-health-check');
+        const data = await response.json();
+        
+        if (data.available) {
+          console.log('✅ AI service is available and working');
+          setIsAIAvailable(true);
+          setAiHealthError(null);
+        } else {
+          console.warn('⚠️ AI service is unavailable:', data.error);
+          setIsAIAvailable(false);
+          setAiHealthError(data.error);
+        }
+      } catch (error) {
+        console.error('❌ Failed to check AI health:', error);
+        setIsAIAvailable(false);
+        setAiHealthError('Unable to connect to AI service');
+      } finally {
+        setIsCheckingAIHealth(false);
+      }
+    };
+
+    checkAIHealth();
+  }, []);
 
   // Set data attribute for conditional styling based on ML recommendations
   useEffect(() => {
@@ -1463,6 +1499,29 @@ Reflective Learning Processor works best with instructional content, lessons, or
               <div className="flex items-center space-x-2">
                 <AcademicCapIcon className="w-6 h-6 text-indigo-600" />
                 <span className="text-sm font-medium text-indigo-800">AI Learning Modes</span>
+                {/* AI Status Indicator */}
+                {isCheckingAIHealth && (
+                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                    Checking AI...
+                  </span>
+                )}
+                {!isCheckingAIHealth && !isAIAvailable && (
+                  <span className="text-xs text-red-600 flex items-center gap-1 bg-red-50 px-2 py-1 rounded-full">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    AI Unavailable
+                  </span>
+                )}
+                {!isCheckingAIHealth && isAIAvailable && (
+                  <span className="text-xs text-green-600 flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    AI Ready
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center space-x-2">
@@ -1470,10 +1529,11 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 <div className="relative group">
                   <button
                     onClick={handleAITutorClick}
-                    disabled={isAINarratorLoading}
+                    disabled={isAINarratorLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('AI Narrator')}
                     onMouseLeave={() => setShowTooltip(null)}
-                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('AI Narrator') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
+                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale text-sm ${isRecommended('AI Narrator') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
                       }`}
                   >
                     {isAINarratorLoading ? (
@@ -1519,10 +1579,11 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 <div className="relative group">
                   <button
                     onClick={handleVisualContentClick}
-                    disabled={isExtractingContent}
+                    disabled={isExtractingContent || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Visual Learning')}
                     onMouseLeave={() => setShowTooltip(null)}
-                    className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 text-sm"
+                    title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
+                    className="relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale text-sm"
                   >
                     {isExtractingContent ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1555,10 +1616,11 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 <div className="relative group">
                   <button
                     onClick={handleSequentialLearningClick}
-                    disabled={isSequentialLearningLoading}
+                    disabled={isSequentialLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Sequential Learning')}
                     onMouseLeave={() => setShowTooltip(null)}
-                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Sequential Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
+                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale text-sm ${isRecommended('Sequential Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
                       }`}
                   >
                     {isSequentialLearningLoading ? (
@@ -1606,10 +1668,11 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 <div className="relative group">
                   <button
                     onClick={handleGlobalLearningClick}
-                    disabled={isGlobalLearningLoading}
+                    disabled={isGlobalLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Global Learning')}
                     onMouseLeave={() => setShowTooltip(null)}
-                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Global Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
+                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale text-sm ${isRecommended('Global Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
                       }`}
                   >
                     {isGlobalLearningLoading ? (
@@ -1657,10 +1720,11 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 <div className="relative group">
                   <button
                     onClick={handleSensingLearningClick}
-                    disabled={isSensingLearningLoading}
+                    disabled={isSensingLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Hands-On Lab')}
                     onMouseLeave={() => setShowTooltip(null)}
-                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Hands-On Lab') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
+                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale text-sm ${isRecommended('Hands-On Lab') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
                       }`}
                   >
                     {isSensingLearningLoading ? (
@@ -1708,10 +1772,11 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 <div className="relative group">
                   <button
                     onClick={handleIntuitiveLearningClick}
-                    disabled={isIntuitiveLearningLoading}
+                    disabled={isIntuitiveLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Concept Constellation')}
                     onMouseLeave={() => setShowTooltip(null)}
-                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Concept Constellation') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
+                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale text-sm ${isRecommended('Concept Constellation') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
                       }`}
                   >
                     {isIntuitiveLearningLoading ? (
@@ -1757,10 +1822,11 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 <div className="relative group">
                   <button
                     onClick={handleActiveLearningClick}
-                    disabled={isActiveLearningLoading}
+                    disabled={isActiveLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Active Learning Hub')}
                     onMouseLeave={() => setShowTooltip(null)}
-                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Active Learning Hub') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
+                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale text-sm ${isRecommended('Active Learning Hub') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
                       }`}
                   >
                     {isActiveLearningLoading ? (
@@ -1808,10 +1874,11 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 <div className="relative group">
                   <button
                     onClick={handleReflectiveLearningClick}
-                    disabled={isReflectiveLearningLoading}
+                    disabled={isReflectiveLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Reflective Learning')}
                     onMouseLeave={() => setShowTooltip(null)}
-                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all duration-200 disabled:opacity-50 text-sm ${isRecommended('Reflective Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
+                    title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
+                    className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg hover:from-pink-600 hover:to-rose-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale text-sm ${isRecommended('Reflective Learning') ? 'ring-2 ring-yellow-400 ring-offset-2' : ''
                       }`}
                   >
                     {isReflectiveLearningLoading ? (
