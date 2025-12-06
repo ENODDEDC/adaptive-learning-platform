@@ -658,20 +658,48 @@ const CourseDetailPage = ({
     };
   }, [getAssignmentSubmissions, students.length]);
 
-  // Fetch scores data when Scores tab becomes active (instructors) or when course loads (students for their own grades)
-  useEffect(() => {
+  // Fetch submissions data
+  const fetchSubmissionsData = useCallback(async () => {
     if (!courseDetails || scoresLoading) return;
     
-    if (isInstructor && activeTab === 'marks' && submissions.length === 0) {
+    try {
+      setScoresLoading(true);
+      console.log('🔍 SCORES: Fetching submissions for course:', courseDetails._id);
+      
+      const res = await fetch(`/api/courses/${courseDetails._id}/submissions`);
+      
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      const fetchedSubmissions = data.submissions || [];
+      console.log('🔍 SCORES: Fetched submissions:', fetchedSubmissions.length, 'items');
+      setSubmissions(fetchedSubmissions);
+      setScoresError('');
+    } catch (err) {
+      console.error('🔍 SCORES: Failed to fetch submissions:', err);
+      setScoresError(err.message);
+      setSubmissions([]);
+    } finally {
+      setScoresLoading(false);
+    }
+  }, [courseDetails, scoresLoading]);
+
+  // Fetch scores data when Scores tab becomes active (instructors) or when course loads (students for their own grades)
+  useEffect(() => {
+    if (!courseDetails) return;
+    
+    if (isInstructor && activeTab === 'marks' && submissions.length === 0 && !scoresLoading) {
       // Instructors fetch when Scores tab is active
       console.log('🔍 SCORES: Scores tab activated, fetching data');
-      fetchScoresData();
-    } else if (!isInstructor && user && (activeTab === 'classwork' || activeTab === 'stream') && submissions.length === 0) {
+      fetchSubmissionsData();
+    } else if (!isInstructor && user && (activeTab === 'classwork' || activeTab === 'stream') && submissions.length === 0 && !scoresLoading) {
       // Students fetch their own submissions for activity cards when viewing classwork or stream
       console.log('🔍 SCORES: Fetching student submissions for activity status');
-      fetchScoresData();
+      fetchSubmissionsData();
     }
-  }, [activeTab, courseDetails, submissions.length, scoresLoading, fetchScoresData, isInstructor, user]);
+  }, [activeTab, courseDetails, submissions.length, scoresLoading, fetchSubmissionsData, isInstructor, user]);
 
   // Filter and sort submissions
   useEffect(() => {
