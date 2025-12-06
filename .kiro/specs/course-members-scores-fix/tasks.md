@@ -80,6 +80,8 @@
   
   - [x] 5.2 Replace placeholder table rows with real submission data
 
+
+
     - Map over filteredSubmissions to render rows
     - Display student name from studentId.name
     - Display assignment title from assignmentId.title

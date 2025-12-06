@@ -658,13 +658,20 @@ const CourseDetailPage = ({
     };
   }, [getAssignmentSubmissions, students.length]);
 
-  // Fetch scores data when Scores tab becomes active
+  // Fetch scores data when Scores tab becomes active (instructors) or when course loads (students for their own grades)
   useEffect(() => {
-    if (activeTab === 'marks' && courseDetails && submissions.length === 0 && !scoresLoading) {
+    if (!courseDetails || scoresLoading) return;
+    
+    if (isInstructor && activeTab === 'marks' && submissions.length === 0) {
+      // Instructors fetch when Scores tab is active
       console.log('🔍 SCORES: Scores tab activated, fetching data');
       fetchScoresData();
+    } else if (!isInstructor && user && (activeTab === 'classwork' || activeTab === 'stream') && submissions.length === 0) {
+      // Students fetch their own submissions for activity cards when viewing classwork or stream
+      console.log('🔍 SCORES: Fetching student submissions for activity status');
+      fetchScoresData();
     }
-  }, [activeTab, courseDetails, submissions.length, scoresLoading, fetchScoresData]);
+  }, [activeTab, courseDetails, submissions.length, scoresLoading, fetchScoresData, isInstructor, user]);
 
   // Filter and sort submissions
   useEffect(() => {
@@ -1180,23 +1187,25 @@ const CourseDetailPage = ({
                       <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/30 rounded-full"></div>
                     )}
                   </button>
-                  <button
-                    className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'marks'
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
-                      : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
-                      }`}
-                    onClick={() => setActiveTab('marks')}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      Scores
-                    </div>
-                    {activeTab === 'marks' && (
-                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/30 rounded-full"></div>
-                    )}
-                  </button>
+                  {isInstructor && (
+                    <button
+                      className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'marks'
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
+                        : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
+                        }`}
+                      onClick={() => setActiveTab('marks')}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Scores
+                      </div>
+                      {activeTab === 'marks' && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/30 rounded-full"></div>
+                      )}
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -1238,6 +1247,8 @@ const CourseDetailPage = ({
                 <ClassworkTab
                   courseDetails={courseDetails}
                   isInstructor={isInstructor}
+                  submissions={submissions}
+                  currentUser={user}
                   onOpenContent={(content) => {
                     try {
                       console.log('🔍 WINDOW: Dispatching collapseSidebar event for classwork');
@@ -1266,43 +1277,41 @@ const CourseDetailPage = ({
                       <p className="mt-1 text-sm text-gray-500">{teachers.length + students.length} total members</p>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          placeholder="Search people..."
-                          value={searchQuery}
-                          onChange={handleSearchChange}
-                          className="w-64 py-2 pr-4 text-sm border border-gray-300 rounded-lg pl-9 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                        />
-                        <svg className="absolute w-4 h-4 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                      </div>
+                    {isInstructor && (
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search people..."
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            className="w-64 py-2 pr-4 text-sm border border-gray-300 rounded-lg pl-9 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          />
+                          <svg className="absolute w-4 h-4 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
 
-                      {isInstructor && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setInviteRole('student');
-                              setInviteModalOpen(true);
-                            }}
-                            className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
-                          >
-                            Invite Student
-                          </button>
-                          <button
-                            onClick={() => {
-                              setInviteRole('coTeacher');
-                              setInviteModalOpen(true);
-                            }}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                          >
-                            Invite Co-teacher
-                          </button>
-                        </>
-                      )}
-                    </div>
+                        <button
+                          onClick={() => {
+                            setInviteRole('student');
+                            setInviteModalOpen(true);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
+                        >
+                          Invite Student
+                        </button>
+                        <button
+                          onClick={() => {
+                            setInviteRole('coTeacher');
+                            setInviteModalOpen(true);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                          Invite Co-teacher
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Members Table */}
@@ -1329,7 +1338,7 @@ const CourseDetailPage = ({
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {/* Teachers */}
-                        {filteredMembers.teachers.map((teacher) => (
+                        {(isInstructor ? filteredMembers.teachers : teachers).map((teacher) => (
                           <tr key={teacher._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
@@ -1397,7 +1406,7 @@ const CourseDetailPage = ({
                         ))}
 
                         {/* Students */}
-                        {filteredMembers.students.map((student) => (
+                        {(isInstructor ? filteredMembers.students : students).map((student) => (
                           <tr key={student._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
@@ -1458,7 +1467,7 @@ const CourseDetailPage = ({
                         ))}
 
                         {/* Empty State */}
-                        {filteredMembers.teachers.length === 0 && filteredMembers.students.length === 0 && (
+                        {(isInstructor ? (filteredMembers.teachers.length === 0 && filteredMembers.students.length === 0) : (teachers.length === 0 && students.length === 0)) && (
                           <tr>
                             <td colSpan={5} className="px-6 py-12 text-center">
                               <div className="flex flex-col items-center">
@@ -1499,7 +1508,7 @@ const CourseDetailPage = ({
                 </div>
               )}
 
-              {activeTab === 'marks' && !selectedAssignment && (
+              {activeTab === 'marks' && isInstructor && !selectedAssignment && (
                 <div className="p-8 transition-all duration-200 bg-white border shadow-sm border-gray-200/60 sm:p-10 rounded-2xl hover:shadow-lg">
                   <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -1607,7 +1616,7 @@ const CourseDetailPage = ({
                 </div>
               )}
 
-              {activeTab === 'marks' && selectedAssignment && (
+              {activeTab === 'marks' && isInstructor && selectedAssignment && (
                 <div className="p-8 transition-all duration-200 bg-white border shadow-sm border-gray-200/60 sm:p-10 rounded-2xl hover:shadow-lg">
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-4">

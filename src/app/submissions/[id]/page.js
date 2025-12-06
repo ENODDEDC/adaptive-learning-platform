@@ -14,6 +14,8 @@ const SubmissionGradingPage = ({ params }) => {
   const [grade, setGrade] = useState('');
   const [feedback, setFeedback] = useState('');
   const [saving, setSaving] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isInstructor, setIsInstructor] = useState(false);
 
   const fetchSubmission = useCallback(async () => {
     setLoading(true);
@@ -39,8 +41,36 @@ const SubmissionGradingPage = ({ params }) => {
   }, [id]);
 
   useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/profile');
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
+      }
+    };
+    
+    fetchUser();
     fetchSubmission();
   }, [fetchSubmission]);
+
+  // Check if user is instructor
+  useEffect(() => {
+    if (submission && user) {
+      // Check if user is the course creator or co-teacher
+      const courseCreatorId = submission.assignmentId?.courseId?.createdBy?._id || submission.assignmentId?.courseId?.createdBy;
+      const currentUserId = user._id || user.id;
+      const coTeachers = submission.assignmentId?.courseId?.coTeachers || [];
+      
+      const userIsInstructor = courseCreatorId === currentUserId || 
+        coTeachers.some(t => (t._id || t) === currentUserId);
+      
+      setIsInstructor(userIsInstructor);
+    }
+  }, [submission, user]);
 
   const handleSaveGrade = async () => {
     if (!grade || isNaN(grade) || grade < 0 || grade > 100) {
@@ -210,10 +240,12 @@ const SubmissionGradingPage = ({ params }) => {
             </div>
           </div>
 
-          {/* Grading Panel */}
+          {/* Grading Panel - Only for Instructors */}
           <div className="lg:col-span-1">
             <div className="sticky p-6 bg-white border border-gray-200 top-8 rounded-xl">
-              <h2 className="mb-4 text-lg font-semibold text-gray-900">Grading</h2>
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">
+                {submission.studentId?._id === user?._id ? 'Your Grade' : 'Grading'}
+              </h2>
               
               {/* Current Status */}
               <div className="mb-4">
@@ -229,44 +261,54 @@ const SubmissionGradingPage = ({ params }) => {
                 )}
               </div>
 
-              {/* Grade Input */}
-              <div className="mb-4">
-                <label className="block mb-2 text-sm font-medium text-gray-700">
-                  Grade (0-100)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={grade}
-                  onChange={(e) => setGrade(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter grade"
-                />
-              </div>
+              {/* Grade Input - Only for Instructors */}
+              {isInstructor ? (
+                <>
+                  <div className="mb-4">
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Grade (0-100)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={grade}
+                      onChange={(e) => setGrade(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter grade"
+                    />
+                  </div>
 
-              {/* Feedback */}
-              <div className="mb-4">
-                <label className="block mb-2 text-sm font-medium text-gray-700">
-                  Feedback
-                </label>
-                <textarea
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Provide feedback to the student..."
-                />
-              </div>
+                  {/* Feedback */}
+                  <div className="mb-4">
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Feedback
+                    </label>
+                    <textarea
+                      value={feedback}
+                      onChange={(e) => setFeedback(e.target.value)}
+                      rows={6}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Provide feedback to the student..."
+                    />
+                  </div>
 
-              {/* Save Button */}
-              <button
-                onClick={handleSaveGrade}
-                disabled={saving}
-                className="w-full px-4 py-2 text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {saving ? 'Saving...' : 'Save Grade'}
-              </button>
+                  {/* Save Button */}
+                  <button
+                    onClick={handleSaveGrade}
+                    disabled={saving}
+                    className="w-full px-4 py-2 text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {saving ? 'Saving...' : 'Save Grade'}
+                  </button>
+                </>
+              ) : (
+                <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
+                  <p className="text-sm text-blue-800">
+                    You can view your submission and grade here. Only instructors can modify grades.
+                  </p>
+                </div>
+              )}
 
               {/* Current Grade Display */}
               {submission.grade !== null && submission.grade !== undefined && (
@@ -285,6 +327,14 @@ const SubmissionGradingPage = ({ params }) => {
                       Graded on {format(new Date(submission.gradedAt), 'MMM d, yyyy')}
                     </p>
                   )}
+                </div>
+              )}
+
+              {/* Feedback Display for Students */}
+              {!isInstructor && submission.feedback && (
+                <div className="p-4 mt-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <p className="mb-2 text-sm font-medium text-gray-700">Teacher Feedback</p>
+                  <p className="text-sm text-gray-800 whitespace-pre-wrap">{submission.feedback}</p>
                 </div>
               )}
             </div>
