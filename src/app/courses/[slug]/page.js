@@ -82,6 +82,25 @@ const CourseDetailPage = ({
     }
   }, [documentPanelOpen]);
 
+  // Scores Tab State
+  const [submissions, setSubmissions] = useState([]);
+  const [filteredSubmissions, setFilteredSubmissions] = useState([]);
+  const [scoresLoading, setScoresLoading] = useState(false);
+  const [scoresError, setScoresError] = useState('');
+  const [assignmentFilter, setAssignmentFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('newest');
+  const [statistics, setStatistics] = useState({
+    averageGrade: null,
+    submissionRate: null
+  });
+
+  // Members Tab State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredMembers, setFilteredMembers] = useState({ teachers: [], students: [] });
+
+  // Selected assignment for viewing submissions
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
+
   // Invite modal states
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [inviteRole, setInviteRole] = useState(''); // 'student' or 'coTeacher'
@@ -487,6 +506,225 @@ const CourseDetailPage = ({
       console.error('Failed to fetch people:', err);
     }
   }, [courseDetails]);
+
+  const fetchScoresData = useCallback(async () => {
+    if (!courseDetails?._id) return;
+    
+    console.log('🔍 SCORES: Fetching submissions for course:', courseDetails._id);
+    setScoresLoading(true);
+    setScoresError('');
+    
+    try {
+      const res = await fetch(`/api/courses/${courseDetails._id}/submissions`);
+      
+      console.log('🔍 SCORES: API response status:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log('🔍 SCORES: Received submissions:', data.submissions?.length || 0);
+      setSubmissions(data.submissions || []);
+      calculateStatistics(data.submissions || []);
+    } catch (err) {
+      console.error('🔍 SCORES: Failed to fetch scores:', err);
+      setScoresError(err.message);
+    } finally {
+      setScoresLoading(false);
+    }
+  }, [courseDetails]);
+
+  const calculateStatistics = useCallback((submissionsData) => {
+    console.log('🔍 SCORES: Calculating statistics for', submissionsData.length, 'submissions');
+    
+    // Calculate average grade
+    const gradedSubmissions = submissionsData.filter(s => s.grade !== null && s.grade !== undefined);
+    const averageGrade = gradedSubmissions.length > 0
+      ? (gradedSubmissions.reduce((sum, s) => sum + s.grade, 0) / gradedSubmissions.length).toFixed(1)
+      : null;
+    
+    console.log('🔍 SCORES: Graded submissions:', gradedSubmissions.length, 'Average grade:', averageGrade);
+    
+    // Calculate submission rate
+    const submittedCount = submissionsData.filter(s => s.status === 'submitted').length;
+    const totalCount = submissionsData.length;
+    const submissionRate = totalCount > 0
+      ? Math.round((submittedCount / totalCount) * 100)
+      : null;
+    
+    console.log('🔍 SCORES: Submitted:', submittedCount, 'Total:', totalCount, 'Rate:', submissionRate + '%');
+    
+    setStatistics({ averageGrade, submissionRate });
+  }, []);
+
+  const handleRetryScores = useCallback(() => {
+    console.log('🔍 SCORES: Retrying to fetch scores data');
+    fetchScoresData();
+  }, [fetchScoresData]);
+
+  const handleAssignmentFilterChange = useCallback((e) => {
+    const value = e.target.value;
+    console.log('🔍 SCORES: Assignment filter changed to:', value);
+    setAssignmentFilter(value);
+  }, []);
+
+  const handleSortOrderChange = useCallback((e) => {
+    const value = e.target.value;
+    console.log('🔍 SCORES: Sort order changed to:', value);
+    setSortOrder(value);
+  }, []);
+
+  const handleSearchChange = useCallback((e) => {
+    const value = e.target.value;
+    console.log('🔍 MEMBERS: Search query changed to:', value);
+    setSearchQuery(value);
+  }, []);
+
+  const handleAssignmentClick = useCallback((assignment) => {
+    console.log('🔍 SCORES: Assignment clicked:', assignment.title);
+    setSelectedAssignment(assignment);
+  }, []);
+
+  const handleBackToAssignments = useCallback(() => {
+    console.log('🔍 SCORES: Going back to assignments list');
+    setSelectedAssignment(null);
+  }, []);
+
+  // Get submissions for selected assignment
+  const getAssignmentSubmissions = useCallback((assignmentId) => {
+    return submissions.filter(s => s.assignmentId?._id === assignmentId);
+  }, [submissions]);
+
+  const handleExportToExcel = useCallback(() => {
+    if (!selectedAssignment) return;
+    
+    const assignmentSubs = getAssignmentSubmissions(selectedAssignment._id);
+    
+    // Create CSV content
+    let csvContent = 'Student Name,Email,Submitted Date,Grade,Status,Feedback\n';
+    
+    assignmentSubs.forEach(submission => {
+      const studentName = submission.studentId?.name || 'Unknown';
+      const email = submission.studentId?.email || '';
+      const submittedDate = submission.submittedAt 
+        ? format(new Date(submission.submittedAt), 'yyyy-MM-dd HH:mm:ss')
+        : 'Not submitted';
+      const grade = submission.grade !== null && submission.grade !== undefined 
+        ? submission.grade 
+        : 'Not graded';
+      const status = submission.status === 'submitted' ? 'Submitted' : 'Draft';
+      const feedback = submission.feedback ? `"${submission.feedback.replace(/"/g, '""')}"` : '';
+      
+      csvContent += `"${studentName}","${email}","${submittedDate}","${grade}","${status}",${feedback}\n`;
+    });
+    
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${selectedAssignment.title}_grades_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('🔍 SCORES: Exported grades to CSV');
+  }, [selectedAssignment, getAssignmentSubmissions]);
+
+  // Calculate assignment statistics
+  const getAssignmentStats = useCallback((assignmentId) => {
+    const assignmentSubs = getAssignmentSubmissions(assignmentId);
+    const gradedSubs = assignmentSubs.filter(s => s.grade !== null && s.grade !== undefined);
+    const submittedSubs = assignmentSubs.filter(s => s.status === 'submitted');
+    
+    const avgGrade = gradedSubs.length > 0
+      ? (gradedSubs.reduce((sum, s) => sum + s.grade, 0) / gradedSubs.length).toFixed(1)
+      : null;
+    
+    const submissionRate = students.length > 0
+      ? Math.round((submittedSubs.length / students.length) * 100)
+      : 0;
+    
+    return {
+      totalSubmissions: assignmentSubs.length,
+      submittedCount: submittedSubs.length,
+      gradedCount: gradedSubs.length,
+      averageGrade: avgGrade,
+      submissionRate
+    };
+  }, [getAssignmentSubmissions, students.length]);
+
+  // Fetch scores data when Scores tab becomes active
+  useEffect(() => {
+    if (activeTab === 'marks' && courseDetails && submissions.length === 0 && !scoresLoading) {
+      console.log('🔍 SCORES: Scores tab activated, fetching data');
+      fetchScoresData();
+    }
+  }, [activeTab, courseDetails, submissions.length, scoresLoading, fetchScoresData]);
+
+  // Filter and sort submissions
+  useEffect(() => {
+    console.log('🔍 SCORES: Filtering and sorting submissions');
+    let filtered = [...submissions];
+    
+    // Apply assignment type filter
+    if (assignmentFilter !== 'all') {
+      filtered = filtered.filter(s => s.assignmentId?.type === assignmentFilter);
+      console.log('🔍 SCORES: Filtered by type', assignmentFilter, ':', filtered.length, 'submissions');
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortOrder) {
+        case 'newest':
+          return new Date(b.submittedAt || b.createdAt) - new Date(a.submittedAt || a.createdAt);
+        case 'oldest':
+          return new Date(a.submittedAt || a.createdAt) - new Date(b.submittedAt || b.createdAt);
+        case 'highest':
+          // Put ungraded at the end
+          if (a.grade === null || a.grade === undefined) return 1;
+          if (b.grade === null || b.grade === undefined) return -1;
+          return b.grade - a.grade;
+        case 'lowest':
+          // Put ungraded at the end
+          if (a.grade === null || a.grade === undefined) return 1;
+          if (b.grade === null || b.grade === undefined) return -1;
+          return a.grade - b.grade;
+        default:
+          return 0;
+      }
+    });
+    
+    console.log('🔍 SCORES: Sorted by', sortOrder, ':', filtered.length, 'submissions');
+    setFilteredSubmissions(filtered);
+  }, [submissions, assignmentFilter, sortOrder]);
+
+  // Filter members by search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredMembers({ teachers, students });
+      return;
+    }
+    
+    const query = searchQuery.toLowerCase();
+    console.log('🔍 MEMBERS: Filtering members by query:', query);
+    
+    const filteredTeachers = teachers.filter(t => 
+      t.name?.toLowerCase().includes(query) || 
+      t.email?.toLowerCase().includes(query)
+    );
+    const filteredStudents = students.filter(s => 
+      s.name?.toLowerCase().includes(query) || 
+      s.email?.toLowerCase().includes(query)
+    );
+    
+    console.log('🔍 MEMBERS: Filtered teachers:', filteredTeachers.length, 'students:', filteredStudents.length);
+    setFilteredMembers({ teachers: filteredTeachers, students: filteredStudents });
+  }, [teachers, students, searchQuery]);
 
 
   const handleInviteUser = useCallback(async (email, role) => {
@@ -1033,6 +1271,8 @@ const CourseDetailPage = ({
                         <input
                           type="text"
                           placeholder="Search people..."
+                          value={searchQuery}
+                          onChange={handleSearchChange}
                           className="w-64 py-2 pr-4 text-sm border border-gray-300 rounded-lg pl-9 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         />
                         <svg className="absolute w-4 h-4 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1089,7 +1329,7 @@ const CourseDetailPage = ({
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {/* Teachers */}
-                        {teachers.map((teacher) => (
+                        {filteredMembers.teachers.map((teacher) => (
                           <tr key={teacher._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
@@ -1157,7 +1397,7 @@ const CourseDetailPage = ({
                         ))}
 
                         {/* Students */}
-                        {students.map((student) => (
+                        {filteredMembers.students.map((student) => (
                           <tr key={student._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
@@ -1218,7 +1458,7 @@ const CourseDetailPage = ({
                         ))}
 
                         {/* Empty State */}
-                        {teachers.length === 0 && students.length === 0 && (
+                        {filteredMembers.teachers.length === 0 && filteredMembers.students.length === 0 && (
                           <tr>
                             <td colSpan={5} className="px-6 py-12 text-center">
                               <div className="flex flex-col items-center">
@@ -1259,54 +1499,281 @@ const CourseDetailPage = ({
                 </div>
               )}
 
-              {activeTab === 'marks' && (
+              {activeTab === 'marks' && !selectedAssignment && (
                 <div className="p-8 transition-all duration-200 bg-white border shadow-sm border-gray-200/60 sm:p-10 rounded-2xl hover:shadow-lg">
                   <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-2xl font-bold text-gray-900">Scores</h2>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">Scores</h2>
+                      <p className="mt-1 text-sm text-gray-500">Select an assignment to view student submissions and grades</p>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <select className="px-3 py-2 text-sm transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:shadow-sm">
-                        <option>All assignments</option>
-                        <option>Quizzes</option>
-                        <option>Materials</option>
+                      <select 
+                        value={assignmentFilter}
+                        onChange={handleAssignmentFilterChange}
+                        className="px-3 py-2 text-sm transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:shadow-sm"
+                      >
+                        <option value="all">All types</option>
+                        <option value="assignment">Assignments</option>
+                        <option value="quiz">Quizzes</option>
+                        <option value="material">Materials</option>
                       </select>
-                      <select className="px-3 py-2 text-sm transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:shadow-sm">
-                        <option>Sort: Newest</option>
-                        <option>Sort: Oldest</option>
-                      </select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2">
-                    <div className="p-4 border border-gray-200 rounded-lg bg-blue-50">
-                      <p className="text-sm text-gray-600">Average Grade</p>
-                      <p className="text-2xl font-bold text-blue-700">—</p>
+
+                  {scoresLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="relative w-16 h-16">
+                        <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-transparent rounded-full border-t-blue-600 animate-spin"></div>
+                      </div>
                     </div>
-                    <div className="p-4 border border-gray-200 rounded-lg bg-green-50">
-                      <p className="text-sm text-gray-600">Submission Rate</p>
-                      <p className="text-2xl font-bold text-green-700">—</p>
+                  ) : scoresError ? (
+                    <div className="py-12 text-center">
+                      <svg className="w-12 h-12 mx-auto mb-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <h3 className="mb-2 text-lg font-medium text-gray-900">Failed to load scores</h3>
+                      <p className="mb-4 text-gray-500">{scoresError}</p>
+                      <button
+                        onClick={handleRetryScores}
+                        className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : assignments.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <h3 className="mb-2 text-lg font-medium text-gray-900">No assignments yet</h3>
+                      <p className="text-gray-500">Create assignments to start tracking student submissions and grades.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {assignments
+                        .filter(a => assignmentFilter === 'all' || a.type === assignmentFilter)
+                        .map((assignment) => {
+                          const stats = getAssignmentStats(assignment._id);
+                          return (
+                            <div
+                              key={assignment._id}
+                              onClick={() => handleAssignmentClick(assignment)}
+                              className="p-6 transition-all duration-200 border border-gray-200 rounded-xl hover:shadow-lg hover:border-blue-300 cursor-pointer bg-gradient-to-r from-white to-gray-50"
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="text-lg font-semibold text-gray-900">{assignment.title}</h3>
+                                    <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${
+                                      assignment.type === 'quiz' ? 'bg-purple-100 text-purple-700' :
+                                      assignment.type === 'material' ? 'bg-blue-100 text-blue-700' :
+                                      'bg-green-100 text-green-700'
+                                    }`}>
+                                      {assignment.type || 'assignment'}
+                                    </span>
+                                  </div>
+                                  {assignment.description && (
+                                    <p className="mb-4 text-sm text-gray-600 line-clamp-2">{assignment.description}</p>
+                                  )}
+                                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                                    <div className="p-3 rounded-lg bg-blue-50">
+                                      <p className="text-xs text-gray-600">Submissions</p>
+                                      <p className="text-lg font-bold text-blue-700">{stats.submittedCount}/{students.length}</p>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-green-50">
+                                      <p className="text-xs text-gray-600">Graded</p>
+                                      <p className="text-lg font-bold text-green-700">{stats.gradedCount}/{stats.submittedCount}</p>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-purple-50">
+                                      <p className="text-xs text-gray-600">Avg Grade</p>
+                                      <p className="text-lg font-bold text-purple-700">{stats.averageGrade ? `${stats.averageGrade}%` : '—'}</p>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-amber-50">
+                                      <p className="text-xs text-gray-600">Rate</p>
+                                      <p className="text-lg font-bold text-amber-700">{stats.submissionRate}%</p>
+                                    </div>
+                                  </div>
+                                </div>
+                                <svg className="w-6 h-6 ml-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'marks' && selectedAssignment && (
+                <div className="p-8 transition-all duration-200 bg-white border shadow-sm border-gray-200/60 sm:p-10 rounded-2xl hover:shadow-lg">
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <button
+                        onClick={handleBackToAssignments}
+                        className="flex items-center gap-2 text-sm font-medium text-blue-600 transition-colors hover:text-blue-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back to Assignments
+                      </button>
+                      <button
+                        onClick={handleExportToExcel}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors bg-green-600 rounded-lg hover:bg-green-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export to Excel
+                      </button>
+                    </div>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900">{selectedAssignment.title}</h2>
+                        <p className="mt-1 text-sm text-gray-500 capitalize">{selectedAssignment.type || 'assignment'}</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="overflow-hidden border border-gray-200 rounded-xl">
-                    <table className="min-w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 font-semibold text-left text-gray-700">Student</th>
-                          <th className="px-4 py-3 font-semibold text-left text-gray-700">Assignment</th>
-                          <th className="px-4 py-3 font-semibold text-left text-gray-700">Score</th>
-                          <th className="px-4 py-3 font-semibold text-left text-gray-700">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-100">
-                        {[1, 2, 3].map((i) => (
-                          <tr key={`sample-row-${i}`} className="hover:bg-gray-50">
-                            <td className="px-4 py-3">User {i}</td>
-                            <td className="px-4 py-3">Sample Assignment {i}</td>
-                            <td className="px-4 py-3 font-medium">—</td>
-                            <td className="px-4 py-3"><span className="px-2 py-0.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">Pending</span></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+
+                  {(() => {
+                    const assignmentSubs = getAssignmentSubmissions(selectedAssignment._id);
+                    const stats = getAssignmentStats(selectedAssignment._id);
+                    
+                    return (
+                      <>
+                        <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-4">
+                          <div className="p-4 border border-gray-200 rounded-lg bg-blue-50">
+                            <p className="text-sm text-gray-600">Submissions</p>
+                            <p className="text-2xl font-bold text-blue-700">{stats.submittedCount}/{students.length}</p>
+                          </div>
+                          <div className="p-4 border border-gray-200 rounded-lg bg-green-50">
+                            <p className="text-sm text-gray-600">Graded</p>
+                            <p className="text-2xl font-bold text-green-700">{stats.gradedCount}</p>
+                          </div>
+                          <div className="p-4 border border-gray-200 rounded-lg bg-purple-50">
+                            <p className="text-sm text-gray-600">Average Grade</p>
+                            <p className="text-2xl font-bold text-purple-700">{stats.averageGrade ? `${stats.averageGrade}%` : '—'}</p>
+                          </div>
+                          <div className="p-4 border border-gray-200 rounded-lg bg-amber-50">
+                            <p className="text-sm text-gray-600">Submission Rate</p>
+                            <p className="text-2xl font-bold text-amber-700">{stats.submissionRate}%</p>
+                          </div>
+                        </div>
+
+                        {assignmentSubs.length === 0 ? (
+                          <div className="py-12 text-center">
+                            <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <h3 className="mb-2 text-lg font-medium text-gray-900">No submissions yet</h3>
+                            <p className="text-gray-500">Students haven't submitted any work for this assignment yet.</p>
+                          </div>
+                        ) : (
+                          <div className="overflow-hidden border border-gray-200 rounded-xl">
+                            <table className="min-w-full text-sm">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-4 py-3 font-semibold text-left text-gray-700">Student</th>
+                                  <th className="px-4 py-3 font-semibold text-left text-gray-700">Submitted</th>
+                                  <th className="px-4 py-3 font-semibold text-left text-gray-700">Score</th>
+                                  <th className="px-4 py-3 font-semibold text-left text-gray-700">Status</th>
+                                  <th className="px-4 py-3 font-semibold text-left text-gray-700">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-100">
+                                {assignmentSubs.map((submission) => (
+                                  <tr key={submission._id} className="transition-colors hover:bg-gray-50">
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center">
+                                        <div className="flex-shrink-0 w-8 h-8 mr-3">
+                                          <div className="flex items-center justify-center w-8 h-8 overflow-hidden bg-blue-600 rounded-full">
+                                            {submission.studentId?.profilePicture ? (
+                                              // eslint-disable-next-line @next/next/no-img-element
+                                              <img 
+                                                src={submission.studentId.profilePicture} 
+                                                alt={submission.studentId.name || 'Student'} 
+                                                className="object-cover w-full h-full"
+                                                onError={(e) => {
+                                                  e.target.style.display = 'none';
+                                                  e.target.nextElementSibling.style.display = 'flex';
+                                                }}
+                                              />
+                                            ) : null}
+                                            <span className={`text-xs font-medium text-white ${submission.studentId?.profilePicture ? 'hidden' : ''}`}>
+                                              {submission.studentId?.name ? submission.studentId.name.charAt(0).toUpperCase() : 'S'}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <div className="font-medium text-gray-900">
+                                            {submission.studentId?.name || 'Unknown Student'}
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            {submission.studentId?.email || ''}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      {submission.submittedAt ? (
+                                        <div className="text-sm text-gray-900">
+                                          {format(new Date(submission.submittedAt), 'MMM d, yyyy')}
+                                          <div className="text-xs text-gray-500">
+                                            {format(new Date(submission.submittedAt), 'h:mm a')}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <span className="text-sm text-gray-400">Not submitted</span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      {submission.grade !== null && submission.grade !== undefined ? (
+                                        <span className={`text-lg font-semibold ${
+                                          submission.grade >= 90 ? 'text-green-600' :
+                                          submission.grade >= 70 ? 'text-blue-600' :
+                                          submission.grade >= 50 ? 'text-yellow-600' :
+                                          'text-red-600'
+                                        }`}>
+                                          {submission.grade}%
+                                        </span>
+                                      ) : (
+                                        <span className="text-gray-400">—</span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      {submission.status === 'submitted' ? (
+                                        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-green-700 bg-green-100 rounded-full">
+                                          Submitted
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
+                                          Draft
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <a
+                                        href={`/submissions/${submission._id}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                        }}
+                                        className="inline-block px-3 py-1 text-xs font-medium text-blue-600 transition-colors rounded-lg hover:bg-blue-50 hover:text-blue-700"
+                                      >
+                                        View & Grade
+                                      </a>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
