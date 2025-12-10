@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const CourseScoresTab = ({ courseId, isInstructor }) => {
   const [loading, setLoading] = useState(true);
@@ -8,37 +8,7 @@ const CourseScoresTab = ({ courseId, isInstructor }) => {
   const [assignments, setAssignments] = useState([]);
   const [students, setStudents] = useState([]);
 
-  useEffect(() => {
-    if (courseId) {
-      fetchScoresData();
-    }
-  }, [courseId]);
-
-  const fetchScoresData = async () => {
-    setLoading(true);
-    try {
-      // Fetch assignments for the course
-      const assignmentsRes = await fetch(`/api/courses/${courseId}/assignments`);
-      if (assignmentsRes.ok) {
-        const assignmentsData = await assignmentsRes.json();
-        const assignmentsList = assignmentsData.assignments.filter(a => a.type === 'assignment');
-        setAssignments(assignmentsList);
-
-        // Fetch all submissions for all assignments
-        const submissionsRes = await fetch(`/api/courses/${courseId}/submissions`);
-        if (submissionsRes.ok) {
-          const submissionsData = await submissionsRes.json();
-          processScoresData(assignmentsList, submissionsData.submissions);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch scores data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const processScoresData = (assignmentsList, submissions) => {
+  const processScoresData = useCallback((assignmentsList, submissions) => {
     // Group submissions by student
     const studentMap = {};
 
@@ -81,7 +51,43 @@ const CourseScoresTab = ({ courseId, isInstructor }) => {
 
     setStudents(studentsList);
     setScores(studentsList);
-  };
+  }, []);
+
+  const fetchScoresData = useCallback(async () => {
+    if (!courseId) return;
+    
+    setLoading(true);
+    try {
+      // Fetch assignments for the course
+      const assignmentsRes = await fetch(`/api/courses/${courseId}/assignments`);
+      if (assignmentsRes.ok) {
+        const assignmentsData = await assignmentsRes.json();
+        const assignmentsList = assignmentsData.assignments.filter(a => a.type === 'assignment');
+        setAssignments(assignmentsList);
+
+        // Only fetch submissions if there are assignments
+        if (assignmentsList.length > 0) {
+          const submissionsRes = await fetch(`/api/courses/${courseId}/submissions`);
+          if (submissionsRes.ok) {
+            const submissionsData = await submissionsRes.json();
+            processScoresData(assignmentsList, submissionsData.submissions);
+          }
+        } else {
+          // No assignments, so no submissions to process
+          setStudents([]);
+          setScores([]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch scores data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId, processScoresData]);
+
+  useEffect(() => {
+    fetchScoresData();
+  }, [fetchScoresData]);
 
   const getSubmissionStatus = (student, assignmentId) => {
     const submission = student.submissions[assignmentId];

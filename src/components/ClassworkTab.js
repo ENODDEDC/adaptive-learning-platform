@@ -786,7 +786,8 @@ const ClassworkTab = ({
   setEditingClasswork,
   classworkType,
   setClassworkType,
-  compactMode = false
+  compactMode = false,
+  submissionsFromProps = [] // Add missing prop with default value
 }) => {
   const [assignments, setAssignments] = useState([]);
   const [forms, setForms] = useState([]);
@@ -834,6 +835,23 @@ const ClassworkTab = ({
     isOpen: false,
     classworkId: null
   });
+
+  // Sync submissions from props to local state
+  useEffect(() => {
+    console.log('🔍 CLASSWORK: Submissions from props:', submissionsFromProps);
+    if (submissionsFromProps && submissionsFromProps.length > 0) {
+      console.log('🔍 CLASSWORK: Syncing submissions from props:', submissionsFromProps.length, 'items');
+      console.log('🔍 CLASSWORK: Submission details:', submissionsFromProps.map(s => ({
+        id: s._id,
+        assignment: s.assignment || s.assignmentId?._id,
+        status: s.status,
+        grade: s.grade
+      })));
+      setSubmissions(submissionsFromProps);
+    } else {
+      console.log('🔍 CLASSWORK: No submissions from props or empty array');
+    }
+  }, [submissionsFromProps]);
 
   // Toast notification functions
   const showToast = (message, type = 'success', duration = 3000) => {
@@ -1444,6 +1462,49 @@ const ClassworkTab = ({
               </div>
             </div>
 
+            {/* Status Badge for Students - Prominent Position */}
+            {!isInstructor && itemType === 'assignment' && (
+              <div className="mb-3">
+                {submission && submission.grade !== null && submission.grade !== undefined ? (
+                  // Graded - Show grade prominently
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg shadow-sm ${submission.grade >= 90 ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-2 border-green-200' :
+                        submission.grade >= 70 ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-2 border-blue-200' :
+                          submission.grade >= 50 ? 'bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 border-2 border-yellow-200' :
+                            'bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-2 border-red-200'
+                      }`}>
+                      <span className="text-base">✅</span>
+                      <span>Graded: {submission.grade}%</span>
+                    </span>
+                  </div>
+                ) : submission && submission.status === 'submitted' ? (
+                  // Submitted but not graded
+                  <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-blue-700 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg shadow-sm">
+                    <span className="text-base">📝</span>
+                    <span>Submitted - Awaiting Grade</span>
+                  </span>
+                ) : submission && submission.status === 'draft' ? (
+                  // In Progress
+                  <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-amber-700 bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-lg shadow-sm">
+                    <span className="text-base">🔄</span>
+                    <span>In Progress</span>
+                  </span>
+                ) : item.dueDate && new Date(item.dueDate) < new Date() ? (
+                  // Missed/Overdue - No submission and past due date
+                  <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-red-700 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200 rounded-lg shadow-sm">
+                    <span className="text-base">❌</span>
+                    <span>Missed</span>
+                  </span>
+                ) : (
+                  // Not Started - No submission but not overdue yet
+                  <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 rounded-lg shadow-sm">
+                    <span className="text-base">⭕</span>
+                    <span>Not Started</span>
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Title */}
             <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">
               {item.title}
@@ -1529,26 +1590,55 @@ const ClassworkTab = ({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-            <div className="text-xs text-gray-500">
-              {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
-            </div>
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-gray-500">
+                {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
+              </div>
 
-            {/* View Details Button for Assignments */}
-            {itemType === 'assignment' && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAssignmentClick(item);
-                }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-all duration-200 hover:border-gray-400 hover:shadow-sm active:scale-95"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                View Details
-              </button>
-            )}
+              {/* Status Badge for Students */}
+              {!isInstructor && itemType === 'assignment' && (
+                <div className="flex items-center gap-2">
+                  {submission && submission.grade !== null && submission.grade !== undefined ? (
+                    // Graded
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full ${submission.grade >= 90 ? 'bg-green-100 text-green-700 border border-green-200' :
+                          submission.grade >= 70 ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                            submission.grade >= 50 ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
+                              'bg-red-100 text-red-700 border border-red-200'
+                        }`}>
+                        <span>✅</span>
+                        <span>{submission.grade}%</span>
+                      </span>
+                    </div>
+                  ) : submission && submission.status === 'submitted' ? (
+                    // Submitted but not graded
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-100 border border-blue-200 rounded-full">
+                      <span>📝</span>
+                      <span>Submitted</span>
+                    </span>
+                  ) : submission && submission.status === 'draft' ? (
+                    // In Progress
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-700 bg-amber-100 border border-amber-200 rounded-full">
+                      <span>🔄</span>
+                      <span>In Progress</span>
+                    </span>
+                  ) : item.dueDate && new Date(item.dueDate) < new Date() ? (
+                    // Missed/Overdue
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-700 bg-red-100 border border-red-200 rounded-full">
+                      <span>❌</span>
+                      <span>Missed</span>
+                    </span>
+                  ) : (
+                    // Not Started
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-600 bg-gray-100 border border-gray-200 rounded-full">
+                      <span>⭕</span>
+                      <span>Not Started</span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -2148,9 +2238,37 @@ const ClassworkTab = ({
                   </button>
                 </div>
               ) : submission ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded">
-                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                  Submitted
+                <div className="flex flex-col items-end gap-2">
+                  {submission.grade !== null && submission.grade !== undefined ? (
+                    <>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                        Graded
+                      </span>
+                      <span className={`text-lg font-bold ${submission.grade >= 90 ? 'text-green-600' :
+                          submission.grade >= 70 ? 'text-blue-600' :
+                            submission.grade >= 50 ? 'text-yellow-600' :
+                              'text-red-600'
+                        }`}>
+                        {submission.grade}%
+                      </span>
+                    </>
+                  ) : item.dueDate && new Date(item.dueDate) < new Date() ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded">
+                      <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                      Submitted (Not Graded)
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      Submitted
+                    </span>
+                  )}
+                </div>
+              ) : item.dueDate && new Date(item.dueDate) < new Date() ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                  Missed
                 </span>
               ) : (
                 <button
@@ -2226,37 +2344,13 @@ const ClassworkTab = ({
       console.log('🔍 CLASSWORK: Setting assignments state with', classwork.length, 'items');
       setAssignments(classwork);
 
-      // Fetch submissions for status tracking
-      try {
-        console.log('🔍 CLASSWORK: Fetching submissions for course:', courseDetails._id);
-        const submissionsRes = await fetch(`/api/courses/${courseDetails._id}/submissions`);
-        if (submissionsRes.ok) {
-          const submissionsData = await submissionsRes.json();
-          const fetchedSubmissions = submissionsData.submissions || [];
-          console.log('🔍 CLASSWORK: Fetched submissions:', fetchedSubmissions.length, 'items');
-          console.log('🔍 CLASSWORK: Submission details:', fetchedSubmissions.map(s => ({
-            id: s._id,
-            assignment: s.assignment,
-            status: s.status,
-            studentId: s.studentId
-          })));
-          setSubmissions(fetchedSubmissions);
-        } else {
-          console.error('🔍 CLASSWORK: Failed to fetch submissions, status:', submissionsRes.status);
-          const errorText = await submissionsRes.text();
-          console.error('🔍 CLASSWORK: Error response:', errorText);
-          setSubmissions([]);
-        }
-      } catch (subErr) {
-        console.warn('🔍 CLASSWORK: Failed to fetch submissions:', subErr);
-        setSubmissions([]);
-      }
+      // Note: Submissions are synced from parent component via props in useEffect
+      console.log('🔍 CLASSWORK: Current submissions count:', submissions.length, 'items');
 
     } catch (err) {
       console.error('🔍 CLASSWORK: Failed to fetch assignments:', err);
       setError(err.message);
       setAssignments([]);
-      setSubmissions([]);
     } finally {
       if (isDragOperation) {
         setIsDragLoading(false);
@@ -2767,68 +2861,34 @@ const ClassworkTab = ({
                 case 'grid':
                   return (
                     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12 layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}>
-                      {filtered.map((item) => (
-                        <EnhancedActivityCard
-                          key={item._id}
-                          assignment={item.itemType !== 'form' ? item : null}
-                          form={item.itemType === 'form' ? item : null}
-                          submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
-                          isInstructor={isInstructor}
-                          onEdit={() => {
-                            if (item.itemType === 'form') {
-                              handleEditForm(item);
-                            } else {
-                              setEditingClasswork(item);
-                              setIsCreateClassworkModalOpen(true);
+                      {filtered.map((item) => {
+                        // Find submission for this assignment - check both assignment and assignmentId fields
+                        const itemSubmission = item.itemType === 'assignment'
+                          ? submissions.find(s => {
+                            const submissionAssignmentId = s.assignment || s.assignmentId?._id || s.assignmentId;
+                            const match = String(submissionAssignmentId) === String(item._id);
+                            if (match) {
+                              console.log('🔍 MATCH: Found submission for assignment', item.title, ':', s);
                             }
-                          }}
-                          onDelete={() => handleDeleteClasswork(item._id)}
-                          onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
-                          onOpenContent={onOpenContent}
-                          viewMode="grid"
-                        />
-                      ))}
-                    </div>
-                  );
+                            return match;
+                          })
+                          : null;
 
-                case 'list':
-                  return (
-                    <div className={`space-y-3 lg:space-y-4 layout-transition-list-to-grid ${isTransitioning ? 'layout-transition-active' : ''}`}>
-                      {filtered.map((item) => (
-                        <EnhancedActivityCard
-                          key={item._id}
-                          assignment={item.itemType !== 'form' ? item : null}
-                          form={item.itemType === 'form' ? item : null}
-                          submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
-                          isInstructor={isInstructor}
-                          onEdit={() => {
-                            if (item.itemType === 'form') {
-                              handleEditForm(item);
-                            } else {
-                              setEditingClasswork(item);
-                              setIsCreateClassworkModalOpen(true);
-                            }
-                          }}
-                          onDelete={() => handleDeleteClasswork(item._id)}
-                          onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
-                          onOpenContent={onOpenContent}
-                          viewMode="list"
-                        />
-                      ))}
-                    </div>
-                  );
+                        if (item.itemType === 'assignment' && !itemSubmission) {
+                          console.log('🔍 NO MATCH: No submission found for assignment', item.title, item._id);
+                          console.log('🔍 Available submissions:', submissions.map(s => ({
+                            assignment: s.assignment || s.assignmentId?._id || s.assignmentId,
+                            status: s.status,
+                            grade: s.grade
+                          })));
+                        }
 
-                case 'timeline':
-                  return (
-                    <div className={`relative layout-transition-to-timeline ${isTransitioning ? 'layout-transition-active' : ''}`}>
-                      <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-blue-200"></div>
-                      <div className="space-y-6 lg:space-y-8">
-                        {filtered.map((item) => (
+                        return (
                           <EnhancedActivityCard
                             key={item._id}
                             assignment={item.itemType !== 'form' ? item : null}
                             form={item.itemType === 'form' ? item : null}
-                            submission={item.itemType === 'assignment' ? submissions.find(s => String(s.assignment) === String(item._id)) : null}
+                            submission={itemSubmission}
                             isInstructor={isInstructor}
                             onEdit={() => {
                               if (item.itemType === 'form') {
@@ -2841,9 +2901,84 @@ const ClassworkTab = ({
                             onDelete={() => handleDeleteClasswork(item._id)}
                             onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
                             onOpenContent={onOpenContent}
-                            viewMode="timeline"
+                            viewMode="grid"
                           />
-                        ))}
+                        );
+                      })}
+                    </div>
+                  );
+
+                case 'list':
+                  return (
+                    <div className={`space-y-3 lg:space-y-4 layout-transition-list-to-grid ${isTransitioning ? 'layout-transition-active' : ''}`}>
+                      {filtered.map((item) => {
+                        const itemSubmission = item.itemType === 'assignment'
+                          ? submissions.find(s => {
+                            const submissionAssignmentId = s.assignment || s.assignmentId?._id || s.assignmentId;
+                            return String(submissionAssignmentId) === String(item._id);
+                          })
+                          : null;
+
+                        return (
+                          <EnhancedActivityCard
+                            key={item._id}
+                            assignment={item.itemType !== 'form' ? item : null}
+                            form={item.itemType === 'form' ? item : null}
+                            submission={itemSubmission}
+                            isInstructor={isInstructor}
+                            onEdit={() => {
+                              if (item.itemType === 'form') {
+                                handleEditForm(item);
+                              } else {
+                                setEditingClasswork(item);
+                                setIsCreateClassworkModalOpen(true);
+                              }
+                            }}
+                            onDelete={() => handleDeleteClasswork(item._id)}
+                            onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
+                            onOpenContent={onOpenContent}
+                            viewMode="list"
+                          />
+                        );
+                      })}
+                    </div>
+                  );
+
+                case 'timeline':
+                  return (
+                    <div className={`relative layout-transition-to-timeline ${isTransitioning ? 'layout-transition-active' : ''}`}>
+                      <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-blue-300 to-blue-200"></div>
+                      <div className="space-y-6 lg:space-y-8">
+                        {filtered.map((item) => {
+                          const itemSubmission = item.itemType === 'assignment'
+                            ? submissions.find(s => {
+                              const submissionAssignmentId = s.assignment || s.assignmentId?._id || s.assignmentId;
+                              return String(submissionAssignmentId) === String(item._id);
+                            })
+                            : null;
+
+                          return (
+                            <EnhancedActivityCard
+                              key={item._id}
+                              assignment={item.itemType !== 'form' ? item : null}
+                              form={item.itemType === 'form' ? item : null}
+                              submission={itemSubmission}
+                              isInstructor={isInstructor}
+                              onEdit={() => {
+                                if (item.itemType === 'form') {
+                                  handleEditForm(item);
+                                } else {
+                                  setEditingClasswork(item);
+                                  setIsCreateClassworkModalOpen(true);
+                                }
+                              }}
+                              onDelete={() => handleDeleteClasswork(item._id)}
+                              onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
+                              onOpenContent={onOpenContent}
+                              viewMode="timeline"
+                            />
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -2860,7 +2995,10 @@ const ClassworkTab = ({
                       {['notStarted', 'inProgress', 'completed'].map((status) => {
                         // Simplified filtering with better state synchronization
                         const statusAssignments = assignments.filter(assignment => {
-                          const submission = submissions.find(s => String(s.assignment) === String(assignment._id));
+                          const submission = submissions.find(s => {
+                            const submissionAssignmentId = s.assignment || s.assignmentId?._id || s.assignmentId;
+                            return String(submissionAssignmentId) === String(assignment._id);
+                          });
 
                           if (status === 'notStarted') {
                             return !submission; // No submission = Not Started
@@ -2897,7 +3035,10 @@ const ClassworkTab = ({
                             </h3>
                             <div className="space-y-3 max-h-[70vh] overflow-y-auto">
                               {statusAssignments.map((assignment) => {
-                                const assignmentSubmission = submissions.find(s => String(s.assignment) === String(assignment._id));
+                                const assignmentSubmission = submissions.find(s => {
+                                  const submissionAssignmentId = s.assignment || s.assignmentId?._id || s.assignmentId;
+                                  return String(submissionAssignmentId) === String(assignment._id);
+                                });
 
                                 return (
                                   <div
