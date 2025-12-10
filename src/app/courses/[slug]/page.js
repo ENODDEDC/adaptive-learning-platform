@@ -660,7 +660,7 @@ const CourseDetailPage = ({
 
   // Fetch submissions data
   const fetchSubmissionsData = useCallback(async () => {
-    if (!courseDetails || scoresLoading) return;
+    if (!courseDetails) return;
     
     try {
       setScoresLoading(true);
@@ -684,22 +684,29 @@ const CourseDetailPage = ({
     } finally {
       setScoresLoading(false);
     }
-  }, [courseDetails, scoresLoading]);
+  }, [courseDetails]);
 
   // Fetch scores data when Scores tab becomes active (instructors) or when course loads (students for their own grades)
   useEffect(() => {
-    if (!courseDetails) return;
+    if (!courseDetails || scoresLoading) return;
     
-    if (isInstructor && activeTab === 'marks' && submissions.length === 0 && !scoresLoading) {
+    // Use a ref to track if we've already fetched to prevent duplicate calls
+    let shouldFetch = false;
+    
+    if (isInstructor && activeTab === 'marks' && submissions.length === 0) {
       // Instructors fetch when Scores tab is active
       console.log('🔍 SCORES: Scores tab activated, fetching data');
-      fetchSubmissionsData();
-    } else if (!isInstructor && user && (activeTab === 'classwork' || activeTab === 'stream') && submissions.length === 0 && !scoresLoading) {
+      shouldFetch = true;
+    } else if (!isInstructor && user && (activeTab === 'classwork' || activeTab === 'stream') && submissions.length === 0) {
       // Students fetch their own submissions for activity cards when viewing classwork or stream
       console.log('🔍 SCORES: Fetching student submissions for activity status');
+      shouldFetch = true;
+    }
+    
+    if (shouldFetch) {
       fetchSubmissionsData();
     }
-  }, [activeTab, courseDetails, submissions.length, scoresLoading, fetchSubmissionsData, isInstructor, user]);
+  }, [activeTab, courseDetails, isInstructor, user, fetchSubmissionsData]);
 
   // Filter and sort submissions
   useEffect(() => {
@@ -1552,7 +1559,6 @@ const CourseDetailPage = ({
                         <option value="all">All types</option>
                         <option value="assignment">Assignments</option>
                         <option value="quiz">Quizzes</option>
-                        <option value="material">Materials</option>
                       </select>
                     </div>
                   </div>
@@ -1578,17 +1584,18 @@ const CourseDetailPage = ({
                         Retry
                       </button>
                     </div>
-                  ) : assignments.length === 0 ? (
+                  ) : assignments.filter(a => a.type !== 'material').length === 0 ? (
                     <div className="py-12 text-center">
                       <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <h3 className="mb-2 text-lg font-medium text-gray-900">No assignments yet</h3>
-                      <p className="text-gray-500">Create assignments to start tracking student submissions and grades.</p>
+                      <h3 className="mb-2 text-lg font-medium text-gray-900">No gradable assignments yet</h3>
+                      <p className="text-gray-500">Create assignments or quizzes to start tracking student submissions and grades.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {assignments
+                        .filter(a => a.type !== 'material') // Exclude materials from scores tab
                         .filter(a => assignmentFilter === 'all' || a.type === assignmentFilter)
                         .map((assignment) => {
                           const stats = getAssignmentStats(assignment._id);
