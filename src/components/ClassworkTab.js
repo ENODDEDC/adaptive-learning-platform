@@ -1596,48 +1596,19 @@ const ClassworkTab = ({
                 {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
               </div>
 
-              {/* Status Badge for Students */}
-              {!isInstructor && itemType === 'assignment' && (
-                <div className="flex items-center gap-2">
-                  {submission && submission.grade !== null && submission.grade !== undefined ? (
-                    // Graded
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full ${submission.grade >= 90 ? 'bg-green-100 text-green-700 border border-green-200' :
-                          submission.grade >= 70 ? 'bg-blue-100 text-blue-700 border border-blue-200' :
-                            submission.grade >= 50 ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
-                              'bg-red-100 text-red-700 border border-red-200'
-                        }`}>
-                        <span>✅</span>
-                        <span>{submission.grade}%</span>
-                      </span>
-                    </div>
-                  ) : submission && submission.status === 'submitted' ? (
-                    // Submitted but not graded
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-100 border border-blue-200 rounded-full">
-                      <span>📝</span>
-                      <span>Submitted</span>
-                    </span>
-                  ) : submission && submission.status === 'draft' ? (
-                    // In Progress
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-700 bg-amber-100 border border-amber-200 rounded-full">
-                      <span>🔄</span>
-                      <span>In Progress</span>
-                    </span>
-                  ) : item.dueDate && new Date(item.dueDate) < new Date() ? (
-                    // Missed/Overdue
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-700 bg-red-100 border border-red-200 rounded-full">
-                      <span>❌</span>
-                      <span>Missed</span>
-                    </span>
-                  ) : (
-                    // Not Started
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-600 bg-gray-100 border border-gray-200 rounded-full">
-                      <span>⭕</span>
-                      <span>Not Started</span>
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* View Details Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAssignmentClick(item);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-200"
+              >
+                <span>View Details</span>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
