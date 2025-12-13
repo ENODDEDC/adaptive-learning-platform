@@ -7,7 +7,7 @@ const failedAttempts = new Map();
 
 const LOCKOUT_CONFIG = {
   maxAttempts: 5, // Lock after 5 failed attempts
-  lockoutDuration: 30 * 60 * 1000, // 30 minutes
+  lockoutDuration: 15 * 60 * 1000, // 15 minutes
   attemptWindow: 15 * 60 * 1000, // 15 minutes window
 };
 

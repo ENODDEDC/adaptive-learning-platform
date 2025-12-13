@@ -37,6 +37,15 @@ export function sanitizeString(input) {
 }
 
 /**
+ * Sanitize general input (alias for sanitizeString for backward compatibility)
+ * @param {string} input
+ * @returns {string}
+ */
+export function sanitizeInput(input) {
+  return sanitizeString(input);
+}
+
+/**
  * Validate name fields
  * @param {string} name
  * @param {string} fieldName

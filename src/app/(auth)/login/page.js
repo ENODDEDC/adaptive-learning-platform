@@ -14,6 +14,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [lockoutTime, setLockoutTime] = useState(null);
+  const [remainingTime, setRemainingTime] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
   const router = useRouter();
   const canvasRef = useRef(null);
 
@@ -168,6 +171,25 @@ export default function LoginPage() {
     checkAuth();
   }, [router]);
 
+  // Countdown timer effect
+  useEffect(() => {
+    if (!isLocked || remainingTime <= 0) return;
+
+    const timer = setInterval(() => {
+      setRemainingTime((prev) => {
+        if (prev <= 1) {
+          setIsLocked(false);
+          setLockoutTime(null);
+          setError('');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isLocked, remainingTime]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -194,6 +216,17 @@ export default function LoginPage() {
           console.warn('⚠️ No token received in response');
         }
         router.push('/home');
+      } else if (res.status === 423) {
+        // Account locked
+        console.error('🔒 Account locked:', data.message);
+        setIsLocked(true);
+        if (data.lockedUntil) {
+          const lockTime = new Date(data.lockedUntil);
+          setLockoutTime(lockTime);
+          const remaining = Math.ceil((lockTime - new Date()) / 1000);
+          setRemainingTime(remaining > 0 ? remaining : 0);
+        }
+        setError(data.message || 'Account is temporarily locked.');
       } else {
         console.error('❌ Login failed:', data.message);
         setError(data.message || 'Login failed. Please try again.');
@@ -211,11 +244,13 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
 
     try {
+      // Attempt Google OAuth popup
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      console.log('Google Sign-In successful:', user);
+      console.log('✅ Google OAuth successful:', user.email);
 
+      // Send Google user data to backend
       const res = await fetch('/api/auth/google-signin', {
         method: 'POST',
         headers: {
@@ -234,22 +269,54 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        console.log('✅ Google user synced to MongoDB and logged in');
-        // Store token in localStorage for immediate access
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-          console.log('✅ Google token stored in localStorage');
+        // Check if new user requires registration completion
+        if (data.requiresRegistration) {
+          console.log('🔄 New user detected, redirecting to registration completion');
+          // Store temporary Google data in sessionStorage
+          sessionStorage.setItem('googleTempData', JSON.stringify(data.tempData));
+          router.push('/complete-registration');
         } else {
-          console.warn('⚠️ No token received from Google sign-in');
+          // Existing user - proceed with normal login flow
+          console.log('✅ Google user synced to MongoDB and logged in');
+          // Store token in localStorage for immediate access
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+            console.log('✅ Google token stored in localStorage');
+          } else {
+            console.warn('⚠️ No token received from Google sign-in');
+          }
+          router.push('/home');
         }
-        router.push('/home');
       } else {
         console.error('❌ Google sign-in failed:', data.message);
-        setError(data.message || 'Failed to complete Google sign-in');
+        // Provide specific error messages based on status code
+        if (res.status === 500) {
+          setError('Server error occurred. Please try again in a moment.');
+        } else if (res.status === 401) {
+          setError('Authentication failed. Please try signing in again.');
+        } else {
+          setError(data.message || 'Failed to complete Google sign-in. Please try again.');
+        }
       }
     } catch (error) {
-      console.error('Google Sign-In error:', error);
-      setError('Failed to sign in with Google. Please try again.');
+      console.error('❌ Google Sign-In error:', error);
+      
+      // Handle specific Firebase/Google OAuth errors
+      if (error.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in cancelled. Please try again if you want to continue.');
+      } else if (error.code === 'auth/popup-blocked') {
+        setError('Pop-up blocked by browser. Please allow pop-ups for this site and try again.');
+      } else if (error.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your connection and try again.');
+      } else if (error.code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please wait a moment and try again.');
+      } else if (error.code === 'auth/unauthorized-domain') {
+        setError('This domain is not authorized for Google sign-in. Please contact support.');
+      } else if (error.message && error.message.includes('fetch')) {
+        setError('Connection error. Please check your internet connection and try again.');
+      } else {
+        setError('Failed to sign in with Google. Please try again or use email login.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -311,7 +378,8 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                    disabled={isLocked}
+                    className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Enter your email"
                   />
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
@@ -327,7 +395,8 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                    disabled={isLocked}
+                    className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Enter your password"
                   />
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
@@ -353,21 +422,69 @@ export default function LoginPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl backdrop-blur-sm">
-                  <p className="text-sm text-red-300">{error}</p>
+                <div className={`p-3 ${isLocked ? 'bg-orange-500/20 border-orange-500/30' : 'bg-red-500/20 border-red-500/30'} border rounded-xl backdrop-blur-sm`}>
+                  <div className="flex items-start gap-2">
+                    {isLocked && (
+                      <svg className="w-5 h-5 text-orange-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    )}
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${isLocked ? 'text-orange-300' : 'text-red-300'}`}>
+                        {isLocked && remainingTime > 0 ? (
+                          <>
+                            Account locked due to multiple failed login attempts.
+                            <span className="block mt-1 text-orange-200">
+                              Try again in {Math.floor(remainingTime / 60)} {Math.floor(remainingTime / 60) === 1 ? 'minute' : 'minutes'} {remainingTime % 60 > 0 && `and ${remainingTime % 60} ${remainingTime % 60 === 1 ? 'second' : 'seconds'}`}.
+                            </span>
+                            {lockoutTime && (
+                              <span className="block mt-1 text-xs text-orange-200/90">
+                                You can login again at {lockoutTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          error
+                        )}
+                      </p>
+                      {isLocked && remainingTime > 0 && (
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-orange-200/80">Time remaining:</span>
+                            <span className="text-lg font-bold text-orange-100 tabular-nums">
+                              {Math.floor(remainingTime / 60)}:{String(remainingTime % 60).padStart(2, '0')}
+                            </span>
+                          </div>
+                          <div className="w-full bg-orange-900/30 rounded-full h-2 overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-orange-400 to-orange-500 transition-all duration-1000 ease-linear"
+                              style={{ width: `${(remainingTime / (15 * 60)) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* Sign In Button */}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isLocked}
                 className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-xl hover:shadow-2xl"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     Connecting...
+                  </div>
+                ) : isLocked ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Account Locked
                   </div>
                 ) : (
                   'Sign In'

@@ -39,9 +39,11 @@ export async function POST(req) {
     // Check account lockout
     const lockStatus = isAccountLocked(email);
     if (lockStatus.locked) {
+      const minutes = Math.ceil(lockStatus.remainingTime / 60);
       return NextResponse.json({
-        message: `Account is temporarily locked. Please try again in ${Math.ceil(lockStatus.remainingTime / 60)} minutes.`,
+        message: `Account is temporarily locked. Please try again in ${minutes} minute${minutes !== 1 ? 's' : ''}.`,
         lockedUntil: lockStatus.lockoutTime,
+        remainingTime: lockStatus.remainingTime,
       }, { status: 423 });
     }
 
@@ -65,6 +67,16 @@ export async function POST(req) {
     if (!isValidUser || !isValidPassword || !isAdmin) {
       // Record failed attempt
       const failedStatus = await recordFailedAttempt(email);
+      
+      // Check if account just got locked
+      if (failedStatus.locked) {
+        const minutes = Math.ceil(failedStatus.remainingTime / 60);
+        return NextResponse.json({
+          message: `Account is temporarily locked. Please try again in ${minutes} minute${minutes !== 1 ? 's' : ''}.`,
+          lockedUntil: failedStatus.lockoutTime,
+          remainingTime: Math.ceil((failedStatus.lockoutTime - new Date()) / 1000),
+        }, { status: 423 });
+      }
       
       let message = 'Invalid credentials or not an admin';
       if (failedStatus.remainingAttempts > 0 && failedStatus.remainingAttempts <= 3) {

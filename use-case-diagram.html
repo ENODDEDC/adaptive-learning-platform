@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelevo - Use Case Diagram</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1em;
+        }
+
+        .diagram-container {
+            position: relative;
+            padding: 40px 20px;
+            background: #f7fafc;
+            border-radius: 15px;
+            min-height: 1100px;
+        }
+
+        /* System Box */
+        .system-box {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 900px;
+            height: 1000px;
+            border: 3px solid #4a5568;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .system-title {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 5px 20px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 1.2em;
+        }
+
+        /* Actors */
+        .actor {
+            position: absolute;
+            text-align: center;
+            width: 120px;
+        }
+
+        .actor-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .actor-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.95em;
+        }
+
+        /* Actor Positions */
+        .student { left: 50px; top: 100px; }
+        .instructor { left: 50px; top: 350px; }
+        .admin { left: 50px; top: 600px; }
+        .super-admin { left: 50px; top: 850px; }
+
+        /* Use Cases */
+        .use-case {
+            position: absolute;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 50px;
+            padding: 12px 20px;
+            font-size: 0.85em;
+            color: #2d3748;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        .use-case:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            background: #f7fafc;
+        }
+
+        /* Use Case Positions - Better Layout */
+        /* Row 1 - Authentication (Student) */
+        .uc-register { left: 280px; top: 50px; }
+        .uc-login { left: 450px; top: 50px; }
+        .uc-reset-password { left: 620px; top: 50px; }
+        .uc-google-signin { left: 790px; top: 50px; }
+
+        /* Row 2 - Student Course Features */
+        .uc-browse-courses { left: 280px; top: 130px; }
+        .uc-join-course { left: 450px; top: 130px; }
+        .uc-view-content { left: 620px; top: 130px; }
+        .uc-view-announcements { left: 790px; top: 130px; }
+
+        /* Row 3 - Student Learning Features */
+        .uc-submit-assignment { left: 280px; top: 210px; }
+        .uc-ai-tutor { left: 450px; top: 210px; }
+        .uc-learning-modes { left: 620px; top: 210px; }
+        .uc-smart-notes { left: 790px; top: 210px; }
+
+        /* Row 4 - Student Advanced Features */
+        .uc-take-questionnaire { left: 280px; top: 290px; }
+        .uc-view-learning-style { left: 450px; top: 290px; }
+        .uc-document-viewer { left: 620px; top: 290px; }
+        .uc-manage-profile { left: 790px; top: 290px; }
+
+        /* Row 5 - Instructor Features */
+        .uc-create-course { left: 280px; top: 400px; }
+        .uc-upload-content { left: 450px; top: 400px; }
+        .uc-create-assignment { left: 620px; top: 400px; }
+        .uc-post-announcement { left: 790px; top: 400px; }
+
+        /* Row 6 - Instructor Advanced */
+        .uc-grade-submission { left: 280px; top: 480px; }
+        .uc-visual-content { left: 450px; top: 480px; }
+        .uc-notifications { left: 620px; top: 480px; }
+
+        /* Row 7 - Admin Features */
+        .uc-manage-users { left: 280px; top: 650px; }
+        .uc-manage-courses { left: 450px; top: 650px; }
+        .uc-view-analytics { left: 620px; top: 650px; }
+        .uc-manage-settings { left: 790px; top: 650px; }
+
+        /* Connection Lines */
+        svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection-line {
+            stroke: #cbd5e0;
+            stroke-width: 1.5;
+            fill: none;
+            stroke-dasharray: 5, 5;
+        }
+
+        /* Legend */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            font-size: 0.85em;
+        }
+
+        .legend-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            color: #4a5568;
+        }
+
+        .legend-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .legend-line {
+            width: 30px;
+            height: 2px;
+            margin-right: 10px;
+            background: #cbd5e0;
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .system-box {
+                width: 800px;
+                height: 900px;
+            }
+            
+            .use-case {
+                font-size: 0.75em;
+                padding: 10px 15px;
+                min-width: 110px;
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .diagram-container {
+                overflow-x: auto;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 20px;
+            }
+            
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Intelevo - Use Case Diagram</h1>
+            <p>AI-Powered Assistive Learning Management System</p>
+        </div>
+
+        <div class="diagram-container">
+            <!-- System Boundary -->
+            <div class="system-box">
+                <div class="system-title">Intelevo LMS</div>
+            </div>
+
+            <!-- Actors -->
+            <div class="actor student">
+                <div class="actor-icon">👨‍🎓</div>
+                <div class="actor-name">Student</div>
+            </div>
+
+            <div class="actor instructor">
+                <div class="actor-icon">👨‍🏫</div>
+                <div class="actor-name">Instructor</div>
+            </div>
+
+            <div class="actor admin">
+                <div class="actor-icon">👤</div>
+                <div class="actor-name">Admin</div>
+            </div>
+
+            <div class="actor super-admin">
+                <div class="actor-icon">⚡</div>
+                <div class="actor-name">Super Admin</div>
+            </div>
+
+            <!-- Use Cases - Authentication & Basic -->
+            <div class="use-case uc-register">Register Account</div>
+            <div class="use-case uc-login">Login</div>
+            <div class="use-case uc-reset-password">Reset Password</div>
+            <div class="use-case uc-google-signin">Google Sign-In</div>
+
+            <!-- Use Cases - Course Management -->
+            <div class="use-case uc-browse-courses">Browse Courses</div>
+            <div class="use-case uc-join-course">Join Course</div>
+            <div class="use-case uc-view-content">View Course Content</div>
+            <div class="use-case uc-submit-assignment">Submit Assignment</div>
+            <div class="use-case uc-view-announcements">View Announcements</div>
+
+            <!-- Use Cases - AI Learning Features -->
+            <div class="use-case uc-ai-tutor">Use AI Tutor</div>
+            <div class="use-case uc-learning-modes">Access Learning Modes</div>
+            <div class="use-case uc-take-questionnaire">Take ILS Questionnaire</div>
+            <div class="use-case uc-view-learning-style">View Learning Style</div>
+            <div class="use-case uc-smart-notes">Create Smart Notes</div>
+
+            <!-- Use Cases - Instructor Features -->
+            <div class="use-case uc-create-course">Create Course</div>
+            <div class="use-case uc-upload-content">Upload Content</div>
+            <div class="use-case uc-create-assignment">Create Assignment</div>
+            <div class="use-case uc-grade-submission">Grade Submissions</div>
+            <div class="use-case uc-post-announcement">Post Announcement</div>
+
+            <!-- Use Cases - Admin Features -->
+            <div class="use-case uc-manage-users">Manage Users</div>
+            <div class="use-case uc-manage-courses">Manage Courses</div>
+            <div class="use-case uc-view-analytics">View Analytics</div>
+            <div class="use-case uc-manage-settings">Manage Settings</div>
+
+            <!-- Use Cases - Advanced Features -->
+            <div class="use-case uc-document-viewer">View Documents</div>
+            <div class="use-case uc-visual-content">Generate Visual Content</div>
+            <div class="use-case uc-manage-profile">Manage Profile</div>
+            <div class="use-case uc-notifications">Receive Notifications</div>
+
+            <!-- SVG for connection lines -->
+            <svg>
+                <!-- Student connections - Row 1 -->
+                <line class="connection-line" x1="170" y1="130" x2="280" y2="80" />
+                <line class="connection-line" x1="170" y1="130" x2="450" y2="80" />
+                <line class="connection-line" x1="170" y1="130" x2="620" y2="80" />
+                <line class="connection-line" x1="170" y1="130" x2="790" y2="80" />
+                
+                <!-- Student connections - Row 2 -->
+                <line class="connection-line" x1="170" y1="130" x2="280" y2="160" />
+                <line class="connection-line" x1="170" y1="130" x2="450" y2="160" />
+                <line class="connection-line" x1="170" y1="130" x2="620" y2="160" />
+                <line class="connection-line" x1="170" y1="130" x2="790" y2="160" />
+                
+                <!-- Student connections - Row 3 -->
+                <line class="connection-line" x1="170" y1="130" x2="280" y2="240" />
+                <line class="connection-line" x1="170" y1="130" x2="450" y2="240" />
+                <line class="connection-line" x1="170" y1="130" x2="620" y2="240" />
+                <line class="connection-line" x1="170" y1="130" x2="790" y2="240" />
+                
+                <!-- Student connections - Row 4 -->
+                <line class="connection-line" x1="170" y1="130" x2="280" y2="320" />
+                <line class="connection-line" x1="170" y1="130" x2="450" y2="320" />
+                <line class="connection-line" x1="170" y1="130" x2="620" y2="320" />
+                <line class="connection-line" x1="170" y1="130" x2="790" y2="320" />
+
+                <!-- Instructor connections - Auth -->
+                <line class="connection-line" x1="170" y1="380" x2="280" y2="80" />
+                <line class="connection-line" x1="170" y1="380" x2="450" y2="80" />
+                
+                <!-- Instructor connections - Row 5 -->
+                <line class="connection-line" x1="170" y1="380" x2="280" y2="430" />
+                <line class="connection-line" x1="170" y1="380" x2="450" y2="430" />
+                <line class="connection-line" x1="170" y1="380" x2="620" y2="430" />
+                <line class="connection-line" x1="170" y1="380" x2="790" y2="430" />
+                
+                <!-- Instructor connections - Row 6 -->
+                <line class="connection-line" x1="170" y1="380" x2="280" y2="510" />
+                <line class="connection-line" x1="170" y1="380" x2="450" y2="510" />
+                <line class="connection-line" x1="170" y1="380" x2="620" y2="510" />
+
+                <!-- Admin connections - Auth -->
+                <line class="connection-line" x1="170" y1="630" x2="280" y2="80" />
+                <line class="connection-line" x1="170" y1="630" x2="450" y2="80" />
+                
+                <!-- Admin connections - Row 7 -->
+                <line class="connection-line" x1="170" y1="630" x2="280" y2="680" />
+                <line class="connection-line" x1="170" y1="630" x2="450" y2="680" />
+                <line class="connection-line" x1="170" y1="630" x2="620" y2="680" />
+                <line class="connection-line" x1="170" y1="630" x2="790" y2="680" />
+
+                <!-- Super Admin connections - Auth -->
+                <line class="connection-line" x1="170" y1="880" x2="280" y2="80" />
+                <line class="connection-line" x1="170" y1="880" x2="450" y2="80" />
+                
+                <!-- Super Admin connections - Admin features -->
+                <line class="connection-line" x1="170" y1="880" x2="280" y2="680" />
+                <line class="connection-line" x1="170" y1="880" x2="450" y2="680" />
+                <line class="connection-line" x1="170" y1="880" x2="620" y2="680" />
+                <line class="connection-line" x1="170" y1="880" x2="790" y2="680" />
+            </svg>
+
+            <!-- Legend -->
+            <div class="legend" style="bottom: 40px; right: 40px;"></div>
+                <div class="legend-title">Legend</div>
+                <div class="legend-item">
+                    <div class="legend-icon"></div>
+                    <span>Actor</span>
+                </div>
+                <div class="legend-item">
+                    <div style="width: 30px; height: 20px; border: 2px solid #667eea; border-radius: 10px; margin-right: 10px;"></div>
+                    <span>Use Case</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="border-top: 1.5px dashed #cbd5e0;"></div>
+                    <span>Association</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add hover effects and tooltips
+        document.querySelectorAll('.use-case').forEach(useCase => {
+            useCase.addEventListener('mouseenter', function() {
+                this.style.borderColor = '#764ba2';
+                this.style.borderWidth = '3px';
+            });
+            
+            useCase.addEventListener('mouseleave', function() {
+                this.style.borderColor = '#667eea';
+                this.style.borderWidth = '2px';
+            });
+        });
+
+        // Print functionality
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+        });
+    </script>
+</body>
+</html>

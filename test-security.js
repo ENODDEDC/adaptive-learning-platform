@@ -5,8 +5,10 @@
  * Usage: node test-security.js
  */
 
-const crypto = require('crypto');
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 
+(async () => {
 console.log('🔐 Security Implementation Test\n');
 
 // Test 1: Verify crypto module for OTP generation
@@ -98,30 +100,31 @@ console.log('   ✓ Copy this to your .env file as JWT_SECRET\n');
 // Test 7: Verify bcrypt rounds calculation
 console.log('✅ Test 7: Bcrypt Performance Test');
 console.log('   Testing bcrypt with 12 rounds...');
-const bcrypt = require('bcryptjs');
 const testPassword = 'TestPassword123!';
 const startTime = Date.now();
-bcrypt.hash(testPassword, 12, (err, hash) => {
-  if (err) {
-    console.log('   ✗ Bcrypt failed:', err.message, '\n');
-  } else {
-    const endTime = Date.now();
-    const duration = endTime - startTime;
-    console.log(`   Hash: ${hash.substring(0, 30)}...`);
-    console.log(`   Time taken: ${duration}ms`);
-    console.log(`   ✓ Bcrypt working (${duration < 500 ? 'fast' : 'acceptable'} performance)\n`);
-    
-    // Final summary
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🎉 Security Implementation Test Complete!');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('\n📋 Next Steps:');
-    console.log('1. Copy the JWT Secret above to your .env file');
-    console.log('2. Ensure all environment variables are set');
-    console.log('3. Run: npm run dev');
-    console.log('4. Test authentication flows in browser');
-    console.log('5. Check browser DevTools → Application → Cookies');
-    console.log('   - Verify "token" cookie has HttpOnly flag');
-    console.log('6. Review MIGRATION_GUIDE.md for code updates\n');
-  }
-});
+
+try {
+  const hash = await bcrypt.hash(testPassword, 12);
+  const endTime = Date.now();
+  const duration = endTime - startTime;
+  console.log(`   Hash: ${hash.substring(0, 30)}...`);
+  console.log(`   Time taken: ${duration}ms`);
+  console.log(`   ✓ Bcrypt working (${duration < 500 ? 'fast' : 'acceptable'} performance)\n`);
+  
+  // Final summary
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('🎉 Security Implementation Test Complete!');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('\n📋 Next Steps:');
+  console.log('1. Copy the JWT Secret above to your .env file');
+  console.log('2. Ensure all environment variables are set');
+  console.log('3. Run: npm run dev');
+  console.log('4. Test authentication flows in browser');
+  console.log('5. Check browser DevTools → Application → Cookies');
+  console.log('   - Verify "token" cookie has HttpOnly flag');
+  console.log('6. Review MIGRATION_GUIDE.md for code updates\n');
+} catch (err) {
+  console.log('   ✗ Bcrypt failed:', err.message, '\n');
+}
+
+})();

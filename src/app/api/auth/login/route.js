@@ -39,9 +39,11 @@ export async function POST(req) {
     // Check account lockout
     const lockStatus = isAccountLocked(email);
     if (lockStatus.locked) {
+      const minutes = Math.ceil(lockStatus.remainingTime / 60);
       return NextResponse.json({
-        message: `Account is temporarily locked due to multiple failed login attempts. Please try again in ${Math.ceil(lockStatus.remainingTime / 60)} minutes.`,
+        message: `Account is temporarily locked due to multiple failed login attempts. Please try again in ${minutes} minute${minutes !== 1 ? 's' : ''}.`,
         lockedUntil: lockStatus.lockoutTime,
+        remainingTime: lockStatus.remainingTime,
       }, { status: 423 }); // 423 Locked
     }
 
@@ -65,11 +67,19 @@ export async function POST(req) {
       // Record failed attempt
       const failedStatus = await recordFailedAttempt(email);
       
+      // Check if account just got locked
+      if (failedStatus.locked) {
+        const minutes = Math.ceil((failedStatus.lockoutTime - new Date()) / 1000 / 60);
+        return NextResponse.json({
+          message: `Account is temporarily locked due to multiple failed login attempts. Please try again in ${minutes} minute${minutes !== 1 ? 's' : ''}.`,
+          lockedUntil: failedStatus.lockoutTime,
+          remainingTime: Math.ceil((failedStatus.lockoutTime - new Date()) / 1000),
+        }, { status: 423 });
+      }
+      
       let message = 'Invalid credentials';
       if (failedStatus.remainingAttempts > 0 && failedStatus.remainingAttempts <= 3) {
         message = `Invalid credentials. ${failedStatus.remainingAttempts} attempt(s) remaining before account lockout.`;
-      } else if (failedStatus.locked) {
-        message = 'Account locked due to multiple failed attempts. Please try again later.';
       }
 
       return NextResponse.json({ message }, { status: 401 });

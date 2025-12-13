@@ -105,7 +105,7 @@ const Layout = ({ children }) => {
   }, []);
 
 
-  const isAuthPage = ['/', '/login', '/register', '/forgot-password', '/reset-password'].some(
+  const isAuthPage = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/complete-registration'].some(
     path => pathname === path || (path !== '/' && pathname?.startsWith(path))
   );
 
