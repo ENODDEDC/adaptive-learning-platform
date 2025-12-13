@@ -14,7 +14,7 @@ export async function POST(request) {
 
     // Initialize Gemini AI (same as your existing AI Narrator service)
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     // Truncate content if too long (Gemini has token limits)
     const maxLength = 4000; // Conservative limit for Gemini

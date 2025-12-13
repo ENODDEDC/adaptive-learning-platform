@@ -11,7 +11,7 @@ class SensingLearningService {
       try {
         this.genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY);
         this.model = this.genAI.getGenerativeModel({
-          model: "gemini-flash-lite-latest"
+          model: "gemini-2.5-flash-lite"
         });
         console.log('🔬 Sensing Learning Service initialized');
       } catch (error) {

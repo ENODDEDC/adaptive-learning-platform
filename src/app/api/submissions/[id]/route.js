@@ -113,9 +113,10 @@ export async function GET(request, { params }) {
     const { id } = await params;
 
     const submission = await Submission.findById(id)
-      .populate('assignmentId', 'title type courseId')
-      .populate('studentId', 'name email')
-      .populate('attachments');
+      .populate('assignmentId', 'title type courseId description')
+      .populate('studentId', 'name email profilePicture')
+      .populate('attachments')
+      .populate('gradedBy', 'name email');
 
     if (!submission) {
       return NextResponse.json({ message: 'Submission not found' }, { status: 404 });
@@ -139,7 +140,20 @@ export async function GET(request, { params }) {
       return NextResponse.json({ message: 'Forbidden: Not authorized to view this submission' }, { status: 403 });
     }
 
-    return NextResponse.json({ submission }, { status: 200 });
+    // Add course info to the response for instructor check on frontend
+    const submissionWithCourse = {
+      ...submission.toObject(),
+      assignmentId: {
+        ...submission.assignmentId.toObject(),
+        courseId: {
+          _id: course._id,
+          createdBy: course.createdBy,
+          coTeachers: course.coTeachers
+        }
+      }
+    };
+
+    return NextResponse.json({ submission: submissionWithCourse }, { status: 200 });
   } catch (error) {
     console.error('Get Submission by ID Error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

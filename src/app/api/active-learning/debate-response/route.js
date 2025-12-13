@@ -26,7 +26,7 @@ export async function POST(request) {
 
     // Initialize Google AI
     const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     // Create context from conversation history
     const conversationContext = history.map(entry => 

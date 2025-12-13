@@ -25,7 +25,8 @@ const SubmissionGradingPage = ({ params }) => {
       const res = await fetch(`/api/submissions/${id}`);
       
       if (!res.ok) {
-        throw new Error(`Error: ${res.status} ${res.statusText}`);
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
       }
       
       const data = await res.json();
@@ -65,9 +66,17 @@ const SubmissionGradingPage = ({ params }) => {
       const currentUserId = user._id || user.id;
       const coTeachers = submission.assignmentId?.courseId?.coTeachers || [];
       
+      console.log('🔍 Instructor Check:', {
+        courseCreatorId,
+        currentUserId,
+        coTeachers,
+        hasCourseData: !!submission.assignmentId?.courseId
+      });
+      
       const userIsInstructor = courseCreatorId === currentUserId || 
         coTeachers.some(t => (t._id || t) === currentUserId);
       
+      console.log('👨‍🏫 Is Instructor:', userIsInstructor);
       setIsInstructor(userIsInstructor);
     }
   }, [submission, user]);
@@ -214,27 +223,83 @@ const SubmissionGradingPage = ({ params }) => {
                 </div>
               )}
 
-              {submission.content ? (
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-gray-800 whitespace-pre-wrap">{submission.content}</p>
+              {/* Text Content */}
+              {submission.content && (
+                <div className="mb-4">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-900">Written Response</h3>
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p className="text-gray-800 whitespace-pre-wrap">{submission.content}</p>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-gray-500">No content submitted</p>
               )}
 
+              {/* Attachments */}
               {submission.attachments && submission.attachments.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="mb-2 text-sm font-semibold text-gray-900">Attachments</h3>
+                <div className={submission.content ? 'mt-4' : ''}>
+                  <h3 className="mb-2 text-sm font-semibold text-gray-900">
+                    Attachments ({submission.attachments.length})
+                  </h3>
                   <div className="space-y-2">
-                    {submission.attachments.map((attachment, index) => (
-                      <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded">
-                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                        <span className="text-sm text-gray-700">{attachment.name || `Attachment ${index + 1}`}</span>
-                      </div>
-                    ))}
+                    {submission.attachments.map((attachment, index) => {
+                      const fileUrl = attachment.cloudStorage?.url || attachment.url || attachment.fileUrl || `/api/files/${attachment.cloudStorage?.key || attachment._id}`;
+                      return (
+                        <a
+                          key={index}
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-lg transition-all group"
+                        >
+                          <div className="p-2 bg-white rounded-lg shadow-sm">
+                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">
+                              {attachment.originalName || attachment.title || attachment.name || `Attachment ${index + 1}`}
+                            </p>
+                            <div className="flex items-center space-x-3 mt-1">
+                              {attachment.fileSize && (
+                                <span className="text-xs text-gray-600">
+                                  {Math.round(attachment.fileSize / 1024)} KB
+                                </span>
+                              )}
+                              {attachment.mimeType && (
+                                <span className="text-xs text-gray-500">
+                                  {attachment.mimeType.split('/')[1]?.toUpperCase() || 'File'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-medium text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                              Click to view
+                            </span>
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </div>
+                        </a>
+                      );
+                    })}
                   </div>
+                </div>
+              )}
+
+              {/* No submission message - only show if both content and attachments are missing */}
+              {!submission.content && (!submission.attachments || submission.attachments.length === 0) && (
+                <div className="p-8 text-center bg-yellow-50 rounded-lg border-2 border-dashed border-yellow-300">
+                  <svg className="w-12 h-12 mx-auto mb-3 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p className="text-yellow-800 font-semibold text-lg mb-2">Empty Submission</p>
+                  <p className="text-yellow-700 text-sm mb-3">
+                    The student marked this assignment as submitted but did not include any written response or file attachments.
+                  </p>
+                  <p className="text-yellow-600 text-xs">
+                    You can still grade this submission or contact the student to resubmit with proper content.
+                  </p>
                 </div>
               )}
             </div>
@@ -264,6 +329,15 @@ const SubmissionGradingPage = ({ params }) => {
               {/* Grade Input - Only for Instructors */}
               {isInstructor ? (
                 <>
+                  {/* Warning for empty submissions */}
+                  {!submission.content && (!submission.attachments || submission.attachments.length === 0) && (
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs text-yellow-800">
+                        ⚠️ This is an empty submission. Consider giving a low grade or 0, or ask the student to resubmit.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="mb-4">
                     <label className="block mb-2 text-sm font-medium text-gray-700">
                       Grade (0-100)

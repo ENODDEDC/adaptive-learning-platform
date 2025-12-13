@@ -11,7 +11,7 @@ class VisualContentService {
       try {
         this.genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY);
         this.imageModel = this.genAI.getGenerativeModel({ 
-          model: "gemini-2.5-flash-image" 
+          model: "gemini-2.5-flash-lite" 
         });
         console.log('🎨 Visual Content Service initialized');
       } catch (error) {

@@ -70,7 +70,7 @@ export async function POST(request) {
     try {
       // Initialize Google Gemini AI
       const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
       // Convert PDF buffer to base64
       const pdfBase64 = pdfBuffer.toString('base64');

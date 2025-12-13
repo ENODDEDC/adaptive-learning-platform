@@ -56,7 +56,7 @@ class AITutorService {
     if (!this.genAI && typeof window !== 'undefined') {
       // Client-side initialization
       this.genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY);
-      this.model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
       // Use the correct TTS model from working sample
       try {
         this.ttsModel = this.genAI.getGenerativeModel({ 
@@ -70,7 +70,7 @@ class AITutorService {
     } else if (!this.genAI && typeof window === 'undefined') {
       // Server-side initialization
       this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-      this.model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
       // Use the correct TTS model from working sample
       try {
         this.ttsModel = this.genAI.getGenerativeModel({ 
