@@ -1,31 +1,21 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export async function POST() {
+export async function POST(req) {
   try {
     const cookieStore = await cookies();
-    const response = NextResponse.json({ message: 'Logout successful' }, { status: 200 });
     
-    // Clear both token and adminToken cookies
-    cookieStore.set('token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      expires: new Date(0),
-      path: '/',
-      sameSite: 'Lax',
-    });
-    
-    cookieStore.set('adminToken', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      expires: new Date(0),
-      path: '/',
-      sameSite: 'Lax',
-    });
-    
-    return response;
+    // Clear authentication cookies
+    cookieStore.delete('token');
+    cookieStore.delete('adminToken');
+
+    return NextResponse.json({ 
+      message: 'Logged out successfully' 
+    }, { status: 200 });
   } catch (error) {
     console.error('Logout Error:', error.message);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      message: 'An error occurred during logout' 
+    }, { status: 500 });
   }
 }

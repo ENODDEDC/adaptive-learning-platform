@@ -4,7 +4,8 @@ import Course from '@/models/Course'; // To populate course details
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/utils/auth';
 import { withPerformanceMonitoring } from '@/utils/performanceMonitor';
-import { withRateLimiting } from '@/utils/rateLimiter';
+import { checkRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
+import { getClientIP } from '@/utils/inputValidator';
 
 // Simple in-memory cache for schedule data
 const scheduleCache = new Map();
@@ -30,8 +31,15 @@ function setCachedSchedule(cacheKey, data) {
   });
 }
 
-// Wrap with performance monitoring and rate limiting
+// Wrap with performance monitoring
 const monitoredGET = withPerformanceMonitoring(async (request) => {
+  // Check rate limiting
+  const clientIP = getClientIP(request);
+  const rateLimit = checkRateLimit(clientIP, 'api');
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit.retryAfter);
+  }
+
   const payload = await verifyToken();
   if (!payload) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -61,12 +69,18 @@ const monitoredGET = withPerformanceMonitoring(async (request) => {
 });
 
 export async function GET(request) {
-  const rateLimitedGET = withRateLimiting(monitoredGET, '/api/schedule');
-  return rateLimitedGET(request);
+  return monitoredGET(request);
 }
 
-// Wrap with performance monitoring and rate limiting
+// Wrap with performance monitoring
 const monitoredPOST = withPerformanceMonitoring(async (request) => {
+  // Check rate limiting
+  const clientIP = getClientIP(request);
+  const rateLimit = checkRateLimit(clientIP, 'api');
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit.retryAfter);
+  }
+
   const payload = await verifyToken();
   if (!payload) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -84,6 +98,10 @@ const monitoredPOST = withPerformanceMonitoring(async (request) => {
   // Check if a course already exists for this slot
   const existingSchedule = await ScheduledCourse.findOne({ userId, day, timeSlot });
 
+  // Clear cache after successful update
+  const cacheKey = `schedule:${userId}`;
+  scheduleCache.delete(cacheKey);
+
   let result;
   if (existingSchedule) {
     // Update existing schedule
@@ -100,19 +118,21 @@ const monitoredPOST = withPerformanceMonitoring(async (request) => {
     });
     return NextResponse.json({ message: 'Course scheduled', scheduledCourse: result }, { status: 201 });
   }
-
-  // Clear cache after successful update
-  const cacheKey = `schedule:${userId}`;
-  scheduleCache.delete(cacheKey);
 });
 
 export async function POST(request) {
-  const rateLimitedPOST = withRateLimiting(monitoredPOST, '/api/schedule');
-  return rateLimitedPOST(request);
+  return monitoredPOST(request);
 }
 
-// Wrap with performance monitoring and rate limiting
+// Wrap with performance monitoring
 const monitoredDELETE = withPerformanceMonitoring(async (request) => {
+  // Check rate limiting
+  const clientIP = getClientIP(request);
+  const rateLimit = checkRateLimit(clientIP, 'api');
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit.retryAfter);
+  }
+
   const payload = await verifyToken();
   if (!payload) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -136,6 +156,5 @@ const monitoredDELETE = withPerformanceMonitoring(async (request) => {
 });
 
 export async function DELETE(request) {
-  const rateLimitedDELETE = withRateLimiting(monitoredDELETE, '/api/schedule');
-  return rateLimitedDELETE(request);
+  return monitoredDELETE(request);
 }

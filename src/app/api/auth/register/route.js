@@ -5,29 +5,63 @@ import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
 import { otpEmailTemplate } from '@/emails/OtpEmail';
 import ActivityLogger from '@/utils/activityLogger';
+import { checkRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
+import { validateRegistrationData, getClientIP } from '@/utils/inputValidator';
+import { validatePassword } from '@/utils/passwordValidator';
+import { generateSecureOTP } from '@/utils/secureOTP';
 
 export async function POST(req) {
   try {
     await connectMongoDB();
 
-    const { name, middleName, surname, suffix, email, password } = await req.json();
+    const body = await req.json();
+    const { name, middleName, surname, suffix, email, password } = body;
 
-    const existingUser = await User.findOne({ email });
+    // Get client IP for rate limiting
+    const clientIP = getClientIP(req);
+
+    // Check rate limiting
+    const rateLimit = checkRateLimit(clientIP, 'register');
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.retryAfter);
+    }
+
+    // Validate input data
+    const validation = validateRegistrationData({ name, middleName, surname, suffix, email });
+    if (!validation.valid) {
+      return NextResponse.json({ 
+        message: 'Validation failed', 
+        errors: validation.errors 
+      }, { status: 400 });
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return NextResponse.json({ 
+        message: 'Password does not meet requirements', 
+        errors: passwordValidation.errors 
+      }, { status: 400 });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: validation.sanitized.email });
     if (existingUser) {
       return NextResponse.json({ message: 'User already exists' }, { status: 400 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12); // Increased from 10 to 12 rounds
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    // Generate cryptographically secure OTP
+    const otp = generateSecureOTP(6);
+    const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // Reduced to 5 minutes
 
     const newUser = new User({
-      name,
-      middleName,
-      surname,
-      suffix,
-      email,
+      name: validation.sanitized.name,
+      middleName: validation.sanitized.middleName,
+      surname: validation.sanitized.surname,
+      suffix: validation.sanitized.suffix,
+      email: validation.sanitized.email,
       password: hashedPassword,
       otp,
       otpExpires,
@@ -81,10 +115,13 @@ export async function POST(req) {
       console.log('SMTP not configured, skipping email. OTP:', otp);
     }
 
-    return NextResponse.json({ message: 'User registered successfully. Please check your email for OTP.' }, { status: 201 });
+    return NextResponse.json({ 
+      message: 'User registered successfully. Please check your email for OTP.',
+      email: validation.sanitized.email 
+    }, { status: 201 });
   } catch (error) {
     console.error('Registration Error:', error.message);
-    console.error('Stack:', error.stack);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    // Don't expose internal errors to client
+    return NextResponse.json({ message: 'An error occurred during registration' }, { status: 500 });
   }
 }

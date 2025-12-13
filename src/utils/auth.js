@@ -1,11 +1,18 @@
 import { cookies } from 'next/headers';
 import * as jose from 'jose';
 
-export async function verifyToken() {
+export async function verifyToken(req = null) {
   try {
-    // Check both 'token' and 'adminToken' cookies
-    const cookieStore = await cookies();
-    const token = cookieStore.get('adminToken')?.value || cookieStore.get('token')?.value;
+    let token;
+
+    if (req) {
+      // For API routes with request object
+      token = req.cookies.get('adminToken')?.value || req.cookies.get('token')?.value;
+    } else {
+      // For server components
+      const cookieStore = await cookies();
+      token = cookieStore.get('adminToken')?.value || cookieStore.get('token')?.value;
+    }
 
     if (!token) {
       return null;
@@ -13,8 +20,15 @@ export async function verifyToken() {
 
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     const { payload } = await jose.jwtVerify(token, secret);
+    
+    // Check if token is expired
+    if (payload.exp && payload.exp < Date.now() / 1000) {
+      return null;
+    }
+
     return payload;
   } catch (error) {
+    console.error('Token verification failed:', error.message);
     return null;
   }
 }

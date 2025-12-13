@@ -59,6 +59,29 @@ const userSchema = new mongoose.Schema({
     enum: ['super admin', 'admin', 'instructor', 'student'],
     default: 'student',
   },
+  // Security fields
+  failedLoginAttempts: {
+    type: Number,
+    default: 0,
+  },
+  accountLockedUntil: {
+    type: Date,
+  },
+  lastLoginAt: {
+    type: Date,
+  },
+  lastLoginIP: {
+    type: String,
+  },
+  passwordChangedAt: {
+    type: Date,
+  },
+  loginHistory: [{
+    ip: String,
+    userAgent: String,
+    timestamp: { type: Date, default: Date.now },
+    success: Boolean,
+  }],
 }, { timestamps: true });
 
 export default mongoose.models.User || mongoose.model('User', userSchema);

@@ -1,23 +1,49 @@
 import { NextResponse } from 'next/server';
 import connectMongoDB from '@/config/mongoConfig';
 import User from '@/models/User';
-import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import { checkRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
+import { validateEmail, getClientIP } from '@/utils/inputValidator';
+import { generateResetToken, hashToken } from '@/utils/secureOTP';
 
 export async function POST(req) {
   try {
     await connectMongoDB();
 
-    const { email } = await req.json();
+    const body = await req.json();
+    const email = body.email?.toLowerCase().trim();
+
+    // Input validation
+    if (!email) {
+      return NextResponse.json({ message: 'Email is required' }, { status: 400 });
+    }
+
+    if (!validateEmail(email)) {
+      return NextResponse.json({ message: 'Invalid email format' }, { status: 400 });
+    }
+
+    // Get client IP for rate limiting
+    const clientIP = getClientIP(req);
+
+    // Check rate limiting
+    const rateLimit = checkRateLimit(clientIP, 'forgotPassword');
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.retryAfter);
+    }
 
     const user = await User.findOne({ email });
 
+    // Always return success to prevent email enumeration
     if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+      // Return success even if user doesn't exist (security best practice)
+      return NextResponse.json({ 
+        message: 'If an account exists with this email, a password reset link has been sent.' 
+      }, { status: 200 });
     }
 
-    const resetToken = crypto.randomBytes(20).toString('hex');
-    const passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    // Generate secure reset token (32 bytes = 64 hex characters)
+    const resetToken = generateResetToken(32);
+    const passwordResetToken = hashToken(resetToken);
     const passwordResetExpires = Date.now() + 3600000; // 1 hour
 
     user.resetPasswordToken = passwordResetToken;
@@ -55,13 +81,17 @@ export async function POST(req) {
       };
 
       await transporter.sendMail(mailOptions);
+      console.log('✅ Password reset email sent to:', email);
     } else {
       console.log('SMTP not configured, skipping email. Reset URL:', resetUrl);
     }
 
-    return NextResponse.json({ message: 'Password reset link sent to your email' }, { status: 200 });
+    // Always return success message (prevent email enumeration)
+    return NextResponse.json({ 
+      message: 'If an account exists with this email, a password reset link has been sent.' 
+    }, { status: 200 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    console.error('Forgot Password Error:', error.message);
+    return NextResponse.json({ message: 'An error occurred. Please try again later.' }, { status: 500 });
   }
 }

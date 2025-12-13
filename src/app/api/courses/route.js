@@ -4,7 +4,8 @@ import Content from '@/models/Content';
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/utils/auth';
 import { withPerformanceMonitoring } from '@/utils/performanceMonitor';
-import { withRateLimiting } from '@/utils/rateLimiter';
+import { checkRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
+import { getClientIP } from '@/utils/inputValidator';
 
 // Simple in-memory cache for courses data
 const coursesCache = new Map();
@@ -30,8 +31,15 @@ function setCachedCourses(cacheKey, data) {
   });
 }
 
-// Wrap with performance monitoring and rate limiting
+// Wrap with performance monitoring
 const monitoredPOST = withPerformanceMonitoring(async (request) => {
+  // Check rate limiting
+  const clientIP = getClientIP(request);
+  const rateLimit = checkRateLimit(clientIP, 'api');
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit.retryAfter);
+  }
+
   const payload = await verifyToken();
   if (!payload) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -71,12 +79,18 @@ const monitoredPOST = withPerformanceMonitoring(async (request) => {
 });
 
 export async function POST(request) {
-  const rateLimitedPOST = withRateLimiting(monitoredPOST, '/api/courses');
-  return rateLimitedPOST(request);
+  return monitoredPOST(request);
 }
 
-// Wrap with performance monitoring and rate limiting
+// Wrap with performance monitoring
 const monitoredGET = withPerformanceMonitoring(async (request) => {
+  // Check rate limiting
+  const clientIP = getClientIP(request);
+  const rateLimit = checkRateLimit(clientIP, 'api');
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit.retryAfter);
+  }
+
   const payload = await verifyToken();
   if (!payload) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -156,6 +170,5 @@ const monitoredGET = withPerformanceMonitoring(async (request) => {
 });
 
 export async function GET(request) {
-  const rateLimitedGET = withRateLimiting(monitoredGET, '/api/courses');
-  return rateLimitedGET(request);
+  return monitoredGET(request);
 }
