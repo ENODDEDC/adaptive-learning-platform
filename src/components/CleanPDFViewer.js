@@ -16,6 +16,7 @@ import {
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import learningModeRecommendationService from '../services/learningModeRecommendationService';
+import DocumentViewerTour from './DocumentViewerTour';
 
 // Tooltip data for learning modes
 const tooltipData = {
@@ -97,6 +98,7 @@ const CleanPDFViewer = ({
   const [showTooltip, setShowTooltip] = useState({ mode: null, content: null });
   const [showPersonalizationBanner, setShowPersonalizationBanner] = useState(true);
   const [showMoreModes, setShowMoreModes] = useState(false);
+  const [showTour, setShowTour] = useState(false);
 
   // AI Health Check state
   const [isAIAvailable, setIsAIAvailable] = useState(true);
@@ -200,9 +202,25 @@ const CleanPDFViewer = ({
                        mode.name === 'Reflect' ? 'Reflective Learning' :
                        mode.name;
 
+    // Get data-tour attribute based on mode name
+    const getTourAttribute = (name) => {
+      const tourMap = {
+        'AI Narrator': 'ai-narrator',
+        'Visual Learning': 'visual-learning',
+        'Step-by-Step': 'step-by-step',
+        'Big Picture': 'big-picture',
+        'Hands-On': 'hands-on',
+        'Theory': 'theory',
+        'Practice': 'practice',
+        'Reflect': 'reflect'
+      };
+      return tourMap[name] || '';
+    };
+
     return (
       <div key={mode.name} className="relative group">
         <button
+          data-tour={getTourAttribute(mode.name)}
           onClick={mode.handler}
           disabled={mode.loading || !isAIAvailable}
           title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
@@ -536,7 +554,7 @@ const CleanPDFViewer = ({
         }`}>
         {/* Left/Center Section - Smart AI Learning Modes */}
         {isContentEducational && (
-          <div className="flex items-center space-x-2">
+          <div data-tour="learning-modes" className="flex items-center space-x-2">
             {hasClassification && recommendedButtons.length > 0 ? (
               <>
                 {/* Recommended Modes - Prominent */}
@@ -589,6 +607,18 @@ const CleanPDFViewer = ({
 
         {/* Right Section - Zoom and Actions */}
         <div className="flex items-center space-x-2">
+          {/* Take a Tour Button */}
+          <button
+            onClick={() => setShowTour(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all"
+            title="Take a tour of learning modes"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="hidden sm:inline">Tour</span>
+          </button>
+          
           {/* Zoom Controls */}
           <div className="flex items-center space-x-1 border rounded-md">
             <button
@@ -735,6 +765,9 @@ const CleanPDFViewer = ({
           </span>
         </div>
       </div>
+
+      {/* Document Viewer Tour */}
+      <DocumentViewerTour show={showTour} onComplete={() => setShowTour(false)} />
     </div>
   );
 };
