@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { CogIcon, ChartBarIcon, ArrowPathIcon, CheckCircleIcon, SparklesIcon, AcademicCapIcon, LightBulbIcon, EyeIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { CogIcon, ChartBarIcon, ArrowPathIcon, CheckCircleIcon, SparklesIcon, AcademicCapIcon, LightBulbIcon, EyeIcon, BookOpenIcon, BeakerIcon, BoltIcon, ShieldCheckIcon, RocketLaunchIcon } from '@heroicons/react/24/outline';
 
 const LearningPreferences = () => {
   const [profile, setProfile] = useState(null);
@@ -211,14 +211,16 @@ const LearningPreferences = () => {
             const nextThreshold = totalInteractions < 50 ? 50 : totalInteractions < 100 ? 100 : totalInteractions < 200 ? 200 : Math.ceil(totalInteractions / 50) * 50 + 50;
             const progress = (totalInteractions / nextThreshold) * 100;
             const stage = totalInteractions < 50 ? 'building' : totalInteractions < 100 ? 'initial' : totalInteractions < 200 ? 'refined' : 'stable';
-            const stageEmoji = totalInteractions < 50 ? '🌱' : totalInteractions < 100 ? '📊' : totalInteractions < 200 ? '⚡' : '✅';
+            const StageIcon = totalInteractions < 50 ? BeakerIcon : totalInteractions < 100 ? ChartBarIcon : totalInteractions < 200 ? BoltIcon : ShieldCheckIcon;
+            const stageColor = totalInteractions < 50 ? 'text-green-600' : totalInteractions < 100 ? 'text-blue-600' : totalInteractions < 200 ? 'text-yellow-600' : 'text-emerald-600';
             
             return (
               <>
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      {stageEmoji} {totalInteractions} / {nextThreshold} interactions
+                    <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <StageIcon className={`w-5 h-5 ${stageColor}`} />
+                      {totalInteractions} / {nextThreshold} engagement events
                     </span>
                     <span className="text-sm font-bold text-blue-700">
                       {nextThreshold - totalInteractions} more needed
@@ -241,13 +243,14 @@ const LearningPreferences = () => {
                 {/* Milestone Badges */}
                 <div className="grid grid-cols-4 gap-2">
                   {[
-                    { threshold: 50, label: 'Initial', emoji: '📊', stage: 'preliminary' },
-                    { threshold: 100, label: 'Refined', emoji: '⚡', stage: 'moderate' },
-                    { threshold: 200, label: 'Stable', emoji: '✅', stage: 'high' },
-                    { threshold: nextThreshold > 200 ? nextThreshold : 250, label: 'Next', emoji: '🎯', stage: 'update' }
+                    { threshold: 50, label: 'Initial', icon: ChartBarIcon, stage: 'preliminary' },
+                    { threshold: 100, label: 'Refined', icon: BoltIcon, stage: 'moderate' },
+                    { threshold: 200, label: 'Stable', icon: ShieldCheckIcon, stage: 'high' },
+                    { threshold: nextThreshold > 200 ? nextThreshold : 250, label: 'Next', icon: RocketLaunchIcon, stage: 'update' }
                   ].map((milestone, idx) => {
                     const reached = totalInteractions >= milestone.threshold;
                     const isCurrent = !reached && milestone.threshold === nextThreshold;
+                    const MilestoneIcon = milestone.icon;
                     
                     return (
                       <div
@@ -260,7 +263,13 @@ const LearningPreferences = () => {
                             : 'bg-gray-100 border-gray-300'
                         }`}
                       >
-                        <div className="text-2xl mb-1">{reached ? '✓' : milestone.emoji}</div>
+                        <div className="flex justify-center mb-1">
+                          {reached ? (
+                            <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                          ) : (
+                            <MilestoneIcon className={`w-6 h-6 ${isCurrent ? 'text-blue-600' : 'text-gray-400'}`} />
+                          )}
+                        </div>
                         <div className="text-xs font-bold text-gray-900">{milestone.threshold}</div>
                         <div className="text-xs text-gray-600">{milestone.label}</div>
                       </div>
@@ -271,9 +280,9 @@ const LearningPreferences = () => {
                 <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
                   <p className="text-sm text-gray-700">
                     <strong>Current Stage:</strong> {stage.charAt(0).toUpperCase() + stage.slice(1)}
-                    {stage === 'building' && ' - Keep interacting to reach your first classification at 50 interactions!'}
+                    {stage === 'building' && ' - Keep interacting to reach your first classification at 50 engagement events!'}
                     {stage === 'initial' && ' - Your learning style is emerging. Reach 100 for refined classification.'}
-                    {stage === 'refined' && ' - Almost there! 200 interactions provides research-validated accuracy.'}
+                    {stage === 'refined' && ' - Almost there! 200 engagement events provides research-validated accuracy.'}
                     {stage === 'stable' && ' - Your learning style is confirmed with high confidence!'}
                   </p>
                 </div>
@@ -504,25 +513,31 @@ const LearningPreferences = () => {
                 </div>
               </div>
 
-              <p className={`text-sm ${(profile.mlConfidenceScore || 0) >= 0.80 ? 'text-green-800' :
+              <div className={`text-sm flex items-start gap-2 ${(profile.mlConfidenceScore || 0) >= 0.80 ? 'text-green-800' :
                   (profile.mlConfidenceScore || 0) >= 0.65 ? 'text-yellow-800' :
                     (profile.mlConfidenceScore || 0) >= 0.50 ? 'text-orange-800' :
                       'text-red-800'
                 }`}>
-                <strong>
-                  {(profile.mlConfidenceScore || 0) >= 0.80 && '✓ High ML Confidence - '}
-                  {(profile.mlConfidenceScore || 0) >= 0.65 && (profile.mlConfidenceScore || 0) < 0.80 && '⚡ Good ML Confidence - '}
-                  {(profile.mlConfidenceScore || 0) >= 0.50 && (profile.mlConfidenceScore || 0) < 0.65 && '📊 Moderate ML Confidence - '}
-                  {(profile.mlConfidenceScore || 0) < 0.50 && '🌱 Low ML Confidence - '}
-                </strong>
-                The ML model is {((profile.mlConfidenceScore || 0) * 100).toFixed(1)}% confident in this classification based on {profile.dataQuality.interactionCount || profile.dataQuality.totalInteractions || 0} interactions.
-                {profile.dataQuality.confidenceLevel !== 'high' && ` Keep learning to reach ${profile.dataQuality.confidenceLevel === 'medium' ? '30' :
-                    profile.dataQuality.confidenceLevel === 'low-medium' ? '15' : '5'
-                  } interactions for ${profile.dataQuality.confidenceLevel === 'medium' ? 'high' :
-                    profile.dataQuality.confidenceLevel === 'low-medium' ? 'medium' : 'low-medium'
-                  } confidence.`}
-                {profile.dataQuality.confidenceLevel === 'high' && ' Your profile is highly accurate!'}
-              </p>
+                {(profile.mlConfidenceScore || 0) >= 0.80 && <ShieldCheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />}
+                {(profile.mlConfidenceScore || 0) >= 0.65 && (profile.mlConfidenceScore || 0) < 0.80 && <BoltIcon className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />}
+                {(profile.mlConfidenceScore || 0) >= 0.50 && (profile.mlConfidenceScore || 0) < 0.65 && <ChartBarIcon className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />}
+                {(profile.mlConfidenceScore || 0) < 0.50 && <BeakerIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />}
+                <p>
+                  <strong>
+                    {(profile.mlConfidenceScore || 0) >= 0.80 && 'High ML Confidence - '}
+                    {(profile.mlConfidenceScore || 0) >= 0.65 && (profile.mlConfidenceScore || 0) < 0.80 && 'Good ML Confidence - '}
+                    {(profile.mlConfidenceScore || 0) >= 0.50 && (profile.mlConfidenceScore || 0) < 0.65 && 'Moderate ML Confidence - '}
+                    {(profile.mlConfidenceScore || 0) < 0.50 && 'Low ML Confidence - '}
+                  </strong>
+                  The ML model is {((profile.mlConfidenceScore || 0) * 100).toFixed(1)}% confident in this classification based on {profile.dataQuality.interactionCount || profile.dataQuality.totalInteractions || 0} engagement events.
+                  {profile.dataQuality.confidenceLevel !== 'high' && ` Keep learning to reach ${profile.dataQuality.confidenceLevel === 'medium' ? '30' :
+                      profile.dataQuality.confidenceLevel === 'low-medium' ? '15' : '5'
+                    } engagement events for ${profile.dataQuality.confidenceLevel === 'medium' ? 'high' :
+                      profile.dataQuality.confidenceLevel === 'low-medium' ? 'medium' : 'low-medium'
+                    } confidence.`}
+                  {profile.dataQuality.confidenceLevel === 'high' && ' Your profile is highly accurate!'}
+                </p>
+              </div>
             </div>
           )}
 
@@ -552,8 +567,8 @@ const LearningPreferences = () => {
                 <p className="text-2xl font-bold text-blue-600 mb-1">
                   {profile.dataQuality?.interactionCount || profile.dataQuality?.totalInteractions || 0}
                 </p>
-                <p className="text-xs text-gray-600">Total</p>
-                <p className="text-sm font-semibold text-gray-900 mt-1">Interactions</p>
+                <p className="text-xs text-gray-600">Engagement</p>
+                <p className="text-sm font-semibold text-gray-900 mt-1">Events</p>
               </div>
               <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
                 <p className="text-2xl font-bold text-green-600 mb-1">
@@ -574,10 +589,10 @@ const LearningPreferences = () => {
             Your learning style hasn't been classified yet
           </p>
           <p className="text-gray-600 mb-1">
-            Reach 50 interactions to unlock ML classification!
+            Reach 50 engagement events to unlock ML classification!
           </p>
           <p className="text-sm text-gray-500">
-            Use learning modes to build your profile. Classification happens automatically at 50 interactions.
+            Use learning modes to build your profile. Classification happens automatically at 50 engagement events.
           </p>
         </div>
       )}

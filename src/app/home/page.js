@@ -956,11 +956,11 @@ export default function Home() {
 // Component definitions
 const SparklesIcon = (props) => (
   <Image
-    src="/platform_icon.png"
+    src="/favicon.svg"
     alt="Intelevo AI"
     width={40}
     height={40}
-    className="object-cover w-10 h-10 rounded-full"
+    className="object-contain w-10 h-10"
     {...props}
   />
 );

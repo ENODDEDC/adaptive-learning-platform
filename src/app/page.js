@@ -143,8 +143,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
-                <Image src="/platform_icon.png" alt="Intelevo" width={28} height={28} className="rounded-lg" />
+              <div className="w-12 h-12 flex items-center justify-center">
+                <Image src="/favicon.svg" alt="Intelevo" width={48} height={48} className="object-contain" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Intelevo</span>
             </div>

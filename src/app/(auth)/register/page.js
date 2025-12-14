@@ -355,7 +355,7 @@ export default function RegisterPage() {
         <Link href="/" className="flex items-center gap-3 group">
           <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 group-hover:bg-white/20 transition-all duration-300">
             <Image
-              src="/platform_icon.png"
+              src="/favicon.svg"
               alt="Intelevo"
               width={24}
               height={24}

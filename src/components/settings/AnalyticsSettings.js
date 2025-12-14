@@ -125,7 +125,7 @@ const AnalyticsSettings = () => {
                 <div className="mb-3">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-semibold">
-                      {totalInteractions} / {nextThreshold} interactions
+                      {totalInteractions} / {nextThreshold} engagement events
                     </span>
                     <span className="text-sm font-bold bg-white/20 px-3 py-1 rounded-full">
                       {nextThreshold - totalInteractions} to go
@@ -164,7 +164,7 @@ const AnalyticsSettings = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Interactions Card */}
+        {/* Total Engagement Events Card */}
         <div className="bg-blue-600 rounded-lg p-6 text-white shadow-md hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between mb-4">
             <AcademicCapIcon className="w-10 h-10" />
@@ -172,7 +172,7 @@ const AnalyticsSettings = () => {
           <p className="text-4xl font-bold mb-2">
             {stats?.totalInteractions || 0}
           </p>
-          <p className="text-blue-100 text-sm font-medium">Total Interactions</p>
+          <p className="text-blue-100 text-sm font-medium">Engagement Events</p>
         </div>
 
         {/* Total Learning Time Card */}
@@ -246,7 +246,7 @@ const AnalyticsSettings = () => {
           {/* AI Assistant Summary Stats */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white rounded-lg p-4 shadow-sm">
-              <p className="text-sm text-gray-600 mb-1">Total Interactions</p>
+              <p className="text-sm text-gray-600 mb-1">Total Prompts</p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats.aiAssistantUsage.totalInteractions || 0}
               </p>
@@ -408,7 +408,7 @@ const AnalyticsSettings = () => {
                  '🌱 Low Certainty'}
               </p>
               <p className="text-xs text-gray-600 mt-1">
-                Based on {stats.dataQuality?.interactionCount || stats.dataQuality?.totalInteractions || 0} interactions. More data improves confidence.
+                Based on {stats.dataQuality?.interactionCount || stats.dataQuality?.totalInteractions || 0} engagement events. More data improves confidence.
               </p>
             </div>
           </div>
@@ -430,9 +430,9 @@ const AnalyticsSettings = () => {
               </p>
             </div>
 
-            {/* Total Interactions */}
+            {/* Total Engagement Events */}
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">Total Interactions</p>
+              <p className="text-sm text-gray-600 mb-2">Engagement Events</p>
               <p className="text-3xl font-bold text-gray-900">
                 {stats.dataQuality.interactionCount || stats.dataQuality.totalInteractions}
               </p>
