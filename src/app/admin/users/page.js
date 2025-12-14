@@ -19,6 +19,8 @@ export default function AdminUserManagementPage() {
   });
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
   const [adminRole, setAdminRole] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const router = useRouter();
 
   const fetchUsers = useCallback(async () => {
@@ -177,6 +179,17 @@ export default function AdminUserManagementPage() {
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   if (loading) {
     return <div className="py-8 text-center">Loading users...</div>;
   }
@@ -191,17 +204,17 @@ export default function AdminUserManagementPage() {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
               User Management
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-gray-600 dark:text-gray-300">
               Manage user accounts, roles, and permissions across the platform.
             </p>
           </div>
           <div className="mt-4 lg:mt-0">
             <button
               onClick={() => setIsCreateUserModalOpen(true)}
-              className="flex items-center px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl"
+              className="flex items-center px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 bg-purple-600 rounded-lg shadow-lg hover:bg-purple-700 hover:shadow-xl"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -213,62 +226,62 @@ export default function AdminUserManagementPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-          <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+          <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{users.length}</p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+          <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Students</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Students</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {users.filter(u => u.role === 'student').length}
                 </p>
               </div>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+          <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Instructors</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Instructors</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {users.filter(u => u.role === 'instructor').length}
                 </p>
               </div>
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+          <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Admins</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Admins</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {users.filter(u => u.role === 'admin' || u.role === 'super admin').length}
                 </p>
               </div>
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <svg className="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
@@ -277,12 +290,12 @@ export default function AdminUserManagementPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
@@ -291,19 +304,19 @@ export default function AdminUserManagementPage() {
                   placeholder="Search users by name, email, or role..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full py-3 pl-10 pr-3 leading-5 placeholder-gray-400 transition-all duration-200 bg-white border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="block w-full py-3 pl-10 pr-3 leading-5 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <select className="px-4 py-3 text-gray-700 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+              <select className="px-4 py-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                 <option>All Roles</option>
                 <option>Student</option>
                 <option>Instructor</option>
                 <option>Admin</option>
                 <option>Super Admin</option>
               </select>
-              <button className="px-4 py-3 text-gray-700 transition-colors duration-200 bg-gray-100 rounded-lg hover:bg-gray-200">
+              <button className="px-4 py-3 text-gray-700 dark:text-gray-300 transition-colors duration-200 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
                 Export
               </button>
             </div>
@@ -311,37 +324,37 @@ export default function AdminUserManagementPage() {
         </div>
 
         {/* Users Table */}
-        <div className="overflow-hidden bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                  <th className="px-6 py-4 text-xs font-medium tracking-wider text-left text-gray-500 dark:text-gray-400 uppercase">
                     User
                   </th>
-                  <th className="px-6 py-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                  <th className="px-6 py-4 text-xs font-medium tracking-wider text-left text-gray-500 dark:text-gray-400 uppercase">
                     Role
                   </th>
-                  <th className="px-6 py-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                  <th className="px-6 py-4 text-xs font-medium tracking-wider text-left text-gray-500 dark:text-gray-400 uppercase">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                  <th className="px-6 py-4 text-xs font-medium tracking-wider text-left text-gray-500 dark:text-gray-400 uppercase">
                     Last Active
                   </th>
-                  <th className="px-6 py-4 text-xs font-medium tracking-wider text-right text-gray-500 uppercase">
+                  <th className="px-6 py-4 text-xs font-medium tracking-wider text-right text-gray-500 dark:text-gray-400 uppercase">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map(user => (
-                  <tr key={user._id} className="transition-colors duration-200 hover:bg-gray-50">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {paginatedUsers.map(user => (
+                  <tr key={user._id} className="transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700">
                     {editingUser === user._id ? (
                       <>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 w-10 h-10">
-                              <div className="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full">
+                              <div className="flex items-center justify-center w-10 h-10 bg-purple-500 rounded-full">
                                 <span className="text-sm font-medium text-white">
                                   {editFormData.name.charAt(0)}{editFormData.surname.charAt(0)}
                                 </span>
@@ -353,7 +366,7 @@ export default function AdminUserManagementPage() {
                                 name="name"
                                 value={editFormData.name}
                                 onChange={handleEditFormChange}
-                                className="block w-32 text-sm border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                                className="block w-32 text-sm border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-purple-500 focus:border-purple-500"
                                 placeholder="First name"
                               />
                               <input
@@ -361,7 +374,7 @@ export default function AdminUserManagementPage() {
                                 name="surname"
                                 value={editFormData.surname}
                                 onChange={handleEditFormChange}
-                                className="block w-32 mt-1 text-sm border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                                className="block w-32 mt-1 text-sm border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-purple-500 focus:border-purple-500"
                                 placeholder="Last name"
                               />
                               <input
@@ -369,7 +382,7 @@ export default function AdminUserManagementPage() {
                                 name="email"
                                 value={editFormData.email}
                                 onChange={handleEditFormChange}
-                                className="block w-48 mt-1 text-sm border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                                className="block w-48 mt-1 text-sm border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-purple-500 focus:border-purple-500"
                                 placeholder="Email"
                               />
                             </div>
@@ -380,7 +393,7 @@ export default function AdminUserManagementPage() {
                             name="role"
                             value={editFormData.role}
                             onChange={handleEditFormChange}
-                            className="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                            className="block w-full text-sm border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-purple-500 focus:border-purple-500"
                           >
                             <option value="student">Student</option>
                             <option value="instructor">Instructor</option>
@@ -391,17 +404,17 @@ export default function AdminUserManagementPage() {
                           </select>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
                             Active
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                           Just now
                         </td>
                         <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
                           <button
                             onClick={() => handleSaveEdit(user._id)}
-                            className="px-3 py-1 mr-2 text-xs font-bold text-white transition-colors duration-200 bg-green-500 rounded-lg hover:bg-green-600"
+                            className="px-3 py-1 mr-2 text-xs font-bold text-white transition-colors duration-200 bg-indigo-500 rounded-lg hover:bg-indigo-600"
                           >
                             Save
                           </button>
@@ -418,43 +431,43 @@ export default function AdminUserManagementPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 w-10 h-10">
-                              <div className="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full">
+                              <div className="flex items-center justify-center w-10 h-10 bg-purple-500 rounded-full">
                                 <span className="text-sm font-medium text-white">
                                   {user.name.charAt(0)}{user.surname.charAt(0)}
                                 </span>
                               </div>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                 {user.name} {user.surname}
                               </div>
-                              <div className="text-sm text-gray-500">{user.email}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            user.role === 'student' ? 'bg-blue-100 text-blue-800' :
-                            user.role === 'instructor' ? 'bg-green-100 text-green-800' :
-                            user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                            'bg-orange-100 text-orange-800'
+                            user.role === 'student' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
+                            user.role === 'instructor' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                            user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                           }`}>
                             {user.role}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
                             Active
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                           Just now
                         </td>
                         <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
                           <div className="flex items-center justify-end space-x-2">
                             <button
                               onClick={() => handleEditClick(user)}
-                              className="p-2 text-blue-600 transition-all duration-200 rounded-lg hover:text-blue-900 hover:bg-blue-50"
+                              className="p-2 text-purple-600 dark:text-purple-400 transition-all duration-200 rounded-lg hover:text-purple-900 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30"
                               title="Edit user"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -463,7 +476,7 @@ export default function AdminUserManagementPage() {
                             </button>
                             <button
                               onClick={() => handleDeleteUser(user._id)}
-                              className="p-2 text-red-600 transition-all duration-200 rounded-lg hover:text-red-900 hover:bg-red-50"
+                              className="p-2 text-red-600 dark:text-red-400 transition-all duration-200 rounded-lg hover:text-red-900 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
                               title="Delete user"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -482,11 +495,108 @@ export default function AdminUserManagementPage() {
 
           {filteredUsers.length === 0 && (
             <div className="py-12 text-center">
-              <svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
-              <p className="mt-1 text-sm text-gray-500">Try adjusting your search criteria.</p>
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No users found</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Try adjusting your search criteria.</p>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {filteredUsers.length > 0 && (
+            <div className="flex flex-col items-center justify-between gap-4 px-6 py-4 border-t border-gray-200 dark:border-gray-700 sm:flex-row">
+              {/* Items per page selector */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Show</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  per page (Showing {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length})
+                </span>
+              </div>
+
+              {/* Pagination buttons */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="First page"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+
+                {/* Page numbers */}
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-purple-600 text-white'
+                            : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Last page"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
         </div>

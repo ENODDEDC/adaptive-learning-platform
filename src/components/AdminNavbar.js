@@ -70,12 +70,12 @@ export default function AdminNavbar({ toggleSidebar }) {
   const isDashboard = pathname === '/admin/dashboard' || pathname === '/admin';
 
   return (
-    <nav className="sticky top-0 z-40 border-b shadow-sm bg-white/80 backdrop-blur-xl border-gray-200/50">
+    <nav className="sticky top-0 z-40 border-b shadow-sm bg-white/80 dark:bg-[#1e293b] backdrop-blur-xl border-gray-200/50 dark:border-blue-900/50">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center">
          <button
             type="button"
-            className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+            className="p-2 text-gray-600 dark:text-gray-300 transition-all duration-200 rounded-lg hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:focus:ring-offset-[#1e293b]"
             onClick={toggleSidebar}
           >
             <span className="sr-only">Open sidebar</span>
@@ -85,44 +85,44 @@ export default function AdminNavbar({ toggleSidebar }) {
           {/* Page-specific header */}
           {isDashboard && (
             <div className="ml-6">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Dashboard Overview
               </h1>
-              <p className="text-sm text-gray-500">Welcome back! Here's what's happening with your platform today.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-300">Welcome back! Here's what's happening with your platform today.</p>
             </div>
           )}
 
           {/* Other page headers can be added here */}
           {pathname.includes('/courses') && !isDashboard && (
             <div className="ml-6">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Course Management
               </h1>
-              <p className="text-sm text-gray-500">Manage courses, instructors, and student enrollments.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-300">Manage courses, instructors, and student enrollments.</p>
             </div>
           )}
 
           {pathname.includes('/users') && (
             <div className="ml-6">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 User Management
               </h1>
-              <p className="text-sm text-gray-500">Manage user accounts and permissions.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-300">Manage user accounts and permissions.</p>
             </div>
           )}
 
           {pathname.includes('/settings') && (
             <div className="ml-6">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Settings
               </h1>
-              <p className="text-sm text-gray-500">Configure your admin preferences and system settings.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-300">Configure your admin preferences and system settings.</p>
             </div>
           )}
 
           {/* Course Management Actions */}
           {pathname.includes('/courses') && !isDashboard && (
-            <button className="px-4 py-2 text-sm font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl">
+            <button className="px-4 py-2 text-sm font-medium text-white transition-all duration-200 bg-purple-600 dark:bg-purple-500 rounded-lg shadow-lg hover:bg-purple-700 dark:hover:bg-purple-600 hover:shadow-xl">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
@@ -138,14 +138,14 @@ export default function AdminNavbar({ toggleSidebar }) {
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="flex items-center px-4 py-2 space-x-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center px-4 py-2 space-x-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-white/10 border border-gray-300 dark:border-blue-900/50 rounded-lg hover:bg-gray-50 dark:hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
               </button>
-              <button className="px-6 py-3 font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl">
+              <button className="px-6 py-3 font-medium text-white transition-all duration-200 bg-indigo-600 dark:bg-indigo-500 rounded-lg shadow-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 hover:shadow-xl">
                 Generate Report
               </button>
             </>
@@ -158,14 +158,14 @@ export default function AdminNavbar({ toggleSidebar }) {
             <input
               type="text"
               placeholder="Search..."
-              className="block w-64 py-2 pl-10 pr-3 leading-5 placeholder-gray-400 transition-all duration-200 border border-gray-200 rounded-lg bg-white/50 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="block w-64 py-2 pl-10 pr-3 leading-5 placeholder-gray-400 dark:placeholder-gray-400 transition-all duration-200 border border-gray-200 dark:border-blue-900/50 rounded-lg bg-white/50 dark:bg-white/10 text-gray-900 dark:text-white focus:outline-none focus:bg-white dark:focus:bg-white/20 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
 
           {/* Dark mode toggle */}
           <button
             onClick={toggleDarkMode}
-            className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="p-2 text-gray-600 dark:text-gray-300 transition-all duration-200 rounded-lg hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             {darkMode ? (
               <SunIcon className="w-5 h-5" />
@@ -177,18 +177,18 @@ export default function AdminNavbar({ toggleSidebar }) {
           {/* Notifications */}
           <button
             type="button"
-            className="relative p-2 text-gray-600 transition-all duration-200 rounded-lg hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="relative p-2 text-gray-600 dark:text-gray-300 transition-all duration-200 rounded-lg hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             <span className="sr-only">View notifications</span>
             <BellIcon className="w-6 h-6" aria-hidden="true" />
             {/* Notification badge */}
-            <span className="absolute block w-3 h-3 bg-red-500 rounded-full top-1 right-1 ring-2 ring-white"></span>
+            <span className="absolute block w-3 h-3 bg-red-500 rounded-full top-1 right-1 ring-2 ring-white dark:ring-[#1e293b]"></span>
           </button>
 
           {/* Profile dropdown */}
           <Menu as="div" className="relative">
             <div>
-              <Menu.Button className="flex items-center max-w-xs p-1 bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+              <Menu.Button className="flex items-center max-w-xs p-1 bg-white dark:bg-white/10 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:focus:ring-offset-[#1e293b]">
                 <span className="sr-only">Open user menu</span>
                 <div className="relative">
                   {adminData.photoURL ? (
@@ -198,15 +198,15 @@ export default function AdminNavbar({ toggleSidebar }) {
                       alt="Admin profile"
                     />
                   ) : (
-                    <div className="flex items-center justify-center w-10 h-10 text-sm font-semibold text-white bg-blue-500 rounded-full ring-2 ring-gray-200">
+                    <div className="flex items-center justify-center w-10 h-10 text-sm font-semibold text-white bg-purple-500 dark:bg-purple-600 rounded-full ring-2 ring-gray-200 dark:ring-gray-700">
                       {adminData.name.charAt(0)}
                     </div>
                   )}
-                  <div className="absolute w-4 h-4 bg-green-400 rounded-full -bottom-1 -right-1 ring-2 ring-white"></div>
+                  <div className="absolute w-4 h-4 bg-indigo-400 dark:bg-indigo-500 rounded-full -bottom-1 -right-1 ring-2 ring-white dark:ring-[#1e293b]"></div>
                 </div>
                 <div className="hidden ml-3 md:block">
-                  <p className="text-sm font-medium text-gray-900">{adminData.name}</p>
-                  <p className="text-xs text-gray-500">{adminData.email}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{adminData.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-300">{adminData.email}</p>
                 </div>
                 <ChevronDownIcon className="w-5 h-5 ml-2 text-gray-400" aria-hidden="true" />
               </Menu.Button>
@@ -220,10 +220,10 @@ export default function AdminNavbar({ toggleSidebar }) {
               leaveFrom="transform opacity-100 scale-100"
               leaveTo="transform opacity-0 scale-95"
             >
-              <Menu.Items className="absolute right-0 z-10 w-56 mt-2 origin-top-right bg-white shadow-lg rounded-xl ring-1 ring-black ring-opacity-5 focus:outline-none">
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-900">{adminData.name}</p>
-                  <p className="text-sm text-gray-500">{adminData.email}</p>
+              <Menu.Items className="absolute right-0 z-10 w-56 mt-2 origin-top-right bg-white dark:bg-[#1e293b] shadow-lg rounded-xl ring-1 ring-black dark:ring-blue-900/50 ring-opacity-5 focus:outline-none">
+                <div className="px-4 py-3 border-b border-gray-100 dark:border-blue-900/50">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{adminData.name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-300">{adminData.email}</p>
                 </div>
                 <div className="py-1">
                   <Menu.Item>
@@ -231,11 +231,11 @@ export default function AdminNavbar({ toggleSidebar }) {
                       <a
                         href="/admin/profile"
                         className={classNames(
-                          active ? 'bg-gray-50' : '',
-                          'flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
+                          active ? 'bg-gray-50 dark:bg-white/10' : '',
+                          'flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/10'
                         )}
                       >
-                        <UserIcon className="w-5 h-5 mr-3 text-gray-400" />
+                        <UserIcon className="w-5 h-5 mr-3 text-gray-400 dark:text-gray-400" />
                         Profile
                       </a>
                     )}
@@ -245,17 +245,17 @@ export default function AdminNavbar({ toggleSidebar }) {
                       <a
                         href="/admin/settings"
                         className={classNames(
-                          active ? 'bg-gray-50' : '',
-                          'flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
+                          active ? 'bg-gray-50 dark:bg-white/10' : '',
+                          'flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/10'
                         )}
                       >
-                        <Cog6ToothIcon className="w-5 h-5 mr-3 text-gray-400" />
+                        <Cog6ToothIcon className="w-5 h-5 mr-3 text-gray-400 dark:text-gray-400" />
                         Settings
                       </a>
                     )}
                   </Menu.Item>
                 </div>
-                <div className="py-1 border-t border-gray-100">
+                <div className="py-1 border-t border-gray-100 dark:border-blue-900/50">
                   <Menu.Item>
                     {({ active }) => (
                       <button
@@ -265,11 +265,11 @@ export default function AdminNavbar({ toggleSidebar }) {
                           window.location.href = '/admin/login';
                         }}
                         className={classNames(
-                          active ? 'bg-red-50 text-red-700' : 'text-gray-700',
-                          'flex items-center w-full px-4 py-2 text-sm hover:bg-red-50'
+                          active ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-200',
+                          'flex items-center w-full px-4 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/30'
                         )}
                       >
-                        <ArrowLeftOnRectangleIcon className="w-5 h-5 mr-3 text-gray-400" />
+                        <ArrowLeftOnRectangleIcon className="w-5 h-5 mr-3 text-gray-400 dark:text-gray-400" />
                         Sign out
                       </button>
                     )}

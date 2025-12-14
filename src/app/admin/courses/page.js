@@ -26,7 +26,6 @@ export default function AdminCourseManagementPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState('courses');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courseAnnouncements, setCourseAnnouncements] = useState([]);
   const [courseMembers, setCourseMembers] = useState(null);
@@ -36,6 +35,12 @@ export default function AdminCourseManagementPage() {
   const [courseActivities, setCourseActivities] = useState([]);
   const [viewingContent, setViewingContent] = useState(null);
   const [showContentModal, setShowContentModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [feedPage, setFeedPage] = useState(1);
+  const [feedItemsPerPage, setFeedItemsPerPage] = useState(10);
+  const [membersPage, setMembersPage] = useState(1);
+  const [membersPerPage, setMembersPerPage] = useState(12);
   const router = useRouter();
 
   const fetchCourses = useCallback(async () => {
@@ -193,6 +198,10 @@ export default function AdminCourseManagementPage() {
 
   const handleModalTabChange = (tab, courseId) => {
     setModalTab(tab);
+    // Reset pagination when switching tabs
+    setFeedPage(1);
+    setMembersPage(1);
+    
     if (tab === 'feed' && courseId) {
       fetchCourseAnnouncements(courseId);
       fetchCourseContent(courseId);
@@ -523,6 +532,17 @@ export default function AdminCourseManagementPage() {
     }
   });
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, sortBy]);
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -540,7 +560,7 @@ export default function AdminCourseManagementPage() {
         {/* Stats Cards Skeleton */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+            <div key={i} className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <div className="w-24 h-4 bg-gray-200 rounded animate-pulse"></div>
@@ -553,7 +573,7 @@ export default function AdminCourseManagementPage() {
         </div>
 
         {/* Search and Filters Skeleton */}
-        <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
             <div className="w-full h-12 max-w-md bg-gray-200 rounded-lg animate-pulse"></div>
             <div className="flex items-center space-x-3">
@@ -567,7 +587,7 @@ export default function AdminCourseManagementPage() {
         <div className="masonry-grid">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="masonry-item">
-              <div className="p-6 bg-white border border-gray-200 shadow-sm rounded-xl">
+              <div className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl">
                 {/* Card Header Skeleton */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center">
@@ -613,58 +633,16 @@ export default function AdminCourseManagementPage() {
   }
 
   return (
-    <div className="space-y-6">
-
-      {/* Tabs Navigation */}
-      <div className="bg-white border border-gray-100 shadow-sm rounded-xl">
-        <div className="border-b border-gray-100">
-          <nav className="flex px-6 space-x-8">
-            <button
-              onClick={() => setActiveTab('courses')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'courses'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Courses ({filteredCourses.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('announcements')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'announcements'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Course Feed
-            </button>
-            <button
-              onClick={() => setActiveTab('members')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'members'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Member Management
-            </button>
-          </nav>
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'courses' && (
-        <>
+    <div className="space-y-6 dark:bg-gray-900">
           {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
-        <div className="p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-blue-300 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+        <div className="p-6 transition-all duration-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-purple-300 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Courses</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">{courses.length}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Courses</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100 animate-pulse-gentle">{courses.length}</p>
             </div>
-            <div className="p-3 bg-blue-500 rounded-lg shadow-lg animate-icon-bounce">
+            <div className="p-3 bg-purple-600 rounded-lg shadow-lg animate-icon-bounce">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
@@ -672,15 +650,15 @@ export default function AdminCourseManagementPage() {
           </div>
         </div>
 
-        <div className="p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-green-300 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <div className="p-6 transition-all duration-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-purple-300 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Courses</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Courses</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100 animate-pulse-gentle">
                 {courses.filter(c => c.status === 'active').length}
               </p>
             </div>
-            <div className="p-3 bg-green-500 rounded-lg shadow-lg animate-icon-bounce">
+            <div className="p-3 bg-indigo-600 rounded-lg shadow-lg animate-icon-bounce">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -688,11 +666,11 @@ export default function AdminCourseManagementPage() {
           </div>
         </div>
 
-        <div className="p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-purple-300 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+        <div className="p-6 transition-all duration-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-purple-300 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Students</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100 animate-pulse-gentle">
                 {courses.reduce((acc, course) => acc + (course.enrolledUsersCount || 0), 0)}
               </p>
             </div>
@@ -704,15 +682,15 @@ export default function AdminCourseManagementPage() {
           </div>
         </div>
 
-        <div className="p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-orange-300 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+        <div className="p-6 transition-all duration-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1 hover:border-purple-300 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Avg. Enrollment</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900 animate-pulse-gentle">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Enrollment</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100 animate-pulse-gentle">
                 {courses.length > 0 ? Math.round(courses.reduce((acc, course) => acc + (course.enrolledUsersCount || 0), 0) / courses.length) : 0}
               </p>
             </div>
-            <div className="p-3 bg-orange-500 rounded-lg shadow-lg animate-icon-bounce">
+            <div className="p-3 bg-gray-500 rounded-lg shadow-lg animate-icon-bounce">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
@@ -722,14 +700,14 @@ export default function AdminCourseManagementPage() {
       </div>
 
       {/* Enhanced Search and Filters */}
-      <div className="overflow-hidden bg-white border border-gray-100 shadow-sm rounded-xl">
+      <div className="overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
         <div className="p-4 sm:p-6">
           <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
             {/* Search Input */}
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <svg className="w-4 h-4 text-gray-400 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
@@ -738,12 +716,12 @@ export default function AdminCourseManagementPage() {
                   placeholder="Search courses by name, instructor, or description..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full py-2.5 sm:py-3 pl-9 sm:pl-10 pr-3 text-sm sm:text-base leading-5 placeholder-gray-400 transition-all duration-200 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="block w-full py-2.5 sm:py-3 pl-9 sm:pl-10 pr-3 text-sm sm:text-base leading-5 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-gray-100"
                 />
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -760,7 +738,7 @@ export default function AdminCourseManagementPage() {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="appearance-none px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base text-gray-700 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-8"
+                  className="appearance-none px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-8"
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
@@ -779,7 +757,7 @@ export default function AdminCourseManagementPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base text-gray-700 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-8"
+                  className="appearance-none px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-8"
                 >
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
@@ -820,11 +798,11 @@ export default function AdminCourseManagementPage() {
 
           {/* Advanced Filters Panel */}
           {showFilters && (
-            <div className="pt-4 mt-4 border-t border-gray-100 animate-fade-in-down">
+            <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-700 animate-fade-in-down">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-700">Enrollment Range</label>
-                  <select className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                  <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Enrollment Range</label>
+                  <select className="w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                     <option>All Ranges</option>
                     <option>0-10 students</option>
                     <option>11-50 students</option>
@@ -832,8 +810,8 @@ export default function AdminCourseManagementPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-700">Date Created</label>
-                  <select className="w-full px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                  <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Date Created</label>
+                  <select className="w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                     <option>All Time</option>
                     <option>Last 7 days</option>
                     <option>Last 30 days</option>
@@ -841,11 +819,11 @@ export default function AdminCourseManagementPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-700">Instructor</label>
+                  <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Instructor</label>
                   <input
                     type="text"
                     placeholder="Filter by instructor..."
-                    className="w-full px-3 py-2 text-sm placeholder-gray-400 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-gray-100"
                   />
                 </div>
                 <div className="flex items-end">
@@ -859,7 +837,7 @@ export default function AdminCourseManagementPage() {
 
           {/* Active Filters & Results Count */}
           <div className="flex flex-col mt-4 space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
               <span>Showing {filteredCourses.length} of {courses.length} courses</span>
               {(searchTerm || filterStatus !== 'all') && (
                 <button
@@ -874,7 +852,7 @@ export default function AdminCourseManagementPage() {
               )}
             </div>
             {filteredCourses.length > 0 && (
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 Sorted by: {sortBy === 'newest' ? 'Newest First' : sortBy === 'oldest' ? 'Oldest First' : sortBy === 'name' ? 'Name' : 'Enrollment'}
               </div>
             )}
@@ -884,17 +862,21 @@ export default function AdminCourseManagementPage() {
 
       {/* Courses Grid */}
       <div className="masonry-grid">
-        {filteredCourses.map((course, index) => (
+        {paginatedCourses.map((course, index) => (
           <div key={course._id} className="masonry-item">
             {editingCourse === course._id ? (
               /* Edit Mode Card */
-              <div className="relative transition-all duration-300 bg-white border border-gray-200 shadow-sm group rounded-xl hover:shadow-lg animate-admin-card-entrance hover:scale-[1.02]">
+              <div className="relative transition-all duration-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm group rounded-xl hover:shadow-lg animate-admin-card-entrance hover:scale-[1.02]">
                 <div className="p-6">
                   <div className="flex items-center mb-4">
                     <div className="flex-shrink-0 w-12 h-12">
-                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-white text-lg font-semibold shadow-lg ${
-                        editFormData.coverColor || 'bg-blue-500'
-                      }`}>
+                      <div 
+                        className="h-12 w-12 rounded-xl flex items-center justify-center text-lg font-semibold shadow-lg"
+                        style={{ 
+                          backgroundColor: editFormData.coverColor || '#3b82f6',
+                          color: '#1f2937'
+                        }}
+                      >
                         {editFormData.subject?.charAt(0) || 'C'}
                       </div>
                     </div>
@@ -935,14 +917,14 @@ export default function AdminCourseManagementPage() {
                         <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        <span className="text-sm font-medium text-gray-900">{course.enrolledUsersCount || 0}</span>
-                        <span className="text-sm text-gray-500">students</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{course.enrolledUsersCount || 0}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">students</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <svg className={`w-5 h-5 ${course.isArchived ? 'text-amber-500' : 'text-green-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="text-sm font-medium text-gray-900">{course.isArchived ? 'Archived' : 'Active'}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{course.isArchived ? 'Archived' : 'Active'}</span>
                       </div>
                     </div>
                     <div className="text-sm text-gray-500">
@@ -954,7 +936,7 @@ export default function AdminCourseManagementPage() {
                     <button
                       onClick={() => handleSaveEdit(course._id)}
                       disabled={actionLoading[`edit-${course._id}`]}
-                      className="flex items-center px-4 py-2 space-x-2 text-sm font-medium text-white transition-all duration-200 bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center px-4 py-2 space-x-2 text-sm font-medium text-white transition-all duration-200 bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {actionLoading[`edit-${course._id}`] && (
                         <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -974,22 +956,26 @@ export default function AdminCourseManagementPage() {
               </div>
             ) : (
               /* View Mode Card */
-              <div className="relative p-6 transition-all duration-300 bg-white border border-gray-200 shadow-sm group rounded-xl hover:shadow-xl animate-admin-card-entrance hover:-translate-y-1 hover:scale-[1.02] hover:border-blue-300">
+              <div className="relative p-6 transition-all duration-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm group rounded-xl hover:shadow-xl animate-admin-card-entrance hover:-translate-y-1 hover:scale-[1.02] hover:border-purple-300 dark:hover:border-purple-500">
                   {/* Card Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center flex-1 min-w-0">
                       <div className="flex-shrink-0 w-12 h-12">
-                        <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-white text-lg font-semibold shadow-lg transition-all duration-300 group-hover:scale-110 ${
-                          course.coverColor || 'bg-blue-500'
-                        }`}>
+                        <div 
+                          className="h-12 w-12 rounded-xl flex items-center justify-center text-lg font-semibold shadow-lg transition-all duration-300 group-hover:scale-110"
+                          style={{ 
+                            backgroundColor: course.coverColor || '#3b82f6',
+                            color: '#1f2937'
+                          }}
+                        >
                           {course.subject?.charAt(0) || 'C'}
                         </div>
                       </div>
                       <div className="flex-1 min-w-0 ml-3">
-                        <h3 className="text-lg font-semibold text-gray-900 truncate transition-colors duration-200 group-hover:text-purple-700">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate transition-colors duration-200 group-hover:text-purple-700 dark:group-hover:text-purple-400">
                           {course.subject}
                         </h3>
-                        <p className="mt-1 text-sm text-gray-500 line-clamp-2">
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
                           {course.section || 'No description available'}
                         </p>
                       </div>
@@ -997,14 +983,14 @@ export default function AdminCourseManagementPage() {
                     <div className="flex flex-col items-end space-y-2">
                       <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${
                         course.isArchived
-                          ? 'text-amber-800 bg-amber-100'
-                          : 'text-green-800 bg-green-100'
+                          ? 'text-gray-800 bg-gray-100 dark:text-gray-300 dark:bg-gray-700'
+                          : 'text-indigo-800 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/30'
                       }`}>
                         {course.isArchived ? 'Archived' : 'Active'}
                       </span>
                       {course.enrolledUsersCount > 0 && (
-                        <div className="flex items-center space-x-1 text-xs text-gray-500">
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
+                          <div className="w-2 h-2 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-pulse"></div>
                           <span>Live</span>
                         </div>
                       )}
@@ -1014,68 +1000,68 @@ export default function AdminCourseManagementPage() {
                   {/* Card Content */}
                   <div className="mb-4 space-y-3">
                     {/* Instructor Info */}
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
                       <div className="flex items-center min-w-0 space-x-2">
-                        <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg">
-                          <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                          <svg className="w-4 h-4 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                         </div>
                         <div className="min-w-0">
-                          <span className="block text-sm font-medium text-gray-900 truncate">
+                          <span className="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                             {course.teacherName || course.createdBy?.name || 'No instructor'}
                           </span>
-                          <span className="text-xs text-gray-500">Instructor</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Instructor</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Enrollment & Date Info */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="flex items-center p-2 space-x-2 rounded-lg bg-blue-50">
-                        <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 bg-blue-100 rounded-lg">
-                          <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex items-center p-2 space-x-2 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                        <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                          <svg className="w-3 h-3 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                         </div>
                         <div>
-                          <span className="text-sm font-semibold text-blue-900">{course.enrolledUsersCount || 0}</span>
-                          <span className="block text-xs text-blue-700">Students</span>
+                          <span className="text-sm font-semibold text-purple-900 dark:text-purple-200">{course.enrolledUsersCount || 0}</span>
+                          <span className="block text-xs text-purple-700 dark:text-purple-400">Students</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center p-2 space-x-2 rounded-lg bg-green-50">
-                        <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 bg-green-100 rounded-lg">
-                          <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex items-center p-2 space-x-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
+                        <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
+                          <svg className="w-3 h-3 text-indigo-600 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 9l6-6m0 0v6m0-6h-6" />
                           </svg>
                         </div>
                         <div>
-                          <span className="text-sm font-semibold text-green-900">
+                          <span className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">
                             {new Date(course.createdAt).toLocaleDateString()}
                           </span>
-                          <span className="block text-xs text-green-700">Created</span>
+                          <span className="block text-xs text-indigo-700 dark:text-indigo-400">Created</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Unique Key Display */}
                     {course.uniqueKey && (
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-purple-50">
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-700">
                         <div className="flex items-center space-x-2">
-                          <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 bg-purple-100 rounded-lg">
-                            <svg className="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-600 rounded-lg">
+                            <svg className="w-3 h-3 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                             </svg>
                           </div>
                           <div>
-                            <span className="font-mono text-xs font-medium text-purple-900">{course.uniqueKey}</span>
-                            <span className="block text-xs text-purple-700">Course Key</span>
+                            <span className="font-mono text-xs font-medium text-gray-900 dark:text-gray-100">{course.uniqueKey}</span>
+                            <span className="block text-xs text-gray-700 dark:text-gray-400">Course Key</span>
                           </div>
                         </div>
                         <button
                           onClick={() => navigator.clipboard.writeText(course.uniqueKey)}
-                          className="p-1 text-purple-600 transition-colors duration-200 hover:text-purple-800"
+                          className="p-1 text-gray-600 dark:text-gray-400 transition-colors duration-200 hover:text-gray-800 dark:hover:text-gray-200"
                           title="Copy course key"
                         >
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1087,11 +1073,11 @@ export default function AdminCourseManagementPage() {
                   </div>
 
                   {/* Card Actions */}
-                  <div className="flex items-center justify-end pt-4 space-x-2 border-t border-gray-100">
+                  <div className="flex items-center justify-end pt-4 space-x-2 border-t border-gray-100 dark:border-gray-700">
                     <button
                       onClick={() => handleViewClick(course._id)}
                       disabled={actionLoading[`view-${course._id}`]}
-                      className="flex items-center justify-center p-2 text-green-600 transition-all duration-200 rounded-lg hover:text-white hover:bg-green-600 animate-icon-bounce disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center justify-center p-2 text-indigo-600 transition-all duration-200 rounded-lg hover:text-white hover:bg-indigo-600 animate-icon-bounce disabled:opacity-50 disabled:cursor-not-allowed"
                       title="View course details"
                     >
                       {actionLoading[`view-${course._id}`] ? (
@@ -1107,7 +1093,7 @@ export default function AdminCourseManagementPage() {
                     </button>
                     <button
                       onClick={() => handleEditClick(course)}
-                      className="p-2 text-blue-600 transition-all duration-200 rounded-lg hover:text-white hover:bg-blue-600 animate-icon-bounce"
+                      className="p-2 text-purple-600 transition-all duration-200 rounded-lg hover:text-white hover:bg-purple-600 animate-icon-bounce"
                       title="Edit course"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1144,11 +1130,11 @@ export default function AdminCourseManagementPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
-              <h3 className="mb-2 text-xl font-semibold text-gray-900">No courses found</h3>
-              <p className="mb-6 text-gray-500">Try adjusting your search criteria or create a new course to get started.</p>
+              <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-gray-100">No courses found</h3>
+              <p className="mb-6 text-gray-500 dark:text-gray-400">Try adjusting your search criteria or create a new course to get started.</p>
               <button
                 onClick={() => setIsCreateCourseModalOpen(true)}
-                className="inline-flex items-center px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl"
+                className="inline-flex items-center px-6 py-3 space-x-2 font-medium text-white transition-all duration-200 bg-purple-600 rounded-lg shadow-lg hover:bg-purple-700 hover:shadow-xl"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1160,6 +1146,103 @@ export default function AdminCourseManagementPage() {
         )}
       </div>
 
+      {/* Pagination Controls */}
+      {filteredCourses.length > 0 && (
+        <div className="flex flex-col items-center justify-between gap-4 p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm sm:flex-row rounded-xl">
+          {/* Items per page selector */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Show</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            >
+              <option value={6}>6</option>
+              <option value={12}>12</option>
+              <option value={24}>24</option>
+              <option value={48}>48</option>
+            </select>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              per page (Showing {startIndex + 1}-{Math.min(endIndex, filteredCourses.length)} of {filteredCourses.length})
+            </span>
+          </div>
+
+          {/* Pagination buttons */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="First page"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+
+            {/* Page numbers */}
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      currentPage === pageNum
+                        ? 'bg-purple-600 dark:bg-purple-500 text-white hover:bg-purple-700 dark:hover:bg-purple-600'
+                        : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Last page"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
         onClose={() => setIsCreateCourseModalOpen(false)}
@@ -1169,15 +1252,19 @@ export default function AdminCourseManagementPage() {
 
       {showViewModal && selectedCourse && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black bg-opacity-50 sm:p-4 animate-admin-modal-backdrop-fade">
-          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white shadow-2xl rounded-2xl animate-modal-appear">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 shadow-2xl rounded-2xl animate-modal-appear">
             {/* Modal Header */}
-            <div className="relative px-8 py-6 bg-blue-600 rounded-t-2xl">
+            <div className="relative px-8 py-6 bg-purple-600 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center justify-center w-16 h-16 bg-white shadow-lg rounded-2xl">
-                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-white text-xl font-bold ${
-                      selectedCourse.coverColor || 'bg-blue-500'
-                    }`}>
+                    <div 
+                      className="h-12 w-12 rounded-xl flex items-center justify-center text-xl font-bold"
+                      style={{ 
+                        backgroundColor: selectedCourse.coverColor || '#3b82f6',
+                        color: '#1f2937'
+                      }}
+                    >
                       {selectedCourse.subject?.charAt(0) || 'C'}
                     </div>
                   </div>
@@ -1198,7 +1285,7 @@ export default function AdminCourseManagementPage() {
             </div>
 
             {/* Modal Tabs Navigation */}
-            <div className="bg-white border-b border-gray-200">
+            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <nav className="flex px-8 -mb-px space-x-8">
                 <button
                   onClick={() => handleModalTabChange('feed', selectedCourse._id)}
@@ -1260,7 +1347,7 @@ export default function AdminCourseManagementPage() {
               {/* Feed Tab */}
               {modalTab === 'feed' && (
                 <div className="space-y-6">
-                  <h3 className="mb-4 text-lg font-semibold text-gray-900">Course Feed & Announcements</h3>
+                  <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Course Feed & Announcements</h3>
                   
                   {tabLoading ? (
                     <div className="p-8 text-center bg-gray-50 rounded-xl">
@@ -1274,34 +1361,80 @@ export default function AdminCourseManagementPage() {
                       {/* Announcements Section */}
                       {courseAnnouncements.length > 0 && (
                         <div className="space-y-4">
-                          <h4 className="font-semibold text-gray-800 text-md">Announcements</h4>
-                          {courseAnnouncements.map((announcement) => (
-                            <div key={announcement.id} className="p-4 transition-shadow bg-white border border-gray-200 rounded-xl hover:shadow-md">
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-md">Announcements</h4>
+                          {courseAnnouncements
+                            .slice((feedPage - 1) * feedItemsPerPage, feedPage * feedItemsPerPage)
+                            .map((announcement) => (
+                            <div key={announcement.id} className="p-4 transition-shadow bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:shadow-md">
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center mb-2 space-x-3">
-                                    <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-full">
-                                      <span className="text-sm font-semibold text-purple-600">
+                                    <div className="flex items-center justify-center w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full">
+                                      <span className="text-sm font-semibold text-purple-600 dark:text-purple-300">
                                         {announcement.postedBy?.charAt(0) || 'A'}
                                       </span>
                                     </div>
                                     <div>
-                                      <p className="text-sm font-medium text-gray-900">{announcement.postedBy}</p>
-                                      <p className="text-xs text-gray-500">
+                                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{announcement.postedBy}</p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
                                         {new Date(announcement.createdAt).toLocaleDateString()}
                                       </p>
                                     </div>
                                     {announcement.pinned && (
-                                      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full">
+                                      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-purple-800 bg-purple-100 dark:text-purple-300 dark:bg-purple-900/30 rounded-full">
                                         Pinned
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-gray-700">{announcement.content}</p>
+                                  <p className="text-gray-700 dark:text-gray-300">{announcement.content}</p>
                                 </div>
                               </div>
                             </div>
                           ))}
+
+                          {/* Announcements Pagination */}
+                          {courseAnnouncements.length > feedItemsPerPage && (
+                            <div className="flex items-center justify-between p-4 mt-4 border-t border-gray-200">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-600">Show</span>
+                                <select
+                                  value={feedItemsPerPage}
+                                  onChange={(e) => {
+                                    setFeedItemsPerPage(Number(e.target.value));
+                                    setFeedPage(1);
+                                  }}
+                                  className="px-2 py-1 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                >
+                                  <option value={5}>5</option>
+                                  <option value={10}>10</option>
+                                  <option value={20}>20</option>
+                                </select>
+                                <span className="text-sm text-gray-600">
+                                  ({((feedPage - 1) * feedItemsPerPage) + 1}-{Math.min(feedPage * feedItemsPerPage, courseAnnouncements.length)} of {courseAnnouncements.length})
+                                </span>
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => setFeedPage(prev => Math.max(1, prev - 1))}
+                                  disabled={feedPage === 1}
+                                  className="px-3 py-1 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Previous
+                                </button>
+                                <span className="text-sm text-gray-600">
+                                  Page {feedPage} of {Math.ceil(courseAnnouncements.length / feedItemsPerPage)}
+                                </span>
+                                <button
+                                  onClick={() => setFeedPage(prev => Math.min(Math.ceil(courseAnnouncements.length / feedItemsPerPage), prev + 1))}
+                                  disabled={feedPage === Math.ceil(courseAnnouncements.length / feedItemsPerPage)}
+                                  className="px-3 py-1 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Next
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -1313,15 +1446,15 @@ export default function AdminCourseManagementPage() {
                             <div key={content._id} className="p-4 transition-shadow bg-white border border-gray-200 rounded-xl hover:shadow-md">
                               <div className="flex items-start justify-between">
                                 <div className="flex items-start flex-1 space-x-3">
-                                  <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
-                                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <div className="flex items-center justify-center w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                                    <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                     </svg>
                                   </div>
                                   <div className="flex-1">
-                                    <h5 className="font-medium text-gray-900">{content.title}</h5>
+                                    <h5 className="font-medium text-gray-900 dark:text-gray-100">{content.title}</h5>
                                     {content.description && (
-                                      <p className="mt-1 text-sm text-gray-600">{content.description}</p>
+                                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{content.description}</p>
                                     )}
                                     <div className="flex items-center mt-2 space-x-4 text-xs text-gray-500">
                                       <span>{new Date(content.createdAt).toLocaleDateString()}</span>
@@ -1384,7 +1517,7 @@ export default function AdminCourseManagementPage() {
               {/* Activities Tab */}
               {modalTab === 'activities' && (
                 <div className="space-y-6">
-                  <h3 className="mb-4 text-lg font-semibold text-gray-900">Course Activities & Assignments</h3>
+                  <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Course Activities & Assignments</h3>
                   
                   {tabLoading ? (
                     <div className="p-8 text-center bg-gray-50 rounded-xl">
@@ -1400,8 +1533,8 @@ export default function AdminCourseManagementPage() {
                           <div className="flex items-start justify-between">
                             <div className="flex items-start flex-1 space-x-3">
                               <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${
-                                activity.type === 'assignment' ? 'bg-orange-100' : 
-                                activity.type === 'quiz' ? 'bg-green-100' : 'bg-blue-100'
+                                activity.type === 'assignment' ? 'bg-purple-100 dark:bg-purple-900/30' : 
+                                activity.type === 'quiz' ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-gray-100 dark:bg-gray-700'
                               }`}>
                                 {activity.type === 'assignment' ? (
                                   <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1419,10 +1552,10 @@ export default function AdminCourseManagementPage() {
                               </div>
                               <div className="flex-1">
                                 <div className="flex items-center space-x-2">
-                                  <h5 className="font-semibold text-gray-900">{activity.title}</h5>
+                                  <h5 className="font-semibold text-gray-900 dark:text-gray-100">{activity.title}</h5>
                                   <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${
-                                    activity.type === 'assignment' ? 'bg-orange-100 text-orange-800' :
-                                    activity.type === 'quiz' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                                    activity.type === 'assignment' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                    activity.type === 'quiz' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                                   }`}>
                                     {activity.type}
                                   </span>
@@ -1500,66 +1633,114 @@ export default function AdminCourseManagementPage() {
               {/* Members Tab */}
               {modalTab === 'members' && (
                 <div>
-                  <h3 className="flex items-center mb-4 text-lg font-semibold text-gray-900">
-                    <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <h3 className="flex items-center mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <svg className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                     </svg>
                     Enrolled Members ({selectedCourse.enrolledUsers ? selectedCourse.enrolledUsers.length : 0})
                   </h3>
 
                   {selectedCourse.enrolledUsers && selectedCourse.enrolledUsers.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      {selectedCourse.enrolledUsers.map(user => (
-                        <div key={user._id} className="flex items-center p-4 space-x-4 bg-gray-50 rounded-xl">
-                          <div className="flex items-center justify-center w-12 h-12 font-semibold text-white bg-purple-500 rounded-full">
-                            {user.name?.charAt(0) || 'U'}
+                    <>
+                      <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2">
+                        {selectedCourse.enrolledUsers
+                          .slice((membersPage - 1) * membersPerPage, membersPage * membersPerPage)
+                          .map(user => (
+                          <div key={user._id} className="flex items-center p-4 space-x-4 bg-gray-50 rounded-xl">
+                            <div className="flex items-center justify-center w-12 h-12 font-semibold text-purple-900 bg-purple-200 rounded-full">
+                              {user.name?.charAt(0) || 'U'}
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                user.role === 'student' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'
+                              }`}>
+                                {user.role}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">{user.name}</p>
-                            <p className="text-sm text-gray-500">{user.email}</p>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.role === 'student' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                            }`}>
-                              {user.role}
+                        ))}
+                      </div>
+
+                      {/* Members Pagination */}
+                      {selectedCourse.enrolledUsers.length > membersPerPage && (
+                        <div className="flex items-center justify-between p-4 border-t border-gray-200">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-600">Show</span>
+                            <select
+                              value={membersPerPage}
+                              onChange={(e) => {
+                                setMembersPerPage(Number(e.target.value));
+                                setMembersPage(1);
+                              }}
+                              className="px-2 py-1 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            >
+                              <option value={6}>6</option>
+                              <option value={12}>12</option>
+                              <option value={24}>24</option>
+                            </select>
+                            <span className="text-sm text-gray-600">
+                              ({((membersPage - 1) * membersPerPage) + 1}-{Math.min(membersPage * membersPerPage, selectedCourse.enrolledUsers.length)} of {selectedCourse.enrolledUsers.length})
                             </span>
                           </div>
+
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => setMembersPage(prev => Math.max(1, prev - 1))}
+                              disabled={membersPage === 1}
+                              className="px-3 py-1 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Previous
+                            </button>
+                            <span className="text-sm text-gray-600">
+                              Page {membersPage} of {Math.ceil(selectedCourse.enrolledUsers.length / membersPerPage)}
+                            </span>
+                            <button
+                              onClick={() => setMembersPage(prev => Math.min(Math.ceil(selectedCourse.enrolledUsers.length / membersPerPage), prev + 1))}
+                              disabled={membersPage === Math.ceil(selectedCourse.enrolledUsers.length / membersPerPage)}
+                              className="px-3 py-1 text-sm font-medium text-gray-700 transition-colors bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Next
+                            </button>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </>
                   ) : (
                     <div className="py-12 text-center bg-gray-50 rounded-xl">
                       <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
-                      <h4 className="mb-2 text-lg font-medium text-gray-900">No Students Enrolled</h4>
-                      <p className="text-gray-500">Students will appear here once they join this course.</p>
+                      <h4 className="mb-2 text-lg font-medium text-gray-900 dark:text-gray-100">No Students Enrolled</h4>
+                      <p className="text-gray-500 dark:text-gray-400">Students will appear here once they join this course.</p>
                     </div>
                   )}
 
                   {/* Course Info Summary */}
                   <div className="mt-8">
-                    <h3 className="flex items-center mb-4 text-lg font-semibold text-gray-900">
-                      <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <h3 className="flex items-center mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      <svg className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Course Information
                     </h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div className="p-4 bg-gray-50 rounded-xl">
-                        <p className="text-sm font-medium text-gray-600">Course Name</p>
-                        <p className="text-sm font-semibold text-gray-900">{selectedCourse.subject}</p>
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Course Name</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedCourse.subject}</p>
                       </div>
-                      <div className="p-4 bg-gray-50 rounded-xl">
-                        <p className="text-sm font-medium text-gray-600">Instructor</p>
-                        <p className="text-sm font-semibold text-gray-900">{selectedCourse.teacherName || selectedCourse.createdBy?.name}</p>
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Instructor</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedCourse.teacherName || selectedCourse.createdBy?.name}</p>
                       </div>
-                      <div className="p-4 bg-gray-50 rounded-xl">
-                        <p className="text-sm font-medium text-gray-600">Unique Key</p>
-                        <p className="font-mono text-sm font-semibold text-gray-900">{selectedCourse.uniqueKey}</p>
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Unique Key</p>
+                        <p className="font-mono text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedCourse.uniqueKey}</p>
                       </div>
-                      <div className="p-4 bg-gray-50 rounded-xl">
-                        <p className="text-sm font-medium text-gray-600">Created Date</p>
-                        <p className="text-sm font-semibold text-gray-900">{new Date(selectedCourse.createdAt).toLocaleDateString()}</p>
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Created Date</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{new Date(selectedCourse.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
                   </div>
@@ -1578,10 +1759,10 @@ export default function AdminCourseManagementPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end px-8 py-4 space-x-3 bg-gray-50 rounded-b-2xl">
+            <div className="flex items-center justify-end px-8 py-4 space-x-3 bg-gray-50 dark:bg-gray-700 rounded-b-2xl">
               <button
                 onClick={handleCloseViewModal}
-                className="px-6 py-2 text-sm font-medium text-gray-700 transition-all duration-200 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                className="px-6 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-all duration-200 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
               >
                 Close
               </button>
@@ -1593,9 +1774,9 @@ export default function AdminCourseManagementPage() {
       {/* Content/Activity Viewing Modal */}
       {showContentModal && viewingContent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-admin-modal-backdrop-fade">
-          <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white shadow-2xl rounded-2xl animate-modal-appear">
+          <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 shadow-2xl rounded-2xl animate-modal-appear">
             {/* Modal Header */}
-            <div className="sticky top-0 z-10 px-6 py-4 bg-blue-600 rounded-t-2xl">
+            <div className="sticky top-0 z-10 px-6 py-4 bg-purple-600 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-white">
                   {viewingContent.type === 'content' ? 'Course Material' : 'Activity Details'}
@@ -1619,18 +1800,18 @@ export default function AdminCourseManagementPage() {
               {/* Title and Type */}
               <div className="mb-6">
                 <div className="flex items-center mb-2 space-x-3">
-                  <h4 className="text-2xl font-bold text-gray-900">{viewingContent.title}</h4>
+                  <h4 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{viewingContent.title}</h4>
                   {viewingContent.type === 'activity' && (
                     <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full ${
-                      viewingContent.type === 'assignment' ? 'bg-orange-100 text-orange-800' :
-                      viewingContent.type === 'quiz' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                      viewingContent.type === 'assignment' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                      viewingContent.type === 'quiz' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                     }`}>
                       {viewingContent.type}
                     </span>
                   )}
                 </div>
                 {viewingContent.description && (
-                  <p className="text-gray-600">{viewingContent.description}</p>
+                  <p className="text-gray-600 dark:text-gray-400">{viewingContent.description}</p>
                 )}
               </div>
 
@@ -1638,17 +1819,17 @@ export default function AdminCourseManagementPage() {
               {viewingContent.type === 'activity' && (
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   {viewingContent.dueDate && (
-                    <div className="p-4 bg-gray-50 rounded-xl">
-                      <p className="text-sm font-medium text-gray-600">Due Date</p>
-                      <p className="text-lg font-semibold text-gray-900">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Due Date</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                         {new Date(viewingContent.dueDate).toLocaleDateString()}
                       </p>
                     </div>
                   )}
                   {viewingContent.points && (
-                    <div className="p-4 bg-gray-50 rounded-xl">
-                      <p className="text-sm font-medium text-gray-600">Points</p>
-                      <p className="text-lg font-semibold text-gray-900">{viewingContent.points}</p>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Points</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{viewingContent.points}</p>
                     </div>
                   )}
                 </div>
@@ -1657,25 +1838,25 @@ export default function AdminCourseManagementPage() {
               {/* File/Link Section */}
               {viewingContent.fileUrl && (
                 <div className="mb-6">
-                  <h5 className="mb-3 text-lg font-semibold text-gray-900">Attached File</h5>
-                  <div className="p-4 border-2 border-gray-300 border-dashed rounded-xl">
+                  <h5 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Attached File</h5>
+                  <div className="p-4 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-xl">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg">
-                          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                          <svg className="w-6 h-6 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                           </svg>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">View File</p>
-                          <p className="text-sm text-gray-500">Click to open in new tab</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">View File</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Click to open in new tab</p>
                         </div>
                       </div>
                       <a
                         href={viewingContent.fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
+                        className="px-4 py-2 text-sm font-medium text-white transition-colors bg-indigo-600 rounded-lg hover:bg-indigo-700"
                       >
                         Open File
                       </a>
@@ -1685,18 +1866,18 @@ export default function AdminCourseManagementPage() {
               )}
 
               {/* Additional Info */}
-              <div className="pt-4 border-t border-gray-200">
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Created</p>
-                    <p className="text-sm text-gray-900">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Created</p>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">
                       {new Date(viewingContent.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   {viewingContent.updatedAt && (
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Last Updated</p>
-                      <p className="text-sm text-gray-900">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Last Updated</p>
+                      <p className="text-sm text-gray-900 dark:text-gray-100">
                         {new Date(viewingContent.updatedAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -1706,7 +1887,7 @@ export default function AdminCourseManagementPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between px-6 py-4 bg-gray-50 rounded-b-2xl">
+            <div className="flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-gray-700 rounded-b-2xl">
               <button
                 onClick={() => {
                   if (viewingContent.type === 'content') {
@@ -1725,7 +1906,7 @@ export default function AdminCourseManagementPage() {
                   setShowContentModal(false);
                   setViewingContent(null);
                 }}
-                className="px-6 py-2 text-sm font-medium text-gray-700 transition-all duration-200 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-6 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-all duration-200 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500"
               >
                 Close
               </button>
@@ -1774,8 +1955,6 @@ export default function AdminCourseManagementPage() {
           </div>
         ))}
       </div>
-        </>
-      )}
     </div>
   );
 }

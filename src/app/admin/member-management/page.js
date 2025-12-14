@@ -14,6 +14,8 @@ export default function AdminMemberManagementPage() {
   const [notifications, setNotifications] = useState([]);
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -162,25 +164,36 @@ export default function AdminMemberManagementPage() {
     return matchesSearch;
   });
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedMembers = filteredMembers.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCourse]);
+
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-3">
-            <div className="w-64 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+            <div className="w-64 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-96 animate-pulse"></div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+            <div key={i} className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
-                  <div className="w-24 h-4 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-24 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                 </div>
-                <div className="w-12 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
+                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
               </div>
             </div>
           ))}
@@ -188,18 +201,18 @@ export default function AdminMemberManagementPage() {
 
         <div className="space-y-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="p-6 bg-white border border-gray-200 rounded-xl">
+            <div key={i} className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
                   <div className="space-y-2">
-                    <div className="w-32 h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="w-48 h-4 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="w-32 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    <div className="w-48 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                   </div>
                 </div>
                 <div className="flex space-x-2">
-                  <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-                  <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
                 </div>
               </div>
             </div>
@@ -218,20 +231,20 @@ export default function AdminMemberManagementPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Member Management</h1>
-          <p className="mt-1 text-gray-600">Manage course members, roles, and permissions</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Member Management</h1>
+          <p className="mt-1 text-gray-600 dark:text-gray-400">Manage course members, roles, and permissions</p>
         </div>
       </div>
 
       {/* Course Selection */}
-      <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+      <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
         <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
           <div>
-            <label className="block mb-2 text-sm font-medium text-gray-700">Select Course</label>
+            <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Select Course</label>
             <select
               value={selectedCourse}
               onChange={(e) => setSelectedCourse(e.target.value)}
-              className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[300px]"
+              className="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[300px]"
             >
               <option value="">Choose a course...</option>
               {courses.map(course => (
@@ -243,7 +256,7 @@ export default function AdminMemberManagementPage() {
           </div>
 
           {selectedCourse && courseMembers && (
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               <span className="font-medium">Course:</span> {courseMembers.course.subject} {courseMembers.course.section}
             </div>
           )}
@@ -254,13 +267,13 @@ export default function AdminMemberManagementPage() {
         <>
           {/* Stats Cards */}
           <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
-            <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+            <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Students</p>
-                  <p className="mt-1 text-3xl font-bold text-gray-900">{courseMembers.summary.totalEnrolled}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
+                  <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{courseMembers.summary.totalEnrolled}</p>
                 </div>
-                <div className="p-3 bg-blue-500 rounded-lg shadow-lg">
+                <div className="p-3 bg-purple-600 rounded-lg shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -268,13 +281,13 @@ export default function AdminMemberManagementPage() {
               </div>
             </div>
 
-            <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+            <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Co-Teachers</p>
-                  <p className="mt-1 text-3xl font-bold text-gray-900">{courseMembers.summary.totalCoTeachers}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Co-Teachers</p>
+                  <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{courseMembers.summary.totalCoTeachers}</p>
                 </div>
-                <div className="p-3 bg-green-500 rounded-lg shadow-lg">
+                <div className="p-3 bg-indigo-600 rounded-lg shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                   </svg>
@@ -282,11 +295,11 @@ export default function AdminMemberManagementPage() {
               </div>
             </div>
 
-            <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+            <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Instructors</p>
-                  <p className="mt-1 text-3xl font-bold text-gray-900">{courseMembers.summary.totalInstructors}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Instructors</p>
+                  <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{courseMembers.summary.totalInstructors}</p>
                 </div>
                 <div className="p-3 bg-purple-500 rounded-lg shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,13 +309,13 @@ export default function AdminMemberManagementPage() {
               </div>
             </div>
 
-            <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+            <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Members</p>
-                  <p className="mt-1 text-3xl font-bold text-gray-900">{courseMembers.summary.totalMembers}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Members</p>
+                  <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{courseMembers.summary.totalMembers}</p>
                 </div>
-                <div className="p-3 bg-orange-500 rounded-lg shadow-lg">
+                <div className="p-3 bg-gray-500 rounded-lg shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -312,13 +325,13 @@ export default function AdminMemberManagementPage() {
           </div>
 
           {/* Search and Members List */}
-          <div className="bg-white border border-gray-100 shadow-sm rounded-xl">
+          <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
             <div className="p-6">
               <div className="flex flex-col mb-6 space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
                 <div className="flex-1 max-w-md">
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
                     </div>
@@ -327,12 +340,12 @@ export default function AdminMemberManagementPage() {
                       placeholder="Search members by name, email, or role..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="block w-full py-2.5 pl-9 pr-3 text-sm leading-5 placeholder-gray-400 transition-all duration-200 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="block w-full py-2.5 pl-9 pr-3 text-sm leading-5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     {searchTerm && (
                       <button
                         onClick={() => setSearchTerm('')}
-                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -347,15 +360,15 @@ export default function AdminMemberManagementPage() {
               <div className="space-y-4">
                 {filteredMembers.length === 0 ? (
                   <div className="py-12 text-center">
-                    <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
-                    <h3 className="mb-2 text-lg font-medium text-gray-900">No members found</h3>
-                    <p className="text-gray-500">Members will appear here once they join this course.</p>
+                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-gray-100">No members found</h3>
+                    <p className="text-gray-500 dark:text-gray-400">Members will appear here once they join this course.</p>
                   </div>
                 ) : (
-                  filteredMembers.map((member) => (
-                    <div key={member.id} className="p-6 transition-colors duration-200 border border-gray-200 bg-gray-50 rounded-xl hover:bg-gray-100">
+                  paginatedMembers.map((member) => (
+                    <div key={member.id} className="p-6 transition-colors duration-200 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                           <div className="flex items-center justify-center w-12 h-12 font-semibold text-white bg-purple-500 rounded-full">
@@ -363,18 +376,18 @@ export default function AdminMemberManagementPage() {
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center space-x-3">
-                              <h3 className="text-lg font-semibold text-gray-900">{member.name}</h3>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{member.name}</h3>
                               <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${
-                                member.type === 'creator' ? 'bg-purple-100 text-purple-800' :
-                                member.type === 'instructor' ? 'bg-green-100 text-green-800' :
-                                member.type === 'coTeacher' ? 'bg-blue-100 text-blue-800' :
-                                'bg-gray-100 text-gray-800'
+                                member.type === 'creator' ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200' :
+                                member.type === 'instructor' ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200' :
+                                member.type === 'coTeacher' ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200' :
+                                'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
                               }`}>
                                 {member.memberType}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600">{member.email}</p>
-                            <p className="text-xs text-gray-500">Role: {member.role}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{member.email}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500">Role: {member.role}</p>
                           </div>
                         </div>
 
@@ -383,21 +396,21 @@ export default function AdminMemberManagementPage() {
                             <>
                               <button
                                 onClick={() => openRoleModal(member)}
-                                className="px-3 py-2 text-sm font-medium text-blue-600 transition-colors duration-200 bg-blue-100 rounded-lg hover:bg-blue-200"
+                                className="px-3 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 transition-colors duration-200 bg-purple-100 dark:bg-purple-900 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800"
                               >
                                 Change Role
                               </button>
                               <button
                                 onClick={() => handleMemberAction(member.id, 'remove')}
                                 disabled={actionLoading[`remove-${member.id}`]}
-                                className="px-3 py-2 text-sm font-medium text-red-600 transition-colors duration-200 bg-red-100 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 transition-colors duration-200 bg-red-100 dark:bg-red-900 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {actionLoading[`remove-${member.id}`] ? 'Removing...' : 'Remove'}
                               </button>
                             </>
                           )}
                           {member.type === 'creator' && (
-                            <span className="px-3 py-2 text-sm font-medium text-purple-600 bg-purple-100 rounded-lg">
+                            <span className="px-3 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900 rounded-lg">
                               Course Creator
                             </span>
                           )}
@@ -407,6 +420,103 @@ export default function AdminMemberManagementPage() {
                   ))
                 )}
               </div>
+
+              {/* Pagination Controls */}
+              {filteredMembers.length > 0 && (
+                <div className="flex flex-col items-center justify-between gap-4 p-6 mt-6 border-t border-gray-200 dark:border-gray-700 sm:flex-row">
+                  {/* Items per page selector */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Show</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      per page (Showing {startIndex + 1}-{Math.min(endIndex, filteredMembers.length)} of {filteredMembers.length})
+                    </span>
+                  </div>
+
+                  {/* Pagination buttons */}
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="First page"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+
+                    {/* Page numbers */}
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                              currentPage === pageNum
+                                ? 'bg-purple-600 text-white'
+                                : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Last page"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </>
@@ -415,8 +525,8 @@ export default function AdminMemberManagementPage() {
       {/* Role Change Modal */}
       {showRoleModal && selectedMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black bg-opacity-50 sm:p-4">
-          <div className="w-full max-w-md bg-white shadow-2xl rounded-2xl">
-            <div className="px-6 py-4 bg-blue-600 rounded-t-2xl">
+          <div className="w-full max-w-md bg-white dark:bg-gray-800 shadow-2xl rounded-2xl">
+            <div className="px-6 py-4 bg-purple-600 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">Change Member Role</h3>
                 <button
@@ -437,17 +547,17 @@ export default function AdminMemberManagementPage() {
                     {selectedMember.name.charAt(0)}
                   </div>
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900">{selectedMember.name}</h4>
-                    <p className="text-sm text-gray-600">{selectedMember.email}</p>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{selectedMember.name}</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{selectedMember.email}</p>
                   </div>
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Current role: <span className="font-medium">{selectedMember.role}</span> ({selectedMember.memberType})
                 </p>
               </div>
 
               <div className="mb-6 space-y-3">
-                <label className="block text-sm font-medium text-gray-700">New Role:</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">New Role:</label>
                 <div className="space-y-2">
                   <label className="flex items-center">
                     <input
@@ -457,7 +567,7 @@ export default function AdminMemberManagementPage() {
                       defaultChecked={selectedMember.type === 'enrolled'}
                       className="mr-2 text-purple-600 focus:ring-purple-500"
                     />
-                    <span className="text-sm">Student</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">Student</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -467,7 +577,7 @@ export default function AdminMemberManagementPage() {
                       defaultChecked={selectedMember.type === 'coTeacher'}
                       className="mr-2 text-purple-600 focus:ring-purple-500"
                     />
-                    <span className="text-sm">Co-Teacher</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">Co-Teacher</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -477,7 +587,7 @@ export default function AdminMemberManagementPage() {
                       defaultChecked={selectedMember.type === 'instructor'}
                       className="mr-2 text-purple-600 focus:ring-purple-500"
                     />
-                    <span className="text-sm">Instructor</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-100">Instructor</span>
                   </label>
                 </div>
               </div>
@@ -494,7 +604,7 @@ export default function AdminMemberManagementPage() {
                 </button>
                 <button
                   onClick={() => setShowRoleModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 transition-colors duration-200 bg-gray-100 rounded-lg hover:bg-gray-200"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors duration-200 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   Cancel
                 </button>
@@ -511,8 +621,8 @@ export default function AdminMemberManagementPage() {
             key={notification.id}
             className={`max-w-sm w-full p-4 rounded-lg shadow-lg transition-all duration-300 animate-fade-in-down ${
               notification.type === 'success'
-                ? 'bg-green-50 border border-green-200 text-green-800'
-                : 'bg-red-50 border border-red-200 text-red-800'
+                ? 'bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-200'
+                : 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
             }`}
           >
             <div className="flex items-center">

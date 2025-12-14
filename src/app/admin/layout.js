@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import AdminSidebar from '@/components/AdminSidebar';
 import AdminNavbar from '@/components/AdminNavbar';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
@@ -51,16 +53,27 @@ export default function AdminLayout({ children }) {
 
   // Don't show sidebar/navbar on login page
   if (pathname === '/admin/login') {
-    return <>{children}</>;
+    return (
+      <ThemeProvider>
+        {children}
+      </ThemeProvider>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="p-6 lg:p-8">
-        <div className="mx-auto max-w-7xl">
-          {children}
+    <ThemeProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+        {/* Theme Toggle - Fixed position in top right */}
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle />
         </div>
-      </main>
-    </div>
+        
+        <main className="p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl">
+            {children}
+          </div>
+        </main>
+      </div>
+    </ThemeProvider>
   );
 }

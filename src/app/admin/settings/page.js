@@ -143,7 +143,7 @@ export default function AdminSettingsPage() {
   };
 
   if (loading) {
-    return <div className="py-8 text-center">Loading settings...</div>;
+    return <div className="py-8 text-center text-gray-900 dark:text-gray-100">Loading settings...</div>;
   }
 
   return (
@@ -152,52 +152,52 @@ export default function AdminSettingsPage() {
       <div className="space-y-8">
         {/* Header */}
         <div className="text-center lg:text-left">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Admin Settings
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
             Manage your account settings and preferences.
           </p>
         </div>
 
       {/* Alerts */}
       {error && (
-        <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+        <div className="p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20 dark:border-red-800">
           <div className="flex items-center">
-            <svg className="w-5 h-5 mr-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 mr-3 text-red-400 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-sm text-red-700">{error}</p>
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           </div>
         </div>
       )}
 
       {success && (
-        <div className="p-4 border border-green-200 rounded-lg bg-green-50">
+        <div className="p-4 border border-indigo-200 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800">
           <div className="flex items-center">
-            <svg className="w-5 h-5 mr-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 mr-3 text-indigo-400 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            <p className="text-sm text-green-700">{success}</p>
+            <p className="text-sm text-indigo-700 dark:text-indigo-300">{success}</p>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* Profile Information */}
-        <div className="p-8 bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="p-8 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex items-center mb-6">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+              <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <h2 className="ml-3 text-xl font-semibold text-gray-900">Profile Information</h2>
+            <h2 className="ml-3 text-xl font-semibold text-gray-900 dark:text-gray-100">Profile Information</h2>
           </div>
 
           <form onSubmit={handleProfileSubmit} className="space-y-6">
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700" htmlFor="name">
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="name">
                 First Name
               </label>
               <input
@@ -206,13 +206,13 @@ export default function AdminSettingsPage() {
                 name="name"
                 value={adminData.name}
                 onChange={handleProfileChange}
-                className="block w-full px-4 py-3 text-gray-900 placeholder-gray-400 transition-all duration-200 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="block w-full px-4 py-3 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
               />
             </div>
 
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700" htmlFor="surname">
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="surname">
                 Last Name
               </label>
               <input
@@ -221,13 +221,13 @@ export default function AdminSettingsPage() {
                 name="surname"
                 value={adminData.surname}
                 onChange={handleProfileChange}
-                className="block w-full px-4 py-3 text-gray-900 placeholder-gray-400 transition-all duration-200 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="block w-full px-4 py-3 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
               />
             </div>
 
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700" htmlFor="email">
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="email">
                 Email Address
               </label>
               <input
@@ -236,14 +236,14 @@ export default function AdminSettingsPage() {
                 name="email"
                 value={adminData.email}
                 onChange={handleProfileChange}
-                className="block w-full px-4 py-3 text-gray-900 placeholder-gray-400 transition-all duration-200 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="block w-full px-4 py-3 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
               />
             </div>
 
             <button
               type="submit"
-              className="w-full px-6 py-3 font-medium text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl"
+              className="w-full px-6 py-3 font-medium text-white transition-all duration-200 bg-purple-600 dark:bg-purple-500 rounded-lg shadow-lg hover:bg-purple-700 dark:hover:bg-purple-600 hover:shadow-xl"
             >
               Update Profile
             </button>
@@ -251,19 +251,19 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Change Password */}
-        <div className="p-8 bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="p-8 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex items-center mb-6">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+              <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
               </svg>
             </div>
-            <h2 className="ml-3 text-xl font-semibold text-gray-900">Change Password</h2>
+            <h2 className="ml-3 text-xl font-semibold text-gray-900 dark:text-gray-100">Change Password</h2>
           </div>
 
           <form onSubmit={handlePasswordSubmit} className="space-y-6">
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700" htmlFor="newPassword">
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="newPassword">
                 New Password
               </label>
               <input
@@ -271,14 +271,14 @@ export default function AdminSettingsPage() {
                 id="newPassword"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="block w-full px-4 py-3 text-gray-900 placeholder-gray-400 transition-all duration-200 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="block w-full px-4 py-3 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="Enter new password"
                 required
               />
             </div>
 
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700" htmlFor="confirmPassword">
+              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="confirmPassword">
                 Confirm New Password
               </label>
               <input
@@ -286,7 +286,7 @@ export default function AdminSettingsPage() {
                 id="confirmPassword"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="block w-full px-4 py-3 text-gray-900 placeholder-gray-400 transition-all duration-200 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="block w-full px-4 py-3 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="Confirm new password"
                 required
               />
@@ -294,7 +294,7 @@ export default function AdminSettingsPage() {
 
             <button
               type="submit"
-              className="w-full px-6 py-3 font-medium text-white transition-all duration-200 bg-green-600 rounded-lg shadow-lg hover:bg-green-700 hover:shadow-xl"
+              className="w-full px-6 py-3 font-medium text-white transition-all duration-200 bg-indigo-600 dark:bg-indigo-500 rounded-lg shadow-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 hover:shadow-xl"
             >
               Change Password
             </button>
@@ -302,14 +302,14 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Profile Picture */}
-        <div className="p-8 bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="p-8 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex items-center mb-6">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+              <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h2 className="ml-3 text-xl font-semibold text-gray-900">Profile Picture</h2>
+            <h2 className="ml-3 text-xl font-semibold text-gray-900 dark:text-gray-100">Profile Picture</h2>
           </div>
 
           <AdminProfilePictureUpload
@@ -319,9 +319,9 @@ export default function AdminSettingsPage() {
             }}
           />
 
-          <div className="p-4 mt-6 rounded-lg bg-gray-50">
-            <h4 className="mb-2 text-sm font-medium text-gray-900">Upload Guidelines</h4>
-            <ul className="space-y-1 text-sm text-gray-600">
+          <div className="p-4 mt-6 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+            <h4 className="mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">Upload Guidelines</h4>
+            <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
               <li>• Maximum file size: 5MB</li>
               <li>• Supported formats: JPG, PNG, GIF</li>
               <li>• Recommended size: 400x400px or larger</li>
@@ -331,45 +331,45 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* System Preferences */}
-        <div className="p-8 bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="p-8 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex items-center mb-6">
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+              <svg className="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
-            <h2 className="ml-3 text-xl font-semibold text-gray-900">System Preferences</h2>
+            <h2 className="ml-3 text-xl font-semibold text-gray-900 dark:text-gray-100">System Preferences</h2>
           </div>
 
           <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div>
-                <p className="font-medium text-gray-900">Email Notifications</p>
-                <p className="text-sm text-gray-600">Receive notifications about system updates</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">Email Notifications</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Receive notifications about system updates</p>
               </div>
-              <button className="relative inline-flex items-center h-6 transition-colors duration-200 bg-purple-600 rounded-full w-11 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-                <span className="inline-block w-4 h-4 transition-transform duration-200 transform translate-x-6 bg-white rounded-full"></span>
+              <button className="relative inline-flex items-center h-6 transition-colors duration-200 bg-purple-600 dark:bg-purple-500 rounded-full w-11 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                <span className="inline-block w-4 h-4 transition-transform duration-200 transform translate-x-6 bg-white dark:bg-gray-200 rounded-full"></span>
               </button>
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div>
-                <p className="font-medium text-gray-900">Dark Mode</p>
-                <p className="text-sm text-gray-600">Toggle between light and dark themes</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">Dark Mode</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Toggle between light and dark themes</p>
               </div>
-              <button className="relative inline-flex items-center h-6 transition-colors duration-200 bg-gray-200 rounded-full w-11 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-                <span className="inline-block w-4 h-4 transition-transform duration-200 transform translate-x-1 bg-white rounded-full"></span>
+              <button className="relative inline-flex items-center h-6 transition-colors duration-200 bg-gray-200 dark:bg-gray-600 rounded-full w-11 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                <span className="inline-block w-4 h-4 transition-transform duration-200 transform translate-x-1 bg-white dark:bg-gray-200 rounded-full"></span>
               </button>
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50">
               <div>
-                <p className="font-medium text-gray-900">Auto-save</p>
-                <p className="text-sm text-gray-600">Automatically save changes as you type</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">Auto-save</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Automatically save changes as you type</p>
               </div>
-              <button className="relative inline-flex items-center h-6 transition-colors duration-200 bg-purple-600 rounded-full w-11 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-                <span className="inline-block w-4 h-4 transition-transform duration-200 transform translate-x-6 bg-white rounded-full"></span>
+              <button className="relative inline-flex items-center h-6 transition-colors duration-200 bg-purple-600 dark:bg-purple-500 rounded-full w-11 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                <span className="inline-block w-4 h-4 transition-transform duration-200 transform translate-x-6 bg-white dark:bg-gray-200 rounded-full"></span>
               </button>
             </div>
           </div>
