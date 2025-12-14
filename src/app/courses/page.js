@@ -879,16 +879,18 @@ const CourseContent = () => {
         </div>
       </div>
 
-      {/* Course Filter and Sort Component */}
-      <div className="mx-4">
-        <CourseFilterSort
-          courses={courses}
-          onFilteredCoursesChange={setFilteredCourses}
-          onSortChange={setSortBy}
-          initialFilters={activeFilters}
-          initialSort={sortBy}
-        />
-      </div>
+      {/* Course Filter and Sort Component - Only show when there are courses */}
+      {courses.length > 0 && (
+        <div className="mx-4">
+          <CourseFilterSort
+            courses={courses}
+            onFilteredCoursesChange={setFilteredCourses}
+            onSortChange={setSortBy}
+            initialFilters={activeFilters}
+            initialSort={sortBy}
+          />
+        </div>
+      )}
 
 
 
@@ -953,35 +955,47 @@ const CourseContent = () => {
             <div className="masonry-grid">
           {activeTab === 'courses' ? (
           filteredCourses.length === 0 ? (
-            <div className="col-span-full animate-fade-in-up">
-              <div className="p-6 sm:p-8 lg:p-12 text-center bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl mx-4 sm:mx-0">
-                <div className="relative mb-4 sm:mb-6">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
-                  <div className="relative flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
-                    <svg className="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            <div className="col-span-full">
+              <div className="p-12 text-center bg-white border border-gray-200 shadow-sm rounded-2xl mx-4 sm:mx-0">
+                {/* Icon */}
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-28 h-28 bg-blue-50 rounded-full"></div>
+                  </div>
+                  <div className="relative flex items-center justify-center w-20 h-20 mx-auto bg-blue-500 rounded-2xl shadow-sm">
+                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                   </div>
                 </div>
-                <h3 className="mb-2 sm:mb-3 text-xl sm:text-2xl font-bold text-gray-900">No courses yet</h3>
-                <p className="mb-6 sm:mb-8 text-base sm:text-lg text-gray-600 max-w-md mx-auto px-4">Start your learning journey by creating your first course or joining an existing one.</p>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
+
+                {/* Title */}
+                <h3 className="text-2xl font-semibold text-gray-900 mb-3">
+                  No Courses Yet
+                </h3>
+
+                {/* Message */}
+                <p className="text-sm text-gray-600 max-w-md mx-auto mb-8 leading-relaxed">
+                  Start your learning journey by creating your first course or joining an existing one.
+                </p>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button
                     onClick={() => openCreateCourseModal()}
-                    className="group relative flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden text-sm sm:text-base"
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 hover:shadow-md transition-all duration-200"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <svg className="relative w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    <span className="relative">Create Course</span>
+                    <span>Create Course</span>
                   </button>
                   <button
                     onClick={() => openJoinCourseModal()}
-                    className="group flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-gray-200 text-gray-700 font-semibold rounded-2xl shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-300 hover:scale-105 active:scale-95 text-sm sm:text-base"
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 font-medium rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
                   >
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>
                     <span>Join Course</span>
                   </button>

@@ -51,7 +51,7 @@ export async function POST(req) {
 
     await user.save();
 
-    const resetUrl = `${process.env.NEXT_PUBLIC_URL}/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
 
     // Skip email sending if SMTP is not configured
     if (process.env.SMTP_HOST && process.env.SMTP_USER) {
@@ -68,15 +68,94 @@ export async function POST(req) {
       const mailOptions = {
         from: process.env.FROM_EMAIL,
         to: email,
-        subject: 'Password Reset Request',
+        subject: 'Password Reset Request - Intelevo',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #333;">Password Reset</h1>
-            <p>You are receiving this email because you (or someone else) have requested the reset of the password for your account.</p>
-            <p>Please click on the following link, or paste this into your browser to complete the process:</p>
-            <a href="${resetUrl}">${resetUrl}</a>
-            <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
-          </div>
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Password Reset</title>
+          </head>
+          <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+            <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+              <tr>
+                <td style="padding: 40px 20px;">
+                  <table role="presentation" style="max-width: 600px; margin: 0 auto; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); overflow: hidden;">
+                    
+                    <!-- Header with gradient -->
+                    <tr>
+                      <td style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); padding: 40px 40px 30px; text-align: center;">
+                        <div style="width: 80px; height: 80px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border-radius: 20px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255, 255, 255, 0.3);">
+                          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C9.243 2 7 4.243 7 7v3H6c-1.103 0-2 .897-2 2v8c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2v-8c0-1.103-.897-2-2-2h-1V7c0-2.757-2.243-5-5-5zm3 8H9V7c0-1.654 1.346-3 3-3s3 1.346 3 3v3z" fill="white"/>
+                          </svg>
+                        </div>
+                        <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Password Reset Request</h1>
+                        <p style="margin: 10px 0 0; color: rgba(255, 255, 255, 0.9); font-size: 14px;">Secure your account with Intelevo</p>
+                      </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                      <td style="padding: 40px; color: rgba(255, 255, 255, 0.9);">
+                        <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">Hello,</p>
+                        <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6;">We received a request to reset the password for your Intelevo account. If you made this request, click the button below to reset your password:</p>
+                        
+                        <!-- Reset Button -->
+                        <table role="presentation" style="margin: 30px 0;">
+                          <tr>
+                            <td style="text-align: center;">
+                              <a href="${resetUrl}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3); transition: all 0.3s ease;">
+                                Reset Password
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+                        
+                        <p style="margin: 20px 0; font-size: 14px; line-height: 1.6; color: rgba(255, 255, 255, 0.7);">Or copy and paste this link into your browser:</p>
+                        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; word-break: break-all; font-size: 13px; color: #60a5fa;">
+                          ${resetUrl}
+                        </div>
+                        
+                        <!-- Security Notice -->
+                        <div style="margin-top: 30px; padding: 16px; background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; border-radius: 8px;">
+                          <p style="margin: 0; font-size: 14px; line-height: 1.6; color: rgba(255, 255, 255, 0.9);">
+                            <strong>⚠️ Security Notice:</strong><br>
+                            This link will expire in 1 hour. If you didn't request a password reset, please ignore this email or contact support if you have concerns about your account security.
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                      <td style="padding: 30px 40px; background: rgba(0, 0, 0, 0.2); border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <p style="margin: 0 0 10px; font-size: 14px; color: rgba(255, 255, 255, 0.7); text-align: center;">
+                          This email was sent by <strong style="color: white;">Intelevo</strong>
+                        </p>
+                        <p style="margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.5); text-align: center;">
+                          © ${new Date().getFullYear()} Intelevo. All rights reserved.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Bottom spacing -->
+                  <table role="presentation" style="max-width: 600px; margin: 20px auto 0;">
+                    <tr>
+                      <td style="text-align: center; padding: 0 20px;">
+                        <p style="margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.4); line-height: 1.6;">
+                          If you're having trouble clicking the button, copy and paste the URL above into your web browser.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
         `,
       };
 
