@@ -21,8 +21,12 @@ export async function GET(request, { params }) {
 
     // Check if the user is either the creator or enrolled in the course
     // course.createdBy is populated, so we need to access _id
-    const creatorId = course.createdBy._id ? course.createdBy._id.toString() : course.createdBy.toString();
-    const isCreator = creatorId === userId;
+    // Handle case where createdBy user no longer exists
+    let isCreator = false;
+    if (course.createdBy) {
+      const creatorId = course.createdBy._id ? course.createdBy._id.toString() : course.createdBy.toString();
+      isCreator = creatorId === userId;
+    }
     const isEnrolled = course.enrolledUsers.some(enrolledId => enrolledId.toString() === userId);
 
     // If course is archived, only creator can access it

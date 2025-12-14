@@ -51,23 +51,25 @@
 
         .diagram-container {
             position: relative;
-            padding: 40px 20px;
+            padding: 30px 20px;
             background: #f7fafc;
             border-radius: 15px;
-            min-height: 1100px;
+            min-height: 1000px;
         }
 
         /* System Box */
         .system-box {
             position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: 900px;
-            height: 1000px;
+            left: 240px;
+            top: 40px;
+            transform: none;
+            width: 980px;
+            height: 920px;
             border: 3px solid #4a5568;
             border-radius: 15px;
             background: rgba(255, 255, 255, 0.95);
+            z-index: 1;
+            padding: 18px 20px;
         }
 
         .system-title {
@@ -87,6 +89,7 @@
             position: absolute;
             text-align: center;
             width: 120px;
+            z-index: 4;
         }
 
         .actor-icon {
@@ -110,10 +113,10 @@
         }
 
         /* Actor Positions */
-        .student { left: 50px; top: 100px; }
-        .instructor { left: 50px; top: 350px; }
-        .admin { left: 50px; top: 600px; }
-        .super-admin { left: 50px; top: 850px; }
+        .student { left: 50px; top: 120px; }
+        .instructor { left: 50px; top: 380px; }
+        .admin { left: 50px; top: 640px; }
+        .super-admin { left: 50px; top: 900px; }
 
         /* Use Cases */
         .use-case {
@@ -129,6 +132,7 @@
             transition: all 0.3s ease;
             cursor: pointer;
             min-width: 140px;
+            z-index: 5;
         }
 
         .use-case:hover {
@@ -139,45 +143,45 @@
 
         /* Use Case Positions - Better Layout */
         /* Row 1 - Authentication (Student) */
-        .uc-register { left: 280px; top: 50px; }
-        .uc-login { left: 450px; top: 50px; }
-        .uc-reset-password { left: 620px; top: 50px; }
-        .uc-google-signin { left: 790px; top: 50px; }
+        .uc-register { left: 300px; top: 70px; }
+        .uc-login { left: 480px; top: 70px; }
+        .uc-reset-password { left: 660px; top: 70px; }
+        .uc-google-signin { left: 840px; top: 70px; }
 
         /* Row 2 - Student Course Features */
-        .uc-browse-courses { left: 280px; top: 130px; }
-        .uc-join-course { left: 450px; top: 130px; }
-        .uc-view-content { left: 620px; top: 130px; }
-        .uc-view-announcements { left: 790px; top: 130px; }
+        .uc-browse-courses { left: 300px; top: 150px; }
+        .uc-join-course { left: 480px; top: 150px; }
+        .uc-view-content { left: 660px; top: 150px; }
+        .uc-view-announcements { left: 840px; top: 150px; }
 
         /* Row 3 - Student Learning Features */
-        .uc-submit-assignment { left: 280px; top: 210px; }
-        .uc-ai-tutor { left: 450px; top: 210px; }
-        .uc-learning-modes { left: 620px; top: 210px; }
-        .uc-smart-notes { left: 790px; top: 210px; }
+        .uc-submit-assignment { left: 300px; top: 230px; }
+        .uc-ai-tutor { left: 480px; top: 230px; }
+        .uc-learning-modes { left: 660px; top: 230px; }
+        .uc-smart-notes { left: 840px; top: 230px; }
 
         /* Row 4 - Student Advanced Features */
-        .uc-take-questionnaire { left: 280px; top: 290px; }
-        .uc-view-learning-style { left: 450px; top: 290px; }
-        .uc-document-viewer { left: 620px; top: 290px; }
-        .uc-manage-profile { left: 790px; top: 290px; }
+        .uc-take-questionnaire { left: 300px; top: 310px; }
+        .uc-view-learning-style { left: 480px; top: 310px; }
+        .uc-document-viewer { left: 660px; top: 310px; }
+        .uc-manage-profile { left: 840px; top: 310px; }
 
         /* Row 5 - Instructor Features */
-        .uc-create-course { left: 280px; top: 400px; }
-        .uc-upload-content { left: 450px; top: 400px; }
-        .uc-create-assignment { left: 620px; top: 400px; }
-        .uc-post-announcement { left: 790px; top: 400px; }
+        .uc-create-course { left: 300px; top: 420px; }
+        .uc-upload-content { left: 480px; top: 420px; }
+        .uc-create-assignment { left: 660px; top: 420px; }
+        .uc-post-announcement { left: 840px; top: 420px; }
 
         /* Row 6 - Instructor Advanced */
-        .uc-grade-submission { left: 280px; top: 480px; }
-        .uc-visual-content { left: 450px; top: 480px; }
-        .uc-notifications { left: 620px; top: 480px; }
+        .uc-grade-submission { left: 300px; top: 500px; }
+        .uc-visual-content { left: 480px; top: 500px; }
+        .uc-notifications { left: 660px; top: 500px; }
 
         /* Row 7 - Admin Features */
-        .uc-manage-users { left: 280px; top: 650px; }
-        .uc-manage-courses { left: 450px; top: 650px; }
-        .uc-view-analytics { left: 620px; top: 650px; }
-        .uc-manage-settings { left: 790px; top: 650px; }
+        .uc-manage-users { left: 300px; top: 700px; }
+        .uc-manage-courses { left: 480px; top: 700px; }
+        .uc-view-analytics { left: 660px; top: 700px; }
+        .uc-manage-settings { left: 840px; top: 700px; }
 
         /* Connection Lines */
         svg {
@@ -187,14 +191,25 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 1;
+            z-index: 2; /* show lines above system box */
         }
 
         .connection-line {
-            stroke: #cbd5e0;
-            stroke-width: 1.5;
+            stroke: #475569; /* darker slate for readability */
+            stroke-width: 2;
             fill: none;
-            stroke-dasharray: 5, 5;
+            stroke-dasharray: 6, 6;
+            stroke-linecap: round;
+            opacity: 1;
+            transition: stroke 150ms ease, stroke-width 150ms ease, opacity 150ms ease;
+            filter: drop-shadow(0 2px 2px rgba(71,85,105,0.08));
+        }
+
+        /* Slight highlight on hover to emphasize association */
+        .connection-line:hover {
+            stroke: #2d3748;
+            stroke-width: 2.6;
+            opacity: 1;
         }
 
         /* Legend */
@@ -203,10 +218,12 @@
             bottom: 20px;
             right: 20px;
             background: white;
-            padding: 15px 20px;
+            padding: 12px 14px;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
             font-size: 0.85em;
+            z-index: 6;
+            width: 160px;
         }
 
         .legend-title {
@@ -409,7 +426,7 @@
             </svg>
 
             <!-- Legend -->
-            <div class="legend" style="bottom: 40px; right: 40px;"></div>
+            <div class="legend" style="bottom: 40px; right: 40px;">
                 <div class="legend-title">Legend</div>
                 <div class="legend-item">
                     <div class="legend-icon"></div>

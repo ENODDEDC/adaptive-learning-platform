@@ -210,6 +210,27 @@ const CourseDetailPage = ({
     fetchCurrentUser();
   }, [fetchCourseDetails, fetchCurrentUser]);
 
+  // Determine if current user is the instructor (course creator)
+  useEffect(() => {
+    if (courseDetails && user) {
+      // Handle case where createdBy might be null
+      if (!courseDetails.createdBy) {
+        console.log('🔍 DEBUG: Course has no creator, user is not instructor');
+        setIsInstructor(false);
+        return;
+      }
+
+      // Handle both cases: createdBy as object with _id or direct ID string
+      const courseCreatorId = courseDetails.createdBy._id || courseDetails.createdBy;
+      const currentUserId = user._id || user.id;
+
+      const userIsInstructor = courseCreatorId === currentUserId;
+      console.log('🔍 DEBUG: User is instructor:', userIsInstructor);
+      console.log('🔍 DEBUG: Course created by:', courseCreatorId);
+      console.log('🔍 DEBUG: Current user ID:', currentUserId);
+      setIsInstructor(userIsInstructor);
+    }
+  }, [courseDetails, user]);
 
   // Hydration tracking
   useEffect(() => {
@@ -489,14 +510,6 @@ const CourseDetailPage = ({
     }
   }, [courseDetails]);
 
-  // Ensure assignments are fetched for Ongoing Task sidebar
-  useEffect(() => {
-    if (courseDetails) {
-      fetchAssignments();
-      fetchPeople();
-    }
-  }, [courseDetails, fetchAssignments]);
-
   const fetchPeople = useCallback(async () => {
     if (!courseDetails) return;
 
@@ -515,6 +528,14 @@ const CourseDetailPage = ({
       console.error('Failed to fetch people:', err);
     }
   }, [courseDetails]);
+
+  // Ensure assignments are fetched for Ongoing Task sidebar
+  useEffect(() => {
+    if (courseDetails) {
+      fetchAssignments();
+      fetchPeople();
+    }
+  }, [courseDetails, fetchAssignments, fetchPeople]);
 
   const fetchScoresData = useCallback(async () => {
     if (!courseDetails?._id) return;

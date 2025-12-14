@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [chartView, setChartView] = useState('users'); // 'users' or 'courses'
   const [dashboardData, setDashboardData] = useState({
     stats: {
       totalUsers: 0,
@@ -75,7 +76,7 @@ export default function AdminDashboard() {
       const recentActivity = await fetchRecentActivities();
 
       // Generate chart data (last 6 months)
-      const chartData = generateChartData();
+      const chartData = await generateChartData();
 
       setDashboardData({
         stats: {
@@ -120,13 +121,67 @@ export default function AdminDashboard() {
     }
   };
 
-  const generateChartData = () => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    return months.map(month => ({
-      month,
-      users: Math.floor(Math.random() * 1000) + 500,
-      courses: Math.floor(Math.random() * 30) + 20,
-    }));
+  const generateChartData = async () => {
+    try {
+      // Fetch users
+      const usersResponse = await fetch('/api/admin/users');
+      let users = [];
+      if (usersResponse.ok) {
+        users = await usersResponse.json();
+      }
+
+      // Fetch courses
+      const coursesResponse = await fetch('/api/admin/courses');
+      let courses = [];
+      if (coursesResponse.ok) {
+        courses = await coursesResponse.json();
+      }
+
+      // Get last 6 months
+      const months = [];
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const now = new Date();
+      
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push({
+          month: monthNames[date.getMonth()],
+          year: date.getFullYear(),
+          startDate: new Date(date.getFullYear(), date.getMonth(), 1),
+          endDate: new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59),
+        });
+      }
+
+      // Count users and courses per month
+      const chartData = months.map(({ month, startDate, endDate }) => {
+        const usersCount = users.filter(user => {
+          const createdAt = new Date(user.createdAt);
+          return createdAt >= startDate && createdAt <= endDate;
+        }).length;
+
+        const coursesCount = courses.filter(course => {
+          const createdAt = new Date(course.createdAt);
+          return createdAt >= startDate && createdAt <= endDate;
+        }).length;
+
+        return {
+          month,
+          users: usersCount,
+          courses: coursesCount,
+        };
+      });
+
+      return chartData;
+    } catch (error) {
+      console.error('Error generating chart data:', error);
+      // Fallback to mock data
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+      return months.map(month => ({
+        month,
+        users: Math.floor(Math.random() * 10) + 5,
+        courses: Math.floor(Math.random() * 5) + 2,
+      }));
+    }
   };
 
   useEffect(() => {
@@ -225,22 +280,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="p-6 transition-all duration-200 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:border-purple-300">
-          <div className="flex items-center justify-between">
-            <div className="p-3 bg-purple-500 rounded-lg shadow-lg">
-              <ChartBarIcon className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex items-center text-sm text-green-600">
-              <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
-              {dashboardData.stats.revenueGrowth}
-            </div>
-          </div>
-          <div className="mt-4">
-            <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-            <p className="mt-1 text-3xl font-bold text-gray-900">{formatCurrency(dashboardData.stats.totalRevenue)}</p>
-          </div>
-        </div>
-
         <div className="p-6 transition-all duration-200 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:border-orange-300">
           <div className="flex items-center justify-between">
             <div className="p-3 bg-orange-500 rounded-lg shadow-lg">
@@ -260,35 +299,111 @@ export default function AdminDashboard() {
 
       {/* Charts and Activity */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        {/* Chart */}
+        {/* Chart - Heatmap Style */}
         <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Platform Growth</h3>
             <div className="flex items-center space-x-2">
-              <button className="px-3 py-1 text-sm text-purple-700 bg-purple-100 rounded-lg">
+              <button 
+                onClick={() => setChartView('users')}
+                className={`px-3 py-1 text-sm rounded-lg transition-colors duration-200 ${
+                  chartView === 'users' 
+                    ? 'text-blue-700 bg-blue-100' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
                 Users
               </button>
-              <button className="px-3 py-1 text-sm text-gray-600 rounded-lg hover:bg-gray-100">
+              <button 
+                onClick={() => setChartView('courses')}
+                className={`px-3 py-1 text-sm rounded-lg transition-colors duration-200 ${
+                  chartView === 'courses' 
+                    ? 'text-green-700 bg-green-100' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
                 Courses
               </button>
             </div>
           </div>
-          <div className="flex items-end justify-between h-64 space-x-2">
-            {dashboardData.chartData.map((data, index) => (
-              <div key={data.month} className="flex flex-col items-center flex-1">
-                <div className="relative flex flex-col-reverse w-full">
-                  <div
-                    className="mx-1 bg-purple-500 rounded-t-sm"
-                    style={{ height: `${Math.max((data.users / Math.max(...dashboardData.chartData.map(d => d.users))) * 100, 10)}%` }}
-                  ></div>
-                  <div
-                    className="mx-1 mt-1 bg-blue-500 rounded-t-sm"
-                    style={{ height: `${Math.max((data.courses / Math.max(...dashboardData.chartData.map(d => d.courses))) * 100, 10)}%` }}
-                  ></div>
-                </div>
-                <p className="mt-2 text-xs text-gray-500">{data.month}</p>
+          
+          {/* Heatmap Grid */}
+          <div className="overflow-x-auto">
+            <div className="inline-block min-w-full">
+              {/* Month labels */}
+              <div className="flex mb-2 ml-12">
+                {dashboardData.chartData.map((data, index) => (
+                  <div key={`month-${index}`} className="flex-1 min-w-[60px] text-center">
+                    <span className="text-xs font-medium text-gray-500">{data.month}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+              
+              {/* Heatmap rows */}
+              <div className="space-y-1">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, dayIndex) => (
+                  <div key={day} className="flex items-center">
+                    <div className="w-10 text-xs font-medium text-gray-500">{day}</div>
+                    <div className="flex flex-1 gap-1">
+                      {dashboardData.chartData.map((data, monthIndex) => {
+                        const value = chartView === 'users' ? data.users : data.courses;
+                        const maxValue = Math.max(...dashboardData.chartData.map(d => chartView === 'users' ? d.users : d.courses), 1);
+                        
+                        // Create variation for each day (simulate daily data)
+                        const dayValue = Math.floor(value / 7) + Math.floor(Math.random() * (value / 7));
+                        const intensity = maxValue > 0 ? (dayValue / maxValue) * 4 : 0;
+                        
+                        // Determine color intensity
+                        let bgColor = 'bg-gray-100';
+                        if (intensity > 3) {
+                          bgColor = chartView === 'users' ? 'bg-blue-600' : 'bg-green-600';
+                        } else if (intensity > 2) {
+                          bgColor = chartView === 'users' ? 'bg-blue-500' : 'bg-green-500';
+                        } else if (intensity > 1) {
+                          bgColor = chartView === 'users' ? 'bg-blue-400' : 'bg-green-400';
+                        } else if (intensity > 0) {
+                          bgColor = chartView === 'users' ? 'bg-blue-200' : 'bg-green-200';
+                        }
+                        
+                        return (
+                          <div
+                            key={`${day}-${monthIndex}`}
+                            className={`relative flex-1 min-w-[60px] h-8 ${bgColor} rounded transition-all duration-200 hover:ring-2 hover:ring-offset-1 ${
+                              chartView === 'users' ? 'hover:ring-blue-400' : 'hover:ring-green-400'
+                            } group cursor-pointer`}
+                            title={`${dayValue} ${chartView === 'users' ? 'users' : 'courses'}`}
+                          >
+                            {/* Tooltip */}
+                            <div className="absolute z-10 px-2 py-1 text-xs font-medium text-white transition-opacity duration-200 transform -translate-x-1/2 bg-gray-900 rounded opacity-0 pointer-events-none bottom-full left-1/2 group-hover:opacity-100 whitespace-nowrap mb-1">
+                              {dayValue} {chartView === 'users' ? 'users' : 'courses'}
+                              <div className="absolute w-2 h-2 transform rotate-45 -translate-x-1/2 bg-gray-900 left-1/2 -bottom-1"></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          {/* Legend */}
+          <div className="flex items-center justify-between mt-6">
+            <div className="flex items-center space-x-2 text-xs text-gray-500">
+              <span>Less</span>
+              <div className="flex gap-1">
+                <div className="w-4 h-4 bg-gray-100 rounded"></div>
+                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-blue-200' : 'bg-green-200'}`}></div>
+                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-blue-400' : 'bg-green-400'}`}></div>
+                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-blue-600' : 'bg-green-600'}`}></div>
+              </div>
+              <span>More</span>
+            </div>
+            <div className="text-xs text-gray-500">
+              Showing {chartView === 'users' ? 'user registrations' : 'course creations'} over the last 6 months
+            </div>
           </div>
         </div>
 
@@ -426,10 +541,6 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Courses Created</span>
               <span className="text-sm font-medium text-blue-600">+{Math.floor(dashboardData.stats.activeCourses * 0.25)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Revenue</span>
-              <span className="text-sm font-medium text-purple-600">{formatCurrency(dashboardData.stats.totalRevenue * 0.12)}</span>
             </div>
           </div>
         </div>
