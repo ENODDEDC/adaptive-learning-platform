@@ -1883,28 +1883,6 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
       </div>
 
       <div className="flex-grow flex-1 flex overflow-auto min-h-0 h-full">
-        {headings.length > 2 && (
-          <aside className="w-64 flex-shrink-0 h-full overflow-y-auto p-8 border-r bg-slate-50/50 hidden lg:block">
-            <h3 className="text-sm font-semibold text-slate-800 mb-4">On this page</h3>
-            <ul className="space-y-2">
-              {headings.map(heading => (
-                <li key={heading.id} className={`text-sm ${heading.level === 2 ? 'pl-3' : ''} ${heading.level === 3 ? 'pl-6' : ''}`}>
-                  <a href={`#${heading.id}`} onClick={(e) => {
-                    e.preventDefault();
-                    const iframe = iframeRef.current;
-                    const headingElement = iframe?.contentDocument?.getElementById(heading.id);
-                    headingElement?.scrollIntoView({ behavior: 'smooth' });
-                  }} className="text-slate-600 hover:text-sky-600 transition-colors block truncate flex items-center gap-2">
-                    {heading.text}
-                    {headingsWithNotes.has(heading.id) && (
-                      <span className="w-2 h-2 bg-blue-500 rounded-full" title="This section has notes"></span>
-                    )}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </aside>
-        )}
         <main className="flex-grow overflow-auto min-h-0 h-full relative" ref={contentRef}>
           {renderPreview()}
         </main>
