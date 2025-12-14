@@ -1276,6 +1276,7 @@ const CourseDetailPage = ({
                   </button>
                   {isInstructor && (
                     <button
+                      data-tour="scores-tab"
                       className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'marks'
                         ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
                         : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
@@ -2374,7 +2375,7 @@ const CourseDetailPage = ({
       )}
 
       {/* Course Detail Tour */}
-      <CourseDetailTour show={showTour} onComplete={() => setShowTour(false)} />
+      <CourseDetailTour show={showTour} onComplete={() => setShowTour(false)} isInstructor={isInstructor} />
 
     </>
   );

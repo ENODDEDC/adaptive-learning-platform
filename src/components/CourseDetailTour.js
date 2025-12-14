@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { XMarkIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
-export default function CourseDetailTour({ show, onComplete }) {
+export default function CourseDetailTour({ show, onComplete, isInstructor }) {
     const [currentStep, setCurrentStep] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -25,7 +25,7 @@ export default function CourseDetailTour({ show, onComplete }) {
         }
     }, [show]);
 
-    const steps = [
+    const baseSteps = [
         {
             target: '[data-tour="course-header"]',
             title: 'Course Information',
@@ -39,19 +39,39 @@ export default function CourseDetailTour({ show, onComplete }) {
         {
             target: '[data-tour="classwork-tab"]',
             title: 'Classwork & Activities',
-            content: 'Access all your assignments, materials, and course content here. Click to view details and submit your work.',
+            content: isInstructor
+                ? 'Create and manage assignments, materials, and course content here. Track student submissions and provide feedback.'
+                : 'Access all your assignments, materials, and course content here. Click to view details and submit your work.',
         },
         {
             target: '[data-tour="people-tab"]',
             title: 'Class Members',
-            content: 'See all students and instructors in this course. View who\'s enrolled and connect with your classmates.',
+            content: isInstructor
+                ? 'Manage your class roster here. View all enrolled students and co-teachers, and invite new members to join.'
+                : 'See all students and instructors in this course. View who\'s enrolled and connect with your classmates.',
         },
+    ];
+
+    // Add Scores tab step only for instructors
+    const instructorSteps = isInstructor ? [
+        {
+            target: '[data-tour="scores-tab"]',
+            title: 'Scores & Grading',
+            content: 'View and manage student grades here. Track submission rates, grade assignments, and export grade reports.',
+        },
+    ] : [];
+
+    const finalSteps = [
         {
             target: '[data-tour="upcoming-tasks"]',
             title: 'Upcoming Tasks',
-            content: 'Track your deadlines and assignments here. Click on any task to start working on it.',
+            content: isInstructor
+                ? 'View upcoming assignment deadlines and course milestones. Keep track of what\'s due next in your course.'
+                : 'Track your deadlines and assignments here. Click on any task to start working on it.',
         },
     ];
+
+    const steps = [...baseSteps, ...instructorSteps, ...finalSteps];
 
     const handleNext = () => {
         if (currentStep < steps.length - 1) {
