@@ -9,6 +9,7 @@ import ContentViewer from '@/components/ContentViewer.client';
 import InviteModal from '@/components/InviteModal';
 import SidePanelDocumentViewer from '@/components/SidePanelDocumentViewer';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import CourseDetailTour from '@/components/CourseDetailTour';
 import { 
   ArchiveBoxIcon, 
   ArrowRightOnRectangleIcon, 
@@ -67,6 +68,9 @@ const CourseDetailPage = ({
   const [isCreateClassworkModalOpen, setIsCreateClassworkModalOpen] = useState(false);
   const [editingClasswork, setEditingClasswork] = useState(null);
   const [classworkType, setClassworkType] = useState('assignment');
+
+  // Tour state
+  const [showTour, setShowTour] = useState(false);
 
   // Auto-collapse course sidebar when document panel opens
   useEffect(() => {
@@ -1012,7 +1016,7 @@ const CourseDetailPage = ({
           })();
         `}} />
         {/* Professional Header */}
-        <div className="mb-8 bg-white border border-gray-200 shadow-sm rounded-xl">
+        <div className="mb-8 bg-white border border-gray-200 shadow-sm rounded-xl" data-tour="course-header">
           <div className="p-8">
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -1094,6 +1098,17 @@ const CourseDetailPage = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   People
+                </button>
+
+                {/* Take a Tour Button */}
+                <button 
+                  onClick={() => setShowTour(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 transition-all duration-200 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Take a Tour
                 </button>
 
                 {/* Course Actions */}
@@ -1206,6 +1221,7 @@ const CourseDetailPage = ({
               {!documentPanelOpen && !isCreateClassworkModalOpen && (
                 <div className="flex justify-between mb-10 overflow-hidden transition-shadow duration-200 bg-white border shadow-sm border-gray-200/60 rounded-xl hover:shadow-md">
                   <button
+                    data-tour="stream-tab"
                     className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'stream'
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
                       : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
@@ -1223,6 +1239,7 @@ const CourseDetailPage = ({
                     )}
                   </button>
                   <button
+                    data-tour="classwork-tab"
                     className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'classwork'
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
                       : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
@@ -1240,6 +1257,7 @@ const CourseDetailPage = ({
                     )}
                   </button>
                   <button
+                    data-tour="people-tab"
                     className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'people'
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
                       : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
@@ -1915,7 +1933,7 @@ const CourseDetailPage = ({
 
           {/* Right Sidebar - Upcoming Tasks - Hidden when document panel or create classwork panel is open */}
           {!documentPanelOpen && !isCreateClassworkModalOpen && (
-            <div className={`bg-white border border-gray-200/60 rounded-xl shadow-sm min-w-[280px] max-w-[320px] w-full h-fit sticky top-6 overflow-hidden transition-all duration-300 hover:shadow-md ${upcomingTasksExpanded ? 'opacity-100 max-h-screen' : 'opacity-60 max-h-16 hover:opacity-100'
+            <div data-tour="upcoming-tasks" className={`bg-white border border-gray-200/60 rounded-xl shadow-sm min-w-[280px] max-w-[320px] w-full h-fit sticky top-6 overflow-hidden transition-all duration-300 hover:shadow-md ${upcomingTasksExpanded ? 'opacity-100 max-h-screen' : 'opacity-60 max-h-16 hover:opacity-100'
               }`}>
               <div className="px-5 py-4 border-b border-gray-200/60 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
                 <div className="flex items-center justify-between">
@@ -2354,6 +2372,9 @@ const CourseDetailPage = ({
           icon={CONFIRMATION_CONFIGS[confirmationModal.type].icon}
         />
       )}
+
+      {/* Course Detail Tour */}
+      <CourseDetailTour show={showTour} onComplete={() => setShowTour(false)} />
 
     </>
   );

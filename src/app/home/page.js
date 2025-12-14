@@ -16,6 +16,7 @@ import {
 import EmptyState from '@/components/EmptyState';
 import { useLayout } from '../../context/LayoutContext';
 import { getLearningBehaviorTracker } from '@/utils/learningBehaviorTracker';
+import HomeTour from '@/components/HomeTour';
 
 // Utility function to normalize and ensure proper color format
 const normalizeColor = (colorValue) => {
@@ -143,6 +144,7 @@ export default function Home() {
   const [isCourseMenuOpen, setIsCourseMenuOpen] = useState(false);
   const [currentCourseIndex, setCurrentCourseIndex] = useState(0);
   const [expandedSchedules, setExpandedSchedules] = useState({});
+  const [showTour, setShowTour] = useState(false);
   const hasDataRef = useRef(false);
 
   const recentActivities = [];
@@ -199,7 +201,12 @@ export default function Home() {
       const enrolled = [];
 
       data.courses.forEach(course => {
-        const isCreator = course.createdBy === user._id;
+        // createdBy is populated as an object, so we need to compare the _id
+        // Handle null/undefined createdBy
+        const creatorId = course.createdBy 
+          ? (typeof course.createdBy === 'object' ? course.createdBy._id : course.createdBy)
+          : null;
+        const isCreator = creatorId && creatorId === user._id;
         
         const formattedCourse = {
           id: course._id,
@@ -228,8 +235,8 @@ export default function Home() {
 
       setCreatedCourses(created);
       setEnrolledCourses(enrolled);
-      // Combine all courses with creators first
-      setAllCourses([...created, ...enrolled]);
+      // Show only enrolled/joined courses on home page
+      setAllCourses(enrolled);
       hasDataRef.current = true;
     } catch (err) {
       setError(err.message);
@@ -441,8 +448,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 overflow-y-auto">
+      {/* Tour Component */}
+      <HomeTour show={showTour} onComplete={() => setShowTour(false)} />
+      
       {/* Compact Welcome Header - Clean Design */}
-      <div className="relative mx-4 mt-3 bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md transition-shadow duration-300">
+      <div className="welcome-header relative mx-4 mt-3 bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md transition-shadow duration-300">
         {/* Subtle accent line - Single color */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 rounded-t-2xl"></div>
 
@@ -466,8 +476,15 @@ export default function Home() {
                     {user ? `${user.name} ${user.surname}` : 'User'}
                   </span>!
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 flex items-center gap-2">
                   Welcome back to your learning dashboard
+                  <button
+                    onClick={() => setShowTour(true)}
+                    className="text-blue-600 hover:text-blue-700 underline text-xs font-medium"
+                    title="Start tour"
+                  >
+                    Take a tour
+                  </button>
                 </p>
               </div>
             </div>
@@ -531,7 +548,7 @@ export default function Home() {
       {/* Main Content Grid - Optimized for single viewport */}
       <div className="flex-1 grid grid-cols-1 gap-4 mx-4 my-3 lg:grid-cols-3 overflow-hidden">
         {/* Unified Courses Section */}
-        <div className="lg:col-span-2 flex flex-col overflow-hidden">
+        <div className="joined-courses-section lg:col-span-2 flex flex-col overflow-hidden">
           <div className="flex-1 flex flex-col p-4 bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
                 <div className="flex items-center justify-between mb-5 flex-shrink-0 pb-4 border-b-2 border-gray-200">
                   <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
@@ -541,32 +558,16 @@ export default function Home() {
                       </svg>
                     </div>
                     <div className="flex flex-col flex-shrink-0">
-                      <h2 className="text-base font-bold text-gray-800 tracking-tight">My Courses</h2>
+                      <h2 className="text-base font-bold text-gray-800 tracking-tight">Joined Courses</h2>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs font-medium text-gray-500">
-                          {allCourses.length} total
+                          {allCourses.length} enrolled
                         </span>
-                        <span className="text-gray-300">•</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-blue-600 bg-blue-50 rounded-lg border border-blue-200 whitespace-nowrap">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                              <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-                            </svg>
-                            {createdCourses.length}
-                          </span>
-                          <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-green-600 bg-green-50 rounded-lg border border-green-200 whitespace-nowrap">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-                            </svg>
-                            {enrolledCourses.length}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="relative flex-shrink-0 z-50">
+                  <div className="add-course-button relative flex-shrink-0 z-50">
                     <button
                       onClick={() => setIsCourseMenuOpen(!isCourseMenuOpen)}
                       className="flex items-center justify-center w-11 h-11 text-white transition-all duration-300 bg-blue-600 rounded-2xl shadow-sm hover:bg-blue-700 hover:shadow-md hover:scale-105 active:scale-95"
@@ -883,7 +884,7 @@ export default function Home() {
         </div>
 
         {/* Compact Recent Activities Sidebar */}
-        <div className="flex flex-col overflow-hidden">
+        <div className="recent-activities flex flex-col overflow-hidden">
           <div className="flex-1 flex flex-col p-4 bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
             <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center justify-center w-6 h-6 bg-gray-100 rounded-lg">
