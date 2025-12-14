@@ -21,6 +21,7 @@ import ReflectiveLearning from './ReflectiveLearning';
 import CacheIndicator from './CacheIndicator';
 import learningModeRecommendationService from '../services/learningModeRecommendationService';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
+import DocumentViewerTour from './DocumentViewerTour';
 
 // Add CSS for animations
 const tooltipStyles = `
@@ -98,6 +99,7 @@ const DocxPreviewWithAI = ({
   const [tutorMode, setTutorMode] = useState('');
   const [panelPosition, setPanelPosition] = useState({ x: 16, y: 16 }); // Initial position (top-left)
   const [isDragging, setIsDragging] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Cache indicator state
@@ -1532,10 +1534,23 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 )}
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div data-tour="learning-modes" className="flex items-center space-x-2">
+                {/* Take a Tour Button */}
+                <button
+                  onClick={() => setShowTour(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all mr-2"
+                  title="Take a tour of learning modes"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="hidden sm:inline">Tour</span>
+                </button>
+
                 {/* AI Narrator */}
                 <div className="relative group">
                   <button
+                    data-tour="ai-narrator"
                     onClick={handleAITutorClick}
                     disabled={isAINarratorLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('AI Narrator')}
@@ -1586,6 +1601,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 {/* Visual Learning */}
                 <div className="relative group">
                   <button
+                    data-tour="visual-learning"
                     onClick={handleVisualContentClick}
                     disabled={isExtractingContent || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Visual Learning')}
@@ -1623,6 +1639,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 {/* Sequential Learning */}
                 <div className="relative group">
                   <button
+                    data-tour="step-by-step"
                     onClick={handleSequentialLearningClick}
                     disabled={isSequentialLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Sequential Learning')}
@@ -1675,6 +1692,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 {/* Global Learning */}
                 <div className="relative group">
                   <button
+                    data-tour="big-picture"
                     onClick={handleGlobalLearningClick}
                     disabled={isGlobalLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Global Learning')}
@@ -1727,6 +1745,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 {/* Hands-On Lab */}
                 <div className="relative group">
                   <button
+                    data-tour="hands-on"
                     onClick={handleSensingLearningClick}
                     disabled={isSensingLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Hands-On Lab')}
@@ -1779,6 +1798,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 {/* Concept Constellation */}
                 <div className="relative group">
                   <button
+                    data-tour="theory"
                     onClick={handleIntuitiveLearningClick}
                     disabled={isIntuitiveLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Concept Constellation')}
@@ -1829,6 +1849,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 {/* Active Learning Hub */}
                 <div className="relative group">
                   <button
+                    data-tour="practice"
                     onClick={handleActiveLearningClick}
                     disabled={isActiveLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Active Learning Hub')}
@@ -1881,6 +1902,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 {/* Reflective Learning */}
                 <div className="relative group">
                   <button
+                    data-tour="reflect"
                     onClick={handleReflectiveLearningClick}
                     disabled={isReflectiveLearningLoading || !isAIAvailable}
                     onMouseEnter={() => setShowTooltip('Reflective Learning')}
@@ -3459,6 +3481,9 @@ Reflective Learning Processor works best with instructional content, lessons, or
         docxContent={docxContent}
         fileName={fileName}
       />
+
+      {/* Document Viewer Tour */}
+      <DocumentViewerTour show={showTour} onComplete={() => setShowTour(false)} />
     </>
   );
 };
