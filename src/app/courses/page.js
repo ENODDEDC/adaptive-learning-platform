@@ -505,7 +505,6 @@ const CourseContent = () => {
       <div className="flex-1 h-screen p-2 sm:p-4 lg:p-6 bg-gray-50 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         {/* Enhanced Header Skeleton */}
         <div className="relative mx-4 mt-4 mb-8 overflow-hidden bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-50/50 via-gray-50/30 to-gray-50/50"></div>
           <div className="relative p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
               <div className="flex items-center gap-4 sm:gap-6">
@@ -576,8 +575,6 @@ const CourseContent = () => {
     <div className="min-h-screen flex flex-col bg-gray-50 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
       {/* Enhanced Header */}
       <div className="relative mx-4 mt-4 mb-8 bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl">
-        {/* Animated background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-indigo-50/30 to-purple-50/50 animate-pulse"></div>
 
         {/* Floating elements */}
         <div className="absolute inset-0 pointer-events-none">
@@ -591,19 +588,19 @@ const CourseContent = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
             <div className="flex items-center gap-4 sm:gap-6">
               <div className="relative">
-                <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shadow-2xl bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl animate-fade-in-up">
+                <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shadow-2xl bg-blue-600 rounded-2xl animate-fade-in-up">
                   <svg className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-pulse border-2 sm:border-3 border-white"></div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-orange-500 rounded-full animate-pulse border-2 sm:border-3 border-white"></div>
               </div>
               <div className="animate-fade-in-up min-w-0 flex-1" style={{ animationDelay: '0.1s' }}>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
-                  All <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Courses</span>
+                  All <span className="text-blue-600">Courses</span>
                 </h1>
                 <p className="text-sm sm:text-base lg:text-lg text-gray-600">Manage and explore your learning journey</p>
-                <div className="mt-2 sm:mt-3 h-1 bg-gradient-to-r from-blue-400 to-indigo-600 rounded-full animate-expand-width" style={{ animationDelay: '0.3s' }}></div>
+                <div className="mt-2 sm:mt-3 h-1 bg-blue-600 rounded-full animate-expand-width" style={{ animationDelay: '0.3s' }}></div>
               </div>
             </div>
           
@@ -622,11 +619,11 @@ const CourseContent = () => {
               >
                 <button
                   onClick={() => setIsCourseMenuOpen(!isCourseMenuOpen)}
-                  className="group relative flex items-center justify-center w-12 h-12 text-white transition-all duration-300 bg-gradient-to-r from-blue-500 to-indigo-600 shadow-xl rounded-2xl hover:shadow-2xl hover:scale-110 active:scale-95 overflow-hidden"
+                  className="group relative flex items-center justify-center w-12 h-12 text-white transition-all duration-300 bg-blue-600 shadow-xl rounded-2xl hover:shadow-2xl hover:scale-110 active:scale-95 overflow-hidden"
                   data-action="main_menu"
                   data-feature="course_actions"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 bg-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <PlusIcon className="relative w-6 h-6 transition-transform duration-300 group-hover:rotate-90" />
                 </button>
               </Tooltip>
@@ -703,8 +700,6 @@ const CourseContent = () => {
 
       {/* Enhanced Navigation Tabs */}
       <div className="relative mx-4 mb-8 bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl z-10">
-        {/* Animated background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-50/30 via-indigo-50/20 to-purple-50/30 animate-pulse"></div>
 
         <div className="relative p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide">
@@ -732,7 +727,7 @@ const CourseContent = () => {
                   }}
                   className={`group relative flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-2xl overflow-hidden ${
                     activeTab === 'courses'
-                      ? 'text-white bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/25'
+                      ? 'text-white bg-blue-600 shadow-lg shadow-blue-500/25'
                       : 'text-gray-600 hover:text-blue-700 hover:bg-blue-50/80 backdrop-blur-sm border border-gray-200/50 hover:border-blue-200/70'
                   }`}
                   data-action="tab_switch"
@@ -750,9 +745,6 @@ const CourseContent = () => {
                     </svg>
                   </div>
                   <span className="relative whitespace-nowrap">Courses</span>
-                  {activeTab === 'courses' && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700 opacity-0 animate-pulse"></div>
-                  )}
                 </button>
               </Tooltip>
 
@@ -779,7 +771,7 @@ const CourseContent = () => {
                   }}
                   className={`group relative flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-2xl overflow-hidden ${
                     activeTab === 'clusters'
-                      ? 'text-white bg-gradient-to-r from-purple-500 to-indigo-600 shadow-lg shadow-purple-500/25'
+                      ? 'text-white bg-purple-600 shadow-lg shadow-purple-500/25'
                       : 'text-gray-600 hover:text-purple-700 hover:bg-purple-50/80 backdrop-blur-sm border border-gray-200/50 hover:border-purple-200/70'
                   }`}
                   data-action="tab_switch"
@@ -797,9 +789,6 @@ const CourseContent = () => {
                     </svg>
                   </div>
                   <span className="relative whitespace-nowrap">Clusters</span>
-                  {activeTab === 'clusters' && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-700 opacity-0 animate-pulse"></div>
-                  )}
                 </button>
               </Tooltip>
 
@@ -833,7 +822,7 @@ const CourseContent = () => {
               </Tooltip>
             </div>
 
-            <div className="hidden sm:block h-8 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent mx-2"></div>
+            <div className="hidden sm:block h-8 w-px bg-gray-300 mx-2"></div>
 
             <div className="flex gap-2 sm:gap-3 min-w-max">
               <button className="group flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-gray-500 transition-all duration-300 rounded-2xl hover:text-gray-700 hover:bg-gray-50/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300/70">
@@ -1079,7 +1068,6 @@ const CourseContent = () => {
                   }`}>
                     {/* Colored Header */}
                     <div className={`relative px-5 py-6 overflow-hidden ${colorVariations.base} transition-all duration-300`}>
-                      <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/15"></div>
                       <div className="absolute inset-0 opacity-[0.06]">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-12 translate-x-12"></div>
                       </div>
@@ -1107,7 +1095,7 @@ const CourseContent = () => {
                     <div className="flex-1 px-5 py-5 flex flex-col">
                       {/* Instructor */}
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="relative flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex-shrink-0 shadow-sm overflow-hidden">
+                        <div className="relative flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full flex-shrink-0 shadow-sm overflow-hidden">
                           {course.instructorProfilePicture ? (
                             <>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1137,7 +1125,7 @@ const CourseContent = () => {
 
                       {/* Schedule Display */}
                       {course.schedules && course.schedules.length > 0 && (
-                        <div className="mb-4 p-3 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+                        <div className="mb-4 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
                           <div className="flex items-center gap-2 mb-2">
                             <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1233,7 +1221,7 @@ const CourseContent = () => {
           ) : (
             clusters.map((cluster, index) => (
               <div key={cluster._id} className={`group overflow-hidden transition-all duration-500 transform bg-white border border-gray-200 shadow-sm rounded-2xl hover:rounded-3xl hover:shadow-2xl hover:shadow-purple-500/10 hover:border-purple-300 hover:-translate-y-2 animate-fade-in-up`} style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className={`h-32 relative p-5 flex flex-col justify-between ${cluster.coverColor} bg-gradient-to-br from-current to-opacity-90 transition-all duration-300 group-hover:from-current group-hover:to-black/20`}>
+                <div className={`h-32 relative p-5 flex flex-col justify-between ${cluster.coverColor} transition-all duration-300`}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center justify-center w-8 h-8 bg-white rounded-lg bg-opacity-20 transition-all duration-300 group-hover:bg-opacity-30 group-hover:scale-110">
