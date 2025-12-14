@@ -18,7 +18,7 @@ export async function middleware(request) {
     return response;
   }
 
-  const protectedRoutes = ['/home', '/courses', '/ask', '/text-to-docs', '/admin', '/forms', '/submissions'];
+  const protectedRoutes = ['/home', '/courses', '/ask', '/text-to-docs', '/admin', '/forms', '/submissions', '/todo'];
   const authRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
   const publicRoutes = ['/verify-otp'];
 
@@ -81,6 +81,7 @@ export const config = {
     '/courses/:path*',
     '/ask',
     '/text-to-docs',
+    '/todo',
     '/admin/:path*',
     '/forms/:path*',
     '/submissions/:path*',

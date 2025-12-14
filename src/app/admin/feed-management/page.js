@@ -356,7 +356,10 @@ export default function AdminFeedManagementPage() {
                             </span>
                           )}
                         </div>
-                        <p className="leading-relaxed text-gray-700">{announcement.content}</p>
+                        <div 
+                          className="leading-relaxed text-gray-700 prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: announcement.content }}
+                        />
                       </div>
                       <div className="flex items-center ml-4 space-x-2">
                         <button
