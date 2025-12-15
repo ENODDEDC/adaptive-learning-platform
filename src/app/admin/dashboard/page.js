@@ -200,30 +200,30 @@ export default function AdminDashboard() {
     return (
       <div className="space-y-6">
         <div className="animate-pulse">
-          <div className="w-64 h-8 mb-6 bg-gray-200 rounded-lg"></div>
+          <div className="w-64 h-8 mb-6 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
           <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+              <div key={i} className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="w-24 h-4 mb-2 bg-gray-200 rounded"></div>
-                    <div className="w-16 h-8 bg-gray-200 rounded"></div>
+                    <div className="w-24 h-4 mb-2 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
                   </div>
-                  <div className="w-12 h-12 ml-4 bg-gray-200 rounded-lg"></div>
+                  <div className="w-12 h-12 ml-4 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
                 </div>
               </div>
             ))}
           </div>
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
-              <div className="w-32 h-6 mb-4 bg-gray-200 rounded"></div>
-              <div className="h-64 bg-gray-200 rounded"></div>
+            <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
+              <div className="w-32 h-6 mb-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
             </div>
-            <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
-              <div className="h-6 mb-4 bg-gray-200 rounded w-36"></div>
+            <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
+              <div className="h-6 mb-4 bg-gray-200 dark:bg-gray-700 rounded w-36"></div>
               <div className="space-y-3">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-16 bg-gray-200 rounded"></div>
+                  <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
                 ))}
               </div>
             </div>
@@ -238,61 +238,61 @@ export default function AdminDashboard() {
 
       {/* Error Alert */}
       {error && (
-        <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+        <div className="p-4 border border-red-200 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-900/20">
           <div className="flex items-center">
-            <ExclamationTriangleIcon className="w-5 h-5 mr-3 text-red-400" />
-            <p className="text-sm text-red-700">{error}</p>
+            <ExclamationTriangleIcon className="w-5 h-5 mr-3 text-red-400 dark:text-red-500" />
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           </div>
         </div>
       )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <div className="p-6 transition-all duration-200 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:border-blue-300">
+        <div className="p-6 transition-all duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-600">
           <div className="flex items-center justify-between">
-            <div className="p-3 bg-blue-500 rounded-lg shadow-lg">
+            <div className="p-3 bg-purple-600 dark:bg-purple-500 rounded-lg shadow-lg">
               <UsersIcon className="w-6 h-6 text-white" />
             </div>
-            <div className="flex items-center text-sm text-green-600">
+            <div className="flex items-center text-sm text-indigo-600 dark:text-indigo-400">
               <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
               {dashboardData.stats.userGrowth}
             </div>
           </div>
           <div className="mt-4">
-            <p className="text-sm font-medium text-gray-600">Total Users</p>
-            <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardData.stats.totalUsers.toLocaleString()}</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+            <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{dashboardData.stats.totalUsers.toLocaleString()}</p>
           </div>
         </div>
 
-        <div className="p-6 transition-all duration-200 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:border-green-300">
+        <div className="p-6 transition-all duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-600">
           <div className="flex items-center justify-between">
-            <div className="p-3 bg-green-500 rounded-lg shadow-lg">
+            <div className="p-3 bg-indigo-600 dark:bg-indigo-500 rounded-lg shadow-lg">
               <AcademicCapIcon className="w-6 h-6 text-white" />
             </div>
-            <div className="flex items-center text-sm text-green-600">
+            <div className="flex items-center text-sm text-indigo-600 dark:text-indigo-400">
               <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
               {dashboardData.stats.courseGrowth}
             </div>
           </div>
           <div className="mt-4">
-            <p className="text-sm font-medium text-gray-600">Active Courses</p>
-            <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardData.stats.activeCourses}</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Courses</p>
+            <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{dashboardData.stats.activeCourses}</p>
           </div>
         </div>
 
-        <div className="p-6 transition-all duration-200 bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:border-orange-300">
+        <div className="p-6 transition-all duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-600">
           <div className="flex items-center justify-between">
-            <div className="p-3 bg-orange-500 rounded-lg shadow-lg">
+            <div className="p-3 bg-gray-500 dark:bg-gray-600 rounded-lg shadow-lg">
               <ClockIcon className="w-6 h-6 text-white" />
             </div>
-            <div className="flex items-center text-sm text-red-600">
+            <div className="flex items-center text-sm text-red-600 dark:text-red-400">
               <ArrowTrendingDownIcon className="w-4 h-4 mr-1" />
               {dashboardData.stats.taskGrowth}
             </div>
           </div>
           <div className="mt-4">
-            <p className="text-sm font-medium text-gray-600">Pending Tasks</p>
-            <p className="mt-1 text-3xl font-bold text-gray-900">{dashboardData.stats.pendingTasks}</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Tasks</p>
+            <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{dashboardData.stats.pendingTasks}</p>
           </div>
         </div>
       </div>
@@ -300,16 +300,16 @@ export default function AdminDashboard() {
       {/* Charts and Activity */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* Chart - Heatmap Style */}
-        <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Platform Growth</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Platform Growth</h3>
             <div className="flex items-center space-x-2">
               <button 
                 onClick={() => setChartView('users')}
                 className={`px-3 py-1 text-sm rounded-lg transition-colors duration-200 ${
                   chartView === 'users' 
-                    ? 'text-blue-700 bg-blue-100' 
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30' 
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 Users
@@ -318,8 +318,8 @@ export default function AdminDashboard() {
                 onClick={() => setChartView('courses')}
                 className={`px-3 py-1 text-sm rounded-lg transition-colors duration-200 ${
                   chartView === 'courses' 
-                    ? 'text-green-700 bg-green-100' 
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/30' 
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 Courses
@@ -334,7 +334,7 @@ export default function AdminDashboard() {
               <div className="flex mb-2 ml-12">
                 {dashboardData.chartData.map((data, index) => (
                   <div key={`month-${index}`} className="flex-1 min-w-[60px] text-center">
-                    <span className="text-xs font-medium text-gray-500">{data.month}</span>
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{data.month}</span>
                   </div>
                 ))}
               </div>
@@ -343,7 +343,7 @@ export default function AdminDashboard() {
               <div className="space-y-1">
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, dayIndex) => (
                   <div key={day} className="flex items-center">
-                    <div className="w-10 text-xs font-medium text-gray-500">{day}</div>
+                    <div className="w-10 text-xs font-medium text-gray-500 dark:text-gray-400">{day}</div>
                     <div className="flex flex-1 gap-1">
                       {dashboardData.chartData.map((data, monthIndex) => {
                         const value = chartView === 'users' ? data.users : data.courses;
@@ -353,30 +353,30 @@ export default function AdminDashboard() {
                         const dayValue = Math.floor(value / 7) + Math.floor(Math.random() * (value / 7));
                         const intensity = maxValue > 0 ? (dayValue / maxValue) * 4 : 0;
                         
-                        // Determine color intensity
-                        let bgColor = 'bg-gray-100';
+                        // Determine color intensity (light to dark)
+                        let bgColor = 'bg-gray-100 dark:bg-gray-700';
                         if (intensity > 3) {
-                          bgColor = chartView === 'users' ? 'bg-blue-600' : 'bg-green-600';
+                          bgColor = chartView === 'users' ? 'bg-purple-600 dark:bg-purple-600' : 'bg-indigo-600 dark:bg-indigo-600';
                         } else if (intensity > 2) {
-                          bgColor = chartView === 'users' ? 'bg-blue-500' : 'bg-green-500';
+                          bgColor = chartView === 'users' ? 'bg-purple-500 dark:bg-purple-500' : 'bg-indigo-500 dark:bg-indigo-500';
                         } else if (intensity > 1) {
-                          bgColor = chartView === 'users' ? 'bg-blue-400' : 'bg-green-400';
+                          bgColor = chartView === 'users' ? 'bg-purple-400 dark:bg-purple-400' : 'bg-indigo-400 dark:bg-indigo-400';
                         } else if (intensity > 0) {
-                          bgColor = chartView === 'users' ? 'bg-blue-200' : 'bg-green-200';
+                          bgColor = chartView === 'users' ? 'bg-purple-200 dark:bg-purple-200' : 'bg-indigo-200 dark:bg-indigo-200';
                         }
                         
                         return (
                           <div
                             key={`${day}-${monthIndex}`}
-                            className={`relative flex-1 min-w-[60px] h-8 ${bgColor} rounded transition-all duration-200 hover:ring-2 hover:ring-offset-1 ${
-                              chartView === 'users' ? 'hover:ring-blue-400' : 'hover:ring-green-400'
+                            className={`relative flex-1 min-w-[60px] h-8 ${bgColor} rounded transition-all duration-200 hover:ring-2 hover:ring-offset-1 dark:hover:ring-offset-gray-800 ${
+                              chartView === 'users' ? 'hover:ring-purple-400 dark:hover:ring-purple-500' : 'hover:ring-indigo-400 dark:hover:ring-indigo-500'
                             } group cursor-pointer`}
                             title={`${dayValue} ${chartView === 'users' ? 'users' : 'courses'}`}
                           >
                             {/* Tooltip */}
-                            <div className="absolute z-10 px-2 py-1 text-xs font-medium text-white transition-opacity duration-200 transform -translate-x-1/2 bg-gray-900 rounded opacity-0 pointer-events-none bottom-full left-1/2 group-hover:opacity-100 whitespace-nowrap mb-1">
+                            <div className="absolute z-10 px-2 py-1 text-xs font-medium text-white transition-opacity duration-200 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 rounded opacity-0 pointer-events-none bottom-full left-1/2 group-hover:opacity-100 whitespace-nowrap mb-1">
                               {dayValue} {chartView === 'users' ? 'users' : 'courses'}
-                              <div className="absolute w-2 h-2 transform rotate-45 -translate-x-1/2 bg-gray-900 left-1/2 -bottom-1"></div>
+                              <div className="absolute w-2 h-2 transform rotate-45 -translate-x-1/2 bg-gray-900 dark:bg-gray-700 left-1/2 -bottom-1"></div>
                             </div>
                           </div>
                         );
@@ -390,30 +390,30 @@ export default function AdminDashboard() {
           
           {/* Legend */}
           <div className="flex items-center justify-between mt-6">
-            <div className="flex items-center space-x-2 text-xs text-gray-500">
+            <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
               <span>Less</span>
               <div className="flex gap-1">
-                <div className="w-4 h-4 bg-gray-100 rounded"></div>
-                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-blue-200' : 'bg-green-200'}`}></div>
-                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-blue-400' : 'bg-green-400'}`}></div>
-                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
-                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-blue-600' : 'bg-green-600'}`}></div>
+                <div className="w-4 h-4 bg-gray-100 dark:bg-gray-700 rounded"></div>
+                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-purple-200 dark:bg-purple-200' : 'bg-indigo-200 dark:bg-indigo-200'}`}></div>
+                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-purple-400 dark:bg-purple-400' : 'bg-indigo-400 dark:bg-indigo-400'}`}></div>
+                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-purple-500 dark:bg-purple-500' : 'bg-indigo-500 dark:bg-indigo-500'}`}></div>
+                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-purple-600 dark:bg-purple-600' : 'bg-indigo-600 dark:bg-indigo-600'}`}></div>
               </div>
               <span>More</span>
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
               Showing {chartView === 'users' ? 'user registrations' : 'course creations'} over the last 6 months
             </div>
           </div>
         </div>
 
         {/* Recent Activity */}
-        <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h3>
             <button
               onClick={() => router.push('/admin/activities')}
-              className="text-sm font-medium text-purple-600 transition-colors duration-200 hover:text-purple-800"
+              className="text-sm font-medium text-purple-600 dark:text-purple-400 transition-colors duration-200 hover:text-purple-800 dark:hover:text-purple-300"
             >
               View all
             </button>
@@ -421,37 +421,37 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             {dashboardData.recentActivity.length > 0 ? (
               dashboardData.recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start p-3 space-x-3 transition-colors duration-200 rounded-lg hover:bg-gray-50 group">
+                <div key={activity.id} className="flex items-start p-3 space-x-3 transition-colors duration-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
                   <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 ${
-                    activity.type === 'success' ? 'bg-green-100 group-hover:bg-green-200' :
-                    activity.type === 'warning' ? 'bg-orange-100 group-hover:bg-orange-200' :
-                    activity.type === 'error' ? 'bg-red-100 group-hover:bg-red-200' :
-                    'bg-blue-100 group-hover:bg-blue-200'
+                    activity.type === 'success' ? 'bg-indigo-100 dark:bg-indigo-900/30 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-900/50' :
+                    activity.type === 'warning' ? 'bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600' :
+                    activity.type === 'error' ? 'bg-red-100 dark:bg-red-900/30 group-hover:bg-red-200 dark:group-hover:bg-red-900/50' :
+                    'bg-purple-100 dark:bg-purple-900/30 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50'
                   }`}>
                     {activity.type === 'success' ? (
-                      <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                      <CheckCircleIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                     ) : activity.type === 'warning' ? (
-                      <ExclamationTriangleIcon className="w-4 h-4 text-orange-600" />
+                      <ExclamationTriangleIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                     ) : activity.type === 'error' ? (
-                      <ExclamationTriangleIcon className="w-4 h-4 text-red-600" />
+                      <ExclamationTriangleIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
                     ) : (
-                      <EyeIcon className="w-4 h-4 text-blue-600" />
+                      <EyeIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">
+                    <p className="text-sm text-gray-900 dark:text-gray-100">
                       <span className="font-medium">{activity.user}</span> {activity.action}{' '}
-                      <span className="font-medium text-purple-600">{activity.target}</span>
+                      <span className="font-medium text-purple-600 dark:text-purple-400">{activity.target}</span>
                     </p>
                     <div className="flex items-center justify-between mt-1">
-                      <p className="text-xs text-gray-500">{activity.time}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{activity.time}</p>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        activity.category === 'user' ? 'bg-blue-100 text-blue-800' :
-                        activity.category === 'course' ? 'bg-green-100 text-green-800' :
-                        activity.category === 'assignment' ? 'bg-purple-100 text-purple-800' :
-                        activity.category === 'form' ? 'bg-orange-100 text-orange-800' :
-                        activity.category === 'admin' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
+                        activity.category === 'user' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
+                        activity.category === 'course' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300' :
+                        activity.category === 'assignment' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
+                        activity.category === 'form' ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' :
+                        activity.category === 'admin' ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' :
+                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                       }`}>
                         {activity.category}
                       </span>
@@ -461,9 +461,9 @@ export default function AdminDashboard() {
               ))
             ) : (
               <div className="py-8 text-center">
-                <EyeIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p className="text-gray-500">No recent activity</p>
-                <p className="mt-1 text-sm text-gray-400">Activities will appear here as users interact with the platform</p>
+                <EyeIcon className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-600" />
+                <p className="text-gray-500 dark:text-gray-400">No recent activity</p>
+                <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Activities will appear here as users interact with the platform</p>
               </div>
             )}
           </div>
@@ -473,57 +473,57 @@ export default function AdminDashboard() {
       {/* System Health & Quick Actions */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* System Health */}
-        <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">System Health</h3>
+        <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">System Health</h3>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-green-50">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/30">
               <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-green-800">System Status</span>
+                <div className="w-3 h-3 bg-indigo-400 dark:bg-indigo-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-indigo-800 dark:text-indigo-300">System Status</span>
               </div>
-              <span className="text-sm text-green-600">{dashboardData.systemHealth.status}</span>
+              <span className="text-sm text-indigo-600 dark:text-indigo-400">{dashboardData.systemHealth.status}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Uptime</span>
-              <span className="text-sm font-medium text-gray-900">{dashboardData.systemHealth.uptime}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Uptime</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{dashboardData.systemHealth.uptime}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Last Backup</span>
-              <span className="text-sm font-medium text-gray-900">{dashboardData.systemHealth.lastBackup}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Last Backup</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{dashboardData.systemHealth.lastBackup}</span>
             </div>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">Quick Actions</h3>
+        <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Quick Actions</h3>
           <div className="space-y-3">
             <button
               onClick={() => router.push('/admin/users')}
-              className="w-full p-3 text-left transition-all duration-200 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 group"
+              className="w-full p-3 text-left transition-all duration-200 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-700 group"
             >
               <div className="flex items-center space-x-3">
-                <div className="p-2 transition-colors duration-200 bg-blue-500 rounded-lg group-hover:bg-blue-600">
+                <div className="p-2 transition-colors duration-200 bg-purple-600 dark:bg-purple-500 rounded-lg group-hover:bg-purple-700 dark:group-hover:bg-purple-600">
                   <UsersIcon className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Manage Users</p>
-                  <p className="text-xs text-gray-600">Add, edit, or remove users</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Manage Users</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Add, edit, or remove users</p>
                 </div>
               </div>
             </button>
 
             <button
               onClick={() => router.push('/admin/courses')}
-              className="w-full p-3 text-left transition-all duration-200 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 group"
+              className="w-full p-3 text-left transition-all duration-200 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 hover:border-indigo-300 dark:hover:border-indigo-700 group"
             >
               <div className="flex items-center space-x-3">
-                <div className="p-2 transition-colors duration-200 bg-green-500 rounded-lg group-hover:bg-green-600">
+                <div className="p-2 transition-colors duration-200 bg-indigo-600 dark:bg-indigo-500 rounded-lg group-hover:bg-indigo-700 dark:group-hover:bg-indigo-600">
                   <AcademicCapIcon className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Create Course</p>
-                  <p className="text-xs text-gray-600">Add new course content</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Create Course</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Add new course content</p>
                 </div>
               </div>
             </button>
@@ -531,16 +531,16 @@ export default function AdminDashboard() {
         </div>
 
         {/* Recent Stats */}
-        <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">This Month</h3>
+        <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">This Month</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">New Users</span>
-              <span className="text-sm font-medium text-green-600">+{Math.floor(dashboardData.stats.totalUsers * 0.15)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">New Users</span>
+              <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">+{Math.floor(dashboardData.stats.totalUsers * 0.15)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Courses Created</span>
-              <span className="text-sm font-medium text-blue-600">+{Math.floor(dashboardData.stats.activeCourses * 0.25)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Courses Created</span>
+              <span className="text-sm font-medium text-purple-600 dark:text-purple-400">+{Math.floor(dashboardData.stats.activeCourses * 0.25)}</span>
             </div>
           </div>
         </div>

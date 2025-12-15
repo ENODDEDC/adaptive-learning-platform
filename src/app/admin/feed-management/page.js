@@ -14,6 +14,8 @@ export default function AdminFeedManagementPage() {
   const [courses, setCourses] = useState([]);
   const [actionLoading, setActionLoading] = useState({});
   const [notifications, setNotifications] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const router = useRouter();
 
   const fetchAnnouncements = useCallback(async () => {
@@ -146,25 +148,38 @@ export default function AdminFeedManagementPage() {
     return matchesSearch;
   });
 
+  // Pagination calculations
+  const currentItems = activeTab === 'announcements' ? filteredAnnouncements : filteredActivities;
+  const totalPages = Math.ceil(currentItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedAnnouncements = filteredAnnouncements.slice(startIndex, endIndex);
+  const paginatedActivities = filteredActivities.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters or tabs change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCourse, activeTab]);
+
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-3">
-            <div className="w-64 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+            <div className="w-64 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-96 animate-pulse"></div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+            <div key={i} className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
-                  <div className="w-24 h-4 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-24 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                 </div>
-                <div className="w-12 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
+                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
               </div>
             </div>
           ))}
@@ -172,15 +187,15 @@ export default function AdminFeedManagementPage() {
 
         <div className="space-y-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="p-6 bg-white border border-gray-200 rounded-xl">
+            <div key={i} className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
               <div className="flex items-center justify-between">
                 <div className="flex-1 space-y-3">
-                  <div className="w-full h-4 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="w-3/4 h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-3/4 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                 </div>
                 <div className="flex space-x-2">
-                  <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-                  <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
                 </div>
               </div>
             </div>
@@ -199,20 +214,20 @@ export default function AdminFeedManagementPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Feed Management</h1>
-          <p className="mt-1 text-gray-600">Manage announcements and activity logs across all courses</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Feed Management</h1>
+          <p className="mt-1 text-gray-600 dark:text-gray-400">Manage announcements and activity logs across all courses</p>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Announcements</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">{announcements.length}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Announcements</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{announcements.length}</p>
             </div>
-            <div className="p-3 bg-blue-500 rounded-lg shadow-lg">
+            <div className="p-3 bg-purple-600 rounded-lg shadow-lg">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
@@ -220,13 +235,13 @@ export default function AdminFeedManagementPage() {
           </div>
         </div>
 
-        <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Course Activities</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">{activities.length}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Course Activities</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{activities.length}</p>
             </div>
-            <div className="p-3 bg-green-500 rounded-lg shadow-lg">
+            <div className="p-3 bg-indigo-600 rounded-lg shadow-lg">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -234,13 +249,13 @@ export default function AdminFeedManagementPage() {
           </div>
         </div>
 
-        <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-xl">
+        <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Courses</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">{courses.length}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Courses</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{courses.length}</p>
             </div>
-            <div className="p-3 bg-purple-500 rounded-lg shadow-lg">
+            <div className="p-3 bg-gray-500 rounded-lg shadow-lg">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
@@ -250,15 +265,15 @@ export default function AdminFeedManagementPage() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border border-gray-100 shadow-sm rounded-xl">
-        <div className="border-b border-gray-100">
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
+        <div className="border-b border-gray-100 dark:border-gray-700">
           <nav className="flex px-6 space-x-8">
             <button
               onClick={() => setActiveTab('announcements')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'announcements'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
               Announcements ({filteredAnnouncements.length})
@@ -267,8 +282,8 @@ export default function AdminFeedManagementPage() {
               onClick={() => setActiveTab('activities')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'activities'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
               Activity Logs ({filteredActivities.length})
@@ -282,7 +297,7 @@ export default function AdminFeedManagementPage() {
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
@@ -291,12 +306,12 @@ export default function AdminFeedManagementPage() {
                   placeholder="Search posts, users, or courses..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full py-2.5 pl-9 pr-3 text-sm leading-5 placeholder-gray-400 transition-all duration-200 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="block w-full py-2.5 pl-9 pr-3 text-sm leading-5 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -310,7 +325,7 @@ export default function AdminFeedManagementPage() {
               <select
                 value={selectedCourse}
                 onChange={(e) => setSelectedCourse(e.target.value)}
-                className="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               >
                 <option value="all">All Courses</option>
                 {courses.map(course => (
@@ -327,37 +342,37 @@ export default function AdminFeedManagementPage() {
             <div className="space-y-4">
               {filteredAnnouncements.length === 0 ? (
                 <div className="py-12 text-center">
-                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  <h3 className="mb-2 text-lg font-medium text-gray-900">No announcements found</h3>
-                  <p className="text-gray-500">Announcements will appear here when instructors post in courses.</p>
+                  <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-gray-100">No announcements found</h3>
+                  <p className="text-gray-500 dark:text-gray-400">Announcements will appear here when instructors post in courses.</p>
                 </div>
               ) : (
-                filteredAnnouncements.map((announcement) => (
-                  <div key={announcement.id} className="p-6 transition-shadow duration-200 bg-white border border-gray-200 rounded-xl hover:shadow-md">
+                paginatedAnnouncements.map((announcement) => (
+                  <div key={announcement.id} className="p-6 transition-shadow duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-md">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center mb-3 space-x-3">
-                          <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-full">
-                            <span className="text-sm font-semibold text-purple-600">
+                          <div className="flex items-center justify-center w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                            <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
                               {announcement.postedBy.charAt(0)}
                             </span>
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{announcement.postedBy}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{announcement.postedBy}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {announcement.courseName} • {new Date(announcement.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                           {announcement.pinned && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full">
+                            <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-full">
                               Pinned
                             </span>
                           )}
                         </div>
                         <div 
-                          className="leading-relaxed text-gray-700 prose prose-sm max-w-none"
+                          className="leading-relaxed text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none"
                           dangerouslySetInnerHTML={{ __html: announcement.content }}
                         />
                       </div>
@@ -365,7 +380,7 @@ export default function AdminFeedManagementPage() {
                         <button
                           onClick={() => handleDeleteAnnouncement(announcement.id)}
                           disabled={actionLoading[`delete-${announcement.id}`]}
-                          className="p-2 text-red-600 transition-all duration-200 rounded-lg hover:text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2 text-red-600 dark:text-red-400 transition-all duration-200 rounded-lg hover:text-white hover:bg-red-600 dark:hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Delete announcement"
                         >
                           {actionLoading[`delete-${announcement.id}`] ? (
@@ -390,47 +405,47 @@ export default function AdminFeedManagementPage() {
             <div className="space-y-4">
               {filteredActivities.length === 0 ? (
                 <div className="py-12 text-center">
-                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <h3 className="mb-2 text-lg font-medium text-gray-900">No activities found</h3>
-                  <p className="text-gray-500">Course activities will appear here when users interact with courses.</p>
+                  <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-gray-100">No activities found</h3>
+                  <p className="text-gray-500 dark:text-gray-400">Course activities will appear here when users interact with courses.</p>
                 </div>
               ) : (
-                filteredActivities.map((activity) => (
-                  <div key={activity.id} className="p-6 transition-shadow duration-200 bg-white border border-gray-200 rounded-xl hover:shadow-md">
+                paginatedActivities.map((activity) => (
+                  <div key={activity.id} className="p-6 transition-shadow duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-md">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center mb-3 space-x-3">
                           <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                            activity.type === 'success' ? 'bg-green-100' :
-                            activity.type === 'warning' ? 'bg-yellow-100' :
-                            activity.type === 'error' ? 'bg-red-100' : 'bg-blue-100'
+                            activity.type === 'success' ? 'bg-indigo-100 dark:bg-indigo-900/30' :
+                            activity.type === 'warning' ? 'bg-gray-100 dark:bg-gray-700' :
+                            activity.type === 'error' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-purple-100 dark:bg-purple-900/30'
                           }`}>
                             <span className={`text-sm font-semibold ${
-                              activity.type === 'success' ? 'text-green-600' :
-                              activity.type === 'warning' ? 'text-yellow-600' :
-                              activity.type === 'error' ? 'text-red-600' : 'text-blue-600'
+                              activity.type === 'success' ? 'text-indigo-600 dark:text-indigo-400' :
+                              activity.type === 'warning' ? 'text-gray-600 dark:text-gray-400' :
+                              activity.type === 'error' ? 'text-red-600 dark:text-red-400' : 'text-purple-600 dark:text-purple-400'
                             }`}>
                               {activity.user.charAt(0)}
                             </span>
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{activity.user}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{activity.user}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {activity.target} • {activity.time}
                             </p>
                           </div>
                           <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${
-                            activity.type === 'success' ? 'bg-green-100 text-green-800' :
-                            activity.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-                            activity.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                            activity.type === 'success' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300' :
+                            activity.type === 'warning' ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' :
+                            activity.type === 'error' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
                           }`}>
                             {activity.type}
                           </span>
                         </div>
-                        <p className="leading-relaxed text-gray-700">{activity.description}</p>
-                        <p className="mt-2 text-sm text-gray-500">
+                        <p className="leading-relaxed text-gray-700 dark:text-gray-300">{activity.description}</p>
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                           Action: <span className="font-medium">{activity.action}</span>
                         </p>
                       </div>
@@ -438,6 +453,103 @@ export default function AdminFeedManagementPage() {
                   </div>
                 ))
               )}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {currentItems.length > 0 && (
+            <div className="flex flex-col items-center justify-between gap-4 p-6 mt-6 border-t border-gray-200 dark:border-gray-700 sm:flex-row">
+              {/* Items per page selector */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Show</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  per page (Showing {startIndex + 1}-{Math.min(endIndex, currentItems.length)} of {currentItems.length})
+                </span>
+              </div>
+
+              {/* Pagination buttons */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="First page"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+
+                {/* Page numbers */}
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-purple-600 text-white'
+                            : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Last page"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -450,8 +562,8 @@ export default function AdminFeedManagementPage() {
             key={notification.id}
             className={`max-w-sm w-full p-4 rounded-lg shadow-lg transition-all duration-300 animate-fade-in-down ${
               notification.type === 'success'
-                ? 'bg-green-50 border border-green-200 text-green-800'
-                : 'bg-red-50 border border-red-200 text-red-800'
+                ? 'bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-200'
+                : 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
             }`}
           >
             <div className="flex items-center">
@@ -472,7 +584,7 @@ export default function AdminFeedManagementPage() {
               <div className="flex-shrink-0 ml-4">
                 <button
                   onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
-                  className="inline-flex text-gray-400 rounded-md hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  className="inline-flex text-gray-400 dark:text-gray-500 rounded-md hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
