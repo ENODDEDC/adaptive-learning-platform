@@ -1,4 +1,4 @@
-# Course Card Height Consistency Fix
+.# Course Card Height Consistency Fix
 
 ## Problem
 Course cards in the masonry grid had inconsistent heights because:
