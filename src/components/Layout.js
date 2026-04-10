@@ -21,7 +21,14 @@ import '../utils/clearOldNotes'; // Auto-clear old localStorage notes
 
 const Layout = ({ children }) => {
   const pathname = usePathname();
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    // Initialize from localStorage if available
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
   const [upcomingTasksExpanded, setUpcomingTasksExpanded] = useState(true);
   const {
     isCreateCourseModalOpen,
@@ -71,7 +78,12 @@ const Layout = ({ children }) => {
    }, [isMounted]); // Depend on isMounted to ensure client-side execution
 
   const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
+    const newState = !isSidebarCollapsed;
+    setIsSidebarCollapsed(newState);
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+    }
     // When on course pages, also control upcoming tasks
     if (pathname?.startsWith('/courses/') && pathname !== '/courses') {
       setUpcomingTasksExpanded(isSidebarCollapsed); // If collapsing sidebar, expand tasks; if expanding sidebar, collapse tasks
