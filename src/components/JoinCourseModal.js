@@ -55,23 +55,18 @@ const JoinCourseModal = ({ isOpen, onClose, onJoinCourse }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
       <div
-        className="w-full max-w-lg bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30"
+        className="w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="join-modal-title"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-xl">
-              <UserPlusIcon className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <h2 id="join-modal-title" className="text-xl font-bold text-gray-900">Join a Course</h2>
-              <p className="text-sm text-gray-500">Enter the course key to join</p>
-            </div>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div>
+            <h2 id="join-modal-title" className="text-lg font-semibold text-gray-900">Join a Course</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Enter the course key to join</p>
           </div>
           <button
             onClick={onClose}
@@ -83,43 +78,40 @@ const JoinCourseModal = ({ isOpen, onClose, onJoinCourse }) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-          <div className="relative">
+        <form onSubmit={handleSubmit} className="p-6">
+          <div>
+            <label htmlFor="courseKey" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Course Key *
+            </label>
             <input
               type="text"
               id="courseKey"
-              className="w-full px-4 pt-6 pb-3 text-gray-900 placeholder-transparent border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent peer transition-all duration-200"
-              placeholder="Course Key"
+              className="w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+              placeholder="e.g., ABC123"
               value={courseKey}
               onChange={(e) => setCourseKey(e.target.value)}
               required
             />
-            <label
-              htmlFor="courseKey"
-              className="absolute left-4 top-4 text-gray-500 text-sm transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-green-600 peer-valid:top-2 peer-valid:text-xs peer-valid:text-green-600"
-            >
-              Course Key *
-            </label>
           </div>
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-100">
+          <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md transition-all duration-200"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!courseKey.trim() || isLoading}
-              className="px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-green-600 to-green-700 rounded-xl hover:from-green-700 hover:to-green-800 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               {isLoading ? (
                 <>

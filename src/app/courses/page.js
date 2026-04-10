@@ -619,77 +619,74 @@ const CourseContent = () => {
               >
                 <button
                   onClick={() => setIsCourseMenuOpen(!isCourseMenuOpen)}
-                  className="group relative flex items-center justify-center w-12 h-12 text-white transition-all duration-300 bg-blue-600 shadow-xl rounded-2xl hover:shadow-2xl hover:scale-110 active:scale-95 overflow-hidden"
+                  className="flex items-center justify-center w-10 h-10 text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-md transition-colors"
                   data-action="main_menu"
                   data-feature="course_actions"
                 >
-                  <div className="absolute inset-0 bg-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <PlusIcon className="relative w-6 h-6 transition-transform duration-300 group-hover:rotate-90" />
+                  <PlusIcon className="w-5 h-5" />
                 </button>
               </Tooltip>
 
 
               {isCourseMenuOpen && (
-                <div className="absolute right-16 top-0 z-[99999] w-64 bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl animate-fade-in-left dropdown-menu">
-                  <div className="p-2">
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => {
-                          openCreateCourseModal();
-                          setIsCourseMenuOpen(false);
-                        }}
-                        className="group flex flex-col items-center gap-1 px-2 py-3 text-xs font-medium text-gray-700 transition-all duration-200 rounded-lg hover:bg-green-50 hover:text-green-700"
-                      >
-                        <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors duration-200">
-                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                        </div>
-                        <span className="text-center">Create Course</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          openJoinCourseModal();
-                          setIsCourseMenuOpen(false);
-                        }}
-                        className="group flex flex-col items-center gap-1 px-2 py-3 text-xs font-medium text-gray-700 transition-all duration-200 rounded-lg hover:bg-blue-50 hover:text-blue-700"
-                      >
-                        <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-200">
-                          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                          </svg>
-                        </div>
-                        <span className="text-center">Join Course</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          openCreateClusterModal();
-                          setIsCourseMenuOpen(false);
-                        }}
-                        className="group flex flex-col items-center gap-1 px-2 py-3 text-xs font-medium text-gray-700 transition-all duration-200 rounded-lg hover:bg-purple-50 hover:text-purple-700"
-                      >
-                        <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors duration-200">
-                          <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
-                        </div>
-                        <span className="text-center">Create Cluster</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          openJoinClusterModal();
-                          setIsCourseMenuOpen(false);
-                        }}
-                        className="group flex flex-col items-center gap-1 px-2 py-3 text-xs font-medium text-gray-700 transition-all duration-200 rounded-lg hover:bg-indigo-50 hover:text-indigo-700"
-                      >
-                        <div className="flex items-center justify-center w-8 h-8 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors duration-200">
-                          <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
-                        </div>
-                        <span className="text-center">Join Cluster</span>
-                      </button>
-                    </div>
+                <div className="absolute right-16 top-0 z-[99999] w-56 bg-white border border-gray-200 shadow-lg rounded-lg overflow-hidden">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        openCreateCourseModal();
+                        setIsCourseMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
+                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </div>
+                      <span className="font-medium">Create Course</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        openJoinCourseModal();
+                        setIsCourseMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
+                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                      </div>
+                      <span className="font-medium">Join Course</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        openCreateClusterModal();
+                        setIsCourseMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
+                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                      </div>
+                      <span className="font-medium">Create Cluster</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        openJoinClusterModal();
+                        setIsCourseMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
+                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <span className="font-medium">Join Cluster</span>
+                    </button>
                   </div>
                 </div>
               )}

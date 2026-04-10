@@ -1,24 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useLayout } from '../context/LayoutContext';
-import { BookOpenIcon, XMarkIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ArrowPathIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
   const { refreshCourses } = useLayout();
   const [subject, setSubject] = useState('');
   const [section, setSection] = useState('');
-  const [coverColor, setCoverColor] = useState('#60a5fa'); // Default blue color
+  const [coverColor, setCoverColor] = useState('#3b82f6');
   const [isLoading, setIsLoading] = useState(false);
   const [schedules, setSchedules] = useState([{ day: 'Monday', startTime: '09:00', endTime: '10:00' }]);
 
   const colorOptions = [
-    { name: 'Blue', value: '#60a5fa' },
-    { name: 'Purple', value: '#a78bfa' },
-    { name: 'Pink', value: '#f472b6' },
-    { name: 'Green', value: '#34d399' },
-    { name: 'Orange', value: '#fb923c' },
-    { name: 'Red', value: '#f87171' },
-    { name: 'Teal', value: '#2dd4bf' },
-    { name: 'Indigo', value: '#818cf8' },
+    { name: 'Blue', value: '#3b82f6' },
+    { name: 'Slate', value: '#64748b' },
+    { name: 'Gray', value: '#6b7280' },
+    { name: 'Zinc', value: '#71717a' },
+    { name: 'Stone', value: '#78716c' },
+    { name: 'Neutral', value: '#737373' },
   ];
 
   const handleAddSchedule = () => {
@@ -79,181 +77,183 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
       <div
-        className="w-full max-w-lg bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30"
+        className="w-full max-w-4xl bg-white rounded-lg shadow-xl overflow-hidden flex"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-xl">
-              <BookOpenIcon className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h2 id="modal-title" className="text-xl font-bold text-gray-900">Create New Course</h2>
-              <p className="text-sm text-gray-500">Set up a new course for your students</p>
+        {/* Left Side - Preview */}
+        <div className="hidden md:flex md:w-2/5 bg-gray-50 p-8 flex-col justify-between border-r border-gray-200">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Preview</h3>
+            <div 
+              className="rounded-lg p-6 shadow-sm"
+              style={{ backgroundColor: coverColor }}
+            >
+              <div className="text-white">
+                <h4 className="text-xl font-semibold mb-2">{subject || 'Course Subject'}</h4>
+                <p className="text-sm opacity-90">{section || 'Section'}</p>
+                <p className="text-xs opacity-75 mt-4">{adminName}</p>
+              </div>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Close modal"
-          >
-            <XMarkIcon className="w-5 h-5" />
-          </button>
+          <div className="text-xs text-gray-500">
+            <p>Students will see this course card on their dashboard</p>
+          </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-          <div className="relative">
-            <input
-              type="text"
-              id="subject"
-              className="w-full px-4 pt-6 pb-3 text-gray-900 placeholder-transparent border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer transition-all duration-200"
-              placeholder="Course Subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              required
-            />
-            <label
-              htmlFor="subject"
-              className={`absolute left-4 text-gray-500 text-sm transition-all duration-200 pointer-events-none ${
-                subject ? 'top-2 text-xs text-blue-600' : 'top-4 text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-blue-600'
-              }`}
+        {/* Right Side - Form */}
+        <div className="flex-1 flex flex-col max-h-[90vh]">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <div>
+              <h2 id="modal-title" className="text-lg font-semibold text-gray-900">Create New Course</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Set up a new course for your students</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Close modal"
             >
-              Course Subject *
-            </label>
+              <XMarkIcon className="w-5 h-5" />
+            </button>
           </div>
 
-          <div className="relative">
-            <input
-              type="text"
-              id="section"
-              className="w-full px-4 pt-6 pb-3 text-gray-900 placeholder-transparent border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer transition-all duration-200"
-              placeholder="Section"
-              value={section}
-              onChange={(e) => setSection(e.target.value)}
-            />
-            <label
-              htmlFor="section"
-              className={`absolute left-4 text-gray-500 text-sm transition-all duration-200 pointer-events-none ${
-                section ? 'top-2 text-xs text-blue-600' : 'top-4 text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-blue-600'
-              }`}
-            >
-              Section
-            </label>
-          </div>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+            <div>
+              <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Course Subject *
+              </label>
+              <input
+                type="text"
+                id="subject"
+                className="w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Mathematics, Physics"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Course Color
-            </label>
-            <div className="grid grid-cols-4 gap-3">
-              {colorOptions.map((color) => (
-                <button
-                  key={color.value}
-                  type="button"
-                  onClick={() => setCoverColor(color.value)}
-                  className={`relative h-12 rounded-xl transition-all duration-200 hover:scale-110 ${
-                    coverColor === color.value
-                      ? 'ring-2 ring-offset-2 ring-blue-500 scale-110'
-                      : 'hover:ring-2 hover:ring-offset-2 hover:ring-gray-300'
-                  }`}
-                  style={{ backgroundColor: color.value }}
-                  title={color.name}
-                >
-                  {coverColor === color.value && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+            <div>
+              <label htmlFor="section" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Section
+              </label>
+              <input
+                type="text"
+                id="section"
+                className="w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., A, B, 101"
+                value={section}
+                onChange={(e) => setSection(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Course Color
+              </label>
+              <div className="flex gap-2">
+                {colorOptions.map((color) => (
+                  <button
+                    key={color.value}
+                    type="button"
+                    onClick={() => setCoverColor(color.value)}
+                    className={`w-10 h-10 rounded-lg transition-all ${
+                      coverColor === color.value
+                        ? 'ring-2 ring-offset-2 ring-gray-900'
+                        : 'hover:ring-2 hover:ring-offset-2 hover:ring-gray-300'
+                    }`}
+                    style={{ backgroundColor: color.value }}
+                    title={color.name}
+                  >
+                    {coverColor === color.value && (
+                      <svg className="w-5 h-5 text-white mx-auto" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
-                    </div>
-                  )}
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Schedule Section */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Class Schedule *
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAddSchedule}
+                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Add
                 </button>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* Schedule Section */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Class Schedule *
-              </label>
-              <button
-                type="button"
-                onClick={handleAddSchedule}
-                className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Schedule
-              </button>
-            </div>
-
-            {schedules.length > 0 && (
-              <div className="space-y-3 max-h-60 overflow-y-auto">
+              <div className="space-y-2">
                 {schedules.map((schedule, index) => (
-                  <div key={index} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1 grid grid-cols-3 gap-2">
-                        <select
-                          value={schedule.day}
-                          onChange={(e) => handleScheduleChange(index, 'day', e.target.value)}
-                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="Monday">Monday</option>
-                          <option value="Tuesday">Tuesday</option>
-                          <option value="Wednesday">Wednesday</option>
-                          <option value="Thursday">Thursday</option>
-                          <option value="Friday">Friday</option>
-                          <option value="Saturday">Saturday</option>
-                          <option value="Sunday">Sunday</option>
-                        </select>
-                        <input
-                          type="time"
-                          value={schedule.startTime}
-                          onChange={(e) => handleScheduleChange(index, 'startTime', e.target.value)}
-                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <input
-                          type="time"
-                          value={schedule.endTime}
-                          onChange={(e) => handleScheduleChange(index, 'endTime', e.target.value)}
-                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
+                  <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    <select
+                      value={schedule.day}
+                      onChange={(e) => handleScheduleChange(index, 'day', e.target.value)}
+                      className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="Monday">Mon</option>
+                      <option value="Tuesday">Tue</option>
+                      <option value="Wednesday">Wed</option>
+                      <option value="Thursday">Thu</option>
+                      <option value="Friday">Fri</option>
+                      <option value="Saturday">Sat</option>
+                      <option value="Sunday">Sun</option>
+                    </select>
+                    <input
+                      type="time"
+                      value={schedule.startTime}
+                      onChange={(e) => handleScheduleChange(index, 'startTime', e.target.value)}
+                      className="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <span className="text-gray-400">-</span>
+                    <input
+                      type="time"
+                      value={schedule.endTime}
+                      onChange={(e) => handleScheduleChange(index, 'endTime', e.target.value)}
+                      className="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    {schedules.length > 1 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveSchedule(index)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                       >
                         <XMarkIcon className="w-4 h-4" />
                       </button>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          </form>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md transition-all duration-200"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
+              onClick={handleSubmit}
               disabled={!subject.trim() || schedules.length === 0 || isLoading}
-              className="px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -265,7 +265,7 @@ const CreateCourseModal = ({ isOpen, onClose, onCreateCourse, adminName }) => {
               )}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

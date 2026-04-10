@@ -330,7 +330,7 @@ export default function UnifiedFloatingAssistant() {
               const x = buttonPosition.x !== null ? buttonPosition.x : rect.left;
               const y = buttonPosition.y !== null ? buttonPosition.y : rect.top;
               return {
-                left: `${x - 420 - 16}px`, // 420px = panel width, 16px gap
+                left: `${x - 420 - 16}px`,
                 bottom: `${window.innerHeight - y - rect.height}px`
               };
             }
@@ -339,38 +339,29 @@ export default function UnifiedFloatingAssistant() {
               bottom: '6rem'
             };
           })()}
-          className="fixed z-40 transition-all duration-500 ease-out"
+          className="fixed z-40"
         >
           <div className="w-[420px] max-w-[calc(100vw-2rem)]">
-            <div className="relative p-5 bg-white rounded-2xl shadow-2xl border border-gray-200">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl"></div>
-              
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                      </svg>
-                    </div>
-                    AI Assistant
-                  </h3>
-                  <button
-                    onClick={() => setSelectedTool(null)}
-                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+            <div className="bg-white rounded-lg shadow-xl border border-gray-200">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">AI Assistant</h3>
+                <button
+                  onClick={() => setSelectedTool(null)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
-                <div className="relative mb-3">
+              <div className="p-6">
+                <div className="relative mb-4">
                   <textarea
                     value={promptText}
                     onChange={(e) => setPromptText(e.target.value)}
                     placeholder="Ask anything..."
-                    className="w-full p-3 text-sm text-gray-700 placeholder-gray-400 transition-all duration-200 border border-gray-200 resize-none bg-white rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    className="w-full p-3 text-sm text-gray-700 placeholder-gray-400 border border-gray-300 resize-none bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows="4"
                     maxLength={500}
                     autoFocus
@@ -380,17 +371,17 @@ export default function UnifiedFloatingAssistant() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-4">
                   <button
                     onClick={() => {
                       setSelectedMode('Ask');
                       const tracker = getLearningBehaviorTracker();
                       if (tracker) tracker.trackAIAssistantMode('ask');
                     }}
-                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                       selectedMode === 'Ask'
                         ? 'text-white bg-blue-600'
-                        : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
+                        : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
                     }`}
                   >
                     Ask
@@ -401,10 +392,10 @@ export default function UnifiedFloatingAssistant() {
                       const tracker = getLearningBehaviorTracker();
                       if (tracker) tracker.trackAIAssistantMode('research');
                     }}
-                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                       selectedMode === 'Research'
                         ? 'text-white bg-blue-600'
-                        : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
+                        : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
                     }`}
                   >
                     Research
@@ -415,10 +406,10 @@ export default function UnifiedFloatingAssistant() {
                       const tracker = getLearningBehaviorTracker();
                       if (tracker) tracker.trackAIAssistantMode('textToDocs');
                     }}
-                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                       selectedMode === 'Text to Docs'
                         ? 'text-white bg-blue-600'
-                        : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
+                        : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
                     }`}
                   >
                     Docs
@@ -428,7 +419,7 @@ export default function UnifiedFloatingAssistant() {
                 <button
                   onClick={handleSubmit}
                   disabled={!promptText.trim()}
-                  className="w-full py-2.5 text-sm font-medium text-white transition-all duration-200 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-blue-600 disabled:hover:to-blue-700"
+                  className="w-full py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Submit
                 </button>
