@@ -17,6 +17,7 @@ import EmptyState from '@/components/EmptyState';
 import { useLayout } from '../../context/LayoutContext';
 import { getLearningBehaviorTracker } from '@/utils/learningBehaviorTracker';
 import HomeTour from '@/components/HomeTour';
+import useViewportInfo from '@/hooks/useViewportInfo';
 
 // Utility function to normalize and ensure proper color format
 const normalizeColor = (colorValue) => {
@@ -146,6 +147,7 @@ export default function Home() {
   const [expandedSchedules, setExpandedSchedules] = useState({});
   const [showTour, setShowTour] = useState(false);
   const hasDataRef = useRef(false);
+  const { height: viewportHeight, isShortHeight, isVeryShortHeight, isNarrowWidth, isCompactUi } = useViewportInfo();
 
   const recentActivities = [];
 
@@ -443,31 +445,31 @@ export default function Home() {
   }
 
   if (error) {
-    return <div className="flex-1 min-h-screen p-8 text-center text-red-500 bg-gray-100">Error: {error}</div>;
+    return <div className="flex h-screen items-center justify-center p-6 text-center text-red-500 bg-gray-100">Error: {error}</div>;
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 overflow-y-auto">
+    <div className="flex flex-col bg-gray-50 overflow-hidden" style={{ height: `${viewportHeight}px` }}>
       {/* Tour Component */}
       <HomeTour show={showTour} onComplete={() => setShowTour(false)} />
       
       {/* Compact Welcome Header - Clean Design */}
-      <div className="welcome-header relative mx-4 mt-3 bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md transition-shadow duration-300">
+      <div className={`welcome-header relative ${isVeryShortHeight ? 'mx-2.5 mt-1.5' : 'mx-3 mt-2'} bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md transition-shadow duration-300`}>
         {/* Subtle accent line - Single color */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 rounded-t-2xl"></div>
 
-        <div className="relative px-6 py-4">
-          <div className="flex items-center justify-between gap-6">
+        <div className={`relative ${isVeryShortHeight ? 'px-4 py-2.5' : 'px-5 py-3'}`}>
+          <div className={`flex items-center justify-between ${isVeryShortHeight ? 'gap-3' : 'gap-4'}`}>
             {/* Left Section - Compact Welcome */}
-            <div className="flex items-center gap-4 flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className="relative flex-shrink-0">
-                <div className="flex items-center justify-center w-12 h-12 bg-blue-500 rounded-xl shadow-sm">
-                  <SparklesIcon className="w-7 h-7 text-white" />
+                <div className="flex items-center justify-center w-11 h-11 bg-blue-500 rounded-xl shadow-sm">
+                  <SparklesIcon className="w-6 h-6 text-white" />
                 </div>
                 <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
               </div>
               <div className="flex flex-col justify-center flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+                <h1 className={`${isVeryShortHeight ? 'text-[1.45rem]' : isShortHeight ? 'text-[1.6rem]' : 'text-[1.75rem]'} font-bold text-gray-900 leading-tight`}>
                   {(() => {
                     const hour = new Date().getHours();
                     const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -476,7 +478,7 @@ export default function Home() {
                     {user ? `${user.name} ${user.surname}` : 'User'}
                   </span>!
                 </h1>
-                <p className="text-sm text-gray-600 flex items-center gap-2">
+                <p className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
                   Welcome back to your learning dashboard
                   <button
                     onClick={() => setShowTour(true)}
@@ -490,15 +492,15 @@ export default function Home() {
             </div>
 
             {/* Right Section - Compact Calendar */}
-            <div className="flex-shrink-0">
-              <div className="flex items-center justify-center gap-2 text-xs text-gray-500 mb-2">
+            <div className={`flex-shrink-0 ${isNarrowWidth ? 'scale-95 origin-right' : ''}`}>
+              <div className="flex items-center justify-center gap-2 text-[11px] text-gray-500 mb-1.5">
                 <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span className="font-semibold">This Week</span>
               </div>
               <div className="bg-gray-50 rounded-xl p-2 border border-gray-200">
-                <div className="text-center mb-1.5">
+                <div className="text-center mb-1">
                   <div className="text-xs text-blue-700 font-bold">
                     {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </div>
@@ -524,7 +526,7 @@ export default function Home() {
                       days.push(
                         <div
                           key={i}
-                          className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-lg ${
+                        className={`text-[11px] font-semibold w-6 h-6 flex items-center justify-center rounded-lg ${
                             isToday
                               ? 'bg-blue-500 text-white'
                               : isPast
@@ -546,19 +548,19 @@ export default function Home() {
       </div>
 
       {/* Main Content Grid - Optimized for single viewport */}
-      <div className="flex-1 grid grid-cols-1 gap-4 mx-4 my-3 lg:grid-cols-3 overflow-hidden">
+      <div className={`flex-1 min-h-0 grid grid-cols-1 ${isVeryShortHeight ? 'gap-2.5 mx-2.5 my-1.5' : 'gap-3 mx-3 my-2'} lg:grid-cols-3 overflow-hidden`}>
         {/* Unified Courses Section */}
-        <div className="joined-courses-section lg:col-span-2 flex flex-col overflow-hidden">
-          <div className="flex-1 flex flex-col p-4 bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
-                <div className="flex items-center justify-between mb-5 flex-shrink-0 pb-4 border-b-2 border-gray-200">
+        <div className="joined-courses-section lg:col-span-2 flex min-h-0 flex-col overflow-hidden">
+          <div className={`flex-1 flex min-h-0 flex-col ${isVeryShortHeight ? 'p-2.5' : 'p-3'} bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300`}>
+                <div className={`flex items-center justify-between ${isVeryShortHeight ? 'mb-2.5 pb-2.5' : 'mb-3 pb-3'} flex-shrink-0 border-b border-gray-200`}>
                   <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
-                    <div className="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-2xl shadow-sm flex-shrink-0">
+                    <div className={`${isVeryShortHeight ? 'w-8 h-8' : 'w-9 h-9'} flex items-center justify-center bg-blue-500 rounded-2xl shadow-sm flex-shrink-0`}>
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                     </div>
                     <div className="flex flex-col flex-shrink-0">
-                      <h2 className="text-base font-bold text-gray-800 tracking-tight">Joined Courses</h2>
+                      <h2 className={`${isVeryShortHeight ? 'text-sm' : 'text-[15px]'} font-bold text-gray-800 tracking-tight`}>Joined Courses</h2>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs font-medium text-gray-500">
                           {allCourses.length} enrolled
@@ -570,7 +572,7 @@ export default function Home() {
                   <div className="add-course-button relative flex-shrink-0 z-50">
                     <button
                       onClick={() => setIsCourseMenuOpen(!isCourseMenuOpen)}
-                      className="flex items-center justify-center w-11 h-11 text-white transition-all duration-300 bg-blue-600 rounded-2xl shadow-sm hover:bg-blue-700 hover:shadow-md hover:scale-105 active:scale-95"
+                      className={`flex items-center justify-center ${isVeryShortHeight ? 'w-9 h-9' : 'w-10 h-10'} text-white transition-all duration-300 bg-blue-600 rounded-2xl shadow-sm hover:bg-blue-700 hover:shadow-md hover:scale-105 active:scale-95`}
                     >
                       <PlusIcon className="w-5 h-5" />
                     </button>
@@ -614,7 +616,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="relative flex-1 overflow-hidden">
+                <div className="relative flex-1 min-h-0 overflow-hidden">
                   {allCourses.length === 0 ? (
                     <EmptyState type="courses" message="No courses yet. Create or join a course to get started!" />
                   ) : (
@@ -622,7 +624,7 @@ export default function Home() {
                       {/* Smooth scroll container */}
                       <div 
                         ref={scrollContainerRef}
-                        className="flex gap-4 overflow-x-auto overflow-y-hidden h-full pb-4 scroll-smooth snap-x snap-mandatory scrollbar-hide"
+                        className={`flex ${isVeryShortHeight ? 'gap-2.5 pb-1.5' : 'gap-3 pb-2'} overflow-x-auto overflow-y-hidden h-full scroll-smooth snap-x snap-mandatory scrollbar-hide`}
                         style={{
                           scrollbarWidth: 'none',
                           msOverflowStyle: 'none',
@@ -635,20 +637,20 @@ export default function Home() {
                           <Link 
                             key={course.id} 
                             href={`/courses/${course.id}`} 
-                            className="course-card flex-shrink-0 w-[calc(50%-8px)] min-w-[300px] max-w-[420px] snap-start group"
+                            className={`course-card flex-shrink-0 ${isCompactUi ? 'w-[calc(50%-5px)] min-w-[260px] max-w-[360px]' : 'w-[calc(50%-6px)] min-w-[280px] max-w-[390px]'} snap-start group`}
                           >
                             <div className="relative flex flex-col h-full bg-white border border-gray-200 cursor-pointer rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-gray-300 overflow-hidden">
                               {/* Colored Header - Optimized */}
-                              <div className={`relative px-5 py-6 overflow-hidden ${colorVariations.base} transition-all duration-300`}>
+                              <div className={`relative ${isVeryShortHeight ? 'px-4 py-3' : 'px-4 py-4'} overflow-hidden ${colorVariations.base} transition-all duration-300`}>
                                 <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/15"></div>
                                 <div className="absolute inset-0 opacity-[0.06]">
                                   <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-12 translate-x-12"></div>
                                 </div>
 
-                                <div className="relative z-10 space-y-3.5">
+                                <div className="relative z-10 space-y-2.5">
                                   {/* Section Badge - Improved */}
                                   <div>
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-lg text-xs font-bold text-gray-800 shadow-sm border border-white/50">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/95 backdrop-blur-sm rounded-lg text-[11px] font-bold text-gray-800 shadow-sm border border-white/50">
                                       <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
                                       </svg>
@@ -658,17 +660,17 @@ export default function Home() {
                                   </div>
 
                                   {/* Course Title - Better Typography */}
-                                  <h3 className="text-xl font-bold text-white leading-snug line-clamp-2 pr-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5)' }}>
+                                  <h3 className="text-lg font-bold text-white leading-snug line-clamp-2 pr-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5)' }}>
                                     {course.title}
                                   </h3>
                                 </div>
                               </div>
 
                               {/* Content Section - Optimized Spacing */}
-                              <div className="flex-1 px-5 py-5 flex flex-col">
+                              <div className={`flex-1 ${isVeryShortHeight ? 'px-4 py-3' : 'px-4 py-4'} flex flex-col`}>
                                 {/* Instructor - Better Visual Weight */}
-                                <div className="flex items-center gap-3 mb-4">
-                                  <div className="relative flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex-shrink-0 shadow-sm overflow-hidden">
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className="relative flex items-center justify-center w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex-shrink-0 shadow-sm overflow-hidden">
                                     {course.instructorProfilePicture ? (
                                       <>
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -692,14 +694,14 @@ export default function Home() {
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="text-xs font-medium text-gray-500 mb-0.5">Instructor</div>
-                                    <div className="text-sm font-semibold text-gray-900 truncate">{course.instructor}</div>
+                                    <div className="text-xs font-semibold text-gray-900 truncate">{course.instructor}</div>
                                   </div>
                                 </div>
 
                                 {/* Schedule Display */}
                                 {course.schedules && course.schedules.length > 0 && (
-                                  <div className="mb-4 p-3 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
-                                    <div className="flex items-center gap-2 mb-2">
+                                  <div className={`${isVeryShortHeight ? 'mb-2.5 p-2' : 'mb-3 p-2.5'} bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100`}>
+                                    <div className="flex items-center gap-2 mb-1.5">
                                       <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                       </svg>
@@ -746,45 +748,45 @@ export default function Home() {
                                 )}
 
                                 {/* Metrics - Improved Layout */}
-                                <div className="flex items-stretch gap-2.5 pt-4 border-t border-gray-200 mt-auto">
+                                <div className={`flex items-stretch ${isVeryShortHeight ? 'gap-1.5 pt-2.5' : 'gap-2 pt-3'} border-t border-gray-200 mt-auto`}>
                                   {course.isCreator ? (
                                     <>
-                                      <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-blue-50 rounded-xl border border-blue-100 transition-all hover:bg-blue-100">
+                                      <div className="flex flex-col items-center justify-center flex-1 px-2.5 py-2.5 bg-blue-50 rounded-xl border border-blue-100 transition-all hover:bg-blue-100">
                                         <svg className="w-5 h-5 text-blue-600 mb-2" fill="currentColor" viewBox="0 0 20 20">
                                           <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                                         </svg>
                                         <div className="text-center">
-                                          <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.studentCount}</div>
+                                          <div className="text-lg font-bold text-gray-900 leading-none mb-1">{course.studentCount}</div>
                                           <div className="text-xs font-medium text-gray-600">Students</div>
                                         </div>
                                       </div>
-                                      <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-purple-50 rounded-xl border border-purple-100 transition-all hover:bg-purple-100">
+                                      <div className="flex flex-col items-center justify-center flex-1 px-2.5 py-2.5 bg-purple-50 rounded-xl border border-purple-100 transition-all hover:bg-purple-100">
                                         <svg className="w-5 h-5 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                         </svg>
                                         <div className="text-center">
-                                          <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.moduleCount}</div>
+                                          <div className="text-lg font-bold text-gray-900 leading-none mb-1">{course.moduleCount}</div>
                                           <div className="text-xs font-medium text-gray-600">Materials</div>
                                         </div>
                                       </div>
                                     </>
                                   ) : (
                                     <>
-                                      <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-purple-50 rounded-xl border border-purple-100 transition-all hover:bg-purple-100">
+                                      <div className="flex flex-col items-center justify-center flex-1 px-2.5 py-2.5 bg-purple-50 rounded-xl border border-purple-100 transition-all hover:bg-purple-100">
                                         <svg className="w-5 h-5 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                         </svg>
                                         <div className="text-center">
-                                          <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.moduleCount}</div>
+                                          <div className="text-lg font-bold text-gray-900 leading-none mb-1">{course.moduleCount}</div>
                                           <div className="text-xs font-medium text-gray-600">Materials</div>
                                         </div>
                                       </div>
-                                      <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-emerald-50 rounded-xl border border-emerald-100 transition-all hover:bg-emerald-100">
+                                      <div className="flex flex-col items-center justify-center flex-1 px-2.5 py-2.5 bg-emerald-50 rounded-xl border border-emerald-100 transition-all hover:bg-emerald-100">
                                         <svg className="w-5 h-5 text-emerald-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                                         </svg>
                                         <div className="text-center">
-                                          <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.assignmentCount}</div>
+                                          <div className="text-lg font-bold text-gray-900 leading-none mb-1">{course.assignmentCount}</div>
                                           <div className="text-xs font-medium text-gray-600">Assignments</div>
                                         </div>
                                       </div>
@@ -840,14 +842,14 @@ export default function Home() {
 
                 {/* Simplified Progress Bar - Eye-friendly */}
                 {allCourses.length > 2 && (
-                  <div className="mt-5 flex-shrink-0">
+                  <div className={`${isVeryShortHeight ? 'mt-2.5' : 'mt-3'} flex-shrink-0`}>
                     <div className="relative h-1.5 bg-gray-200 rounded-full overflow-hidden">
                       <div 
                         className="absolute top-0 left-0 h-full bg-gray-400 rounded-full transition-all duration-300 ease-out"
                         style={{ width: `${Math.min(100, scrollProgress + 20)}%` }}
                       ></div>
                     </div>
-                    <div className="flex items-center justify-center mt-3 text-xs text-gray-500">
+                    <div className="flex items-center justify-center mt-2 text-[11px] text-gray-500">
                       <span className="flex items-center gap-2">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -884,9 +886,9 @@ export default function Home() {
         </div>
 
         {/* Compact Recent Activities Sidebar */}
-        <div className="recent-activities flex flex-col overflow-hidden">
-          <div className="flex-1 flex flex-col p-4 bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-gray-200 flex-shrink-0">
+        <div className="recent-activities flex min-h-0 flex-col overflow-hidden">
+          <div className={`flex-1 flex min-h-0 flex-col ${isVeryShortHeight ? 'p-2.5' : 'p-3'} bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300`}>
+            <div className={`flex items-center gap-2.5 ${isVeryShortHeight ? 'mb-2.5 pb-2.5' : 'mb-3 pb-3'} border-b border-gray-200 flex-shrink-0`}>
               <div className="flex items-center justify-center w-6 h-6 bg-gray-100 rounded-lg">
                 <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -895,17 +897,17 @@ export default function Home() {
               <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Recent Activities</h3>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2.5">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
               {recentActivities.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center py-8">
-                    <div className="w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                    <div className="w-14 h-14 mx-auto mb-2.5 bg-gray-100 rounded-full flex items-center justify-center">
                       <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                     <p className="text-sm font-medium text-gray-500">No recent activities</p>
-                    <p className="text-xs text-gray-400 mt-1">Your activity will appear here</p>
+                    <p className="text-[11px] text-gray-400 mt-1">Your activity will appear here</p>
                   </div>
                 </div>
               ) : (

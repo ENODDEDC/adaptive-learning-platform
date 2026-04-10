@@ -337,9 +337,39 @@ export default function RegisterPage() {
         .animate-shimmer {
           animation: shimmer 2s infinite;
         }
+
+        .register-viewport {
+          min-height: 100dvh;
+          height: 100dvh;
+          overflow: hidden;
+        }
+
+        .register-shell {
+          width: min(100%, 27rem);
+          transform: scale(var(--register-scale, 1));
+          transform-origin: center;
+        }
+
+        @media (max-height: 900px) {
+          .register-shell {
+            --register-scale: 0.94;
+          }
+        }
+
+        @media (max-height: 820px) {
+          .register-shell {
+            --register-scale: 0.88;
+          }
+        }
+
+        @media (max-height: 760px) {
+          .register-shell {
+            --register-scale: 0.82;
+          }
+        }
       `}</style>
       
-      <div className="relative min-h-screen bg-black text-white overflow-hidden">
+      <div className="register-viewport relative bg-black text-white">
         {/* Neural Network Canvas */}
         <canvas
           ref={canvasRef}
@@ -351,27 +381,27 @@ export default function RegisterPage() {
       <div className="absolute inset-0 bg-gradient-to-br from-black via-purple-900/15 to-blue-900/15"></div>
 
       {/* Navigation */}
-      <nav className="fixed top-4 left-4 z-20">
+      <nav className="fixed top-3 left-3 z-20">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 group-hover:bg-white/20 transition-all duration-300">
+          <div className="w-9 h-9 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 group-hover:bg-white/20 transition-all duration-300">
             <Image
               src="/favicon.svg"
               alt="Intelevo"
-              width={24}
-              height={24}
+              width={20}
+              height={20}
               className="rounded-lg"
             />
           </div>
-          <span className="text-xl font-bold tracking-tight text-white">Intelevo</span>
+          <span className="text-lg font-bold tracking-tight text-white">Intelevo</span>
         </Link>
       </nav>
 
       {/* Main Content */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-2">
-        <div className={`w-full max-w-md transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className="relative z-10 flex h-full items-center justify-center px-3 py-3 sm:px-4">
+        <div className={`register-shell transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
 
           {/* Step Indicator */}
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-3">
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full transition-all duration-300 ${step === 1 ? 'bg-blue-400 scale-125' : 'bg-white/30'}`}></div>
               <div className="w-4 h-px bg-white/20"></div>
@@ -382,24 +412,24 @@ export default function RegisterPage() {
           {step === 1 ? (
             <>
               {/* Header */}
-              <div className="text-center mb-4">
-                <h1 className="text-2xl font-black tracking-tighter mb-2">
+              <div className="text-center mb-3">
+                <h1 className="text-[1.65rem] leading-tight font-black tracking-tighter mb-1.5">
                   Start Your
                   <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Learning Journey</span>
                 </h1>
-                <p className="text-white/70 text-sm">
+                <p className="text-white/70 text-xs sm:text-sm">
                   Create your account and become part of the intelligent learning ecosystem
                 </p>
               </div>
 
               {/* Registration Form */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl">
-                <form onSubmit={handleRegister} className="space-y-3">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl">
+                <form onSubmit={handleRegister} className="space-y-2.5">
                   {/* Name Fields Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-white/80">First Name *</label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-white/80">First Name *</label>
                       <div className="relative">
                         <input
                           id="name"
@@ -407,15 +437,15 @@ export default function RegisterPage() {
                           value={formData.name}
                           onChange={handleChange}
                           required
-                          className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-                          placeholder="Enter first name"
+                          className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                          placeholder="First name"
                         />
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-white/80">Last Name *</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-white/80">Last Name *</label>
                       <div className="relative">
                         <input
                           id="surname"
@@ -423,38 +453,38 @@ export default function RegisterPage() {
                           value={formData.surname}
                           onChange={handleChange}
                           required
-                          className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-                          placeholder="Enter last name"
+                          className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                          placeholder="Last name"
                         />
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-white/80">Middle Name</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-white/80">Middle Name</label>
                       <div className="relative">
                         <input
                           id="middleName"
                           type="text"
                           value={formData.middleName}
                           onChange={handleChange}
-                          className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                          className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
                           placeholder="Optional"
                         />
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-white/80">Suffix</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-white/80">Suffix</label>
                       <div className="relative">
                         <input
                           id="suffix"
                           type="text"
                           value={formData.suffix}
                           onChange={handleChange}
-                          className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-                          placeholder="Jr., Sr., etc."
+                          className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                          placeholder="Jr., Sr."
                         />
                         <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                       </div>
@@ -462,8 +492,8 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Email Field */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-white/80">Email Address *</label>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-white/80">Email Address *</label>
                     <div className="relative">
                       <input
                         id="email"
@@ -471,7 +501,7 @@ export default function RegisterPage() {
                         value={formData.email}
                         onChange={handleChange}
                         required
-                        className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
                         placeholder="Enter your email"
                       />
                       <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
@@ -479,14 +509,14 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Password Fields */}
-                  <div className="space-y-4">
-                    <div className="space-y-3">
+                  <div className="space-y-2.5">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-white/80">Password Fields</label>
+                        <label className="text-xs font-medium text-white/80">Password Fields</label>
                         <button
                           type="button"
                           onClick={() => setShowPasswords(!showPasswords)}
-                          className="flex items-center gap-2 text-xs text-white/60 hover:text-white/90 transition-colors"
+                          className="flex items-center gap-1.5 text-[11px] text-white/60 hover:text-white/90 transition-colors"
                         >
                           {showPasswords ? (
                             <>
@@ -507,9 +537,9 @@ export default function RegisterPage() {
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-white/80">Password *</label>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-white/80">Password *</label>
                           <div className="relative">
                             <input
                               id="password"
@@ -517,15 +547,15 @@ export default function RegisterPage() {
                               value={formData.password}
                               onChange={handleChange}
                               required
-                              className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-                              placeholder="Create password"
+                              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                              placeholder="Password"
                             />
                             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                           </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-white/80">Confirm Password *</label>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-white/80">Confirm Password *</label>
                           <div className="relative">
                             <input
                               id="confirmPassword"
@@ -533,8 +563,8 @@ export default function RegisterPage() {
                               value={formData.confirmPassword}
                               onChange={handleChange}
                               required
-                              className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-                              placeholder="Confirm password"
+                              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                              placeholder="Confirm"
                             />
                             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                           </div>
@@ -544,7 +574,7 @@ export default function RegisterPage() {
 
                     {/* Password Strength Indicator */}
                     {formData.password && (
-                      <div className="space-y-2 animate-fadeIn">
+                      <div className="space-y-1.5 animate-fadeIn">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-white/60">Password Strength:</span>
                           <span className={`text-xs font-semibold ${passwordStrength.color}`}>
@@ -563,7 +593,7 @@ export default function RegisterPage() {
                         </div>
 
                         {/* Password Requirements */}
-                        <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="grid grid-cols-2 gap-1.5 text-[11px]">
                           <div className={`flex items-center gap-1 ${/[a-z]/.test(formData.password) ? 'text-green-400' : 'text-white/40'}`}>
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                               {/[a-z]/.test(formData.password) ? (
@@ -620,8 +650,8 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Terms Checkboxes */}
-                  <div className="space-y-3">
-                    <label className="flex items-start gap-3 text-sm text-white/80 cursor-pointer">
+                  <div className="space-y-2">
+                    <label className="flex items-start gap-2 text-xs text-white/80 cursor-pointer leading-snug">
                       <input
                         id="terms"
                         type="checkbox"
@@ -639,7 +669,7 @@ export default function RegisterPage() {
                         </button>
                       </span>
                     </label>
-                    <label className="flex items-start gap-3 text-sm text-white/80 cursor-pointer">
+                    <label className="flex items-start gap-2 text-xs text-white/80 cursor-pointer leading-snug">
                       <input
                         id="privacy"
                         type="checkbox"
@@ -661,8 +691,8 @@ export default function RegisterPage() {
 
                   {/* Error Message */}
                   {error && (
-                    <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl backdrop-blur-sm">
-                      <p className="text-sm text-red-300">{error}</p>
+                    <div className="p-2.5 bg-red-500/20 border border-red-500/30 rounded-xl backdrop-blur-sm">
+                      <p className="text-xs text-red-300">{error}</p>
                     </div>
                   )}
 
@@ -670,7 +700,7 @@ export default function RegisterPage() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-xl hover:shadow-2xl"
+                    className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-sm text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-xl hover:shadow-2xl"
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center gap-2">
@@ -684,8 +714,8 @@ export default function RegisterPage() {
                 </form>
 
                 {/* Sign In Link */}
-                <div className="text-center mt-6">
-                  <p className="text-white/70">
+                <div className="text-center mt-3">
+                  <p className="text-xs text-white/70">
                     Already have an account?{' '}
                     <Link href="/login" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
                       Sign in
@@ -697,31 +727,31 @@ export default function RegisterPage() {
           ) : (
             <>
               {/* OTP Verification Header */}
-              <div className="text-center mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xl">
+              <div className="text-center mb-3">
+                <div className="w-11 h-11 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-2.5 shadow-xl">
                   <MailIcon className="w-6 h-6 text-white" />
                 </div>
-                <h1 className="text-2xl font-black tracking-tighter mb-2">
+                <h1 className="text-[1.65rem] leading-tight font-black tracking-tighter mb-1.5">
                   Verify Your
                   <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">Connection</span>
                 </h1>
-                <p className="text-white/70 text-sm">
+                <p className="text-white/70 text-xs sm:text-sm">
                   We&rsquo;ve sent a verification code to <strong className="text-blue-400">{formData.email}</strong>
                 </p>
               </div>
 
               {/* OTP Form */}
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl">
                 {message && (
-                  <div className="p-4 bg-blue-500/20 border border-blue-500/30 rounded-xl backdrop-blur-sm mb-6">
-                    <p className="text-sm text-blue-300">{message}</p>
+                  <div className="p-3 bg-blue-500/20 border border-blue-500/30 rounded-xl backdrop-blur-sm mb-4">
+                    <p className="text-xs text-blue-300">{message}</p>
                   </div>
                 )}
 
-                <form onSubmit={handleVerifyOtp} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-white/80 block text-center">Verification Code</label>
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-white/80 block text-center">Verification Code</label>
                     <div className="relative">
                       <input
                         id="otp"
@@ -729,19 +759,19 @@ export default function RegisterPage() {
                         value={otp}
                         onChange={(e) => setOtp(e.target.value)}
                         required
-                        className="w-full px-4 py-3 text-center text-xl tracking-widest bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                        className="w-full px-4 py-2.5 text-center text-lg tracking-[0.35em] bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
                         placeholder="000000"
                         maxLength="6"
                       />
                       <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-500/20 to-blue-500/20 opacity-0 focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                     </div>
-                    <p className="text-xs text-white/60 text-center">Enter the 6-digit code sent to your email</p>
+                    <p className="text-[11px] text-white/60 text-center">Enter the 6-digit code sent to your email</p>
                   </div>
 
                   {/* Error Message */}
                   {error && (
-                    <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl backdrop-blur-sm">
-                      <p className="text-sm text-red-300">{error}</p>
+                    <div className="p-2.5 bg-red-500/20 border border-red-500/30 rounded-xl backdrop-blur-sm">
+                      <p className="text-xs text-red-300">{error}</p>
                     </div>
                   )}
 
@@ -749,7 +779,7 @@ export default function RegisterPage() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-xl hover:shadow-2xl"
+                    className="w-full py-2.5 bg-gradient-to-r from-green-500 to-blue-600 text-sm text-white font-semibold rounded-xl hover:from-green-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-xl hover:shadow-2xl"
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center gap-2">
@@ -763,10 +793,10 @@ export default function RegisterPage() {
                 </form>
 
                 {/* Go Back Link */}
-                <div className="text-center mt-6">
+                <div className="text-center mt-4">
                   <button
                     onClick={() => setStep(1)}
-                    className="text-blue-400 hover:text-blue-300 transition-colors text-sm font-medium"
+                    className="text-blue-400 hover:text-blue-300 transition-colors text-xs font-medium"
                   >
                     ← Go back and try again
                   </button>
@@ -776,7 +806,7 @@ export default function RegisterPage() {
           )}
 
           {/* Footer */}
-          <div className="text-center mt-4 text-xs text-white/50">
+          <div className="text-center mt-3 text-[11px] text-white/50 leading-snug">
             <p>
               By creating an account, you agree to our{' '}
               <button

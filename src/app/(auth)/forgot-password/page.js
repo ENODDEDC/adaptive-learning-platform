@@ -179,7 +179,40 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-black text-white overflow-hidden">
+    <>
+      <style jsx>{`
+        .forgot-viewport {
+          min-height: 100dvh;
+          height: 100dvh;
+          overflow: hidden;
+        }
+
+        .forgot-shell {
+          width: min(100%, 24rem);
+          transform: scale(var(--forgot-scale, 1));
+          transform-origin: center;
+        }
+
+        @media (max-height: 900px) {
+          .forgot-shell {
+            --forgot-scale: 0.95;
+          }
+        }
+
+        @media (max-height: 820px) {
+          .forgot-shell {
+            --forgot-scale: 0.89;
+          }
+        }
+
+        @media (max-height: 760px) {
+          .forgot-shell {
+            --forgot-scale: 0.83;
+          }
+        }
+      `}</style>
+
+    <div className="forgot-viewport relative bg-black text-white">
       {/* Neural Network Canvas */}
       <canvas
         ref={canvasRef}
@@ -191,46 +224,46 @@ export default function ForgotPasswordPage() {
       <div className="absolute inset-0 bg-gradient-to-br from-black via-blue-900/20 to-purple-900/20"></div>
 
       {/* Navigation */}
-      <nav className="fixed top-4 left-4 z-20">
+      <nav className="fixed top-3 left-3 z-20">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 group-hover:bg-white/20 transition-all duration-300">
+          <div className="w-9 h-9 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 group-hover:bg-white/20 transition-all duration-300">
             <Image
               src="/favicon.svg"
               alt="Intelevo"
-              width={24}
-              height={24}
+              width={20}
+              height={20}
               className="rounded-lg"
             />
           </div>
-          <span className="text-xl font-bold tracking-tight text-white">Intelevo</span>
+          <span className="text-lg font-bold tracking-tight text-white">Intelevo</span>
         </Link>
       </nav>
 
       {/* Main Content */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-2">
-        <div className={`w-full max-w-sm transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className="relative z-10 flex h-full items-center justify-center px-3 py-3 sm:px-4">
+        <div className={`forgot-shell transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
 
           {/* Header */}
-          <div className="text-center mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xl">
+          <div className="text-center mb-3">
+            <div className="w-11 h-11 bg-gradient-to-br from-blue-400 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-2.5 shadow-xl">
               <KeyIcon className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-black tracking-tighter mb-2">
+            <h1 className="text-[1.65rem] leading-tight font-black tracking-tighter mb-1.5">
               Reset Your
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Password</span>
             </h1>
-            <p className="text-white/70 text-sm">
+            <p className="text-white/70 text-xs sm:text-sm">
               Enter your email and we&apos;ll send you a reset link
             </p>
           </div>
 
           {/* Reset Form */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl">
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl">
+            <form onSubmit={handleSubmit} className="space-y-3">
               {/* Email Field */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white/80">Email Address</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-white/80">Email Address</label>
                 <div className="relative">
                   <input
                     type="email"
@@ -238,7 +271,7 @@ export default function ForgotPasswordPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={isLoading}
-                    className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Enter your email"
                   />
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
@@ -247,24 +280,24 @@ export default function ForgotPasswordPage() {
 
               {/* Success Message */}
               {message && (
-                <div className="p-3 bg-green-500/20 border border-green-500/30 rounded-xl backdrop-blur-sm">
+                <div className="p-2.5 bg-green-500/20 border border-green-500/30 rounded-xl backdrop-blur-sm">
                   <div className="flex items-start gap-2">
-                    <svg className="w-5 h-5 text-green-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-green-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="text-sm text-green-300">{message}</p>
+                    <p className="text-xs text-green-300">{message}</p>
                   </div>
                 </div>
               )}
 
               {/* Error Message */}
               {error && (
-                <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl backdrop-blur-sm">
+                <div className="p-2.5 bg-red-500/20 border border-red-500/30 rounded-xl backdrop-blur-sm">
                   <div className="flex items-start gap-2">
-                    <svg className="w-5 h-5 text-red-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-red-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="text-sm text-red-300">{error}</p>
+                    <p className="text-xs text-red-300">{error}</p>
                   </div>
                 </div>
               )}
@@ -273,7 +306,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-xl hover:shadow-2xl"
+                className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-sm text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-xl hover:shadow-2xl"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
@@ -287,10 +320,10 @@ export default function ForgotPasswordPage() {
             </form>
 
             {/* Back to Login Link */}
-            <div className="text-center mt-6">
+            <div className="text-center mt-4">
               <Link
                 href="/login"
-                className="text-blue-400 hover:text-blue-300 transition-colors text-sm font-medium inline-flex items-center gap-2"
+                className="text-blue-400 hover:text-blue-300 transition-colors text-xs font-medium inline-flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -301,7 +334,7 @@ export default function ForgotPasswordPage() {
           </div>
 
           {/* Footer */}
-          <div className="text-center mt-4 text-xs text-white/50">
+          <div className="text-center mt-3 text-[11px] text-white/50 leading-snug">
             <p>
               Remember your password?{' '}
               <Link href="/login" className="text-blue-400 hover:text-blue-300">
@@ -313,22 +346,23 @@ export default function ForgotPasswordPage() {
       </div>
 
       {/* Floating Elements */}
-      <div className="absolute top-1/4 left-10 animate-float-slow opacity-30">
-        <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-2xl flex items-center justify-center shadow-xl">
+      <div className="absolute top-1/4 left-8 animate-float-slow opacity-20">
+        <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-purple-500 rounded-2xl flex items-center justify-center shadow-xl">
           <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
           </svg>
         </div>
       </div>
 
-      <div className="absolute bottom-1/4 right-10 animate-float-slower opacity-30">
-        <div className="w-20 h-20 bg-gradient-to-br from-purple-400 to-pink-500 rounded-3xl flex items-center justify-center shadow-xl rotate-12">
-          <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="absolute bottom-1/4 right-8 animate-float-slower opacity-20">
+        <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-3xl flex items-center justify-center shadow-xl rotate-12">
+          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         </div>
       </div>
     </div>
+    </>
   );
 }
 

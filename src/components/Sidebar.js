@@ -19,6 +19,7 @@ import {
 import { Dialog, Transition } from '@headlessui/react';
 import CourseBrowserModal from './CourseBrowserModal';
 import { api } from '../services/apiService';
+import useViewportInfo from '@/hooks/useViewportInfo';
 
 
 function classNames(...classes) {
@@ -40,6 +41,15 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   const [navigatingTo, setNavigatingTo] = useState(null);
   const [isCourseBrowserOpen, setIsCourseBrowserOpen] = useState(false);
   const [courseBrowserType, setCourseBrowserType] = useState(''); // 'created' or 'enrolled'
+  const { height: viewportHeight, isShortHeight, isVeryShortHeight, isCompactUi } = useViewportInfo();
+  const sidebarHeight = `${viewportHeight}px`;
+  const expandedNavHeight = Math.max(320, viewportHeight - (isVeryShortHeight ? 170 : isShortHeight ? 185 : 200));
+  const headerPaddingClass = isVeryShortHeight ? (isCollapsed ? 'p-3' : 'p-4') : isShortHeight ? (isCollapsed ? 'p-3.5' : 'p-5') : (isCollapsed ? 'p-4' : 'p-6');
+  const navPaddingClass = isVeryShortHeight ? (isCollapsed ? 'p-2 pt-3' : 'p-4 pt-4') : isShortHeight ? (isCollapsed ? 'p-2 pt-4' : 'p-5 pt-5') : (isCollapsed ? 'p-2' : 'p-6 pt-6');
+  const navTitleSpacingClass = isVeryShortHeight ? 'mb-4' : 'mb-6';
+  const footerSpacingClass = isVeryShortHeight ? 'pt-4 mt-4' : isShortHeight ? 'pt-5 mt-6' : 'pt-6 mt-8';
+  const itemPaddingClass = isVeryShortHeight ? 'gap-3 px-4 py-2.5 mx-1' : 'gap-3 px-4 py-3 mx-1';
+  const compactTextClass = isVeryShortHeight ? 'text-xs font-medium' : 'text-sm font-medium';
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -228,15 +238,15 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     <React.Fragment>
       <aside
         className={`bg-white/95 backdrop-blur-md border-r border-white/30 fixed top-0 left-0 h-screen z-30 flex flex-col shadow-2xl transition-all duration-500 ease-in-out ${isCollapsed ? 'w-20 items-center rounded-r-2xl' : 'w-64 rounded-r-3xl'}`}
-        style={{ boxShadow: '8px 0 16px rgba(0, 0, 0, 0.1)' }}
+        style={{ height: sidebarHeight, boxShadow: '8px 0 16px rgba(0, 0, 0, 0.1)' }}
       >
         {/* Header Section */}
-        <div className={`${isCollapsed ? 'p-4' : 'p-6'} border-b border-gray-100 flex-shrink-0`}>
+        <div className={`${headerPaddingClass} border-b border-gray-100 flex-shrink-0`}>
           {/* Hamburger toggle */}
-          <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} mb-4`}>
+          <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} ${isVeryShortHeight ? 'mb-3' : 'mb-4'}`}>
             <button
               onClick={toggleSidebar}
-              className="p-3 transition-all duration-300 rounded-xl hover:bg-blue-50 hover:scale-110 active:scale-95 group"
+              className={`${isVeryShortHeight ? 'p-2.5' : 'p-3'} transition-all duration-300 rounded-xl hover:bg-blue-50 hover:scale-110 active:scale-95 group`}
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <Bars3Icon className={`w-6 h-6 text-gray-600 transition-all duration-300 group-hover:text-blue-600 ${isCollapsed ? 'rotate-90' : 'rotate-0'}`} />
@@ -248,10 +258,10 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
           <div className="relative animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             <button
               onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-              className="flex items-center justify-between w-full p-3 transition-all duration-200 border border-gray-200 bg-gray-50 rounded-xl hover:bg-gray-100 hover:scale-102"
+              className={`flex items-center justify-between w-full ${isVeryShortHeight ? 'p-2.5' : 'p-3'} transition-all duration-200 border border-gray-200 bg-gray-50 rounded-xl hover:bg-gray-100 hover:scale-102`}
             >
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 overflow-hidden rounded-full shadow-sm bg-gradient-to-br from-blue-500 to-blue-600">
+                <div className={`flex items-center justify-center ${isVeryShortHeight ? 'w-9 h-9' : 'w-10 h-10'} overflow-hidden rounded-full shadow-sm bg-gradient-to-br from-blue-500 to-blue-600`}>
                   {user?.profilePicture ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img 
@@ -273,7 +283,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                   </span>
                 </div>
                 <div className="text-left">
-                  <div className="text-lg font-bold text-gray-900 capitalize">{user?.role || "Student"}</div>
+                  <div className={`${isVeryShortHeight ? 'text-base' : 'text-lg'} font-bold text-gray-900 capitalize`}>{user?.role || "Student"}</div>
                   <div className="text-xs text-gray-500">Active Learning</div>
                 </div>
               </div>
@@ -344,15 +354,18 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
       </div>
 
       {/* Navigation Section */}
-      <nav className={`flex-1 ${isCollapsed ? 'p-2' : 'p-6'} pt-6`} role="navigation" aria-label="Main navigation">
-        <div className={`${isCollapsed ? 'h-full' : 'h-[calc(100vh-200px)] overflow-y-auto elegant-scrollbar relative pr-1'}`}>
+      <nav className={`flex-1 ${navPaddingClass}`} role="navigation" aria-label="Main navigation">
+        <div
+          className={`${isCollapsed ? 'h-full' : 'overflow-y-auto elegant-scrollbar relative pr-1'}`}
+          style={!isCollapsed ? { height: `${expandedNavHeight}px` } : undefined}
+        >
         {!isCollapsed && (
-          <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
-            <h3 className="px-3 mb-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">Navigation</h3>
+          <div className={`${navTitleSpacingClass} animate-fade-in-up`} style={{ animationDelay: '0.15s' }}>
+            <h3 className={`px-3 ${isVeryShortHeight ? 'mb-2' : 'mb-3'} text-xs font-semibold tracking-wider text-gray-500 uppercase`}>Navigation</h3>
           </div>
         )}
 
-        <ul className="space-y-1">
+        <ul className={`${isVeryShortHeight ? 'space-y-0.5' : 'space-y-1'}`}>
           {/* Home Link */}
           <li className="animate-fade-in-up" style={{ animationDelay: '0.05s' }}>
             <button
@@ -364,7 +377,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                   ? 'bg-blue-50 text-blue-700 shadow-lg border border-blue-200 shadow-blue-500/20'
                   : 'text-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 hover:border hover:border-blue-200 hover:shadow-blue-500/10'
               } ${
-                isCollapsed ? 'justify-center p-3 mx-1' : 'gap-3 px-4 py-3 mx-1'
+                isCollapsed ? 'justify-center p-3 mx-1' : itemPaddingClass
               }`}
             >
               {pathname === '/home' && !isCollapsed && (
@@ -384,7 +397,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                 />
               )}
               {!isCollapsed && (
-                <span className="text-sm font-medium">
+                <span className={compactTextClass}>
                   {navigatingTo === 'Home' ? 'Loading...' : 'Home'}
                 </span>
               )}
@@ -403,11 +416,11 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                 {/* Courses Header */}
                 <button
                   onClick={() => setIsCoursesExpanded(!isCoursesExpanded)}
-                  className="flex items-center justify-between w-full gap-3 px-4 py-3 mx-1 font-medium text-gray-600 transition-all duration-300 group rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 hover:border hover:border-blue-200 hover:shadow-blue-500/10"
+                  className={`flex items-center justify-between w-full ${isVeryShortHeight ? 'gap-3 px-4 py-2.5' : 'gap-3 px-4 py-3'} mx-1 font-medium text-gray-600 transition-all duration-300 group rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 hover:border hover:border-blue-200 hover:shadow-blue-500/10`}
                 >
                   <div className="flex items-center gap-3">
                     <BookOpenIcon className="flex-shrink-0 w-5 h-5 text-gray-500 transition-all duration-300 group-hover:text-blue-600 group-hover:scale-110" />
-                    <span className="text-sm font-medium">Courses</span>
+                    <span className={compactTextClass}>Courses</span>
                   </div>
                   <ChevronDownIcon
                     className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isCoursesExpanded ? 'rotate-180' : ''}`}
@@ -416,7 +429,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
 
                 {/* Courses Tree */}
                 {isCoursesExpanded && (
-                  <div className="ml-6 space-y-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                  <div className={`ml-6 ${isVeryShortHeight ? 'space-y-0.5' : 'space-y-1'} animate-fade-in-up`} style={{ animationDelay: '0.2s' }}>
                     {/* Created Courses Section */}
                     <div className="space-y-1">
                       <button
@@ -611,7 +624,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                       ? 'bg-blue-50 text-blue-700 shadow-lg border border-blue-200 shadow-blue-500/20'
                       : 'text-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-700 hover:border hover:border-blue-200 hover:shadow-blue-500/10'
                   } ${
-                    isCollapsed ? 'justify-center p-3 mx-1' : 'gap-3 px-4 py-3 mx-1'
+                    isCollapsed ? 'justify-center p-3 mx-1' : itemPaddingClass
                   }`}
                 >
                   {isActive && !isCollapsed && (
@@ -634,7 +647,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                   )}
                   {!isCollapsed && (
                     <div className="flex items-center justify-between flex-1">
-                      <span className="text-sm font-medium">
+                      <span className={compactTextClass}>
                         {isNavigating ? 'Loading...' : link.label}
                       </span>
                       {isScheduleLink && scheduledCount > 0 && (
@@ -662,14 +675,14 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
 
         {/* Footer section */}
         {!isCollapsed && (
-          <div className="pt-6 mt-8 border-t border-gray-100 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
-            <div className="px-3 py-2 transition-shadow duration-300 border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:shadow-md">
+          <div className={`${footerSpacingClass} border-t border-gray-100 animate-fade-in-up`} style={{ animationDelay: '0.8s' }}>
+            <div className={`px-3 ${isVeryShortHeight ? 'py-1.5' : 'py-2'} transition-shadow duration-300 border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:shadow-md`}>
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg animate-pulse">
+                <div className={`flex items-center justify-center ${isVeryShortHeight ? 'w-7 h-7' : 'w-8 h-8'} bg-blue-100 rounded-lg animate-pulse`}>
                   <span className="text-xs font-bold text-blue-600">AI</span>
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-blue-900">Intelevo AI</div>
+                  <div className={`${isVeryShortHeight ? 'text-xs' : 'text-sm'} font-semibold text-blue-900`}>Intelevo AI</div>
                   <div className="text-xs text-blue-600">Your learning assistant</div>
                 </div>
               </div>

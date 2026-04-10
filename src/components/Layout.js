@@ -13,6 +13,7 @@ import CreateClusterModal from '@/components/CreateClusterModal';
 import JoinClusterModal from '@/components/JoinClusterModal';
 import UnifiedFloatingAssistant from '@/components/UnifiedFloatingAssistant';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import useViewportInfo from '@/hooks/useViewportInfo';
 import { useLayout } from '../context/LayoutContext';
 import featureFlags from '../utils/featureFlags';
 import { api } from '../services/apiService';
@@ -36,6 +37,7 @@ const Layout = ({ children }) => {
   } = useLayout();
   const [user, setUser] = useState(null);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const { height: viewportHeight } = useViewportInfo();
  
    // State to prevent hydration mismatch
    const [isMounted, setIsMounted] = useState(false);
@@ -150,7 +152,7 @@ const Layout = ({ children }) => {
   const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-64';
 
   return (
-    <div className="min-h-screen bg-base-light">
+    <div className="bg-base-light overflow-hidden" style={{ height: `${viewportHeight}px` }}>
       <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
@@ -260,9 +262,9 @@ const Layout = ({ children }) => {
           }
         }}
       />
-      <div className={`transition-all duration-500 ease-in-out ${mainContentMargin} min-h-screen`}>
+      <div className={`transition-all duration-500 ease-in-out ${mainContentMargin} h-full overflow-hidden`}>
         <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
-        <main className="min-h-screen">
+        <main className="h-full overflow-hidden">
           {React.isValidElement(children) && typeof children.type !== 'string'
             ? React.cloneElement(children, {
                 upcomingTasksExpanded,
