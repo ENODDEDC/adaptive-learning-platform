@@ -13,8 +13,8 @@ const config = {
         'text-primary': '#4B4B4B',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'sans-serif'],
-        serif: ['var(--font-lora)', 'serif'],
+        sans: ['var(--font-jakarta)', 'Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        serif: ['Georgia', 'serif'],
       },
       typography: (theme) => ({
         premium: {

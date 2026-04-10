@@ -237,7 +237,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   return (
     <React.Fragment>
       <aside
-        className={`bg-white/95 backdrop-blur-md border-r border-white/30 fixed top-0 left-0 h-screen z-30 flex flex-col shadow-2xl transition-all duration-500 ease-in-out ${isCollapsed ? 'w-20 items-center rounded-r-2xl' : 'w-64 rounded-r-3xl'}`}
+        className={`bg-white/95 backdrop-blur-md border-r border-white/30 fixed top-0 left-0 h-screen z-30 flex flex-col shadow-2xl transition-all duration-500 ease-in-out ${isCollapsed ? 'w-16 items-center rounded-r-2xl' : 'w-52 rounded-r-3xl'}`}
         style={{ height: sidebarHeight, boxShadow: '8px 0 16px rgba(0, 0, 0, 0.1)' }}
       >
         {/* Header Section */}
@@ -293,7 +293,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
             </button>
 
             {isUserDropdownOpen && (
-              <div className="absolute top-0 z-50 w-64 ml-2 overflow-hidden bg-white border border-gray-200 shadow-xl left-full rounded-xl">
+              <div className="absolute top-0 z-50 w-52 ml-2 overflow-hidden bg-white border border-gray-200 shadow-xl left-full rounded-xl">
                 <div className="py-2">
                   <button
                     onClick={() => setIsNotificationModalOpen(true)}
@@ -673,22 +673,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
           })}
         </ul>
 
-        {/* Footer section */}
-        {!isCollapsed && (
-          <div className={`${footerSpacingClass} border-t border-gray-100 animate-fade-in-up`} style={{ animationDelay: '0.8s' }}>
-            <div className={`px-3 ${isVeryShortHeight ? 'py-1.5' : 'py-2'} transition-shadow duration-300 border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:shadow-md`}>
-              <div className="flex items-center gap-3">
-                <div className={`flex items-center justify-center ${isVeryShortHeight ? 'w-7 h-7' : 'w-8 h-8'} bg-blue-100 rounded-lg animate-pulse`}>
-                  <span className="text-xs font-bold text-blue-600">AI</span>
-                </div>
-                <div>
-                  <div className={`${isVeryShortHeight ? 'text-xs' : 'text-sm'} font-semibold text-blue-900`}>Intelevo AI</div>
-                  <div className="text-xs text-blue-600">Your learning assistant</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+
         </div>
       </nav>
       </aside>

@@ -149,7 +149,7 @@ const Layout = ({ children }) => {
 
   // Prevent hydration mismatch by using consistent initial state
   const sidebarState = isSidebarCollapsed;
-  const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-64';
+  const mainContentMargin = isSidebarCollapsed ? 'ml-16' : 'ml-52';
 
   return (
     <div className="bg-base-light overflow-hidden" style={{ height: `${viewportHeight}px` }}>
