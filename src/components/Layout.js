@@ -274,9 +274,9 @@ const Layout = ({ children }) => {
           }
         }}
       />
-      <div className={`transition-all duration-500 ease-in-out ${mainContentMargin} h-full overflow-hidden`}>
+      <div className={`transition-all duration-500 ease-in-out ${mainContentMargin} h-full overflow-hidden pl-4 flex flex-col`}>
         <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
-        <main className="h-full overflow-hidden">
+        <main className="flex-1 overflow-hidden">
           {React.isValidElement(children) && typeof children.type !== 'string'
             ? React.cloneElement(children, {
                 upcomingTasksExpanded,

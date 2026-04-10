@@ -79,9 +79,9 @@ const CourseContent = () => {
         if (!notifications.find(n => n.type === 'course_priority')) {
           addNotification({
             type: 'course_priority',
-            title: 'Layout Optimized! 🎯',
+            title: 'Layout Optimized! ðŸŽ¯',
             message: 'Course cards resized based on your usage patterns',
-            icon: '🎯',
+            icon: 'ðŸŽ¯',
             duration: 4000
           });
         }
@@ -92,9 +92,9 @@ const CourseContent = () => {
         if (!notifications.find(n => n.type === 'search_optimization')) {
           addNotification({
             type: 'search_optimization',
-            title: 'Search Optimized! 🔍',
+            title: 'Search Optimized! ðŸ”',
             message: 'Consider compact layout for better search experience',
-            icon: '🔍',
+            icon: 'ðŸ”',
             duration: 4000
           });
         }
@@ -105,9 +105,9 @@ const CourseContent = () => {
         if (!notifications.find(n => n.type === 'drag_optimization')) {
           addNotification({
             type: 'drag_optimization',
-            title: 'Organization Detected! 📂',
+            title: 'Organization Detected! ðŸ“‚',
             message: 'System remembers your course organization preferences',
-            icon: '📂',
+            icon: 'ðŸ“‚',
             duration: 4000
           });
         }
@@ -572,312 +572,129 @@ const CourseContent = () => {
 
   // Default fallback - no slug provided, show all courses
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-      {/* Enhanced Header */}
-      <div className="relative mx-4 mt-4 mb-8 bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl">
-
-        {/* Floating elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-8 left-12 w-3 h-3 bg-blue-200/40 rounded-full animate-float" style={{ animationDelay: '0s' }}></div>
-          <div className="absolute top-16 right-20 w-2 h-2 bg-indigo-200/50 rounded-full animate-float" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute bottom-12 left-1/4 w-2.5 h-2.5 bg-purple-200/40 rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute top-1/3 right-12 w-1.5 h-1.5 bg-blue-300/30 rounded-full animate-float" style={{ animationDelay: '0.5s' }}></div>
-        </div>
-
-        <div className="relative p-4 sm:p-6 lg:p-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-            <div className="flex items-center gap-4 sm:gap-6">
-              <div className="relative">
-                <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shadow-2xl bg-blue-600 rounded-2xl animate-fade-in-up">
-                  <svg className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-orange-500 rounded-full animate-pulse border-2 sm:border-3 border-white"></div>
-              </div>
-              <div className="animate-fade-in-up min-w-0 flex-1" style={{ animationDelay: '0.1s' }}>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
-                  All <span className="text-blue-600">Courses</span>
-                </h1>
-                <p className="text-sm sm:text-base lg:text-lg text-gray-600">Manage and explore your learning journey</p>
-                <div className="mt-2 sm:mt-3 h-1 bg-blue-600 rounded-full animate-expand-width" style={{ animationDelay: '0.3s' }}></div>
-              </div>
-            </div>
+    <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
+      {/* Simple Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Courses</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage and explore your learning journey</p>
+          </div>
           
-            <div className="animate-fade-in-up flex items-center gap-3" style={{ animationDelay: '0.2s' }}>
-              <Tooltip
-                content={
-                  <div>
-                    <div className="font-semibold mb-1">Quick Actions</div>
-                    <div className="text-sm opacity-90">
-                      Create new courses, join existing ones, or manage clusters
+          <div className="relative">
+            <button
+              onClick={() => setIsCourseMenuOpen(!isCourseMenuOpen)}
+              className="flex items-center justify-center w-10 h-10 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <PlusIcon className="w-5 h-5" />
+            </button>
+
+            {isCourseMenuOpen && (
+              <div className="absolute right-0 top-12 z-50 w-56 bg-white border border-gray-200 shadow-lg rounded-lg overflow-hidden">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      openCreateCourseModal();
+                      setIsCourseMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
+                      <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
                     </div>
-                  </div>
-                }
-                type="help"
-                position="left"
-              >
-                <button
-                  onClick={() => setIsCourseMenuOpen(!isCourseMenuOpen)}
-                  className="flex items-center justify-center w-10 h-10 text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-md transition-colors"
-                  data-action="main_menu"
-                  data-feature="course_actions"
-                >
-                  <PlusIcon className="w-5 h-5" />
-                </button>
-              </Tooltip>
-
-
-              {isCourseMenuOpen && (
-                <div className="absolute right-16 top-0 z-[99999] w-56 bg-white border border-gray-200 shadow-lg rounded-lg overflow-hidden">
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        openCreateCourseModal();
-                        setIsCourseMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
-                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                      </div>
-                      <span className="font-medium">Create Course</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        openJoinCourseModal();
-                        setIsCourseMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
-                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                      </div>
-                      <span className="font-medium">Join Course</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        openCreateClusterModal();
-                        setIsCourseMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
-                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                      </div>
-                      <span className="font-medium">Create Cluster</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        openJoinClusterModal();
-                        setIsCourseMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
-                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                      </div>
-                      <span className="font-medium">Join Cluster</span>
-                    </button>
-                  </div>
+                    <span className="font-medium">Create Course</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      openJoinCourseModal();
+                      setIsCourseMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
+                      <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                    </div>
+                    <span className="font-medium">Join Course</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      openCreateClusterModal();
+                      setIsCourseMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
+                      <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                    </div>
+                    <span className="font-medium">Create Cluster</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      openJoinClusterModal();
+                      setIsCourseMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg">
+                      <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <span className="font-medium">Join Cluster</span>
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Enhanced Navigation Tabs */}
-      <div className="relative mx-4 mb-8 bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl z-10">
-
-        <div className="relative p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-2 sm:gap-3 min-w-max">
-              <Tooltip
-                content={
-                  <div>
-                    <div className="font-semibold mb-1">Your Courses</div>
-                    <div className="text-sm opacity-90">
-                      View and manage all your enrolled courses. Click cards to preview content.
-                    </div>
-                  </div>
-                }
-                type="info"
-                position="bottom"
-              >
-                <button
-                  onClick={() => {
-                    setActiveTab('courses');
-                    trackInteraction('navigation', { path: 'courses_tab' });
-                    trackUserInteraction('tab_switch', null, {
-                      tabName: 'courses',
-                      previousTab: activeTab
-                    });
-                  }}
-                  className={`group relative flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-2xl overflow-hidden ${
-                    activeTab === 'courses'
-                      ? 'text-white bg-blue-600 shadow-lg shadow-blue-500/25'
-                      : 'text-gray-600 hover:text-blue-700 hover:bg-blue-50/80 backdrop-blur-sm border border-gray-200/50 hover:border-blue-200/70'
-                  }`}
-                  data-action="tab_switch"
-                  data-feature="navigation"
-                >
-                  <div className={`flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-xl transition-all duration-300 ${
-                    activeTab === 'courses'
-                      ? 'bg-white/20'
-                      : 'bg-blue-100 group-hover:bg-blue-200'
-                  }`}>
-                    <svg className={`w-3 h-3 sm:w-4 sm:h-4 transition-colors duration-300 ${
-                      activeTab === 'courses' ? 'text-white' : 'text-blue-600'
-                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                  <span className="relative whitespace-nowrap">Courses</span>
-                </button>
-              </Tooltip>
-
-              <Tooltip
-                content={
-                  <div>
-                    <div className="font-semibold mb-1">Course Clusters</div>
-                    <div className="text-sm opacity-90">
-                      Group related courses together for better organization and collaboration.
-                    </div>
-                  </div>
-                }
-                type="info"
-                position="bottom"
-              >
-                <button
-                  onClick={() => {
-                    setActiveTab('clusters');
-                    trackInteraction('navigation', { path: 'clusters_tab' });
-                    trackUserInteraction('tab_switch', null, {
-                      tabName: 'clusters',
-                      previousTab: activeTab
-                    });
-                  }}
-                  className={`group relative flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-2xl overflow-hidden ${
-                    activeTab === 'clusters'
-                      ? 'text-white bg-purple-600 shadow-lg shadow-purple-500/25'
-                      : 'text-gray-600 hover:text-purple-700 hover:bg-purple-50/80 backdrop-blur-sm border border-gray-200/50 hover:border-purple-200/70'
-                  }`}
-                  data-action="tab_switch"
-                  data-feature="navigation"
-                >
-                  <div className={`flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-xl transition-all duration-300 ${
-                    activeTab === 'clusters'
-                      ? 'bg-white/20'
-                      : 'bg-purple-100 group-hover:bg-purple-200'
-                  }`}>
-                    <svg className={`w-3 h-3 sm:w-4 sm:h-4 transition-colors duration-300 ${
-                      activeTab === 'clusters' ? 'text-white' : 'text-purple-600'
-                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                  </div>
-                  <span className="relative whitespace-nowrap">Clusters</span>
-                </button>
-              </Tooltip>
-
-              <Tooltip
-                content={
-                  <div>
-                    <div className="font-semibold mb-1">Archived Courses</div>
-                    <div className="text-sm opacity-90">
-                      View courses you've archived. Restore them anytime to continue learning.
-                    </div>
-                  </div>
-                }
-                type="info"
-                position="bottom"
-              >
-                <button
-                  onClick={() => {
-                    router.push('/archive');
-                  }}
-                  className="group relative flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-2xl overflow-hidden text-gray-600 hover:text-gray-700 hover:bg-gray-50/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300/70"
-                  data-action="navigate"
-                  data-feature="archive"
-                >
-                  <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-xl transition-all duration-300 bg-gray-100 group-hover:bg-gray-200">
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4 transition-colors duration-300 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                    </svg>
-                  </div>
-                  <span className="relative whitespace-nowrap">Archive</span>
-                </button>
-              </Tooltip>
-            </div>
-
-            <div className="hidden sm:block h-8 w-px bg-gray-300 mx-2"></div>
-
-            <div className="flex gap-2 sm:gap-3 min-w-max">
-              <button className="group flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-gray-500 transition-all duration-300 rounded-2xl hover:text-gray-700 hover:bg-gray-50/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300/70">
-                <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-xl group-hover:bg-gray-200 transition-colors duration-300">
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <span className="hidden sm:inline whitespace-nowrap">Documents</span>
-                <span className="sm:hidden">Docs</span>
-                <div className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-600 rounded-full">
-                  Soon
-                </div>
-              </button>
-
-              <button className="group flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-gray-500 transition-all duration-300 rounded-2xl hover:text-gray-700 hover:bg-gray-50/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300/70">
-                <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-xl group-hover:bg-gray-200 transition-colors duration-300">
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <span className="hidden sm:inline whitespace-nowrap">Videos</span>
-                <span className="sm:hidden">Video</span>
-                <div className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-600 rounded-full">
-                  Soon
-                </div>
-              </button>
-
-              <button className="group flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-gray-500 transition-all duration-300 rounded-2xl hover:text-gray-700 hover:bg-gray-50/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300/70">
-                <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-xl group-hover:bg-gray-200 transition-colors duration-300">
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                  </svg>
-                </div>
-                <span className="hidden sm:inline whitespace-nowrap">Audio</span>
-                <span className="sm:hidden">Audio</span>
-                <div className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-600 rounded-full">
-                  Soon
-                </div>
-              </button>
-            </div>
-          </div>
+      {/* Navigation Tabs */}
+      <div className="bg-white border-b border-gray-200 px-6">
+        <div className="flex items-center gap-4 py-3">
+          <button
+            onClick={() => {
+              setActiveTab('courses');
+              trackInteraction('navigation', { path: 'courses_tab' });
+            }}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === 'courses'
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            Courses
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('clusters');
+              trackInteraction('navigation', { path: 'clusters_tab' });
+            }}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === 'clusters'
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            Clusters
+          </button>
+          <button
+            onClick={() => router.push('/archive')}
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            Archive
+          </button>
         </div>
       </div>
 
-      {/* Course Filter and Sort Component - Only show when there are courses */}
-      {courses.length > 0 && (
-        <div className="mx-4">
-          <CourseFilterSort
-            courses={courses}
-            onFilteredCoursesChange={setFilteredCourses}
-            onSortChange={setSortBy}
-            initialFilters={activeFilters}
-            initialSort={sortBy}
-          />
-        </div>
-      )}
-
+      {/* Content Area */}
+      <div className={`flex-1 relative ${courses.length === 0 && activeTab === 'courses' ? 'p-0' : 'px-6 py-2'}`} style={{ overflowY: 'auto', overflowX: 'hidden' }}>
 
 
       {/* Smart Recommendations */}
@@ -889,7 +706,7 @@ const CourseContent = () => {
             title: 'Optimize Card Size',
             message: 'You frequently access courses. Larger cards would improve visibility.',
             action: 'Switch to Large Cards',
-            icon: '📏'
+            icon: 'ðŸ“'
           });
         }
         if (userBehavior.interactionPatterns.searchFrequency > 3 && !userBehavior.layoutPreferences.compactMode) {
@@ -898,7 +715,7 @@ const CourseContent = () => {
             title: 'Enable Compact Mode',
             message: 'You use search often. Compact mode shows more courses at once.',
             action: 'Try Compact Layout',
-            icon: '🔍'
+            icon: 'ðŸ”'
           });
         }
 
@@ -922,7 +739,7 @@ const CourseContent = () => {
                           }
                         }}
                       >
-                        {rec.action} →
+                        {rec.action} â†’
                       </button>
                     </div>
                   </div>
@@ -938,52 +755,36 @@ const CourseContent = () => {
       <div className="relative mb-8 ml-4 mr-4">
         <div className="w-full transition-all duration-500 ease-in-out">
           <AdaptiveLayout componentType="courses" trackInteractions={true} adaptiveMode={true}>
-            <div className="masonry-grid">
+            <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory custom-scrollbar">
           {activeTab === 'courses' ? (
           filteredCourses.length === 0 ? (
-            <div className="col-span-full">
-              <div className="p-12 text-center bg-white border border-gray-200 shadow-sm rounded-2xl mx-4 sm:mx-0">
-                {/* Icon */}
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-28 h-28 bg-blue-50 rounded-full"></div>
-                  </div>
-                  <div className="relative flex items-center justify-center w-20 h-20 mx-auto bg-blue-500 rounded-2xl shadow-sm">
-                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1 }}>
+              <div className="flex flex-col items-center justify-center">
+                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                  <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
                 </div>
-
-                {/* Title */}
-                <h3 className="text-2xl font-semibold text-gray-900 mb-3">
-                  No Courses Yet
-                </h3>
-
-                {/* Message */}
-                <p className="text-sm text-gray-600 max-w-md mx-auto mb-8 leading-relaxed">
-                  Start your learning journey by creating your first course or joining an existing one.
-                </p>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Courses Yet</h3>
+                <p className="text-gray-500 mb-8 text-center max-w-md">Start your learning journey by creating your first course or joining an existing one.</p>
+                <div className="flex gap-3">
                   <button
                     onClick={() => openCreateCourseModal()}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 hover:shadow-md transition-all duration-200"
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    <span>Create Course</span>
+                    Create Course
                   </button>
                   <button
                     onClick={() => openJoinCourseModal()}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 font-medium rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+                    className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 border border-gray-300 font-medium rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>
-                    <span>Join Course</span>
+                    Join Course
                   </button>
                 </div>
               </div>
@@ -1051,7 +852,7 @@ const CourseContent = () => {
                 <Link 
                   key={course.id} 
                   href={`/courses/${course.id}`} 
-                  className="masonry-item group"
+                  className="flex-shrink-0 w-80 snap-start group"
                   draggable
                   onDragStart={(e) => handleDragStart(e, course, index)}
                   onDragOver={(e) => handleDragOver(e, index)}
@@ -1283,71 +1084,10 @@ const CourseContent = () => {
             ))
           )
         )}
-        </div>
-
-      {/* Course Preview Modal */}
-      <CoursePreviewModal
-        course={selectedCourseForPreview}
-        isOpen={previewModalOpen}
-        onClose={handleClosePreview}
-        onViewCourse={handleViewCourse}
-      />
-
-      {/* Drag Feedback */}
-      {draggedCourse && (
-        <div className="drag-feedback">
-          <div className="flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            <span>Drag to reorder courses</span>
-          </div>
-        </div>
-      )}
-
-
-
-      {/* Real-time Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {notifications.map((notification, index) => (
-          <div
-            key={notification.type}
-            className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm animate-slide-in-right"
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <div className="flex items-start gap-3">
-              <span className="text-lg">{notification.icon}</span>
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900 text-sm">{notification.title}</h4>
-                <p className="text-xs text-gray-600 mt-1">{notification.message}</p>
-              </div>
-              <button
-                onClick={() => setNotifications(prev => prev.filter(n => n.type !== notification.type))}
-                className="text-gray-400 hover:text-gray-600 text-sm"
-              >
-                ✕
-              </button>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Drag Feedback */}
-      {dragFeedback && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce">
-          {dragFeedback}
-        </div>
-      )}
-
-
-
-      {/* Adaptive Sync Indicator - Hidden to reduce clutter */}
-      {/* <AdaptiveSyncIndicator
-        variant="floating"
-        position="bottom-left"
-      /> */}
           </AdaptiveLayout>
         </div>
+      </div>
       </div>
     </div>
   );
