@@ -43,13 +43,13 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   const [courseBrowserType, setCourseBrowserType] = useState(''); // 'created' or 'enrolled'
   const { height: viewportHeight, isShortHeight, isVeryShortHeight, isCompactUi } = useViewportInfo();
   const sidebarHeight = `${viewportHeight}px`;
-  const expandedNavHeight = Math.max(320, viewportHeight - (isVeryShortHeight ? 170 : isShortHeight ? 185 : 200));
-  const headerPaddingClass = isVeryShortHeight ? (isCollapsed ? 'p-3' : 'p-4') : isShortHeight ? (isCollapsed ? 'p-3.5' : 'p-5') : (isCollapsed ? 'p-4' : 'p-6');
-  const navPaddingClass = isVeryShortHeight ? (isCollapsed ? 'p-2 pt-3' : 'p-4 pt-4') : isShortHeight ? (isCollapsed ? 'p-2 pt-4' : 'p-5 pt-5') : (isCollapsed ? 'p-2' : 'p-6 pt-6');
-  const navTitleSpacingClass = isVeryShortHeight ? 'mb-4' : 'mb-6';
-  const footerSpacingClass = isVeryShortHeight ? 'pt-4 mt-4' : isShortHeight ? 'pt-5 mt-6' : 'pt-6 mt-8';
-  const itemPaddingClass = isVeryShortHeight ? 'gap-3 px-4 py-2.5 mx-1' : 'gap-3 px-4 py-3 mx-1';
-  const compactTextClass = isVeryShortHeight ? 'text-xs font-medium' : 'text-sm font-medium';
+  const expandedNavHeight = Math.max(320, viewportHeight - 180);
+  const headerPaddingClass = isCollapsed ? 'p-3' : 'p-4';
+  const navPaddingClass = isCollapsed ? 'p-2 pt-3' : 'p-4 pt-4';
+  const navTitleSpacingClass = 'mb-4';
+  const footerSpacingClass = 'pt-4 mt-4';
+  const itemPaddingClass = 'gap-3 px-4 py-2.5 mx-1';
+  const compactTextClass = 'text-sm font-medium';
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -238,15 +238,15 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
     <React.Fragment>
       <aside
         className={`bg-white/95 backdrop-blur-md border-r border-white/30 fixed top-0 left-0 h-screen z-30 flex flex-col shadow-2xl transition-all duration-500 ease-in-out ${isCollapsed ? 'w-16 items-center rounded-r-2xl' : 'w-52 rounded-r-3xl'}`}
-        style={{ height: sidebarHeight, boxShadow: '8px 0 16px rgba(0, 0, 0, 0.1)' }}
+        style={{ height: sidebarHeight, boxShadow: '8px 0 16px rgba(0, 0, 0, 0.1)', width: isCollapsed ? '64px' : '208px' }}
       >
         {/* Header Section */}
         <div className={`${headerPaddingClass} border-b border-gray-100 flex-shrink-0`}>
           {/* Hamburger toggle */}
-          <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} ${isVeryShortHeight ? 'mb-3' : 'mb-4'}`}>
+          <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} mb-3`}>
             <button
               onClick={toggleSidebar}
-              className={`${isVeryShortHeight ? 'p-2.5' : 'p-3'} transition-all duration-300 rounded-xl hover:bg-blue-50 hover:scale-110 active:scale-95 group`}
+              className="p-2.5 transition-all duration-300 rounded-xl hover:bg-blue-50 hover:scale-110 active:scale-95 group"
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <Bars3Icon className={`w-6 h-6 text-gray-600 transition-all duration-300 group-hover:text-blue-600 ${isCollapsed ? 'rotate-90' : 'rotate-0'}`} />
@@ -255,13 +255,13 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
 
         {/* User profile section - only when expanded */}
         {!isCollapsed && (
-          <div className="relative animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <div className="relative">
             <button
               onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-              className={`flex items-center justify-between w-full ${isVeryShortHeight ? 'p-2.5' : 'p-3'} transition-all duration-200 border border-gray-200 bg-gray-50 rounded-xl hover:bg-gray-100 hover:scale-102`}
+              className={`flex items-center justify-between w-full p-2.5 transition-all duration-200 border border-gray-200 bg-gray-50 rounded-xl hover:bg-gray-100 hover:scale-102`}
             >
               <div className="flex items-center gap-3">
-                <div className={`flex items-center justify-center ${isVeryShortHeight ? 'w-9 h-9' : 'w-10 h-10'} overflow-hidden rounded-full shadow-sm bg-gradient-to-br from-blue-500 to-blue-600`}>
+                <div className={`flex items-center justify-center w-9 h-9 overflow-hidden rounded-full shadow-sm bg-gradient-to-br from-blue-500 to-blue-600`}>
                   {user?.profilePicture ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img 
@@ -283,7 +283,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                   </span>
                 </div>
                 <div className="text-left">
-                  <div className={`${isVeryShortHeight ? 'text-base' : 'text-lg'} font-bold text-gray-900 capitalize`}>{user?.role || "Student"}</div>
+                  <div className="text-base font-bold text-gray-900 capitalize">{user?.role || "Student"}</div>
                   <div className="text-xs text-gray-500">Active Learning</div>
                 </div>
               </div>
@@ -360,14 +360,14 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
           style={!isCollapsed ? { height: `${expandedNavHeight}px` } : undefined}
         >
         {!isCollapsed && (
-          <div className={`${navTitleSpacingClass} animate-fade-in-up`} style={{ animationDelay: '0.15s' }}>
-            <h3 className={`px-3 ${isVeryShortHeight ? 'mb-2' : 'mb-3'} text-xs font-semibold tracking-wider text-gray-500 uppercase`}>Navigation</h3>
+          <div className="mb-4">
+            <h3 className="px-3 mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">Navigation</h3>
           </div>
         )}
 
-        <ul className={`${isVeryShortHeight ? 'space-y-0.5' : 'space-y-1'}`}>
+        <ul className="space-y-1">
           {/* Home Link */}
-          <li className="animate-fade-in-up" style={{ animationDelay: '0.05s' }}>
+          <li>
             <button
               onClick={() => handleNavigation('/home', 'Home')}
               disabled={navigatingTo === 'Home'}
@@ -411,7 +411,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
 
           {/* Courses Tree Structure */}
           {!isCollapsed && (
-            <li className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            <li>
               <div className="space-y-1">
                 {/* Courses Header */}
                 <button
@@ -429,7 +429,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
 
                 {/* Courses Tree */}
                 {isCoursesExpanded && (
-                  <div className={`ml-6 ${isVeryShortHeight ? 'space-y-0.5' : 'space-y-1'} animate-fade-in-up`} style={{ animationDelay: '0.2s' }}>
+                  <div className={`ml-6 space-y-1`}>
                     {/* Created Courses Section */}
                     <div className="space-y-1">
                       <button
@@ -459,7 +459,6 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                               onClick={() => handleNavigation(`/courses/${course.id}`, `Course: ${course.title}`)}
                               disabled={navigatingTo === `Course: ${course.title}`}
                               className="flex items-center w-full gap-2 px-3 py-2 ml-4 text-xs font-medium text-left text-gray-600 transition-all duration-200 border-l-2 border-transparent rounded-lg group hover:text-blue-700 hover:bg-blue-50/50 hover:border-blue-300 disabled:opacity-75"
-                              style={{ animationDelay: `${index * 0.05}s` }}
                             >
                               {navigatingTo === `Course: ${course.title}` ? (
                                 <div className="w-1.5 h-1.5 flex items-center justify-center">
@@ -534,7 +533,6 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
                               onClick={() => handleNavigation(`/courses/${course.id}`, `Course: ${course.title}`)}
                               disabled={navigatingTo === `Course: ${course.title}`}
                               className="flex items-center w-full gap-2 px-3 py-2 ml-4 text-xs font-medium text-left text-gray-600 transition-all duration-200 border-l-2 border-transparent rounded-lg group hover:text-purple-700 hover:bg-purple-50/50 hover:border-purple-300 disabled:opacity-75"
-                              style={{ animationDelay: `${index * 0.05}s` }}
                             >
                               {navigatingTo === `Course: ${course.title}` ? (
                                 <div className="w-1.5 h-1.5 flex items-center justify-center">
@@ -614,7 +612,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
             const isScheduleLink = link.label === 'Schedule';
             const isNavigating = navigatingTo === link.label;
             return (
-              <li key={link.href} className="animate-fade-in-up" style={{ animationDelay: `${(index + 2) * 0.05}s` }}>
+              <li key={link.href}>
                 <button
                   onClick={() => handleNavigation(link.href, link.label)}
                   disabled={isNavigating}

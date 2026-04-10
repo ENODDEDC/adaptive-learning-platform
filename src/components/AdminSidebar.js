@@ -63,7 +63,7 @@ export default function AdminSidebar({ isCollapsed, toggleSidebar }) {
   return (
     <div
       className={`fixed inset-y-0 left-0 z-50 bg-slate-900 text-white transition-all duration-300 ease-in-out shadow-2xl ${
-        isCollapsed ? 'w-20' : 'w-64'
+        isCollapsed ? 'w-16' : 'w-52'
       } flex flex-col border-r border-slate-700/50`}
     >
       {/* Header */}

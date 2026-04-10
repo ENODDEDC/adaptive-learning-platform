@@ -133,7 +133,7 @@ const Layout = ({ children }) => {
 
   if (isAdminPage) {
     const sidebarState = isSidebarCollapsed;
-    const mainContentMargin = isSidebarCollapsed ? 'ml-20' : 'ml-64';
+    const mainContentMargin = isSidebarCollapsed ? 'ml-16' : 'ml-52';
     return (
       <div className="min-h-screen bg-gray-100">
         <AdminSidebar isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
