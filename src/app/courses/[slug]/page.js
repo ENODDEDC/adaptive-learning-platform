@@ -977,7 +977,7 @@ const CourseDetailPage = ({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="h-screen overflow-y-auto bg-gray-50">
         <div className="sticky top-0 z-50">
           <div className="h-1 w-full bg-blue-100/80">
             <div className="h-full w-full bg-blue-500 animate-pulse animate-progress-shine"></div>
@@ -1010,7 +1010,7 @@ const CourseDetailPage = ({
 
   return (
     <>
-      <div className="min-h-screen p-8 overflow-y-auto bg-gray-50">
+      <div className="h-screen p-8 overflow-y-auto bg-gray-50">
         {/* Global event listener to open viewer from child components (e.g., Stream attachments) */}
         <script dangerouslySetInnerHTML={{
           __html: `
