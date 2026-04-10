@@ -1010,7 +1010,7 @@ const CourseDetailPage = ({
 
   return (
     <>
-      <div className="h-screen p-8 overflow-y-auto bg-gray-50">
+      <div className="h-screen p-5 overflow-y-auto bg-gray-50">
         {/* Global event listener to open viewer from child components (e.g., Stream attachments) */}
         <script dangerouslySetInnerHTML={{
           __html: `
@@ -1023,29 +1023,29 @@ const CourseDetailPage = ({
           })();
         `}} />
         {/* Professional Header */}
-        <div className="mb-8 bg-white border border-gray-200 shadow-sm rounded-xl" data-tour="course-header">
-          <div className="p-8">
+        <div className="mb-5 bg-white border border-gray-200 shadow-sm rounded-xl" data-tour="course-header">
+          <div className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center justify-center w-12 h-12 bg-blue-600 rounded-lg">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-lg">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium tracking-wide text-gray-500 uppercase animate-fadeInLeft">Course</p>
-                    <h1 className="text-3xl font-bold text-gray-900 animate-subtleFloat">{courseDetails.subject}</h1>
+                    <p className="text-xs font-medium tracking-wide text-gray-500 uppercase animate-fadeInLeft">Course</p>
+                    <h1 className="text-[2rem] font-bold text-gray-900 animate-subtleFloat leading-tight">{courseDetails.subject}</h1>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
                   {/* Course Access Code */}
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg animate-shimmer">
-                    <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                     </svg>
-                    <span className="text-sm font-medium text-indigo-700">Class Code:</span>
+                    <span className="text-xs font-medium text-indigo-700">Class Code:</span>
                     <span className="text-sm font-bold tracking-wider text-indigo-800">{courseDetails.uniqueKey}</span>
                     <button
                       onClick={() => {
@@ -1073,10 +1073,10 @@ const CourseDetailPage = ({
                 </div>
               </div>
 
-              <div className="items-center hidden gap-4 ml-6 sm:flex">
+              <div className="items-center hidden gap-3 ml-5 sm:flex">
                 <div className="flex items-center -space-x-2">
                   {teachers.slice(0, 3).map((teacher) => (
-                    <div key={teacher._id} className="flex items-center justify-center w-10 h-10 overflow-hidden bg-blue-600 border-2 border-white rounded-full shadow-sm">
+                    <div key={teacher._id} className="flex items-center justify-center w-9 h-9 overflow-hidden bg-blue-600 border-2 border-white rounded-full shadow-sm">
                       {teacher.profilePicture ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img 
@@ -1100,7 +1100,7 @@ const CourseDetailPage = ({
                     </div>
                   )}
                 </div>
-                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:border-gray-300 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                <button className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-700 transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:border-gray-300 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -1110,7 +1110,7 @@ const CourseDetailPage = ({
                 {/* Take a Tour Button */}
                 <button 
                   onClick={() => setShowTour(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 transition-all duration-200 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-blue-700 transition-all duration-200 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1122,7 +1122,7 @@ const CourseDetailPage = ({
                 {isInstructor ? (
                   <button
                     onClick={handleArchiveCourse}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white transition-all duration-200 border rounded-lg bg-amber-600 border-amber-600 hover:bg-amber-700 hover:border-amber-700 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-white transition-all duration-200 border rounded-lg bg-amber-600 border-amber-600 hover:bg-amber-700 hover:border-amber-700 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
@@ -1132,7 +1132,7 @@ const CourseDetailPage = ({
                 ) : (
                   <button
                     onClick={handleLeaveCourse}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:border-gray-300 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-700 transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:border-gray-300 hover:shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -1146,7 +1146,7 @@ const CourseDetailPage = ({
         </div>
 
         {/* Main Content Layout - Optimized Proportions */}
-        <div className="flex flex-1 gap-4">
+        <div className="flex flex-1 gap-3">
           {/* Feed Sidebar - Shows when document panel is open */}
           {documentPanelOpen && (
             <div className="w-[60%] bg-white border border-gray-200/60 rounded-xl shadow-sm h-fit sticky top-6 overflow-hidden transition-all duration-300 ease-in-out hover:shadow-md">
@@ -1221,15 +1221,15 @@ const CourseDetailPage = ({
 
           {/* Main Content Area - Enhanced Layout - Hidden when document panel or create classwork panel is open */}
           {!documentPanelOpen && !isCreateClassworkModalOpen && (
-            <div className="flex-1 space-y-8">
+            <div className="flex-1 space-y-5">
               {/* Hidden button to open content viewer from custom events */}
               <button id="__openContentViewerBtn" type="button" className="hidden" />
               {/* Enhanced Navigation Tabs - Hidden when document panel or create classwork panel is open */}
               {!documentPanelOpen && !isCreateClassworkModalOpen && (
-                <div className="flex justify-between mb-10 overflow-hidden transition-shadow duration-200 bg-white border shadow-sm border-gray-200/60 rounded-xl hover:shadow-md">
+                <div className="flex justify-between mb-6 overflow-hidden transition-shadow duration-200 bg-white border shadow-sm border-gray-200/60 rounded-xl hover:shadow-md">
                   <button
                     data-tour="stream-tab"
-                    className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'stream'
+                    className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'stream'
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
                       : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
                       }`}
@@ -1247,7 +1247,7 @@ const CourseDetailPage = ({
                   </button>
                   <button
                     data-tour="classwork-tab"
-                    className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'classwork'
+                    className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'classwork'
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
                       : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
                       }`}
@@ -1265,7 +1265,7 @@ const CourseDetailPage = ({
                   </button>
                   <button
                     data-tour="people-tab"
-                    className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'people'
+                    className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'people'
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
                       : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
                       }`}
@@ -1284,7 +1284,7 @@ const CourseDetailPage = ({
                   {isInstructor && (
                     <button
                       data-tour="scores-tab"
-                      className={`flex-1 px-8 py-5 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'marks'
+                      className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'marks'
                         ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
                         : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
                         }`}
@@ -1335,6 +1335,7 @@ const CourseDetailPage = ({
                     }
                     setSelectedContent(content);
                   }}
+                  compactMode={true}
                 />
               )}
 
@@ -1941,9 +1942,9 @@ const CourseDetailPage = ({
 
           {/* Right Sidebar - Upcoming Tasks - Hidden when document panel or create classwork panel is open */}
           {!documentPanelOpen && !isCreateClassworkModalOpen && (
-            <div data-tour="upcoming-tasks" className={`bg-white border border-gray-200/60 rounded-xl shadow-sm min-w-[280px] max-w-[320px] w-full h-fit sticky top-6 overflow-hidden transition-all duration-300 hover:shadow-md ${upcomingTasksExpanded ? 'opacity-100 max-h-screen' : 'opacity-60 max-h-16 hover:opacity-100'
+            <div data-tour="upcoming-tasks" className={`bg-white border border-gray-200/60 rounded-xl shadow-sm min-w-[260px] max-w-[300px] w-full h-fit sticky top-6 overflow-hidden transition-all duration-300 hover:shadow-md ${upcomingTasksExpanded ? 'opacity-100 max-h-screen' : 'opacity-60 max-h-16 hover:opacity-100'
               }`}>
-              <div className="px-5 py-4 border-b border-gray-200/60 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
+              <div className="px-4 py-3.5 border-b border-gray-200/60 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => {

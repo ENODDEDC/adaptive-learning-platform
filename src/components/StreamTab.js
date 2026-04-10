@@ -125,15 +125,28 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
     });
   };
 
+  const sectionCardClass = compactMode
+    ? 'p-5 sm:p-6'
+    : 'p-6 sm:p-8';
+  const sectionTitleClass = compactMode
+    ? 'text-xl'
+    : 'text-2xl';
+  const itemCardClass = compactMode
+    ? 'p-5'
+    : 'p-6';
+  const stackClass = compactMode
+    ? 'space-y-5'
+    : 'space-y-6';
+
   return (
-    <div className="space-y-6">
+    <div className={stackClass}>
       
 
       {isInstructor && (
-        <div className="group p-6 sm:p-8 bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-300/60 transition-all duration-300 hover:scale-[1.01]">
-          <div className="flex items-center justify-between mb-6">
+        <div className={`group ${sectionCardClass} bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-300/60 transition-all duration-300 hover:scale-[1.01]`}>
+          <div className={`flex items-center justify-between ${compactMode ? 'mb-5' : 'mb-6'}`}>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Post Announcement</h2>
+              <h2 className={`${sectionTitleClass} font-bold text-gray-900 mb-1`}>Post Announcement</h2>
               <p className="text-sm text-gray-600">Share important updates with your students</p>
             </div>
           </div>
@@ -166,18 +179,18 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
       )}
 
       {pinnedItems.length > 0 && (
-        <div className="p-6 sm:p-8 bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-gray-500/10 hover:border-gray-300/60 transition-all duration-300 hover:scale-[1.01]">
-          <div className="flex items-center gap-3 mb-6">
+        <div className={`${sectionCardClass} bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-gray-500/10 hover:border-gray-300/60 transition-all duration-300 hover:scale-[1.01]`}>
+          <div className={`flex items-center gap-3 ${compactMode ? 'mb-5' : 'mb-6'}`}>
             <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
               <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Pinned Announcements</h2>
+            <h2 className={`${sectionTitleClass} font-bold text-gray-900`}>Pinned Announcements</h2>
           </div>
-          <div className="space-y-6">
+          <div className={stackClass}>
             {pinnedItems.map((item) => (
-              <div key={item._id} className="group p-6 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border border-blue-200/60 rounded-xl hover:shadow-lg hover:scale-[1.01] transition-all duration-200">
+              <div key={item._id} className={`group ${itemCardClass} bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border border-blue-200/60 rounded-xl hover:shadow-lg hover:scale-[1.01] transition-all duration-200`}>
                 {/* Header Section */}
                 <div className="flex items-start gap-4 mb-4">
                   <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-full shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600">
@@ -334,13 +347,13 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
         </div>
       )}
 
-      <div className="p-6 sm:p-8 bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-300/60 transition-all duration-300 hover:scale-[1.01]">
-        <div className="flex flex-col gap-6 mb-8 sm:flex-row sm:items-center sm:justify-between">
+      <div className={`${sectionCardClass} bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-300/60 transition-all duration-300 hover:scale-[1.01]`}>
+        <div className={`flex flex-col ${compactMode ? 'gap-4 mb-6' : 'gap-6 mb-8'} sm:flex-row sm:items-center sm:justify-between`}>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">Activity Feed</h2>
+            <h2 className={`${sectionTitleClass} font-bold text-gray-900 mb-1`}>Activity Feed</h2>
             <p className="text-sm text-gray-600">Latest announcements and course updates</p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className={`flex flex-wrap items-center ${compactMode ? 'gap-2.5' : 'gap-3'}`}>
               {['all','announcement','assignment'].map((key) => (
                 <button
                   key={key}
@@ -365,9 +378,9 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
           </div>
         </div>
         {loading ? (
-          <div className="space-y-6">
+          <div className={stackClass}>
             {[...Array(3)].map((_,i) => (
-              <div key={i} className="p-6 border border-gray-200/60 rounded-xl bg-white animate-pulse">
+              <div key={i} className={`${itemCardClass} border border-gray-200/60 rounded-xl bg-white animate-pulse`}>
                 <div className="flex items-start gap-4 mb-4">
                   <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full shadow-sm"></div>
                   <div className="flex-1 space-y-3">
@@ -404,7 +417,7 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
             <p className="text-sm leading-relaxed text-gray-600 max-w-md mx-auto">When your instructor posts announcements or assignments, they&rsquo;ll appear here. Check back soon!</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className={stackClass}>
             {(() => {
               // Sort items based on sortBy
               const sortedItems = [...propStreamItems].sort((a, b) => {
@@ -434,7 +447,7 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                 );
               }
               return filteredItems.map((item) => (
-              <div key={item._id} className="group p-6 bg-white border border-gray-200/60 rounded-xl hover:bg-gray-50/50 hover:border-gray-300/60 hover:shadow-md transition-all duration-200">
+              <div key={item._id} className={`group ${itemCardClass} bg-white border border-gray-200/60 rounded-xl hover:bg-gray-50/50 hover:border-gray-300/60 hover:shadow-md transition-all duration-200`}>
                 {/* Header Section */}
                 <div className="flex items-start gap-4 mb-4">
                   <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-full shadow-lg bg-gradient-to-br from-blue-500 to-blue-600">
