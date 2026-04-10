@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Enforce grepSearch Before Answering",
+  "description": "Automatically reminds agent to use grepSearch when user asks about UI/code behavior",
+  "version": "1",
+  "when": {
+    "type": "promptSubmit"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "BEFORE answering this question, check if the user is asking about UI elements, text, behavior, or code. If YES, you MUST use grepSearch with the exact words the user mentioned BEFORE providing any answer. Search the codebase first, then answer based on actual code found. Do not assume or guess - verify with grepSearch."
+  }
+}

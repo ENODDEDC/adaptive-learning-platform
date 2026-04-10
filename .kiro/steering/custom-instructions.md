@@ -12,6 +12,52 @@ inclusion: always
 - Focus on actionable information
 - Skip the fluff
 
+## MANDATORY Search Protocol (FOLLOW THIS EXACTLY)
+
+⚠️ **BEFORE ANSWERING ANY QUESTION ABOUT CODE/UI, ASK YOURSELF:**
+"Have I used grepSearch with the user's exact words yet?"
+- If NO → STOP and use grepSearch NOW
+- If YES and found nothing → Try 2-3 more search variations before responding
+
+When user asks about ANY UI element, text, behavior, or code:
+
+**STEP 1: Use grepSearch IMMEDIATELY (NOT OPTIONAL)**
+- Search for the EXACT words the user mentions
+- Example: User says "loading text" → grepSearch for "Loading" in src directory
+- Example: User says "what shows when I click" → grepSearch for "onClick" in that component
+- grepSearch works on ANY file size - use it first, always
+- ⚠️ If you skip this step, you are failing the user
+
+**STEP 2: If grepSearch finds it**
+- Read the specific file and line numbers from results
+- Quote the EXACT code found
+- Answer the user's question with the actual code
+
+**STEP 3: If file is truncated when reading**
+- Read in chunks: lines 1-1000, then 1001-2000, then 2001-3000, etc.
+- Keep reading until you find the code
+- NEVER say "I can't find it" if the file has more lines to read
+- ⚠️ Truncated file = incomplete search, keep reading
+- ⚠️ **CRITICAL: If grepSearch shows line 990 but you only read to line 600, YOU MUST READ MORE**
+- **Example: grepSearch finds "Loading Course Details" at line 990 → read lines 900-1100 to see it**
+
+**STEP 4: If still not found after thorough search**
+- Try 2-3 different search patterns (case variations, partial words)
+- Search in parent/related components
+- Check imported components
+- Only then say "not found" and explain what you searched
+
+**FORBIDDEN RESPONSES (will frustrate user):**
+- ❌ "I don't see any loading state"
+- ❌ "It's handled by the framework"
+- ❌ "There's no custom code for that"
+- ❌ Any answer without using grepSearch first
+
+**REQUIRED RESPONSES:**
+- ✅ "Found it at line X: [exact code quote]"
+- ✅ "Searched 3 patterns, checked 5 files, not found in codebase"
+- ✅ Always show what you searched for
+
 ## Code Quality
 - After modifying or creating code files, use `getDiagnostics` tool to check for errors
 - Fix any issues found before finishing
