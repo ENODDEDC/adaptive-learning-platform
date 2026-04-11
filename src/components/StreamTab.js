@@ -3,11 +3,79 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import AttachmentPreview from '@/components/AttachmentPreview';
-import RichTextEditor from '@/components/RichTextEditor';
 import SidePanelDocumentViewer from '@/components/SidePanelDocumentViewer';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import '@/styles/sidePanelStyles.css';
+
+function CustomAnnouncementEditor({ value, onChange, placeholder = 'Share an update with your class...' }) {
+  const [isFocused, setIsFocused] = useState(false);
+  const editorRef = React.useRef(null);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    if (editor.innerHTML !== (value || '')) {
+      editor.innerHTML = value || '';
+    }
+  }, [value]);
+
+  const runCommand = (command, commandValue = null) => {
+    if (typeof document === 'undefined') return;
+    editorRef.current?.focus();
+    document.execCommand(command, false, commandValue);
+    onChange?.(editorRef.current?.innerHTML || '');
+  };
+
+  const handleInput = () => {
+    onChange?.(editorRef.current?.innerHTML || '');
+  };
+
+  const toolbarButtons = [
+    { label: 'B', title: 'Bold', action: () => runCommand('bold'), className: 'font-bold' },
+    { label: 'I', title: 'Italic', action: () => runCommand('italic'), className: 'italic' },
+    { label: 'U', title: 'Underline', action: () => runCommand('underline'), className: 'underline' },
+    { label: '• List', title: 'Bullet list', action: () => runCommand('insertUnorderedList') },
+    { label: '1. List', title: 'Numbered list', action: () => runCommand('insertOrderedList') },
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50/80 px-3 py-2">
+        {toolbarButtons.map((button) => (
+          <button
+            key={button.title}
+            type="button"
+            onClick={button.action}
+            className={`rounded-lg border border-transparent px-3 py-1.5 text-xs font-medium text-gray-600 transition-all duration-200 hover:border-gray-200 hover:bg-white hover:text-gray-900 ${button.className || ''}`}
+            title={button.title}
+          >
+            {button.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="relative">
+        {!isFocused && !value?.replace(/<[^>]*>/g, '').trim() && (
+          <div className="pointer-events-none absolute left-4 top-4 text-sm text-gray-400">
+            {placeholder}
+          </div>
+        )}
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={handleInput}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          className="min-h-[96px] max-h-[180px] overflow-y-auto px-4 py-3 text-sm leading-6 text-gray-800 outline-none prose prose-sm max-w-none"
+          style={{ wordBreak: 'break-word' }}
+        />
+      </div>
+    </div>
+  );
+}
 
 const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, newAnnouncementContent, setNewAnnouncementContent, handlePostAnnouncement, handleDeleteAnnouncement, newCommentContent, setNewCommentContent, handlePostComment, onOpenContent, compactMode = false, documentPanelOpen, setDocumentPanelOpen, setSidePanelDocument: setParentSidePanelDocument }) => {
   const [pinnedItems, setPinnedItems] = useState([]);
@@ -143,25 +211,33 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
       
 
       {isInstructor && (
-        <div className={`group ${sectionCardClass} bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-300/60 transition-all duration-300 hover:scale-[1.01]`}>
-          <div className={`flex items-center justify-between ${compactMode ? 'mb-5' : 'mb-6'}`}>
-            <div>
+        <div className={`group ${sectionCardClass} overflow-hidden bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-300/60 transition-all duration-300 hover:scale-[1.01]`}>
+          <div className="mb-3 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                Instructor Composer
+              </div>
               <h2 className={`${sectionTitleClass} font-bold text-gray-900 mb-1`}>Post Announcement</h2>
-              <p className="text-sm text-gray-600">Share important updates with your students</p>
             </div>
           </div>
-          <RichTextEditor
-            value={newAnnouncementContent}
-            onChange={(content) => {
-              console.log('🔍 DEBUG: RichTextEditor onChange called');
-              console.log('🔍 DEBUG: New content length:', content?.length);
-              console.log('🔍 DEBUG: New content preview:', content?.substring(0, 50));
-              setNewAnnouncementContent(content);
-            }}
-            placeholder="Write your announcement..."
-            className="mb-4"
-          />
-          <div className="flex justify-end">
+
+          <div className="rounded-2xl bg-gradient-to-br from-gray-50 to-white p-2.5 border border-gray-100">
+            <CustomAnnouncementEditor
+              value={newAnnouncementContent}
+              onChange={(content) => {
+                setNewAnnouncementContent(content);
+              }}
+              placeholder="Share an update, deadline reminder, or class note..."
+            />
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="text-xs text-gray-500">
+              {newAnnouncementContent?.replace(/<[^>]*>/g, '').trim()
+                ? `${newAnnouncementContent.replace(/<[^>]*>/g, '').trim().length} characters ready to post`
+                : 'Start typing to draft your announcement'}
+            </div>
             <button
               onClick={() => {
                 console.log('🔍 DEBUG: Post button clicked');
@@ -169,10 +245,10 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                 console.log('🔍 DEBUG: newAnnouncementContent length:', newAnnouncementContent?.length);
                 handlePostAnnouncement();
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white transition-all duration-300 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-105 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl hover:shadow-blue-500/30 active:scale-95"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
-              Post
+              Publish Announcement
             </button>
           </div>
         </div>

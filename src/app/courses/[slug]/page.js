@@ -256,7 +256,7 @@ const CourseDetailPage = ({
     }
 
     try {
-      console.log('🔍 DEBUG: Fetching announcements and classwork for course:', courseDetails._id);
+      console.log('🔍 DEBUG: Fetching announcements and classwork for course:', courseDetails?._id);
       const [announcementsRes, classworkRes] = await Promise.all([
         fetch(`/api/courses/${courseDetails._id}/announcements`), // No need for manual token header
         fetch(`/api/courses/${courseDetails._id}/classwork`), // No need for manual token header
@@ -329,6 +329,13 @@ const CourseDetailPage = ({
   // Determine if current user is the instructor (course creator)
   useEffect(() => {
     if (courseDetails && user) {
+      // Handle case where createdBy might be null
+      if (!courseDetails.createdBy) {
+        console.log('🔍 DEBUG: Course has no creator, user is not instructor');
+        setIsInstructor(false);
+        return;
+      }
+
       // Handle both cases: createdBy as object with _id or direct ID string
       const courseCreatorId = courseDetails.createdBy._id || courseDetails.createdBy;
       const currentUserId = user._id || user.id;
@@ -537,6 +544,29 @@ const CourseDetailPage = ({
     }
   }, [courseDetails, fetchAssignments, fetchPeople]);
 
+  const calculateStatistics = useCallback((submissionsData) => {
+    console.log('ðŸ” SCORES: Calculating statistics for', submissionsData.length, 'submissions');
+    
+    // Calculate average grade
+    const gradedSubmissions = submissionsData.filter(s => s.grade !== null && s.grade !== undefined);
+    const averageGrade = gradedSubmissions.length > 0
+      ? (gradedSubmissions.reduce((sum, s) => sum + s.grade, 0) / gradedSubmissions.length).toFixed(1)
+      : null;
+    
+    console.log('ðŸ” SCORES: Graded submissions:', gradedSubmissions.length, 'Average grade:', averageGrade);
+    
+    // Calculate submission rate
+    const submittedCount = submissionsData.filter(s => s.status === 'submitted').length;
+    const totalCount = submissionsData.length;
+    const submissionRate = totalCount > 0
+      ? Math.round((submittedCount / totalCount) * 100)
+      : null;
+    
+    console.log('ðŸ” SCORES: Submitted:', submittedCount, 'Total:', totalCount, 'Rate:', submissionRate + '%');
+    
+    setStatistics({ averageGrade, submissionRate });
+  }, []);
+
   const fetchScoresData = useCallback(async () => {
     if (!courseDetails?._id) return;
     
@@ -563,9 +593,9 @@ const CourseDetailPage = ({
     } finally {
       setScoresLoading(false);
     }
-  }, [courseDetails]);
+  }, [calculateStatistics, courseDetails]);
 
-  const calculateStatistics = useCallback((submissionsData) => {
+  function calculateStatisticsLegacy(submissionsData) {
     console.log('🔍 SCORES: Calculating statistics for', submissionsData.length, 'submissions');
     
     // Calculate average grade
@@ -586,7 +616,7 @@ const CourseDetailPage = ({
     console.log('🔍 SCORES: Submitted:', submittedCount, 'Total:', totalCount, 'Rate:', submissionRate + '%');
     
     setStatistics({ averageGrade, submissionRate });
-  }, []);
+  }
 
   const handleRetryScores = useCallback(() => {
     console.log('🔍 SCORES: Retrying to fetch scores data');
@@ -706,6 +736,7 @@ const CourseDetailPage = ({
       const fetchedSubmissions = data.submissions || [];
       console.log('🔍 SCORES: Fetched submissions:', fetchedSubmissions.length, 'items');
       setSubmissions(fetchedSubmissions);
+      calculateStatistics(fetchedSubmissions);
       setScoresError('');
     } catch (err) {
       console.error('🔍 SCORES: Failed to fetch submissions:', err);
@@ -714,21 +745,18 @@ const CourseDetailPage = ({
     } finally {
       setScoresLoading(false);
     }
-  }, [courseDetails]);
+  }, [calculateStatistics, courseDetails]);
 
-  // Fetch scores data when Scores tab becomes active (instructors) or when course loads (students for their own grades)
+  // Fetch submissions for instructor overview on course load, and for students when activity state needs it.
   useEffect(() => {
     if (!courseDetails || scoresLoading) return;
     
-    // Use a ref to track if we've already fetched to prevent duplicate calls
     let shouldFetch = false;
     
-    if (isInstructor && activeTab === 'marks' && submissions.length === 0) {
-      // Instructors fetch when Scores tab is active
-      console.log('🔍 SCORES: Scores tab activated, fetching data');
+    if (isInstructor && submissions.length === 0) {
+      console.log('🔍 SCORES: Fetching instructor submissions for teaching overview');
       shouldFetch = true;
     } else if (!isInstructor && user && (activeTab === 'classwork' || activeTab === 'stream') && submissions.length === 0) {
-      // Students fetch their own submissions for activity cards when viewing classwork or stream
       console.log('🔍 SCORES: Fetching student submissions for activity status');
       shouldFetch = true;
     }
@@ -736,7 +764,7 @@ const CourseDetailPage = ({
     if (shouldFetch) {
       fetchSubmissionsData();
     }
-  }, [activeTab, courseDetails, isInstructor, user, fetchSubmissionsData]);
+  }, [activeTab, courseDetails, fetchSubmissionsData, isInstructor, scoresLoading, submissions.length, user]);
 
   // Filter and sort submissions
   useEffect(() => {
@@ -980,6 +1008,47 @@ const CourseDetailPage = ({
     !documentPanelOpen &&
     !isCreateClassworkModalOpen;
 
+  const now = new Date();
+  const upcomingAssignments = (assignments || [])
+    .filter((assignment) => assignment?.dueDate)
+    .map((assignment) => ({ ...assignment, _due: new Date(assignment.dueDate) }))
+    .filter((assignment) => assignment._due >= now)
+    .sort((a, b) => a._due - b._due);
+
+  const pendingReviewSubmissions = submissions.filter(
+    (submission) =>
+      submission?.status === 'submitted' &&
+      (submission?.grade === null || submission?.grade === undefined)
+  );
+
+  const dueThisWeekCount = upcomingAssignments.filter((assignment) => {
+    const daysLeft = Math.ceil((assignment._due - now) / (1000 * 60 * 60 * 24));
+    return daysLeft >= 0 && daysLeft <= 7;
+  }).length;
+
+  const teachingOverviewStats = [
+    {
+      label: 'Deadlines',
+      value: upcomingAssignments.length,
+      accent: 'text-blue-700 bg-blue-50 border-blue-200'
+    },
+    {
+      label: 'To grade',
+      value: pendingReviewSubmissions.length,
+      accent: 'text-amber-700 bg-amber-50 border-amber-200'
+    },
+    {
+      label: 'Students',
+      value: students.length,
+      accent: 'text-emerald-700 bg-emerald-50 border-emerald-200'
+    },
+    {
+      label: 'This week',
+      value: dueThisWeekCount,
+      accent: 'text-indigo-700 bg-indigo-50 border-indigo-200'
+    }
+  ];
+
   if (loading) {
     return (
       <div className="h-screen overflow-y-auto bg-gray-50">
@@ -1080,9 +1149,9 @@ const CourseDetailPage = ({
 
               <div className="items-center hidden gap-3 ml-5 sm:flex">
                 <div className="flex items-center -space-x-2">
-                  {teachers.slice(0, 3).map((teacher) => (
+                  {teachers.filter(teacher => teacher != null).slice(0, 3).map((teacher) => (
                     <div key={teacher._id} className="flex items-center justify-center w-9 h-9 overflow-hidden bg-blue-600 border-2 border-white rounded-full shadow-sm">
-                      {teacher.profilePicture ? (
+                      {teacher?.profilePicture ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img 
                           src={teacher.profilePicture} 
@@ -1446,7 +1515,7 @@ const CourseDetailPage = ({
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {/* Teachers */}
-                        {(isInstructor ? filteredMembers.teachers : teachers).map((teacher) => (
+                        {(isInstructor ? filteredMembers.teachers : teachers).filter(teacher => teacher != null).map((teacher) => (
                           <tr key={teacher._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
@@ -1474,7 +1543,7 @@ const CourseDetailPage = ({
                                     <div className="text-sm font-medium text-gray-900">
                                       {teacher.name || 'Unknown Teacher'}
                                     </div>
-                                    {teacher._id === courseDetails.createdBy._id && (
+                                    {courseDetails?.createdBy?._id && teacher._id === courseDetails.createdBy._id && (
                                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
                                         Owner
                                       </span>
@@ -1501,7 +1570,7 @@ const CourseDetailPage = ({
                               {teacher.createdAt ? format(new Date(teacher.createdAt), 'MMM d, yyyy') : 'Unknown'}
                             </td>
                             <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
-                              {isInstructor && teacher._id !== courseDetails.createdBy._id && (
+                              {isInstructor && courseDetails?.createdBy?._id && teacher._id !== courseDetails.createdBy._id && (
                                 <button
                                   onClick={() => handleRemoveUser(teacher._id, 'coTeacher')}
                                   className="text-red-600 transition-colors hover:text-red-900"
@@ -1514,7 +1583,7 @@ const CourseDetailPage = ({
                         ))}
 
                         {/* Students */}
-                        {(isInstructor ? filteredMembers.students : students).map((student) => (
+                        {(isInstructor ? filteredMembers.students : students).filter(student => student != null).map((student) => (
                           <tr key={student._id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
@@ -1786,7 +1855,7 @@ const CourseDetailPage = ({
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             <h3 className="mb-2 text-lg font-medium text-gray-900">No submissions yet</h3>
-                            <p className="text-gray-500">Students haven't submitted any work for this assignment yet.</p>
+                            <p className="text-gray-500">Students haven&apos;t submitted any work for this assignment yet.</p>
                           </div>
                         ) : (
                           <div className="overflow-hidden border border-gray-200 rounded-xl">
@@ -1969,8 +2038,12 @@ const CourseDetailPage = ({
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-base font-semibold text-gray-900 transition-colors group-hover:text-blue-700">Upcoming Tasks</h3>
-                      <p className="text-xs text-gray-600">Due dates & assignments</p>
+                      <h3 className="text-base font-semibold text-gray-900 transition-colors group-hover:text-blue-700">
+                        {isInstructor ? 'Teaching Overview' : 'Upcoming Tasks'}
+                      </h3>
+                      <p className="text-xs text-gray-600">
+                        {isInstructor ? 'Deadlines, submissions, and grading' : 'Due dates & assignments'}
+                      </p>
                     </div>
                     <svg className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${upcomingTasksExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -2004,8 +2077,11 @@ const CourseDetailPage = ({
                         </svg>
                       </button>
                     </div>
-                    <button className="px-3 py-1.5 text-xs font-medium text-blue-600 transition-all duration-200 rounded-lg hover:text-blue-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 hover:border-blue-300 hover:shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2">
-                      View All
+                    <button
+                      onClick={() => setActiveTab('classwork')}
+                      className="px-3 py-1.5 text-xs font-medium text-blue-600 transition-all duration-200 rounded-lg hover:text-blue-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 hover:border-blue-300 hover:shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2"
+                    >
+                      {isInstructor ? 'Open Classwork' : 'View All'}
                     </button>
                   </div>
                 </div>
@@ -2015,13 +2091,17 @@ const CourseDetailPage = ({
                 }`}>
                 <div className="p-4 overflow-y-auto max-h-96 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
                   {(() => {
-                    const now = new Date();
-                    const upcoming = (assignments || [])
-                      .filter(a => a?.dueDate)
-                      .map(a => ({ ...a, _due: new Date(a.dueDate) }))
-                      .filter(a => a._due >= now)
-                      .sort((a, b) => a._due - b._due)
+                    const upcoming = upcomingAssignments
                       .slice(0, upcomingTasksExpanded ? 6 : 4);
+
+                    const openAssignmentInScores = (assignment) => {
+                      setSelectedAssignment(assignment);
+                      setActiveTab('marks');
+                    };
+
+                    const openAssignmentInClasswork = () => {
+                      setActiveTab('classwork');
+                    };
 
                     if (upcoming.length === 0) {
                       return (
@@ -2031,8 +2111,147 @@ const CourseDetailPage = ({
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           </div>
-                          <h4 className="mb-2 text-base font-semibold text-gray-900">All caught up!</h4>
-                          <p className="text-sm leading-relaxed text-gray-600">No upcoming tasks. Great job staying on top of your assignments!</p>
+                          <h4 className="mb-2 text-base font-semibold text-gray-900">
+                            {isInstructor ? 'No active deadlines' : 'All caught up!'}
+                          </h4>
+                          <p className="text-sm leading-relaxed text-gray-600">
+                            {isInstructor
+                              ? 'There are no upcoming classwork deadlines to monitor right now.'
+                              : 'No upcoming tasks. Great job staying on top of your assignments!'}
+                          </p>
+                          {isInstructor && (
+                            <div className="mt-4 flex justify-center">
+                              <button
+                                onClick={() => setActiveTab('classwork')}
+                                className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                              >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Open Classwork
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (isInstructor) {
+                      return (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-2">
+                            {teachingOverviewStats.map((stat) => (
+                              <div
+                                key={stat.label}
+                                className={`rounded-xl border px-3 py-2.5 ${stat.accent}`}
+                              >
+                                <div className="text-[11px] font-medium uppercase tracking-[0.14em] opacity-80">
+                                  {stat.label}
+                                </div>
+                                <div className="mt-1 text-lg font-semibold text-gray-900">
+                                  {stat.value}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setActiveTab('classwork')}
+                              className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700"
+                            >
+                              Manage Classwork
+                            </button>
+                            <button
+                              onClick={() => setActiveTab('marks')}
+                              className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
+                            >
+                              Open Scores
+                            </button>
+                          </div>
+
+                          <div className="space-y-3">
+                            {upcoming.map((item) => {
+                              const daysLeft = Math.ceil((item._due - now) / (1000 * 60 * 60 * 24));
+                              const urgency = daysLeft <= 0 ? 'overdue' : daysLeft <= 2 ? 'soon' : daysLeft <= 7 ? 'upcoming' : 'normal';
+                              const assignmentSubs = submissions.filter((submission) => {
+                                const submissionAssignmentId =
+                                  submission.assignment ||
+                                  submission.assignmentId?._id ||
+                                  submission.assignmentId;
+                                return String(submissionAssignmentId) === String(item._id);
+                              });
+                              const submittedCount = assignmentSubs.filter((submission) => submission.status === 'submitted').length;
+                              const gradedCount = assignmentSubs.filter(
+                                (submission) => submission.grade !== null && submission.grade !== undefined
+                              ).length;
+                              const ungradedCount = Math.max(submittedCount - gradedCount, 0);
+
+                              const urgencyStyles = {
+                                overdue: 'border-red-200 bg-red-50/80',
+                                soon: 'border-amber-200 bg-amber-50/80',
+                                upcoming: 'border-blue-200 bg-blue-50/80',
+                                normal: 'border-gray-200 bg-white'
+                              };
+
+                              const pillStyles = {
+                                overdue: 'bg-red-100 text-red-700',
+                                soon: 'bg-amber-100 text-amber-700',
+                                upcoming: 'bg-blue-100 text-blue-700',
+                                normal: 'bg-gray-100 text-gray-600'
+                              };
+
+                              return (
+                                <div
+                                  key={item._id}
+                                  className={`rounded-xl border p-3.5 shadow-sm transition hover:shadow-md ${urgencyStyles[urgency]}`}
+                                >
+                                  <div className="mb-3 flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <div className="mb-1 flex items-center gap-2">
+                                        <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${pillStyles[urgency]}`}>
+                                          {daysLeft <= 0 ? 'Needs attention' : daysLeft === 1 ? 'Due tomorrow' : `Due in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`}
+                                        </span>
+                                      </div>
+                                      <h4 className="line-clamp-2 text-sm font-semibold text-gray-900">
+                                        {item.title}
+                                      </h4>
+                                    </div>
+                                    <div className="text-right text-xs text-gray-500">
+                                      <div className="font-semibold text-gray-900">{format(new Date(item._due), 'MMM dd')}</div>
+                                      <div>{format(new Date(item._due), 'h:mm a')}</div>
+                                    </div>
+                                  </div>
+
+                                  <div className="mb-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                    <div className="rounded-lg bg-white/70 px-2.5 py-2">
+                                      <div className="text-[11px] uppercase tracking-[0.12em] text-gray-400">Submitted</div>
+                                      <div className="mt-1 font-semibold text-gray-900">{submittedCount}</div>
+                                    </div>
+                                    <div className="rounded-lg bg-white/70 px-2.5 py-2">
+                                      <div className="text-[11px] uppercase tracking-[0.12em] text-gray-400">Ungraded</div>
+                                      <div className="mt-1 font-semibold text-gray-900">{ungradedCount}</div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => openAssignmentInScores(item)}
+                                      className="flex-1 rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800"
+                                    >
+                                      Review
+                                    </button>
+                                    <button
+                                      onClick={openAssignmentInClasswork}
+                                      className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
+                                    >
+                                      Open
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       );
                     }
@@ -2053,6 +2272,13 @@ const CourseDetailPage = ({
                               const daysLeft = Math.ceil((item._due - now) / (1000 * 60 * 60 * 24));
                               console.log('🔍 DATE: Days left calculation:', daysLeft);
                               const urgency = daysLeft <= 0 ? 'overdue' : daysLeft <= 2 ? 'soon' : daysLeft <= 7 ? 'upcoming' : 'normal';
+                              const assignmentSubs = submissions.filter(s => {
+                                const submissionAssignmentId = s.assignment || s.assignmentId?._id || s.assignmentId;
+                                return String(submissionAssignmentId) === String(item._id);
+                              });
+                              const submittedCount = assignmentSubs.filter(s => s.status === 'submitted').length;
+                              const gradedCount = assignmentSubs.filter(s => s.grade !== null && s.grade !== undefined).length;
+                              const ungradedCount = Math.max(submittedCount - gradedCount, 0);
 
                               // Timeline priority colors
                               const timelineConfig = {
@@ -2119,11 +2345,18 @@ const CourseDetailPage = ({
 
                               // Smart notifications
                               const getNotificationMessage = () => {
-                                if (daysLeft <= 0) return "⚠️ This task is overdue!";
-                                if (daysLeft === 1) return "🔥 Due tomorrow - time to focus!";
-                                if (daysLeft <= 3) return "⚡ Due soon - consider starting today";
-                                if (daysLeft <= 7) return "📅 Coming up this week";
-                                return "✅ You have plenty of time";
+                                if (isInstructor) {
+                                  if (daysLeft <= 0) return 'Deadline reached. Review submissions and grading status.';
+                                  if (ungradedCount > 0) return `${ungradedCount} submission${ungradedCount > 1 ? 's' : ''} waiting for grading.`;
+                                  if (daysLeft === 1) return 'Due tomorrow. Monitor student progress closely.';
+                                  if (daysLeft <= 3) return 'Due soon. Good time to remind students.';
+                                  return 'Upcoming classwork on your teaching timeline.';
+                                }
+                                if (daysLeft <= 0) return 'This task is overdue!';
+                                if (daysLeft === 1) return 'Due tomorrow - time to focus!';
+                                if (daysLeft <= 3) return 'Due soon - consider starting today';
+                                if (daysLeft <= 7) return 'Coming up this week';
+                                return 'You have plenty of time';
                               };
 
                               return (
@@ -2138,7 +2371,9 @@ const CourseDetailPage = ({
                                     {/* Task header */}
                                     <div className="flex items-center justify-between mb-2">
                                       <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-gray-600">{taskType.label}</span>
+                                        <span className="text-xs font-medium text-gray-600">
+                                          {isInstructor ? 'Classwork' : taskType.label}
+                                        </span>
                                       </div>
                                       <div className="text-right whitespace-nowrap">
                                         <div className="text-sm font-semibold text-gray-900">
@@ -2163,20 +2398,41 @@ const CourseDetailPage = ({
 
                                     {/* Task details */}
                                     <div className="flex items-center gap-4 mb-3 text-xs text-gray-600">
-                                      <div className="flex items-center gap-1">
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                        </svg>
-                                        <span>{taskType.estimatedTime}</span>
-                                      </div>
+                                      {isInstructor ? (
+                                        <>
+                                          <div className="flex items-center gap-1">
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            <span>{submittedCount} submitted</span>
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            <span>{ungradedCount} ungraded</span>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <div className="flex items-center gap-1">
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                          </svg>
+                                          <span>{taskType.estimatedTime}</span>
+                                        </div>
+                                      )}
                                     </div>
 
                                     {/* Action buttons */}
                                     <div className="flex items-center justify-between">
                                       <div className="flex gap-2">
-                                        {isCompleted ? (
+                                        {isInstructor ? (
+                                          <button className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-600 rounded-md hover:from-blue-700 hover:to-blue-800 hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2">
+                                            Review
+                                          </button>
+                                        ) : isCompleted ? (
                                           <button className="px-3 py-1.5 text-xs font-medium text-green-700 bg-gradient-to-r from-green-100 to-green-200 border border-green-200 rounded-md hover:from-green-200 hover:to-green-300 hover:border-green-300 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:ring-offset-2">
-                                            ✓ Completed
+                                            Completed
                                           </button>
                                         ) : isStarted ? (
                                           <button className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-gradient-to-r from-blue-100 to-blue-200 border border-blue-200 rounded-md hover:from-blue-200 hover:to-blue-300 hover:border-blue-300 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2">
@@ -2188,7 +2444,7 @@ const CourseDetailPage = ({
                                           </button>
                                         )}
                                         <button className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-md hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-100 hover:border-gray-300 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500/20 focus:ring-offset-2">
-                                          View
+                                          {isInstructor ? 'Open' : 'View'}
                                         </button>
                                       </div>
 
