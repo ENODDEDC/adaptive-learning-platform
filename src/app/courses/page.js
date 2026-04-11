@@ -502,59 +502,49 @@ const CourseContent = () => {
   // Show loading state with skeleton screens
   if (loading) {
     return (
-      <div className="flex-1 h-screen p-2 sm:p-4 lg:p-6 bg-gray-50 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-        {/* Enhanced Header Skeleton */}
-        <div className="relative mx-4 mt-4 mb-8 overflow-hidden bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl">
-          <div className="relative p-4 sm:p-6 lg:p-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-              <div className="flex items-center gap-4 sm:gap-6">
-                <div className="relative">
-                  <div className="skeleton-avatar w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-2xl"></div>
-                </div>
-                <div className="animate-fade-in-up min-w-0 flex-1">
-                  <div className="skeleton-text w-48 h-6 sm:w-56 sm:h-7 lg:w-64 lg:h-8 mb-2"></div>
-                  <div className="skeleton-text w-64 h-4 sm:w-72 sm:h-5 lg:w-80 lg:h-6"></div>
-                </div>
-              </div>
-              <div className="skeleton-button w-12 h-12 rounded-2xl"></div>
+      <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="skeleton-text mb-2 h-8 w-40 rounded"></div>
+              <div className="skeleton-text h-4 w-64 rounded"></div>
             </div>
+            <div className="skeleton-button h-10 w-10 rounded-lg"></div>
           </div>
         </div>
 
-        {/* Navigation Tabs Skeleton */}
-        <div className="relative mx-4 mb-8 overflow-hidden bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl">
-          <div className="relative p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide">
-              <div className="flex gap-2 sm:gap-3 min-w-max">
-                <div className="skeleton-button w-24 h-10 rounded-2xl"></div>
-                <div className="skeleton-button w-24 h-10 rounded-2xl"></div>
-              </div>
-              <div className="hidden sm:block h-8 w-px bg-gray-200 mx-2"></div>
-              <div className="flex gap-2 sm:gap-3 min-w-max">
-                <div className="skeleton-button w-20 h-10 rounded-2xl"></div>
-                <div className="skeleton-button w-20 h-10 rounded-2xl"></div>
-                <div className="skeleton-button w-20 h-10 rounded-2xl"></div>
-              </div>
-            </div>
+        <div className="bg-white border-b border-gray-200 px-6">
+          <div className="flex items-center gap-4 py-3">
+            <div className="skeleton-button h-10 w-24 rounded-lg"></div>
+            <div className="skeleton-button h-10 w-24 rounded-lg"></div>
+            <div className="skeleton-button h-10 w-24 rounded-lg"></div>
           </div>
         </div>
 
-        {/* Course Grid Skeleton with Staggered Animation */}
-        <div className="w-full flex justify-center">
-          <div className="masonry-grid w-full max-w-none">
-            {[...Array(6)].map((_, index) => {
-              // Simulate different card priorities for variety
-              const priorities = ['normal', 'normal', 'high', 'normal', 'featured', 'normal'];
-              const priority = priorities[index % priorities.length];
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-2">
+          <div className="mb-6 space-y-3">
+            <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="h-6 w-6 rounded bg-blue-200"></div>
+                <div className="flex-1">
+                  <div className="skeleton-text mb-2 h-4 w-40 rounded bg-blue-200"></div>
+                  <div className="skeleton-text h-3 w-72 rounded bg-blue-200"></div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              return (
-                <CourseCardSkeleton
-                  key={`skeleton-${index}`}
-                  index={index}
-                  priority={priority}
-                />
-              );
-            })}
+          <div className="relative mb-8 ml-4 mr-4">
+            <div className="w-full transition-all duration-500 ease-in-out">
+              <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory custom-scrollbar">
+                {[...Array(5)].map((_, index) => (
+                  <CourseCardSkeleton
+                    key={`skeleton-${index}`}
+                    index={index}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
