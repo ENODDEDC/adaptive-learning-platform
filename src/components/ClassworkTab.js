@@ -108,7 +108,7 @@ const removeContextMenu = () => {
 };
 
 // Form Thumbnail Component with Live Preview
-const FormThumbnail = ({ form, onPreview, isInstructor, onEdit }) => {
+const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = false }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
@@ -140,7 +140,7 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit }) => {
       className="w-full group"
     >
       {/* Form Thumbnail Container */}
-      <div className="relative w-full aspect-[4/3] bg-white border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 mb-3">
+      <div className={`relative w-full ${compactMode ? 'h-40 mb-2' : 'aspect-[4/3] mb-3'} bg-white border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
         {/* Loading State */}
         {isLoading && (
           <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 flex flex-col items-center justify-center z-10">
@@ -207,21 +207,22 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit }) => {
         </div>
       </div>
 
-      {/* Form Info */}
-      <div className="text-left w-full min-w-0">
-        <p className="font-medium text-gray-900 text-sm truncate group-hover:text-purple-600 transition-colors" title={form.title}>
-          {form.title || 'Untitled Form'}
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          Interactive Form
-        </p>
-      </div>
+      {!compactMode && (
+        <div className="text-left w-full min-w-0">
+          <p className="font-medium text-gray-900 text-sm truncate group-hover:text-purple-600 transition-colors" title={form.title}>
+            {form.title || 'Untitled Form'}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Interactive Form
+          </p>
+        </div>
+      )}
     </button>
   );
 };
 
 // Stable Thumbnail Component that prevents re-renders from parent state changes
-const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
+const StableThumbnailComponent = React.memo(({ attachment, onPreview, compactMode = false }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(
     attachment.thumbnailUrl || thumbnailCache.getThumbnailUrl(attachment._id)
   );
@@ -409,7 +410,7 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
       className="w-full group"
     >
       {/* PDF Thumbnail Container */}
-      <div className="relative w-full aspect-[4/3] bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 mb-3">
+      <div className={`relative w-full ${compactMode ? 'h-40 mb-2' : 'aspect-[4/3] mb-3'} bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
         {isGeneratingThumbnail ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
             <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
@@ -467,15 +468,16 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
         )}
       </div>
 
-      {/* File Info */}
-      <div className="text-left w-full min-w-0">
-        <p className="font-medium text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors" title={fileName}>
-          {fileName}
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : 'PDF Document'}
-        </p>
-      </div>
+      {!compactMode && (
+        <div className="text-left w-full min-w-0">
+          <p className="font-medium text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors" title={fileName}>
+            {fileName}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : 'PDF Document'}
+          </p>
+        </div>
+      )}
     </button>
   );
 }, (prevProps, nextProps) => {
@@ -485,9 +487,10 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview }) => {
     prevProps.attachment.thumbnailUrl === nextProps.attachment.thumbnailUrl
   );
 });
+StableThumbnailComponent.displayName = 'StableThumbnailComponent';
 
 // Enhanced PDF/DOCX Thumbnail Component for Grid View (Stable)
-const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
+const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview, compactMode = false }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(
     attachment.thumbnailUrl || thumbnailCache.getThumbnailUrl(attachment._id)
   );
@@ -691,8 +694,8 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
       </div>
 
       {/* PDF Thumbnail */}
-      <div className="p-4">
-        <div className="relative w-full aspect-[4/3] bg-white rounded-lg border-2 border-gray-200 shadow-inner overflow-hidden mb-3">
+      <div className={compactMode ? 'p-3' : 'p-4'}>
+        <div className={`relative w-full ${compactMode ? 'h-40 mb-2' : 'aspect-[4/3] mb-3'} bg-white rounded-lg border-2 border-gray-200 shadow-inner overflow-hidden`}>
           {isGeneratingThumbnail ? (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
               <div className={`w-8 h-8 border-3 border-t-transparent rounded-full animate-spin mb-2 ${isPdfFile(attachment) ? 'border-red-500' :
@@ -773,6 +776,7 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview }) => {
     prevProps.attachment.thumbnailUrl === nextProps.attachment.thumbnailUrl
   );
 });
+EnhancedPDFFileThumbnail.displayName = 'EnhancedPDFFileThumbnail';
 
 const ClassworkTab = ({
   courseDetails,
@@ -1433,11 +1437,11 @@ const ClassworkTab = ({
 
     const urgencyConfig = getUrgencyConfig();
     const gridCardClass = compactMode
-      ? 'group relative w-[320px] min-w-[320px] max-w-[320px] h-full snap-start flex-shrink-0 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.01]'
+      ? 'group relative w-[264px] min-w-[264px] max-w-[264px] h-[328px] self-start snap-start flex-shrink-0 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.01] flex flex-col'
       : 'group relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px]';
-    const gridHeaderClass = compactMode ? 'p-4 pb-3' : 'p-6 pb-4';
-    const gridBodyClass = compactMode ? 'flex-1 px-4' : 'flex-1 px-6';
-    const gridFooterClass = compactMode ? 'px-4 py-3 bg-gray-50 border-t border-gray-100' : 'px-6 py-4 bg-gray-50 border-t border-gray-100';
+    const gridHeaderClass = compactMode ? 'p-2.5 pb-2' : 'p-6 pb-4';
+    const gridBodyClass = compactMode ? 'flex-1 px-3' : 'flex-1 px-6';
+    const gridFooterClass = compactMode ? 'px-3 py-1.5 bg-gray-50 border-t border-gray-100' : 'px-6 py-4 bg-gray-50 border-t border-gray-100';
 
     // Render different layouts based on view mode
     if (viewMode === 'grid') {
@@ -1449,7 +1453,7 @@ const ClassworkTab = ({
           {/* Clean Header */}
           <div className={gridHeaderClass}>
             {/* Header with Type and Date */}
-            <div className={`flex items-center justify-between ${compactMode ? 'mb-3' : 'mb-4'}`}>
+            <div className={`flex items-center justify-between ${compactMode ? 'mb-2' : 'mb-4'}`}>
               <div className={`flex items-center ${compactMode ? 'gap-2.5' : 'gap-3'}`}>
                 <div className={`${compactMode ? 'w-8 h-8 rounded-lg' : 'w-10 h-10 rounded-xl'} bg-gray-100 flex items-center justify-center`}>
                   <span className={compactMode ? 'text-base' : 'text-lg'}>📄</span>
@@ -1460,7 +1464,7 @@ const ClassworkTab = ({
                   </span>
                 </div>
               </div>
-              <div className="text-xs text-gray-500 flex items-center gap-1">
+              <div className={`${compactMode ? 'text-[11px]' : 'text-xs'} text-gray-500 flex items-center gap-1`}>
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -1512,7 +1516,7 @@ const ClassworkTab = ({
             )}
 
             {/* Title */}
-            <h3 className={`${compactMode ? 'text-base mb-2.5' : 'text-lg mb-3'} font-bold text-gray-900 line-clamp-2 leading-tight`}>
+            <h3 className={`${compactMode ? 'text-sm mb-1.5' : 'text-lg mb-3'} font-bold text-gray-900 line-clamp-2 leading-tight`}>
               {item.title}
             </h3>
           </div>
@@ -1522,16 +1526,17 @@ const ClassworkTab = ({
           <div className={gridBodyClass}>
             {/* Form Thumbnail or Attachments */}
             {itemType === 'form' ? (
-              <div className={compactMode ? 'mb-3' : 'mb-4'}>
+              <div className={compactMode ? 'mb-2' : 'mb-4'}>
                 <FormThumbnail
                   form={item}
                   onPreview={onOpenContent}
                   isInstructor={isInstructor}
                   onEdit={onEdit}
+                  compactMode={compactMode}
                 />
               </div>
             ) : Array.isArray(item.attachments) && item.attachments.length > 0 && (
-              <div className={compactMode ? 'mb-3' : 'mb-4'}>
+              <div className={compactMode ? 'mb-2' : 'mb-4'}>
                 {item.attachments.slice(0, 1).map((attachment, index) => {
                   // Enhanced DOCX thumbnail with AI narrator for DOCX files
                   if (attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
@@ -1542,6 +1547,7 @@ const ClassworkTab = ({
                         key={attachment._id || index}
                         attachment={attachment}
                         onPreview={onOpenContent}
+                        compactMode={compactMode}
                       />
                     );
                   }
@@ -1554,6 +1560,7 @@ const ClassworkTab = ({
                         key={attachment._id || index}
                         attachment={attachment}
                         onPreview={onOpenContent}
+                        compactMode={compactMode}
                       />
                     );
                   }
@@ -1577,7 +1584,7 @@ const ClassworkTab = ({
                         </svg>
                       </div>
                       <div className="flex-1 text-left min-w-0">
-                        <p className="font-medium text-gray-900 text-sm truncate" title={fileName}>{fileName}</p>
+                        <p className={`font-medium text-gray-900 text-sm ${compactMode ? 'line-clamp-1 min-h-[20px]' : 'truncate'} `} title={fileName}>{fileName}</p>
                         <p className="text-xs text-gray-500">{extension}</p>
                       </div>
                       <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1587,7 +1594,7 @@ const ClassworkTab = ({
                   );
                 })}
                 {item.attachments.length > 1 && (
-                  <div className="mt-2 text-center">
+                  <div className="mt-1 text-center">
                     <span className="text-xs text-gray-500">+{item.attachments.length - 1} more file{item.attachments.length > 2 ? 's' : ''}</span>
                   </div>
                 )}
@@ -1598,7 +1605,7 @@ const ClassworkTab = ({
           {/* Footer */}
           <div className={gridFooterClass}>
             <div className="flex items-center justify-between">
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 min-h-[16px]">
                 {item.attachments && item.attachments.length > 0 && `${item.attachments.length} file${item.attachments.length > 1 ? 's' : ''}`}
               </div>
 
@@ -1608,7 +1615,7 @@ const ClassworkTab = ({
                   e.stopPropagation();
                   handleAssignmentClick(item);
                 }}
-                className={`inline-flex items-center gap-1.5 ${compactMode ? 'px-3 py-1.5' : 'px-4 py-2'} text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-200`}
+                className={`inline-flex items-center gap-1.5 ${compactMode ? 'px-2.5 py-1.5' : 'px-4 py-2'} text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-200`}
               >
                 <span>View Details</span>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2603,24 +2610,24 @@ const ClassworkTab = ({
   }, [assignments, submissions, courseDetails._id]);
 
   return (
-    <div className={compactMode ? 'h-[calc(100vh-320px)] min-h-0 flex flex-col' : 'space-y-8'}>
+    <div className={compactMode ? 'h-[calc(100vh-270px)] min-h-0 flex flex-col' : 'space-y-8'}>
       {/* Context Menu now uses isolated DOM-based system */}
       {/* Enhanced Professional classwork management section */}
       <>
         {isInstructor && (
           <div className="bg-white border border-gray-200/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 relative">
-            <div className="px-8 py-6 border-b border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 leading-tight">Classwork</h2>
-                  <p className="text-sm font-medium text-gray-600 mt-1">Create and manage assignments, quizzes, and materials</p>
+                  <h2 className="text-lg font-bold text-gray-900 leading-tight">Classwork</h2>
+                  <p className="mt-0.5 text-xs font-medium text-gray-600">Create and manage assignments, quizzes, and materials</p>
                 </div>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-3 px-6 py-3 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-600 rounded-xl hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg shadow-blue-500/25"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 border border-blue-600 rounded-xl hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg shadow-blue-500/25"
                   onClick={() => setIsCreateClassworkModalOpen(true)}
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                   Create
@@ -2632,13 +2639,13 @@ const ClassworkTab = ({
 
         <div className={`${compactMode ? 'flex-1 min-h-0 flex flex-col' : ''} bg-white border border-gray-200/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden`}>
           {/* Enhanced Header */}
-          <div className={`${compactMode ? 'px-5 py-4' : 'px-8 py-5'} border-b border-gray-100`}>
+          <div className={`${compactMode ? 'px-4 py-3' : 'px-8 py-5'} border-b border-gray-100`}>
             <div className={`flex flex-col ${compactMode ? 'gap-3' : 'gap-4'}`}>
               {/* Minimal Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className={`${compactMode ? 'text-base' : 'text-lg'} font-semibold text-gray-900`}>Activities</h2>
-                  <p className="text-sm text-gray-500 mt-0.5">All classwork and assignments</p>
+                  <h2 className={`${compactMode ? 'text-[15px]' : 'text-lg'} font-semibold text-gray-900`}>Activities</h2>
+                  <p className={`${compactMode ? 'text-xs' : 'text-sm'} text-gray-500 mt-0.5`}>All classwork and assignments</p>
                 </div>
 
                 {/* Essential Controls Only */}
@@ -2655,7 +2662,7 @@ const ClassworkTab = ({
                       placeholder="Search assignments, forms, and materials..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className={`${compactMode ? 'pl-9 pr-3 py-2 text-sm w-56 rounded-lg' : 'pl-10 pr-4 py-2.5 text-sm w-64 rounded-xl'} border border-gray-200 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400`}
+                      className={`${compactMode ? 'pl-8 pr-3 py-1.5 text-sm w-52 rounded-lg' : 'pl-10 pr-4 py-2.5 text-sm w-64 rounded-xl'} border border-gray-200 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all duration-200 shadow-sm hover:shadow-md placeholder-gray-400`}
                     />
                     {searchQuery && (
                       <button
@@ -2675,7 +2682,7 @@ const ClassworkTab = ({
 
             </div>
           </div>
-          <div className={`${compactMode ? 'flex-1 min-h-0 p-4 overflow-hidden' : 'p-10'} smooth-layout-change ${isTransitioning ? 'layout-transition-active' : ''}`}>
+          <div className={`${compactMode ? 'flex-1 min-h-0 p-3 overflow-hidden' : 'p-10'} smooth-layout-change ${isTransitioning ? 'layout-transition-active' : ''}`}>
             {(loading && !isDragOperationInProgress) ? (
               <div className="space-y-6">
                 {[...Array(3)].map((_, i) => (
@@ -2798,7 +2805,7 @@ const ClassworkTab = ({
                 case 'grid':
                   return compactMode ? (
                     <div
-                      className={`flex h-full w-full max-w-full items-stretch gap-4 overflow-x-auto overflow-y-hidden pb-1 snap-x snap-mandatory layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}
+                      className={`flex w-full max-w-full items-start gap-4 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}
                       style={{
                         scrollbarWidth: 'thin',
                         msOverflowStyle: 'auto',

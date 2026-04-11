@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import AITutorModal from './AITutorModal';
 
-const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "" }) => {
+const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "", compactMode = false }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [showAITutor, setShowAITutor] = useState(false);
@@ -123,11 +123,11 @@ const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "" }) => {
     <>
       <div className={`w-full group cursor-pointer ${className}`}>
         {/* DOCX Thumbnail Container */}
-        <div className="relative w-full aspect-[4/3] bg-white border-2 border-blue-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 mb-3">
+        <div className={`relative w-full ${compactMode ? 'h-40 mb-2' : 'aspect-[4/3] mb-3'} bg-white border-2 border-blue-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300`}>
           {isGeneratingThumbnail ? (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-              <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-              <span className="text-sm text-blue-700 font-medium">Generating preview...</span>
+              <div className={`${compactMode ? 'w-6 h-6 mb-2 border-2' : 'w-8 h-8 mb-3 border-3'} border-blue-500 border-t-transparent rounded-full animate-spin`}></div>
+              <span className={`${compactMode ? 'text-xs' : 'text-sm'} text-blue-700 font-medium`}>Generating preview...</span>
             </div>
           ) : thumbnailUrl ? (
             <>
@@ -156,10 +156,10 @@ const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "" }) => {
                   {/* Preview Button */}
                   <button
                     onClick={handlePreviewClick}
-                    className="bg-white/90 backdrop-blur-sm rounded-full p-3 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg hover:bg-white"
+                    className={`${compactMode ? 'p-2' : 'p-3'} bg-white/90 backdrop-blur-sm rounded-full transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg hover:bg-white`}
                     title="Preview Document"
                   >
-                    <EyeIcon className="w-6 h-6 text-blue-600" />
+                    <EyeIcon className={`${compactMode ? 'w-5 h-5' : 'w-6 h-6'} text-blue-600`} />
                   </button>
 
 
@@ -168,25 +168,25 @@ const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "" }) => {
             </>
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-              <DocumentTextIcon className="w-12 h-12 text-blue-400 mb-3" />
-              <span className="text-sm text-blue-600 font-medium">DOCX Document</span>
-              <span className="text-xs text-blue-500 mt-1">Click to preview</span>
+              <DocumentTextIcon className={`${compactMode ? 'w-8 h-8 mb-2' : 'w-12 h-12 mb-3'} text-blue-400`} />
+              <span className={`${compactMode ? 'text-xs' : 'text-sm'} text-blue-600 font-medium`}>DOCX Document</span>
+              {!compactMode && <span className="text-xs text-blue-500 mt-1">Click to preview</span>}
             </div>
           )}
         </div>
 
-        {/* File Info */}
-        <div className="text-left w-full min-w-0">
-          <p className="font-medium text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors" title={fileName}>
-            {fileName}
-          </p>
-          <div className="flex items-center justify-between mt-1">
-            <p className="text-xs text-gray-500">
-              {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : 'Word Document'}
+        {!compactMode && (
+          <div className="text-left w-full min-w-0">
+            <p className={`font-medium text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors`} title={fileName}>
+              {fileName}
             </p>
-
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-xs text-gray-500">
+                {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : 'Word Document'}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Extraction Error */}
         {extractionError && (
