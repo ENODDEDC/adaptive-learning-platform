@@ -1008,6 +1008,11 @@ const CourseDetailPage = ({
     !documentPanelOpen &&
     !isCreateClassworkModalOpen;
 
+  const showRightSidebar =
+    !documentPanelOpen &&
+    !isCreateClassworkModalOpen &&
+    (!isInstructor || activeTab === 'stream' || activeTab === 'classwork');
+
   const now = new Date();
   const upcomingAssignments = (assignments || [])
     .filter((assignment) => assignment?.dueDate)
@@ -2016,7 +2021,7 @@ const CourseDetailPage = ({
           )}
 
           {/* Right Sidebar - Upcoming Tasks - Hidden when document panel or create classwork panel is open */}
-          {!documentPanelOpen && !isCreateClassworkModalOpen && (
+          {showRightSidebar && (
             <div data-tour="upcoming-tasks" className={`flex-shrink-0 bg-white border border-gray-200/60 rounded-xl shadow-sm min-w-[260px] max-w-[300px] w-full h-fit sticky top-6 overflow-hidden transition-all duration-300 hover:shadow-md ${upcomingTasksExpanded ? 'opacity-100 max-h-screen' : 'opacity-60 max-h-16 hover:opacity-100'
               }`}>
               <div className="px-4 py-3.5 border-b border-gray-200/60 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
