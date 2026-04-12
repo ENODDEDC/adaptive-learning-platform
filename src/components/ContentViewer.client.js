@@ -707,7 +707,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
             
             console.log('🔍 Converting Backblaze B2 Word document with key:', extractedKey);
             
-            response = await fetch('/api/files/convert', {
+            response = await fetch('/api/docx-extract', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -760,7 +760,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
               console.error('🔍 Could not parse success response as JSON (attachment):', jsonError);
               throw new Error('Invalid JSON response from conversion API');
             }
-            const html = result.html;
+            const html = result.html || result.content?.html;
             
             if (html) {
               // Create a temporary element to extract headings from the HTML
@@ -1115,7 +1115,7 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
             
             console.log('🔍 Converting Backblaze B2 Word document with key (content):', extractedKey);
             
-            response = await fetch('/api/files/convert', {
+            response = await fetch('/api/docx-extract', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -1168,7 +1168,7 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
               console.error('🔍 Could not parse success response as JSON:', jsonError);
               throw new Error('Invalid JSON response from conversion API');
             }
-            const html = result.html;
+            const html = result.html || result.content?.html;
             
             if (html) {
               // Create a temporary element to extract headings from the HTML

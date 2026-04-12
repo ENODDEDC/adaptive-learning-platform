@@ -12,6 +12,7 @@ const execAsync = promisify(exec);
 export async function POST(request) {
   let tempInputFile = null;
   let tempOutputFile = null;
+  let fileKey = null;
 
   console.log('🚀 DOCX Convert API route hit!');
   
@@ -43,12 +44,23 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Invalid JSON in request body' }, { status: 400 });
     }
 
-    const { fileKey } = requestBody;
+    if (typeof requestBody === 'string') {
+      fileKey = requestBody;
+    } else {
+      fileKey = requestBody?.fileKey || requestBody?.filePath || requestBody?.key || null;
+    }
     console.log('🔍 Converting file with key:', fileKey);
     console.log('🔍 File key type:', typeof fileKey);
     console.log('🔍 File key length:', fileKey?.length);
     console.log('🔍 File key value (raw):', JSON.stringify(fileKey));
     
+    if (typeof fileKey === 'string') {
+      fileKey = fileKey.trim();
+      if (fileKey.startsWith('/api/files/')) {
+        fileKey = fileKey.replace('/api/files/', '');
+      }
+    }
+
     if (!fileKey) {
       console.error('❌ No file key provided');
       return NextResponse.json({ 
