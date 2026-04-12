@@ -2788,14 +2788,15 @@ const ClassworkTab = ({
               switch (viewMode) {
                 case 'grid':
                   return compactMode ? (
-                    <div
-                      className={`flex w-full max-w-full ${isInstructor ? 'items-start' : 'h-full items-stretch'} gap-4 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}
-                      style={{
-                        scrollbarWidth: 'thin',
-                        msOverflowStyle: 'auto',
-                      }}
-                    >
-                      {filtered.map((item) => {
+                    <div className="relative h-full">
+                      <div
+                        className={`flex w-full max-w-full ${isInstructor ? 'items-start' : 'h-full items-stretch'} gap-4 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}
+                        style={{
+                          scrollbarWidth: 'thin',
+                          msOverflowStyle: 'auto',
+                        }}
+                      >
+                        {filtered.map((item) => {
                         // Find submission for this assignment - check both assignment and assignmentId fields
                         const itemSubmission = item.itemType === 'assignment'
                           ? submissions.find(s => {
@@ -2817,28 +2818,37 @@ const ClassworkTab = ({
                           })));
                         }
 
-                        return (
-                          <EnhancedActivityCard
-                            key={item._id}
-                            assignment={item.itemType !== 'form' ? item : null}
-                            form={item.itemType === 'form' ? item : null}
-                            submission={itemSubmission}
-                            isInstructor={isInstructor}
-                            onEdit={() => {
-                              if (item.itemType === 'form') {
-                                handleEditForm(item);
-                              } else {
-                                setEditingClasswork(item);
-                                setIsCreateClassworkModalOpen(true);
-                              }
-                            }}
-                            onDelete={() => handleDeleteClasswork(item._id)}
-                            onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
-                            onOpenContent={onOpenContent}
-                            viewMode="grid"
-                          />
-                        );
-                      })}
+                          return (
+                            <EnhancedActivityCard
+                              key={item._id}
+                              assignment={item.itemType !== 'form' ? item : null}
+                              form={item.itemType === 'form' ? item : null}
+                              submission={itemSubmission}
+                              isInstructor={isInstructor}
+                              onEdit={() => {
+                                if (item.itemType === 'form') {
+                                  handleEditForm(item);
+                                } else {
+                                  setEditingClasswork(item);
+                                  setIsCreateClassworkModalOpen(true);
+                                }
+                              }}
+                              onDelete={() => handleDeleteClasswork(item._id)}
+                              onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
+                              onOpenContent={onOpenContent}
+                              viewMode="grid"
+                            />
+                          );
+                        })}
+                      </div>
+                      {filtered.length > 3 && (
+                        <>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white via-white/95 to-transparent" />
+                          <div className="pointer-events-none absolute bottom-5 right-3 rounded-full border border-blue-100 bg-white/95 px-2.5 py-1 text-[11px] font-medium text-blue-600 shadow-sm backdrop-blur-sm">
+                            Scroll for more
+                          </div>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12 layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}>
