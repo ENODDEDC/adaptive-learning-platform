@@ -882,7 +882,11 @@ const ClassworkTab = ({
       left: direction === 'left' ? -lane.clientWidth * 0.9 : lane.clientWidth * 0.9,
       behavior: 'smooth'
     });
-  }, []);
+
+    window.setTimeout(() => {
+      updateCompactLaneScrollState();
+    }, 250);
+  }, [updateCompactLaneScrollState]);
 
   useEffect(() => {
     if (!compactMode || viewMode !== 'grid') return;
@@ -2830,16 +2834,19 @@ const ClassworkTab = ({
                   return compactMode ? (
                     <div className="relative h-full">
                       {canScrollLeft && (
-                        <button
-                          type="button"
-                          onClick={() => scrollCompactLane('left')}
-                          className="absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full border border-gray-200 bg-white/95 p-2 text-gray-700 shadow-md backdrop-blur-sm transition hover:bg-white hover:shadow-lg"
-                          aria-label="Scroll left"
-                        >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </button>
+                        <>
+                          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-white via-white/95 to-transparent" />
+                          <button
+                            type="button"
+                            onClick={() => scrollCompactLane('left')}
+                            className="absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full border border-gray-200 bg-white/95 p-2 text-gray-700 shadow-md backdrop-blur-sm transition hover:bg-white hover:shadow-lg"
+                            aria-label="Scroll left"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                        </>
                       )}
                       <div
                         ref={compactLaneRef}
