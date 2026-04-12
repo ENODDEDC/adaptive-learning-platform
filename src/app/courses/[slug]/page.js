@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import dynamic from 'next/dynamic';
 import StreamTab from '@/components/StreamTab';
@@ -23,15 +23,8 @@ const CourseDetailPage = ({
   sidebarCollapsed: propSidebarCollapsed,
   setSidebarCollapsed: propSetSidebarCollapsed
 }) => {
-  console.log('🔍 DEBUG: CourseDetailPage component is loading...');
-  console.log('🔍 DEBUG: Current timestamp:', new Date().toISOString());
-  console.log('🔍 DEBUG: Is server-side rendering:', typeof window === 'undefined');
-  console.log('🔍 DEBUG: Window object available:', typeof window !== 'undefined');
-  console.log('🔍 DEBUG: Navigator available:', typeof navigator !== 'undefined');
-  console.log('🔍 DEBUG: localStorage available:', typeof localStorage !== 'undefined');
 
   const { slug } = React.use(params); // slug is now courseId
-  console.log('🔍 DEBUG: Extracted slug from params:', slug);
 
   const [activeTab, setActiveTab] = useState('stream'); // Default to 'Stream' tab
   const [user, setUser] = useState(null);
@@ -41,7 +34,6 @@ const CourseDetailPage = ({
   const [error, setErrorState] = useState('');
 
   const setError = (message) => {
-    console.log('🔍 DEBUG: setError called with:', message);
     setErrorState(message);
   };
   const [teachers, setTeachers] = useState([]);
@@ -84,9 +76,7 @@ const CourseDetailPage = ({
     if (documentPanelOpen) {
       // Dispatch event to collapse main platform sidebar
       if (typeof window !== 'undefined') {
-        console.log('🔍 SIDEBAR: Dispatching collapseMainSidebar event');
         window.dispatchEvent(new CustomEvent('collapseMainSidebar'));
-        console.log('🔍 SIDEBAR: Event dispatched successfully');
       }
     }
   }, [documentPanelOpen]);
@@ -102,6 +92,8 @@ const CourseDetailPage = ({
     averageGrade: null,
     submissionRate: null
   });
+
+  const fetchedSubmissionsCourseRef = useRef(null);
 
   // Members Tab State
   const [searchQuery, setSearchQuery] = useState('');
@@ -156,45 +148,31 @@ const CourseDetailPage = ({
   }, []);
 
   const fetchCourseDetails = useCallback(async () => {
-    console.log('🔍 DEBUG: fetchCourseDetails function called');
-    console.log('🔍 DEBUG: Fetching course details for slug:', slug);
     setLoading(true);
     setError('');
     try {
       const res = await fetch(`/api/courses/${slug}`); // No need for manual token header, cookie is sent automatically
-      console.log('🔍 DEBUG: fetchCourseDetails API response status:', res.status);
 
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
       }
 
       const data = await res.json();
-      console.log('🔍 DEBUG: fetchCourseDetails received data:', data);
-      console.log('🔍 DEBUG: Course details:', data.course);
-      console.log('🔍 DEBUG: Course createdBy field:', data.course.createdBy);
-      console.log('🔍 DEBUG: Course createdBy type:', typeof data.course.createdBy);
       setCourseDetails(data.course);
-      console.log('🔍 DEBUG: fetchCourseDetails completed successfully');
     } catch (err) {
       console.error('🔍 DEBUG: Failed to fetch course details:', err);
       setError(err.message);
     } finally {
-      console.log('🔍 DEBUG: fetchCourseDetails finally block - setting loading to false');
       setLoading(false);
     }
   }, [slug]);
 
   const fetchCurrentUser = useCallback(async () => {
     try {
-      console.log('🔍 DEBUG: Fetching current user profile...');
       const res = await fetch('/api/auth/profile');
-      console.log('🔍 DEBUG: User profile API response status:', res.status);
 
       if (res.ok) {
         const userData = await res.json();
-        console.log('🔍 DEBUG: User profile data received:', userData);
-        console.log('🔍 DEBUG: User ID:', userData._id || userData.id);
-        console.log('🔍 DEBUG: User name:', userData.name || userData.fullname);
         setUser(userData);
       } else {
         console.error('🔍 DEBUG: Failed to fetch user profile, status:', res.status);
@@ -205,7 +183,6 @@ const CourseDetailPage = ({
   }, []);
 
   useEffect(() => {
-    console.log('🔍 DEBUG: useEffect for fetchCourseDetails triggered');
     fetchCourseDetails();
     fetchCurrentUser();
   }, [fetchCourseDetails, fetchCurrentUser]);
@@ -215,7 +192,6 @@ const CourseDetailPage = ({
     if (courseDetails && user) {
       // Handle case where createdBy might be null
       if (!courseDetails.createdBy) {
-        console.log('🔍 DEBUG: Course has no creator, user is not instructor');
         setIsInstructor(false);
         return;
       }
@@ -225,45 +201,20 @@ const CourseDetailPage = ({
       const currentUserId = user._id || user.id;
 
       const userIsInstructor = courseCreatorId === currentUserId;
-      console.log('🔍 DEBUG: User is instructor:', userIsInstructor);
-      console.log('🔍 DEBUG: Course created by:', courseCreatorId);
-      console.log('🔍 DEBUG: Current user ID:', currentUserId);
       setIsInstructor(userIsInstructor);
     }
   }, [courseDetails, user]);
 
-  // Hydration tracking
-  useEffect(() => {
-    console.log('🔍 HYDRATION: Component mounted on client');
-    console.log('🔍 HYDRATION: Client timestamp:', new Date().toISOString());
-    console.log('🔍 HYDRATION: Window available:', typeof window !== 'undefined');
-    console.log('🔍 HYDRATION: Navigator available:', typeof navigator !== 'undefined');
-    console.log('🔍 HYDRATION: localStorage available:', typeof localStorage !== 'undefined');
-
-    // Test navigator.clipboard access
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      console.log('🔍 HYDRATION: Clipboard API available');
-    } else {
-      console.log('🔍 HYDRATION: Clipboard API NOT available');
-    }
-  }, []);
-
   const fetchStreamItems = useCallback(async () => {
-    console.log('🔍 DEBUG: fetchStreamItems called');
     if (!courseDetails) {
-      console.log('🔍 DEBUG: No courseDetails, returning early');
       return;
     }
 
     try {
-      console.log('🔍 DEBUG: Fetching announcements and classwork for course:', courseDetails?._id);
       const [announcementsRes, classworkRes] = await Promise.all([
         fetch(`/api/courses/${courseDetails._id}/announcements`), // No need for manual token header
         fetch(`/api/courses/${courseDetails._id}/classwork`), // No need for manual token header
       ]);
-
-      console.log('🔍 DEBUG: Announcements response status:', announcementsRes.status);
-      console.log('🔍 DEBUG: Classwork response status:', classworkRes.status);
 
       if (!announcementsRes.ok) {
         throw new Error(`Error fetching announcements: ${announcementsRes.status} ${announcementsRes.statusText}`);
@@ -298,8 +249,6 @@ const CourseDetailPage = ({
         ...announcementsData.announcements.map(item => ({ ...item, type: 'announcement' })),
         ...classworkData.classwork.map(item => ({ ...item, type: item.type || 'assignment' })),
       ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by creation date, newest first
-
-      console.log('🔍 DEBUG: Combined items count:', combinedItems.length);
       console.log('🔍 DEBUG: Combined items details:', combinedItems.map(item => ({
         id: item._id,
         type: item.type,
@@ -311,7 +260,6 @@ const CourseDetailPage = ({
       // Don't fetch comments upfront to improve performance - lazy load them when needed
       setStreamItems(combinedItems.map(item => ({ ...item, comments: [] })));
       setItemComments({}); // Clear comments cache
-      console.log('🔍 DEBUG: fetchStreamItems completed successfully - streamItems updated');
     } catch (err) {
       console.error('🔍 DEBUG: Failed to fetch stream items:', err);
       setError(err.message);
@@ -319,56 +267,17 @@ const CourseDetailPage = ({
   }, [courseDetails]);
 
   useEffect(() => {
-    console.log('🔍 DEBUG: useEffect for fetchStreamItems triggered');
-    console.log('🔍 DEBUG: courseDetails available:', !!courseDetails);
     if (courseDetails) {
       fetchStreamItems();
     }
   }, [courseDetails, fetchStreamItems]);
 
-  // Determine if current user is the instructor (course creator)
-  useEffect(() => {
-    if (courseDetails && user) {
-      // Handle case where createdBy might be null
-      if (!courseDetails.createdBy) {
-        console.log('🔍 DEBUG: Course has no creator, user is not instructor');
-        setIsInstructor(false);
-        return;
-      }
-
-      // Handle both cases: createdBy as object with _id or direct ID string
-      const courseCreatorId = courseDetails.createdBy._id || courseDetails.createdBy;
-      const currentUserId = user._id || user.id;
-
-      const userIsInstructor = courseCreatorId === currentUserId;
-      console.log('🔍 DEBUG: User is instructor:', userIsInstructor);
-      console.log('🔍 DEBUG: Course created by:', courseCreatorId);
-      console.log('🔍 DEBUG: Current user ID:', currentUserId);
-      console.log('🔍 DEBUG: Course createdBy type:', typeof courseDetails.createdBy);
-      console.log('🔍 DEBUG: Course createdBy value:', courseDetails.createdBy);
-      setIsInstructor(userIsInstructor);
-    }
-  }, [courseDetails, user]);
-
   const handlePostAnnouncement = useCallback(async () => {
-    console.log('🔍 DEBUG: handlePostAnnouncement called');
-    console.log('🔍 DEBUG: newAnnouncementContent:', newAnnouncementContent);
-    console.log('🔍 DEBUG: newAnnouncementContent type:', typeof newAnnouncementContent);
-    console.log('🔍 DEBUG: newAnnouncementContent length:', newAnnouncementContent?.length);
-    console.log('🔍 DEBUG: newAnnouncementContent.trim():', newAnnouncementContent?.trim());
-    console.log('🔍 DEBUG: newAnnouncementContent.trim() length:', newAnnouncementContent?.trim()?.length);
-    console.log('🔍 DEBUG: courseDetails._id:', courseDetails?._id);
-    console.log('🔍 DEBUG: courseDetails exists:', !!courseDetails);
 
     if (!newAnnouncementContent?.trim() || !courseDetails?._id) {
-      console.log('🔍 DEBUG: Validation failed - content empty or no course');
-      console.log('🔍 DEBUG: !newAnnouncementContent?.trim():', !newAnnouncementContent?.trim());
-      console.log('🔍 DEBUG: !courseDetails?._id:', !courseDetails?._id);
       setError('Announcement content cannot be empty.');
       return;
     }
-
-    console.log('🔍 DEBUG: Starting announcement post...');
     try {
       const res = await fetch(`/api/courses/${courseDetails._id}/announcements`, {
         method: 'POST',
@@ -378,23 +287,13 @@ const CourseDetailPage = ({
         body: JSON.stringify({ content: newAnnouncementContent }),
       });
 
-      console.log('🔍 DEBUG: API response status:', res.status);
-      console.log('🔍 DEBUG: API response ok:', res.ok);
-
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
       }
 
       const responseData = await res.json();
-      console.log('🔍 DEBUG: API response data:', responseData);
-
-      console.log('🔍 DEBUG: Clearing announcement content...');
       setNewAnnouncementContent('');
-
-      console.log('🔍 DEBUG: Refreshing stream items...');
       fetchStreamItems(); // Refresh stream items
-
-      console.log('🔍 DEBUG: Announcement posted successfully!');
     } catch (err) {
       console.error('🔍 DEBUG: Failed to post announcement:', err);
       setError(err.message);
@@ -402,25 +301,13 @@ const CourseDetailPage = ({
   }, [newAnnouncementContent, courseDetails, fetchStreamItems]);
 
   const handlePostComment = useCallback(async (itemId, itemType) => {
-    console.log('🔍 DEBUG: handlePostComment called');
-    console.log('🔍 DEBUG: itemId:', itemId);
-    console.log('🔍 DEBUG: itemType:', itemType);
-    console.log('🔍 DEBUG: newCommentContent state:', newCommentContent);
-    console.log('🔍 DEBUG: newCommentContent[itemId]:', newCommentContent[itemId]);
 
     const content = newCommentContent[itemId]?.trim();
-    console.log('🔍 DEBUG: content after trim:', content);
-    console.log('🔍 DEBUG: content length:', content?.length);
 
     if (!content || !courseDetails?._id) {
-      console.log('🔍 DEBUG: Validation failed - content empty or no courseDetails');
-      console.log('🔍 DEBUG: !content:', !content);
-      console.log('🔍 DEBUG: !courseDetails?._id:', !courseDetails?._id);
       setError('Comment content cannot be empty.');
       return;
     }
-
-    console.log('🔍 DEBUG: Starting API call...');
     try {
       const res = await fetch(`/api/courses/${courseDetails._id}/${itemType}/${itemId}/comments`, {
         method: 'POST',
@@ -430,28 +317,16 @@ const CourseDetailPage = ({
         body: JSON.stringify({ content }),
       });
 
-      console.log('🔍 DEBUG: API response status:', res.status);
-      console.log('🔍 DEBUG: API response ok:', res.ok);
-
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
       }
 
       const responseData = await res.json();
-      console.log('🔍 DEBUG: API response data:', responseData);
-
-      console.log('🔍 DEBUG: Clearing comment content...');
       setNewCommentContent(prev => {
-        console.log('🔍 DEBUG: setNewCommentContent callback - prev state:', prev);
         const newState = { ...prev, [itemId]: '' };
-        console.log('🔍 DEBUG: setNewCommentContent callback - new state:', newState);
         return newState;
       });
-
-      console.log('🔍 DEBUG: Refreshing stream items...');
       fetchStreamItems(); // Refresh stream items to show new comment
-
-      console.log('🔍 DEBUG: Comment posted successfully!');
     } catch (err) {
       console.error('🔍 DEBUG: Failed to post comment:', err);
       setError(err.message);
@@ -545,15 +420,12 @@ const CourseDetailPage = ({
   }, [courseDetails, fetchAssignments, fetchPeople]);
 
   const calculateStatistics = useCallback((submissionsData) => {
-    console.log('ðŸ” SCORES: Calculating statistics for', submissionsData.length, 'submissions');
     
     // Calculate average grade
     const gradedSubmissions = submissionsData.filter(s => s.grade !== null && s.grade !== undefined);
     const averageGrade = gradedSubmissions.length > 0
       ? (gradedSubmissions.reduce((sum, s) => sum + s.grade, 0) / gradedSubmissions.length).toFixed(1)
       : null;
-    
-    console.log('ðŸ” SCORES: Graded submissions:', gradedSubmissions.length, 'Average grade:', averageGrade);
     
     // Calculate submission rate
     const submittedCount = submissionsData.filter(s => s.status === 'submitted').length;
@@ -562,29 +434,22 @@ const CourseDetailPage = ({
       ? Math.round((submittedCount / totalCount) * 100)
       : null;
     
-    console.log('ðŸ” SCORES: Submitted:', submittedCount, 'Total:', totalCount, 'Rate:', submissionRate + '%');
-    
     setStatistics({ averageGrade, submissionRate });
   }, []);
 
   const fetchScoresData = useCallback(async () => {
     if (!courseDetails?._id) return;
-    
-    console.log('🔍 SCORES: Fetching submissions for course:', courseDetails._id);
     setScoresLoading(true);
     setScoresError('');
     
     try {
       const res = await fetch(`/api/courses/${courseDetails._id}/submissions`);
       
-      console.log('🔍 SCORES: API response status:', res.status);
-      
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
       }
       
       const data = await res.json();
-      console.log('🔍 SCORES: Received submissions:', data.submissions?.length || 0);
       setSubmissions(data.submissions || []);
       calculateStatistics(data.submissions || []);
     } catch (err) {
@@ -596,15 +461,12 @@ const CourseDetailPage = ({
   }, [calculateStatistics, courseDetails]);
 
   function calculateStatisticsLegacy(submissionsData) {
-    console.log('🔍 SCORES: Calculating statistics for', submissionsData.length, 'submissions');
     
     // Calculate average grade
     const gradedSubmissions = submissionsData.filter(s => s.grade !== null && s.grade !== undefined);
     const averageGrade = gradedSubmissions.length > 0
       ? (gradedSubmissions.reduce((sum, s) => sum + s.grade, 0) / gradedSubmissions.length).toFixed(1)
       : null;
-    
-    console.log('🔍 SCORES: Graded submissions:', gradedSubmissions.length, 'Average grade:', averageGrade);
     
     // Calculate submission rate
     const submittedCount = submissionsData.filter(s => s.status === 'submitted').length;
@@ -613,25 +475,20 @@ const CourseDetailPage = ({
       ? Math.round((submittedCount / totalCount) * 100)
       : null;
     
-    console.log('🔍 SCORES: Submitted:', submittedCount, 'Total:', totalCount, 'Rate:', submissionRate + '%');
-    
     setStatistics({ averageGrade, submissionRate });
   }
 
   const handleRetryScores = useCallback(() => {
-    console.log('🔍 SCORES: Retrying to fetch scores data');
     fetchScoresData();
   }, [fetchScoresData]);
 
   const handleAssignmentFilterChange = useCallback((e) => {
     const value = e.target.value;
-    console.log('🔍 SCORES: Assignment filter changed to:', value);
     setAssignmentFilter(value);
   }, []);
 
   const handleSortOrderChange = useCallback((e) => {
     const value = e.target.value;
-    console.log('🔍 SCORES: Sort order changed to:', value);
     setSortOrder(value);
   }, []);
 
@@ -642,12 +499,10 @@ const CourseDetailPage = ({
   }, []);
 
   const handleAssignmentClick = useCallback((assignment) => {
-    console.log('🔍 SCORES: Assignment clicked:', assignment.title);
     setSelectedAssignment(assignment);
   }, []);
 
   const handleBackToAssignments = useCallback(() => {
-    console.log('🔍 SCORES: Going back to assignments list');
     setSelectedAssignment(null);
   }, []);
 
@@ -691,8 +546,6 @@ const CourseDetailPage = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    console.log('🔍 SCORES: Exported grades to CSV');
   }, [selectedAssignment, getAssignmentSubmissions]);
 
   // Calculate assignment statistics
@@ -724,7 +577,6 @@ const CourseDetailPage = ({
     
     try {
       setScoresLoading(true);
-      console.log('🔍 SCORES: Fetching submissions for course:', courseDetails._id);
       
       const res = await fetch(`/api/courses/${courseDetails._id}/submissions`);
       
@@ -734,7 +586,6 @@ const CourseDetailPage = ({
       
       const data = await res.json();
       const fetchedSubmissions = data.submissions || [];
-      console.log('🔍 SCORES: Fetched submissions:', fetchedSubmissions.length, 'items');
       setSubmissions(fetchedSubmissions);
       calculateStatistics(fetchedSubmissions);
       setScoresError('');
@@ -742,10 +593,15 @@ const CourseDetailPage = ({
       console.error('🔍 SCORES: Failed to fetch submissions:', err);
       setScoresError(err.message);
       setSubmissions([]);
+      fetchedSubmissionsCourseRef.current = null;
     } finally {
       setScoresLoading(false);
     }
   }, [calculateStatistics, courseDetails]);
+
+  useEffect(() => {
+    fetchedSubmissionsCourseRef.current = null;
+  }, [courseDetails?._id, isInstructor]);
 
   // Fetch submissions for instructor overview on course load, and for students when activity state needs it.
   useEffect(() => {
@@ -754,27 +610,24 @@ const CourseDetailPage = ({
     let shouldFetch = false;
     
     if (isInstructor && submissions.length === 0) {
-      console.log('🔍 SCORES: Fetching instructor submissions for teaching overview');
       shouldFetch = true;
     } else if (!isInstructor && user && (activeTab === 'classwork' || activeTab === 'stream') && submissions.length === 0) {
-      console.log('🔍 SCORES: Fetching student submissions for activity status');
       shouldFetch = true;
     }
     
-    if (shouldFetch) {
+    if (shouldFetch && fetchedSubmissionsCourseRef.current !== courseDetails._id) {
+      fetchedSubmissionsCourseRef.current = courseDetails._id;
       fetchSubmissionsData();
     }
   }, [activeTab, courseDetails, fetchSubmissionsData, isInstructor, scoresLoading, submissions.length, user]);
 
   // Filter and sort submissions
   useEffect(() => {
-    console.log('🔍 SCORES: Filtering and sorting submissions');
     let filtered = [...submissions];
     
     // Apply assignment type filter
     if (assignmentFilter !== 'all') {
       filtered = filtered.filter(s => s.assignmentId?.type === assignmentFilter);
-      console.log('🔍 SCORES: Filtered by type', assignmentFilter, ':', filtered.length, 'submissions');
     }
     
     // Apply sorting
@@ -798,8 +651,6 @@ const CourseDetailPage = ({
           return 0;
       }
     });
-    
-    console.log('🔍 SCORES: Sorted by', sortOrder, ':', filtered.length, 'submissions');
     setFilteredSubmissions(filtered);
   }, [submissions, assignmentFilter, sortOrder]);
 
@@ -2657,3 +2508,4 @@ const CourseDetailPage = ({
 };
 
 export default CourseDetailPage;
+

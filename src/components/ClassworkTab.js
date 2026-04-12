@@ -842,18 +842,8 @@ const ClassworkTab = ({
 
   // Sync submissions from props to local state
   useEffect(() => {
-    console.log('🔍 CLASSWORK: Submissions from props:', submissionsFromProps);
     if (submissionsFromProps && submissionsFromProps.length > 0) {
-      console.log('🔍 CLASSWORK: Syncing submissions from props:', submissionsFromProps.length, 'items');
-      console.log('🔍 CLASSWORK: Submission details:', submissionsFromProps.map(s => ({
-        id: s._id,
-        assignment: s.assignment || s.assignmentId?._id,
-        status: s.status,
-        grade: s.grade
-      })));
       setSubmissions(submissionsFromProps);
-    } else {
-      console.log('🔍 CLASSWORK: No submissions from props or empty array');
     }
   }, [submissionsFromProps]);
 
@@ -2273,9 +2263,7 @@ const ClassworkTab = ({
   };
 
   const fetchAssignments = useCallback(async (isDragOperation = false) => {
-    console.log('🔍 CLASSWORK: fetchAssignments called with courseDetails:', courseDetails?._id);
     if (!courseDetails) {
-      console.log('🔍 CLASSWORK: No courseDetails available, returning early');
       return;
     }
 
@@ -2315,8 +2303,6 @@ const ClassworkTab = ({
           return aUrgency - bUrgency;
         });
       }
-
-      console.log('🔍 CLASSWORK: Fetched classwork:', classwork.length, 'items');
       console.log('🔍 CLASSWORK: First few items:', classwork.slice(0, 3).map(item => ({
         id: item._id,
         title: item.title,
@@ -2325,11 +2311,9 @@ const ClassworkTab = ({
       })));
 
       // Store ALL classwork items - they already have a 'type' field
-      console.log('🔍 CLASSWORK: Setting assignments state with', classwork.length, 'items');
       setAssignments(classwork);
 
       // Note: Submissions are synced from parent component via props in useEffect
-      console.log('🔍 CLASSWORK: Current submissions count:', submissions.length, 'items');
 
     } catch (err) {
       console.error('🔍 CLASSWORK: Failed to fetch assignments:', err);
@@ -2367,9 +2351,7 @@ const ClassworkTab = ({
   }, [courseDetails]);
 
   useEffect(() => {
-    console.log('🔍 CLASSWORK: useEffect triggered - courseDetails:', !!courseDetails, 'sortBy:', sortBy);
     if (courseDetails) {
-      console.log('🔍 CLASSWORK: useEffect calling fetchAssignments');
       fetchAssignments();
       fetchForms();
     }
@@ -2392,8 +2374,6 @@ const ClassworkTab = ({
         const errorData = await res.json();
         throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
       }
-
-      console.log('🔍 CLASSWORK: Classwork deleted successfully, refreshing data');
       showToast('Classwork deleted successfully!', 'success');
 
       fetchAssignments(); // Refresh assignments list
@@ -3407,3 +3387,5 @@ const ClassworkTab = ({
 };
 
 export default ClassworkTab;
+
+
