@@ -830,6 +830,9 @@ const ClassworkTab = ({
   const [dateRange, setDateRange] = useState('all'); // all, thisWeek, thisMonth, overdue
   const [statusFilter, setStatusFilter] = useState('all'); // all, notStarted, inProgress, submitted, completed
   const [groupBy, setGroupBy] = useState('none'); // none, dueDate, type, status
+  const compactLaneRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   // Toast notification system
   const [toasts, setToasts] = useState([]);
@@ -861,6 +864,43 @@ const ClassworkTab = ({
   const removeToast = (id) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
+
+  const updateCompactLaneScrollState = useCallback(() => {
+    const lane = compactLaneRef.current;
+    if (!lane) return;
+
+    const maxScrollLeft = lane.scrollWidth - lane.clientWidth;
+    setCanScrollLeft(lane.scrollLeft > 8);
+    setCanScrollRight(maxScrollLeft - lane.scrollLeft > 8);
+  }, []);
+
+  const scrollCompactLane = useCallback((direction) => {
+    const lane = compactLaneRef.current;
+    if (!lane) return;
+
+    lane.scrollBy({
+      left: direction === 'left' ? -lane.clientWidth * 0.9 : lane.clientWidth * 0.9,
+      behavior: 'smooth'
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!compactMode || viewMode !== 'grid') return;
+
+    const lane = compactLaneRef.current;
+    if (!lane) return;
+
+    const handleResize = () => updateCompactLaneScrollState();
+    updateCompactLaneScrollState();
+
+    lane.addEventListener('scroll', updateCompactLaneScrollState, { passive: true });
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      lane.removeEventListener('scroll', updateCompactLaneScrollState);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [compactMode, viewMode, assignments.length, searchQuery, isInstructor, updateCompactLaneScrollState]);
 
   // Note: Context menu now uses isolated DOM-based system (no React state)
 
@@ -2789,7 +2829,20 @@ const ClassworkTab = ({
                 case 'grid':
                   return compactMode ? (
                     <div className="relative h-full">
+                      {canScrollLeft && (
+                        <button
+                          type="button"
+                          onClick={() => scrollCompactLane('left')}
+                          className="absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full border border-gray-200 bg-white/95 p-2 text-gray-700 shadow-md backdrop-blur-sm transition hover:bg-white hover:shadow-lg"
+                          aria-label="Scroll left"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                      )}
                       <div
+                        ref={compactLaneRef}
                         className={`flex w-full max-w-full ${isInstructor ? 'items-start' : 'h-full items-stretch'} gap-4 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}
                         style={{
                           scrollbarWidth: 'thin',
@@ -2844,9 +2897,18 @@ const ClassworkTab = ({
                       {filtered.length > 3 && (
                         <>
                           <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white via-white/95 to-transparent" />
-                          <div className="pointer-events-none absolute bottom-5 right-3 rounded-full border border-blue-100 bg-white/95 px-2.5 py-1 text-[11px] font-medium text-blue-600 shadow-sm backdrop-blur-sm">
-                            Scroll for more
-                          </div>
+                          {canScrollRight && (
+                            <button
+                              type="button"
+                              onClick={() => scrollCompactLane('right')}
+                              className="absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-full border border-blue-100 bg-white/95 p-2 text-blue-600 shadow-md backdrop-blur-sm transition hover:bg-white hover:shadow-lg"
+                              aria-label="Scroll right"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          )}
                         </>
                       )}
                     </div>
