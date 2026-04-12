@@ -1468,7 +1468,7 @@ const ClassworkTab = ({
     const urgencyConfig = getUrgencyConfig();
     const compactStudentCard = compactMode && !isInstructor;
     const gridCardClass = compactMode
-      ? `group relative ${compactStudentCard ? 'basis-[calc((100%-2rem)/3)] min-w-[calc((100%-2rem)/3)] max-w-[calc((100%-2rem)/3)] h-full self-stretch' : 'w-[264px] min-w-[264px] max-w-[264px] h-[328px] self-start'} snap-start flex-shrink-0 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.01] flex flex-col`
+      ? `group relative basis-[calc((100%-2rem)/3)] min-w-[calc((100%-2rem)/3)] max-w-[calc((100%-2rem)/3)] ${compactStudentCard ? 'h-full self-stretch' : 'h-[328px] self-start'} snap-start flex-shrink-0 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.01] flex flex-col`
       : 'group relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px]';
     const gridHeaderClass = compactMode ? `p-2.5 ${compactStudentCard ? 'pb-1.5' : 'pb-2'}` : 'p-6 pb-4';
     const gridBodyClass = compactMode ? `flex-1 px-3 ${compactStudentCard ? 'pb-1 flex flex-col' : ''}` : 'flex-1 px-6';
