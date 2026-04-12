@@ -1461,6 +1461,10 @@ Reflective Learning Processor works best with instructional content, lessons, or
   };
 
   const fileName = content.title || content.originalName || 'Document.docx';
+  const plainTextForReading = (docxContent || htmlContent || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const estimatedReadMinutes = Math.max(1, Math.ceil((plainTextForReading.split(' ').filter(Boolean).length || 0) / 220));
+  const documentTypeLabel = fileName.split('.').pop()?.toUpperCase() || 'DOCX';
+  const sectionCount = headings.length;
 
   // Helper function to check if a mode is recommended
   const isRecommended = (modeName) => {
@@ -3066,13 +3070,15 @@ Reflective Learning Processor works best with instructional content, lessons, or
 
         {/* Sidebar with headings - Hide when Sequential Learning is active OR when content is not educational */}
         {headings.length > 0 && !showSequentialLearning && isContentEducational && (
-          <aside className="w-64 flex-shrink-0 h-full overflow-y-auto p-8 border-r bg-slate-50/50 hidden lg:block">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-slate-800">On this page</h3>
+          <aside className="sticky top-24 hidden max-h-[calc(100vh-7rem)] w-60 flex-shrink-0 self-start overflow-y-auto border-r border-slate-200/70 bg-slate-50/35 px-5 py-6 lg:block">
+            <div className="mb-4 rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-4 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Document Map</p>
+              <h3 className="mt-1 text-sm font-semibold text-slate-800">On this page</h3>
+              <p className="mt-1 text-xs text-slate-500">{sectionCount} sections</p>
             </div>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5">
               {headings.map((heading) => (
-                <li key={heading.id} className={`text-sm ${heading.level === 2 ? 'pl-3' : ''} ${heading.level === 3 ? 'pl-6' : ''}`}>
+                <li key={heading.id} className={`text-sm ${heading.level === 2 ? 'pl-3' : ''} ${heading.level === 3 ? 'pl-5' : ''}`}>
                   <a
                     href={`#${heading.id}`}
                     onClick={(e) => {
@@ -3082,10 +3088,10 @@ Reflective Learning Processor works best with instructional content, lessons, or
                         element.scrollIntoView({ behavior: 'smooth' });
                       }
                     }}
-                    className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors py-1"
+                    className="group flex items-center gap-2 rounded-xl px-3 py-2 text-slate-600 transition-all hover:bg-white hover:text-slate-900"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                    <span className="truncate max-w-[11rem]" title={heading.text}>{heading.text}</span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300 transition-colors group-hover:bg-blue-500"></span>
+                    <span className="truncate text-[13px] leading-5" title={heading.text}>{heading.text}</span>
                     {headingsWithNotes.has(heading.id) && (
                       <span className="w-2 h-2 bg-blue-500 rounded-full" title="This section has notes"></span>
                     )}
@@ -3095,11 +3101,11 @@ Reflective Learning Processor works best with instructional content, lessons, or
             </ul>
 
             {/* AI Narrator Sidebar Button */}
-            <div className="mt-6 pt-4 border-t border-slate-200">
+            <div className="mt-5 border-t border-slate-200 pt-4">
               <button
                 onClick={handleAITutorClick}
                 disabled={isExtractingContent}
-                className="w-full flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-300 disabled:opacity-50 text-sm font-medium"
+                className="w-full flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 px-3 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:from-purple-600 hover:to-indigo-700 disabled:opacity-50"
               >
                 {isExtractingContent ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -3108,7 +3114,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                 )}
                 <span>Listen with AI</span>
               </button>
-              <p className="text-xs text-slate-500 mt-2 text-center">
+              <p className="mt-2 text-center text-[11px] leading-4 text-slate-500">
                 Get tutorials, quizzes & audio in Taglish
               </p>
             </div>
@@ -3138,8 +3144,29 @@ Reflective Learning Processor works best with instructional content, lessons, or
           showIntuitiveLearning || showActiveLearning || showReflectiveLearning) &&
           !(isSequentialLearningLoading || isGlobalLearningLoading || isSensingLearningLoading ||
             isIntuitiveLearningLoading || isActiveLearningLoading || isReflectiveLearningLoading || willAutoLoad) && (
-            <div className="flex-1 relative">
+            <div className="relative flex-1 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.08),_transparent_38%),linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] px-4 py-5 md:px-6">
               {htmlContent ? (
+                <div className="mx-auto max-w-[1120px]">
+                  <div className="mb-4 rounded-3xl border border-slate-200/80 bg-white/85 px-5 py-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm">
+                    <div className="min-w-0">
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700">
+                            {documentTypeLabel}
+                          </span>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                            {estimatedReadMinutes} min read
+                          </span>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                            {sectionCount || 1} section{sectionCount === 1 ? '' : 's'}
+                          </span>
+                        </div>
+                        <h2 className="truncate text-xl font-semibold tracking-tight text-slate-900 md:text-2xl">
+                          {fileName}
+                        </h2>
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-[30px] border border-slate-200/80 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
                 <iframe
                   ref={(iframe) => {
                     if (iframe) {
@@ -3171,7 +3198,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                       };
                     }
                   }}
-                  className="w-full rounded-lg bg-white"
+                  className="w-full bg-transparent"
                   title={content.title}
                   srcDoc={injectOverrideStyles(htmlContent)}
                   style={{
@@ -3180,6 +3207,8 @@ Reflective Learning Processor works best with instructional content, lessons, or
                     minHeight: '800px'
                   }}
                 />
+                  </div>
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">

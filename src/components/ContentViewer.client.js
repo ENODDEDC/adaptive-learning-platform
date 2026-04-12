@@ -43,512 +43,350 @@ const generateHeadingId = (text, index) => {
 // Enhanced CSS overrides for better DOCX formatting and readability
 const injectOverrideStyles = (rawHtml) => {
   const overrideCss = `
-    :root { 
-      color-scheme: light; 
-      --text-primary: #1a202c;
-      --text-secondary: #2d3748;
-      --text-muted: #4a5568;
-      --bg-primary: #ffffff;
-      --bg-secondary: #f7fafc;
-      --border-light: #e2e8f0;
-      --accent-blue: #3182ce;
-      --accent-blue-light: #ebf8ff;
+    :root {
+      color-scheme: light;
+      --doc-bg: #eef2f7;
+      --paper-bg: #ffffff;
+      --paper-border: #d9e2ec;
+      --paper-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+      --text-primary: #1f2937;
+      --text-secondary: #374151;
+      --text-muted: #6b7280;
+      --rule: #dbe3ee;
+      --accent: #2563eb;
+      --quote-bg: #f8fbff;
+      --table-head: #f6f8fb;
     }
-    
-    html, body { 
-      margin: 0 !important; 
-      padding: 0 !important; 
-      background: var(--bg-secondary); 
-      width: 100% !important; 
-      max-width: 100% !important; 
-      overflow-x: hidden !important; 
-      min-height: 100% !important; 
+
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: linear-gradient(180deg, #f4f7fb 0%, var(--doc-bg) 100%);
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: 100% !important;
+      overflow-x: hidden !important;
     }
-    
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-      line-height: 1.7; 
-      color: var(--text-primary); 
-      -webkit-font-smoothing: antialiased; 
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 17px;
+      line-height: 1.72;
+      color: var(--text-secondary);
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      text-rendering: optimizeLegibility; 
-      width: 100% !important; 
-      max-width: 100% !important; 
-      overflow-x: hidden !important; 
-      min-height: 100% !important; 
-      font-size: 16px;
     }
-    
-    .reader-container { 
-      max-width: 100% !important; 
-      margin: 0 !important; 
-      padding: 48px 56px 40px 56px; 
-      background: var(--bg-primary); 
-      border-radius: 16px; 
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
-      width: 100% !important; 
-      min-width: 100% !important; 
-      overflow-x: hidden !important; 
-      box-sizing: border-box !important; 
+
+    * {
+      box-sizing: border-box !important;
+      max-width: 100% !important;
     }
-    
-    /* Enhanced Typography */
-    .reader-container p { 
-      margin: 1.25em 0; 
-      font-size: 1.05rem; 
-      color: var(--text-secondary); 
-      line-height: 1.75;
-      text-align: justify;
-      hyphens: auto;
-      word-spacing: 0.05em;
+
+    .reader-container {
+      width: min(960px, calc(100% - 48px)) !important;
+      min-width: 0 !important;
+      margin: 28px auto 40px auto !important;
+      padding: 56px 72px !important;
+      background: var(--paper-bg);
+      border: 1px solid var(--paper-border);
+      border-radius: 20px;
+      box-shadow: var(--paper-shadow);
+      overflow-x: hidden !important;
     }
-    
-    .reader-container p:first-of-type {
-      margin-top: 0;
+
+    .reader-container,
+    .reader-container * {
+      width: auto !important;
+      overflow-x: visible !important;
     }
-    
-    .reader-container p:last-of-type {
-      margin-bottom: 0;
-    }
-    
-    /* Enhanced Headings with Better Hierarchy */
-    .reader-container h1 { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      font-size: 2.5rem; 
-      font-weight: 700;
-      line-height: 1.2; 
-      margin: 2em 0 1em 0; 
-      color: var(--text-primary); 
-      letter-spacing: -0.025em;
-      border-bottom: 3px solid var(--accent-blue);
-      padding-bottom: 0.5em;
-    }
-    
-    .reader-container h1:first-child {
-      margin-top: 0;
-    }
-    
-    .reader-container h2 { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      font-size: 2rem; 
-      font-weight: 600;
-      line-height: 1.3; 
-      margin: 2.5em 0 1em 0; 
-      color: var(--text-primary); 
-      letter-spacing: -0.02em;
-      border-bottom: 2px solid var(--border-light);
-      padding-bottom: 0.3em;
-    }
-    
-    .reader-container h3 { 
-      font-size: 1.5rem; 
-      font-weight: 600;
-      line-height: 1.4; 
-      margin: 2em 0 0.75em 0; 
-      color: var(--text-primary);
-      letter-spacing: -0.01em;
-    }
-    
-    .reader-container h4 { 
-      font-size: 1.25rem; 
-      font-weight: 600;
-      line-height: 1.4; 
-      margin: 1.75em 0 0.5em 0; 
-      color: var(--text-secondary);
-    }
-    
-    .reader-container h5, .reader-container h6 { 
-      font-size: 1.1rem; 
-      font-weight: 600;
-      line-height: 1.4; 
-      margin: 1.5em 0 0.5em 0; 
-      color: var(--text-secondary);
-    }
-    
-    /* Enhanced Lists */
-    .reader-container ul, .reader-container ol { 
-      margin: 1.25em 0; 
-      padding-left: 2em; 
-      line-height: 1.7;
-    }
-    
-    .reader-container li { 
-      margin: 0.75em 0; 
-      color: var(--text-secondary);
-      line-height: 1.7;
-    }
-    
-    .reader-container li p {
-      margin: 0.5em 0;
-    }
-    
-    .reader-container ul li {
-      list-style-type: disc;
-    }
-    
-    .reader-container ul ul li {
-      list-style-type: circle;
-    }
-    
-    .reader-container ul ul ul li {
-      list-style-type: square;
-    }
-    
-    /* Enhanced Blockquotes */
-    .reader-container blockquote { 
-      margin: 2em 0; 
-      padding: 1.25em 1.5em; 
-      background: var(--accent-blue-light); 
-      border-left: 4px solid var(--accent-blue); 
-      color: var(--text-secondary); 
-      border-radius: 8px;
-      font-style: italic;
-      position: relative;
-    }
-    
-    .reader-container blockquote::before {
-      content: '"';
-      font-size: 4em;
-      color: var(--accent-blue);
-      position: absolute;
-      top: -0.2em;
-      left: 0.2em;
-      opacity: 0.3;
-      font-family: Georgia, serif;
-    }
-    
-    .reader-container blockquote p {
-      margin: 0.5em 0;
-      padding-left: 1em;
-    }
-    
-    /* Enhanced Tables */
-    .reader-container table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin: 2em 0;
-      background: var(--bg-primary);
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-    
-    .reader-container table th { 
-      padding: 1em 1.25em; 
-      background: var(--bg-secondary);
-      border-bottom: 2px solid var(--border-light);
-      font-weight: 600;
-      color: var(--text-primary);
-      text-align: left;
-    }
-    
-    .reader-container table td { 
-      padding: 0.875em 1.25em; 
-      border-bottom: 1px solid var(--border-light);
-      color: var(--text-secondary);
-    }
-    
-    .reader-container table tr:hover {
-      background: rgba(59, 130, 246, 0.05);
-    }
-    
-    /* Enhanced Code Blocks */
-    .reader-container pre { 
-      background: #1a202c; 
-      color: #e2e8f0; 
-      padding: 1.5em; 
-      border-radius: 12px;
-      overflow-x: auto;
-      margin: 1.5em 0;
-      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-      font-size: 0.9em;
-      line-height: 1.6;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    
-    .reader-container code { 
-      background: #f1f5f9; 
-      color: #475569; 
-      padding: 0.25em 0.5em; 
-      border-radius: 4px;
-      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-      font-size: 0.9em;
-    }
-    
-    .reader-container pre code {
-      background: transparent;
-      color: inherit;
-      padding: 0;
-    }
-    
-    /* Enhanced Links */
-    .reader-container a { 
-      color: var(--accent-blue); 
-      text-decoration: none;
-      border-bottom: 1px solid transparent;
-      transition: all 0.2s ease;
-    }
-    
-    .reader-container a:hover { 
-      border-bottom-color: var(--accent-blue);
-      background: rgba(59, 130, 246, 0.1);
-      padding: 0.1em 0.2em;
-      border-radius: 3px;
-    }
-    
-    /* Enhanced Images and Media */
-    .reader-container img, .reader-container video, .reader-container canvas, .reader-container svg { 
-      max-width: 100%; 
-      height: auto; 
-      border-radius: 12px;
-      margin: 1.5em 0;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    
-    /* Enhanced Emphasis */
-    .reader-container strong, .reader-container b {
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    
-    .reader-container em, .reader-container i {
-      font-style: italic;
-      color: var(--text-secondary);
-    }
-    
-    /* Enhanced Horizontal Rules */
-    .reader-container hr {
-      border: none;
-      height: 2px;
-      background: linear-gradient(to right, transparent, var(--border-light), transparent);
-      margin: 3em 0;
-    }
-    
-    /* Better Paragraph Spacing for Different Content Types */
-    .reader-container p + h1,
-    .reader-container p + h2,
-    .reader-container p + h3 {
-      margin-top: 2.5em;
-    }
-    
-    .reader-container h1 + p,
-    .reader-container h2 + p,
-    .reader-container h3 + p {
-      margin-top: 0.75em;
-    }
-    
-    /* Enhanced Focus and Selection */
-    .reader-container *:focus {
-      outline: 2px solid var(--accent-blue);
-      outline-offset: 2px;
-    }
-    
-    .reader-container ::selection {
-      background: rgba(59, 130, 246, 0.2);
-      color: var(--text-primary);
-    }
-    
-    /* Responsive Typography */
-    @media (max-width: 768px) {
-      .reader-container {
-        padding: 32px 24px;
-      }
-      
-      .reader-container h1 {
-        font-size: 2rem;
-      }
-      
-      .reader-container h2 {
-        font-size: 1.75rem;
-      }
-      
-      .reader-container h3 {
-        font-size: 1.375rem;
-      }
-      
-      .reader-container p {
-        font-size: 1rem;
-        text-align: left;
-      }
-    }
-    
-    @media (min-width: 1200px) {
-      .reader-container { 
-        max-width: 100% !important; 
-        margin: 0 !important; 
-        width: 100% !important; 
-        overflow-x: hidden !important; 
-      }
-    }
-    
-    @media (min-width: 1600px) {
-      .reader-container { 
-        max-width: 100% !important; 
-        margin: 0 !important; 
-        width: 100% !important; 
-        overflow-x: hidden !important; 
-      }
-    }
-    
-    /* Ensure everything is left-aligned by default */
-    .reader-container h1, .reader-container h2, .reader-container h3, .reader-container h4, .reader-container h5, .reader-container h6,
-    .reader-container p, .reader-container li, .reader-container td, .reader-container th, .reader-container blockquote, 
-    .reader-container figure, .reader-container figcaption { 
-      text-align: left !important; 
-    }
-    
-    /* Force full width on all elements and prevent overflow */
-    * { 
-      max-width: 100% !important; 
-      box-sizing: border-box !important; 
-    }
-    
-    .reader-container, .reader-container * { 
-      max-width: 100% !important; 
-      width: auto !important; 
-      overflow-x: hidden !important; 
-    }
-    
-    .reader-container { 
-      width: 100% !important; 
-      min-width: 100% !important; 
-      overflow-x: hidden !important; 
-    }
-    
-    /* Enhanced Document-Specific Styles */
+
     .reader-container .document-content {
-      line-height: 1.8;
+      max-width: 100%;
     }
-    
-    .reader-container .document-title {
-      text-align: center;
-      margin: 0 0 2em 0;
-      padding: 1em 0;
-      border-bottom: 3px solid var(--accent-blue);
-      font-size: 2.75rem;
-      font-weight: 700;
+
+    .reader-container h1,
+    .reader-container h2,
+    .reader-container h3,
+    .reader-container h4,
+    .reader-container h5,
+    .reader-container h6,
+    .reader-container p,
+    .reader-container li,
+    .reader-container td,
+    .reader-container th,
+    .reader-container blockquote,
+    .reader-container figure,
+    .reader-container figcaption {
+      text-align: left !important;
     }
-    
-    .reader-container .section-heading {
-      margin-top: 3em;
-      margin-bottom: 1.25em;
-      padding-bottom: 0.5em;
-      border-bottom: 2px solid var(--border-light);
-      color: var(--text-primary);
-    }
-    
-    .reader-container .subsection-heading {
-      margin-top: 2.5em;
-      margin-bottom: 1em;
-      color: var(--text-primary);
-      font-weight: 600;
-    }
-    
+
+    .reader-container p,
     .reader-container .document-paragraph {
-      margin: 1.5em 0;
-      text-indent: 0;
-      line-height: 1.8;
+      margin: 0 0 1.05em 0;
+      color: var(--text-secondary);
+      font-size: 1rem;
+      line-height: 1.76;
+      word-break: break-word;
     }
-    
+
+    .reader-container p:first-of-type,
     .reader-container .document-paragraph:first-of-type {
       margin-top: 0;
     }
-    
-    .reader-container .empty-paragraph {
-      margin: 0.75em 0;
-      height: 0.75em;
+
+    .reader-container h1,
+    .reader-container .document-title {
+      margin: 0 0 1.2em 0;
+      padding: 0 0 0.45em 0;
+      font-family: 'Segoe UI', 'Inter', sans-serif;
+      font-size: clamp(2rem, 3vw, 2.6rem);
+      line-height: 1.16;
+      font-weight: 700;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--rule);
+      letter-spacing: -0.03em;
     }
-    
+
+    .reader-container h2,
+    .reader-container .section-heading {
+      margin: 2em 0 0.75em 0;
+      padding-bottom: 0.3em;
+      font-family: 'Segoe UI', 'Inter', sans-serif;
+      font-size: clamp(1.45rem, 2.1vw, 1.8rem);
+      line-height: 1.26;
+      font-weight: 650;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--rule);
+      letter-spacing: -0.02em;
+    }
+
+    .reader-container h3,
+    .reader-container .subsection-heading {
+      margin: 1.65em 0 0.55em 0;
+      font-family: 'Segoe UI', 'Inter', sans-serif;
+      font-size: 1.2rem;
+      line-height: 1.34;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .reader-container h4,
+    .reader-container h5,
+    .reader-container h6 {
+      margin: 1.4em 0 0.45em 0;
+      font-family: 'Segoe UI', 'Inter', sans-serif;
+      font-size: 1.02rem;
+      line-height: 1.4;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .reader-container ul,
+    .reader-container ol,
     .reader-container .document-list {
-      margin: 1.5em 0;
-      padding-left: 2.5em;
+      margin: 0.8em 0 1.1em 0;
+      padding-left: 1.45em;
     }
-    
-    .reader-container .document-list.numbered {
-      list-style-type: decimal;
-    }
-    
+
+    .reader-container li,
     .reader-container .document-list li {
-      margin: 0.75em 0;
+      margin: 0.3em 0;
       line-height: 1.7;
     }
-    
-    .reader-container .document-table {
-      margin: 2.5em 0;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    .reader-container li p,
+    .reader-container .list-paragraph {
+      margin: 0.25em 0;
     }
-    
+
+    .reader-container blockquote {
+      margin: 1.5em 0;
+      padding: 1em 1.15em;
+      background: var(--quote-bg);
+      border-left: 3px solid var(--accent);
+      border-radius: 12px;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    .reader-container blockquote::before {
+      content: none;
+    }
+
+    .reader-container blockquote p {
+      margin: 0;
+      padding-left: 0;
+    }
+
+    .reader-container table,
+    .reader-container .document-table {
+      width: 100%;
+      margin: 1.5em 0;
+      border-collapse: collapse;
+      border: 1px solid var(--paper-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: none;
+      background: #fff;
+    }
+
+    .reader-container table th {
+      padding: 0.8em 0.95em;
+      background: var(--table-head);
+      border-bottom: 1px solid var(--paper-border);
+      font-family: 'Segoe UI', 'Inter', sans-serif;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .reader-container table td {
+      padding: 0.8em 0.95em;
+      border-bottom: 1px solid #e9eef5;
+      color: var(--text-secondary);
+      vertical-align: top;
+    }
+
+    .reader-container table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .reader-container pre {
+      margin: 1.4em 0;
+      padding: 1em 1.15em;
+      border-radius: 12px;
+      background: #111827;
+      color: #f3f4f6;
+      overflow-x: auto;
+      font-size: 0.92rem;
+      line-height: 1.65;
+      box-shadow: none;
+    }
+
+    .reader-container code {
+      padding: 0.15em 0.4em;
+      border-radius: 6px;
+      background: #f3f4f6;
+      color: #374151;
+      font-size: 0.92em;
+      font-family: 'Consolas', 'Courier New', monospace;
+    }
+
+    .reader-container pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    .reader-container a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      border-bottom: none;
+    }
+
+    .reader-container a:hover {
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    .reader-container img,
+    .reader-container video,
+    .reader-container canvas,
+    .reader-container svg,
     .reader-container .document-image {
       display: block;
-      margin: 2em auto;
       max-width: 100%;
       height: auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      margin: 1.35em auto;
+      border: 1px solid var(--paper-border);
+      border-radius: 14px;
+      box-shadow: none;
+      background: #fff;
     }
-    
+
+    .reader-container strong,
+    .reader-container b {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .reader-container em,
+    .reader-container i,
     .reader-container .subtitle {
-      font-size: 1.25rem;
       color: var(--text-muted);
       font-style: italic;
-      text-align: center;
-      margin: 1em 0 2em 0;
     }
-    
-    .reader-container .intense {
-      background: linear-gradient(120deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
-      padding: 1.5em 2em;
-      border-radius: 12px;
-      border-left: 4px solid var(--accent-blue);
+
+    .reader-container hr {
+      height: 1px;
       margin: 2em 0;
+      border: none;
+      background: var(--rule);
     }
-    
-    .reader-container .list-paragraph {
-      margin: 0.5em 0;
+
+    .reader-container .empty-paragraph {
+      height: 0.55em;
+      margin: 0;
     }
-    
-    /* Better spacing between different content types */
-    .reader-container .document-paragraph + .section-heading,
-    .reader-container .document-list + .section-heading,
-    .reader-container .document-table + .section-heading {
-      margin-top: 3.5em;
+
+    .reader-container .intense {
+      margin: 1.2em 0;
+      padding: 1em 1.1em;
+      background: #f8fbff;
+      border: 1px solid #dbeafe;
+      border-left: 3px solid var(--accent);
+      border-radius: 12px;
     }
-    
-    .reader-container .section-heading + .document-paragraph,
-    .reader-container .subsection-heading + .document-paragraph {
-      margin-top: 1em;
+
+    .reader-container *:focus {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px;
     }
-    
-    .reader-container .document-paragraph + .document-list,
-    .reader-container .document-paragraph + .document-table {
-      margin-top: 2em;
+
+    .reader-container ::selection {
+      background: rgba(37, 99, 235, 0.16);
+      color: var(--text-primary);
     }
-    
-    /* Enhanced readability for long documents */
-    .reader-container .document-content > .document-paragraph:nth-child(4n) {
-      margin-bottom: 2em;
-    }
-    
-    /* Print Styles */
-    @media print {
+
+    @media (max-width: 900px) {
       .reader-container {
-        box-shadow: none;
-        padding: 0;
-        background: white;
+        width: calc(100% - 24px) !important;
+        margin: 12px auto 20px auto !important;
+        padding: 28px 20px !important;
+        border-radius: 16px;
       }
-      
-      .reader-container h1, .reader-container h2 {
-        border-bottom: none;
-      }
-      
+
+      .reader-container h1,
       .reader-container .document-title {
-        border-bottom: 2px solid #000;
+        font-size: 1.7rem;
       }
-      
+
+      .reader-container h2,
       .reader-container .section-heading {
-        border-bottom: 1px solid #000;
+        font-size: 1.35rem;
+      }
+
+      .reader-container p,
+      .reader-container .document-paragraph {
+        font-size: 0.98rem;
+      }
+    }
+
+    @media print {
+      html, body {
+        background: white !important;
+      }
+
+      .reader-container {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
       }
     }
   `;
@@ -556,6 +394,20 @@ const injectOverrideStyles = (rawHtml) => {
   const wrapScript = `
     <script>
       (function() {
+        function removeLeadingEyebrow(container) {
+          var headings = Array.from(container.querySelectorAll('h1,h2,h3,h4,h5,h6'));
+          if (headings.length < 2) return;
+          var first = headings[0];
+          var second = headings[1];
+          var firstLevel = parseInt(first.tagName.replace('H', ''), 10);
+          var secondLevel = parseInt(second.tagName.replace('H', ''), 10);
+          if (Number.isNaN(firstLevel) || Number.isNaN(secondLevel)) return;
+          if (firstLevel <= secondLevel) return;
+          var firstText = (first.textContent || '').trim();
+          if (!firstText || firstText.length > 120) return;
+          first.remove();
+        }
+
         function wrap() {
           if (document.getElementById('reader-container')) return;
           var container = document.createElement('div');
@@ -565,6 +417,7 @@ const injectOverrideStyles = (rawHtml) => {
           var nodes = Array.from(body.childNodes).filter(function(n){ return !(n.tagName && (n.tagName.toLowerCase() === 'script' || n.tagName.toLowerCase() === 'style')); });
           nodes.forEach(function(n){ container.appendChild(n); });
           body.appendChild(container);
+          removeLeadingEyebrow(container);
         }
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', wrap);
