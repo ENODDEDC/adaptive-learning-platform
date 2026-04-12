@@ -108,7 +108,7 @@ const removeContextMenu = () => {
 };
 
 // Form Thumbnail Component with Live Preview
-const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = false }) => {
+const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = false, compactVariant = 'default' }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
@@ -137,10 +137,10 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = fa
   return (
     <button
       onClick={handleClick}
-      className="w-full group"
+      className={`w-full group ${compactMode && compactVariant === 'student' ? 'h-full flex flex-col' : ''}`}
     >
       {/* Form Thumbnail Container */}
-      <div className={`relative w-full ${compactMode ? 'h-40 mb-2' : 'aspect-[4/3] mb-3'} bg-white border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
+      <div className={`relative w-full ${compactMode ? (compactVariant === 'student' ? 'h-full mb-0' : 'h-40 mb-2') : 'aspect-[4/3] mb-3'} bg-white border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
         {/* Loading State */}
         {isLoading && (
           <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 flex flex-col items-center justify-center z-10">
@@ -222,7 +222,7 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = fa
 };
 
 // Stable Thumbnail Component that prevents re-renders from parent state changes
-const StableThumbnailComponent = React.memo(({ attachment, onPreview, compactMode = false }) => {
+const StableThumbnailComponent = React.memo(({ attachment, onPreview, compactMode = false, compactVariant = 'default' }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(
     attachment.thumbnailUrl || thumbnailCache.getThumbnailUrl(attachment._id)
   );
@@ -407,10 +407,10 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview, compactMod
         e.stopPropagation();
         if (onPreview) onPreview(attachment);
       }}
-      className="w-full group"
+      className={`w-full group ${compactMode && compactVariant === 'student' ? 'h-full flex flex-col' : ''}`}
     >
       {/* PDF Thumbnail Container */}
-      <div className={`relative w-full ${compactMode ? 'h-40 mb-2' : 'aspect-[4/3] mb-3'} bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
+      <div className={`relative w-full ${compactMode ? (compactVariant === 'student' ? 'h-full mb-0' : 'h-40 mb-2') : 'aspect-[4/3] mb-3'} bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
         {isGeneratingThumbnail ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
             <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
@@ -1426,12 +1426,13 @@ const ClassworkTab = ({
     };
 
     const urgencyConfig = getUrgencyConfig();
+    const compactStudentCard = compactMode && !isInstructor;
     const gridCardClass = compactMode
-      ? 'group relative w-[264px] min-w-[264px] max-w-[264px] h-[328px] self-start snap-start flex-shrink-0 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.01] flex flex-col'
+      ? `group relative ${compactStudentCard ? 'basis-[calc((100%-2rem)/3)] min-w-[calc((100%-2rem)/3)] max-w-[calc((100%-2rem)/3)] h-full self-stretch' : 'w-[264px] min-w-[264px] max-w-[264px] h-[328px] self-start'} snap-start flex-shrink-0 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.01] flex flex-col`
       : 'group relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px]';
-    const gridHeaderClass = compactMode ? 'p-2.5 pb-2' : 'p-6 pb-4';
-    const gridBodyClass = compactMode ? 'flex-1 px-3' : 'flex-1 px-6';
-    const gridFooterClass = compactMode ? 'px-3 py-1.5 bg-gray-50 border-t border-gray-100' : 'px-6 py-4 bg-gray-50 border-t border-gray-100';
+    const gridHeaderClass = compactMode ? `p-2.5 ${compactStudentCard ? 'pb-1.5' : 'pb-2'}` : 'p-6 pb-4';
+    const gridBodyClass = compactMode ? `flex-1 px-3 ${compactStudentCard ? 'pb-1 flex flex-col' : ''}` : 'flex-1 px-6';
+    const gridFooterClass = compactMode ? `px-3 ${compactStudentCard ? 'py-1' : 'py-1.5'} bg-gray-50 border-t border-gray-100` : 'px-6 py-4 bg-gray-50 border-t border-gray-100';
 
     // Render different layouts based on view mode
     if (viewMode === 'grid') {
@@ -1516,17 +1517,18 @@ const ClassworkTab = ({
           <div className={gridBodyClass}>
             {/* Form Thumbnail or Attachments */}
             {itemType === 'form' ? (
-              <div className={compactMode ? 'mb-2' : 'mb-4'}>
+              <div className={compactStudentCard ? 'mb-0 flex-1 flex' : compactMode ? 'mb-2' : 'mb-4'}>
                 <FormThumbnail
                   form={item}
                   onPreview={onOpenContent}
                   isInstructor={isInstructor}
                   onEdit={onEdit}
                   compactMode={compactMode}
+                  compactVariant={compactStudentCard ? 'student' : 'default'}
                 />
               </div>
             ) : Array.isArray(item.attachments) && item.attachments.length > 0 && (
-              <div className={compactMode ? 'mb-2' : 'mb-4'}>
+              <div className={compactStudentCard ? 'mb-0 flex-1 flex' : compactMode ? 'mb-2' : 'mb-4'}>
                 {item.attachments.slice(0, 1).map((attachment, index) => {
                   // Enhanced DOCX thumbnail with AI narrator for DOCX files
                   if (attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
@@ -1538,6 +1540,7 @@ const ClassworkTab = ({
                         attachment={attachment}
                         onPreview={onOpenContent}
                         compactMode={compactMode}
+                        compactVariant={compactStudentCard ? 'student' : 'default'}
                       />
                     );
                   }
@@ -1551,6 +1554,7 @@ const ClassworkTab = ({
                         attachment={attachment}
                         onPreview={onOpenContent}
                         compactMode={compactMode}
+                        compactVariant={compactStudentCard ? 'student' : 'default'}
                       />
                     );
                   }
@@ -2785,7 +2789,7 @@ const ClassworkTab = ({
                 case 'grid':
                   return compactMode ? (
                     <div
-                      className={`flex w-full max-w-full items-start gap-4 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}
+                      className={`flex w-full max-w-full ${isInstructor ? 'items-start' : 'h-full items-stretch'} gap-4 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory layout-transition-grid-to-list ${isTransitioning ? 'layout-transition-active' : ''}`}
                       style={{
                         scrollbarWidth: 'thin',
                         msOverflowStyle: 'auto',

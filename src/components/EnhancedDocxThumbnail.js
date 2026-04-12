@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import AITutorModal from './AITutorModal';
 
-const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "", compactMode = false }) => {
+const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "", compactMode = false, compactVariant = 'default' }) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(attachment.thumbnailUrl);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [showAITutor, setShowAITutor] = useState(false);
@@ -121,9 +121,9 @@ const EnhancedDocxThumbnail = ({ attachment, onPreview, className = "", compactM
 
   return (
     <>
-      <div className={`w-full group cursor-pointer ${className}`}>
+      <div className={`w-full group cursor-pointer ${compactMode && compactVariant === 'student' ? 'h-full flex flex-col' : ''} ${className}`}>
         {/* DOCX Thumbnail Container */}
-        <div className={`relative w-full ${compactMode ? 'h-40 mb-2' : 'aspect-[4/3] mb-3'} bg-white border-2 border-blue-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300`}>
+        <div className={`relative w-full ${compactMode ? (compactVariant === 'student' ? 'h-full mb-0' : 'h-40 mb-2') : 'aspect-[4/3] mb-3'} bg-white border-2 border-blue-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300`}>
           {isGeneratingThumbnail ? (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
               <div className={`${compactMode ? 'w-6 h-6 mb-2 border-2' : 'w-8 h-8 mb-3 border-3'} border-blue-500 border-t-transparent rounded-full animate-spin`}></div>
