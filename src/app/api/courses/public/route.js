@@ -13,11 +13,14 @@ export async function GET(request) {
 
     await connectMongoDB();
 
-    console.log('🔍 PUBLIC COURSES: Fetching for user:', userId);
+    // Get search query from URL params
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
 
-    // Fetch all public courses that user is not enrolled in and didn't create
-    // Note: isPrivate defaults to false, so we check for false or null/undefined
-    const publicCourses = await Course.find({
+    console.log('🔍 PUBLIC COURSES: Fetching for user:', userId, 'Search:', search);
+
+    // Build query
+    const query = {
       $or: [
         { isPrivate: false },
         { isPrivate: { $exists: false } },
@@ -26,10 +29,25 @@ export async function GET(request) {
       isArchived: { $ne: true },
       createdBy: { $ne: userId },
       enrolledUsers: { $ne: userId }
-    })
+    };
+
+    // Add search filter if provided
+    if (search) {
+      query.$and = [
+        {
+          $or: [
+            { subject: { $regex: search, $options: 'i' } },
+            { teacherName: { $regex: search, $options: 'i' } }
+          ]
+        }
+      ];
+    }
+
+    // Fetch all public courses that user is not enrolled in and didn't create
+    const publicCourses = await Course.find(query)
     .populate('createdBy', 'name surname profilePicture')
     .select('subject section teacherName coverColor uniqueKey createdBy enrolledUsers schedules isPrivate')
-    .limit(20)
+    .limit(search ? 50 : 20) // More results when searching
     .sort({ createdAt: -1 })
     .lean();
 

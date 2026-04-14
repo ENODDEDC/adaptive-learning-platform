@@ -140,6 +140,10 @@ export default function Home() {
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [allCourses, setAllCourses] = useState([]);
   const [publicCourses, setPublicCourses] = useState([]);
+  const [publicCoursesSearch, setPublicCoursesSearch] = useState('');
+  const [selectedPublicCourse, setSelectedPublicCourse] = useState(null);
+  const [joiningCourse, setJoiningCourse] = useState(false);
+  const [joinSuccessModal, setJoinSuccessModal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isMounted, setIsMounted] = useState(false);
@@ -259,6 +263,63 @@ export default function Home() {
       setPublicCourses(data.courses || []);
     } catch (err) {
       console.error('Failed to fetch public courses:', err);
+    }
+  };
+
+  const searchPublicCourses = async (searchTerm) => {
+    if (!searchTerm.trim()) {
+      fetchPublicCourses();
+      return;
+    }
+    try {
+      const res = await fetch(`/api/courses/public?search=${encodeURIComponent(searchTerm)}`);
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+      const data = await res.json();
+      setPublicCourses(data.courses || []);
+    } catch (err) {
+      console.error('Failed to search public courses:', err);
+    }
+  };
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (publicCoursesSearch) {
+        searchPublicCourses(publicCoursesSearch);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [publicCoursesSearch]);
+
+  const handleJoinPublicCourse = async () => {
+    if (!selectedPublicCourse) return;
+    
+    setJoiningCourse(true);
+    try {
+      const res = await fetch('/api/courses/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseKey: selectedPublicCourse.uniqueKey }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to join course');
+      }
+
+      // Refresh courses
+      fetchUserCourses();
+      fetchPublicCourses();
+      
+      // Show success modal
+      setJoinSuccessModal(selectedPublicCourse);
+      setSelectedPublicCourse(null);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setJoiningCourse(false);
     }
   };
 
@@ -912,6 +973,36 @@ export default function Home() {
               <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Public Courses</h3>
             </div>
 
+            {/* Search Input */}
+            <div style={{ marginBottom: '12px', flexShrink: 0 }}>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder="Search courses..."
+                  value={publicCoursesSearch}
+                  onChange={(e) => setPublicCoursesSearch(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 32px 8px 12px',
+                    fontSize: '13px',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    outline: 'none'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                />
+                <svg 
+                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: '#9ca3af', pointerEvents: 'none' }}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+
             <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
               {publicCourses.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
@@ -921,8 +1012,8 @@ export default function Home() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                     </div>
-                    <p className="text-sm font-medium text-gray-500">No public courses</p>
-                    <p className="text-[11px] text-gray-400 mt-1">Public courses will appear here</p>
+                    <p className="text-sm font-medium text-gray-500">{publicCoursesSearch ? 'No courses found' : 'No public courses'}</p>
+                    <p className="text-[11px] text-gray-400 mt-1">{publicCoursesSearch ? 'Try a different search' : 'Public courses will appear here'}</p>
                   </div>
                 </div>
               ) : (
@@ -943,13 +1034,7 @@ export default function Home() {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-500 font-medium">{course.studentCount} students</span>
                           <button
-                            onClick={() => {
-                              // Open join modal with this course key
-                              const joinInput = document.querySelector('input[placeholder*="course key"]');
-                              if (joinInput) {
-                                joinInput.value = course.uniqueKey;
-                              }
-                            }}
+                            onClick={() => setSelectedPublicCourse(course)}
                             className="text-xs px-2 py-1 font-semibold rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
                           >
                             Join
@@ -979,6 +1064,159 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Join Course Confirmation Modal */}
+      {selectedPublicCourse && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', maxWidth: '450px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '16px', color: '#111827' }}>Join Course</h3>
+            
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'start', gap: '16px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                <div 
+                  style={{ 
+                    width: '60px', 
+                    height: '60px', 
+                    borderRadius: '12px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    color: 'white', 
+                    fontWeight: '700', 
+                    fontSize: '24px',
+                    backgroundColor: selectedPublicCourse.coverColor || '#3b82f6',
+                    flexShrink: 0
+                  }}
+                >
+                  {selectedPublicCourse.subject?.charAt(0) || 'C'}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+                    {selectedPublicCourse.subject}
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px', color: '#6b7280' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span>{selectedPublicCourse.teacherName}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <span>{selectedPublicCourse.studentCount} students</span>
+                    </div>
+                    {selectedPublicCourse.section && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        <span>Section: {selectedPublicCourse.section}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => setSelectedPublicCourse(null)}
+                disabled={joiningCourse}
+                style={{ 
+                  flex: 1,
+                  padding: '10px 16px', 
+                  fontSize: '14px', 
+                  fontWeight: '600', 
+                  color: '#374151', 
+                  backgroundColor: 'white', 
+                  border: '1px solid #d1d5db', 
+                  borderRadius: '8px', 
+                  cursor: joiningCourse ? 'not-allowed' : 'pointer',
+                  opacity: joiningCourse ? 0.5 : 1
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleJoinPublicCourse}
+                disabled={joiningCourse}
+                style={{ 
+                  flex: 1,
+                  padding: '10px 16px', 
+                  fontSize: '14px', 
+                  fontWeight: '600', 
+                  color: 'white', 
+                  backgroundColor: '#3b82f6', 
+                  border: 'none', 
+                  borderRadius: '8px', 
+                  cursor: joiningCourse ? 'not-allowed' : 'pointer',
+                  opacity: joiningCourse ? 0.7 : 1
+                }}
+              >
+                {joiningCourse ? 'Joining...' : 'Join Course'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {joinSuccessModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', maxWidth: '420px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', textAlign: 'center' }}>
+            {/* Success Icon */}
+            <div style={{ width: '80px', height: '80px', margin: '0 auto 20px', backgroundColor: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg style={{ width: '48px', height: '48px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '12px', color: '#111827' }}>Successfully Joined!</h3>
+            <p style={{ fontSize: '15px', color: '#6b7280', marginBottom: '24px' }}>
+              You've been enrolled in <span style={{ fontWeight: '600', color: '#111827' }}>{joinSuccessModal.subject}</span>
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => setJoinSuccessModal(null)}
+                style={{ 
+                  flex: 1,
+                  padding: '12px 20px', 
+                  fontSize: '14px', 
+                  fontWeight: '600', 
+                  color: '#374151', 
+                  backgroundColor: 'white', 
+                  border: '1px solid #d1d5db', 
+                  borderRadius: '8px', 
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setJoinSuccessModal(null);
+                  router.push(`/courses/${joinSuccessModal._id}`);
+                }}
+                style={{ 
+                  flex: 1,
+                  padding: '12px 20px', 
+                  fontSize: '14px', 
+                  fontWeight: '600', 
+                  color: 'white', 
+                  backgroundColor: '#10b981', 
+                  border: 'none', 
+                  borderRadius: '8px', 
+                  cursor: 'pointer'
+                }}
+              >
+                Go to Course
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
