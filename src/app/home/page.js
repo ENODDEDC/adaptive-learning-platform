@@ -139,6 +139,7 @@ export default function Home() {
   const [createdCourses, setCreatedCourses] = useState([]);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [allCourses, setAllCourses] = useState([]);
+  const [publicCourses, setPublicCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isMounted, setIsMounted] = useState(false);
@@ -159,6 +160,7 @@ export default function Home() {
   useEffect(() => {
     if (user) {
       fetchUserCourses();
+      fetchPublicCourses();
     }
   }, [user, shouldRefreshCourses]);
 
@@ -237,13 +239,26 @@ export default function Home() {
 
       setCreatedCourses(created);
       setEnrolledCourses(enrolled);
-      // Show only enrolled/joined courses on home page
-      setAllCourses(enrolled);
+      // Show both created and enrolled courses on home page
+      setAllCourses([...created, ...enrolled]);
       hasDataRef.current = true;
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPublicCourses = async () => {
+    try {
+      const res = await fetch('/api/courses/public');
+      if (!res.ok) {
+        throw new Error(`Error: ${res.status} ${res.statusText}`);
+      }
+      const data = await res.json();
+      setPublicCourses(data.courses || []);
+    } catch (err) {
+      console.error('Failed to fetch public courses:', err);
     }
   };
 
@@ -885,52 +900,60 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Compact Recent Activities Sidebar */}
+        {/* Public Courses Sidebar */}
         <div className="recent-activities flex min-h-0 flex-col overflow-hidden">
           <div className={`flex-1 flex min-h-0 flex-col ${isVeryShortHeight ? 'p-2.5' : 'p-3'} bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300`}>
             <div className={`flex items-center gap-2.5 ${isVeryShortHeight ? 'mb-2.5 pb-2.5' : 'mb-3 pb-3'} border-b border-gray-200 flex-shrink-0`}>
-              <div className="flex items-center justify-center w-6 h-6 bg-gray-100 rounded-lg">
-                <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <div className="flex items-center justify-center w-6 h-6 bg-blue-100 rounded-lg">
+                <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Recent Activities</h3>
+              <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Public Courses</h3>
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
-              {recentActivities.length === 0 ? (
+              {publicCourses.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center py-8">
-                    <div className="w-14 h-14 mx-auto mb-2.5 bg-gray-100 rounded-full flex items-center justify-center">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <div className="w-14 h-14 mx-auto mb-2.5 bg-blue-100 rounded-full flex items-center justify-center">
+                      <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                     </div>
-                    <p className="text-sm font-medium text-gray-500">No recent activities</p>
-                    <p className="text-[11px] text-gray-400 mt-1">Your activity will appear here</p>
+                    <p className="text-sm font-medium text-gray-500">No public courses</p>
+                    <p className="text-[11px] text-gray-400 mt-1">Public courses will appear here</p>
                   </div>
                 </div>
               ) : (
-                recentActivities.map((activity, index) => (
-                  <div key={activity.id} className="p-3 border-2 border-gray-200 cursor-pointer group bg-white rounded-xl hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all">
+                publicCourses.map((course) => (
+                  <div key={course._id} className="p-3 border-2 border-gray-200 cursor-pointer group bg-white rounded-xl hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all">
                     <div className="flex items-start gap-2.5">
-                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${activity.color}`}></div>
+                      <div 
+                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                        style={{ backgroundColor: course.coverColor || '#3b82f6' }}
+                      >
+                        {course.subject?.charAt(0) || 'C'}
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-gray-900 truncate mb-1">
-                          {activity.title}
+                        <h4 className="text-sm font-bold text-gray-900 truncate mb-0.5">
+                          {course.subject}
                         </h4>
-                        <p className="text-xs text-gray-600 truncate mb-2">{activity.course}</p>
+                        <p className="text-xs text-gray-600 truncate mb-1.5">{course.teacherName}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500 font-medium">{activity.time}</span>
-                          <span className={`text-xs px-2 py-0.5 font-semibold rounded-md ${
-                            activity.status === 'submitted' ? 'text-green-700 bg-green-100' :
-                            activity.status === 'new' ? 'text-blue-700 bg-blue-100' :
-                            activity.status === 'graded' ? 'text-purple-700 bg-purple-100' :
-                            activity.status === 'important' ? 'text-orange-700 bg-orange-100' :
-                            'text-gray-700 bg-gray-100'
-                          }`}>
-                            {activity.status}
-                          </span>
+                          <span className="text-xs text-gray-500 font-medium">{course.studentCount} students</span>
+                          <button
+                            onClick={() => {
+                              // Open join modal with this course key
+                              const joinInput = document.querySelector('input[placeholder*="course key"]');
+                              if (joinInput) {
+                                joinInput.value = course.uniqueKey;
+                              }
+                            }}
+                            className="text-xs px-2 py-1 font-semibold rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
+                          >
+                            Join
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -939,10 +962,16 @@ export default function Home() {
               )}
             </div>
 
-            {recentActivities.length > 0 && (
+            {publicCourses.length > 0 && (
               <div className="pt-3 mt-3 border-t border-gray-200 flex-shrink-0">
-                <button className="w-full text-sm font-semibold text-purple-600 hover:text-purple-700 py-1 hover:bg-purple-50 rounded-lg transition-colors">
-                  View All Activities
+                <button 
+                  onClick={() => {
+                    // Scroll to top of public courses
+                    document.querySelector('.recent-activities .overflow-y-auto')?.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="w-full text-sm font-semibold text-blue-600 hover:text-blue-700 py-1 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  View All Courses
                 </button>
               </div>
             )}

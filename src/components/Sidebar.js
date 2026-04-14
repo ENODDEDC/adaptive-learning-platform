@@ -151,6 +151,12 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
           const enrolled = [];
 
           data.courses.forEach(course => {
+            // createdBy is populated as an object, so we need to compare the _id
+            const creatorId = course.createdBy 
+              ? (typeof course.createdBy === 'object' ? course.createdBy._id : course.createdBy)
+              : null;
+            const isCreator = creatorId && creatorId === user._id;
+
             const formattedCourse = {
               id: course._id,
               title: course.subject,
@@ -162,7 +168,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
               enrolledUsers: course.enrolledUsers,
             };
 
-            if (course.createdBy === user._id) {
+            if (isCreator) {
               created.push(formattedCourse);
             } else if (course.enrolledUsers.includes(user._id)) {
               enrolled.push(formattedCourse);

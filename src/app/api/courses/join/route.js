@@ -52,6 +52,12 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Course not found. Please check the course key.' }, { status: 404 });
     }
 
+    // Check if course is private
+    if (course.isPrivate) {
+      console.log('🔍 JOIN COURSE: Course is private');
+      return NextResponse.json({ message: 'This course is private. You need an invitation to join.' }, { status: 403 });
+    }
+
     if (course.createdBy.toString() === userId) {
       console.log('🔍 JOIN COURSE: User is the creator of this course');
       return NextResponse.json({ message: 'You are the creator of this course' }, { status: 400 });
