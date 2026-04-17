@@ -9,9 +9,9 @@ class SequentialLearningService {
   initializeModels() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.CEREBRAS_API_KEY);
         this.model = this.genAI.getGenerativeModel({
-          model: "gemini-flash-lite-latest"
+          model: "llama3.1-8b"
         });
         console.log('🎯 Sequential Learning Service initialized');
       } catch (error) {

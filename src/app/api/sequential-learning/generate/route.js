@@ -80,7 +80,7 @@ export async function POST(request) {
       error.message.includes('rate_limit') ||
       error.message.includes('429')
     ) {
-      errorMessage = 'Sequential learning generation rate-limited by Groq. Wait a minute and retry.';
+      errorMessage = 'Sequential learning generation rate-limited by provider. Wait a minute and retry.';
       statusCode = 429;
     } else if (
       error.message.includes('request_too_large') ||
@@ -89,8 +89,8 @@ export async function POST(request) {
     ) {
       errorMessage = 'Document too large for the generation model. Try a shorter document.';
       statusCode = 413;
-    } else if (error.message.includes('API key') || error.message.includes('GROQ_API_KEY')) {
-      errorMessage = 'Sequential learning service configuration error (missing GROQ_API_KEY).';
+    } else if (error.message.includes('API key') || error.message.includes('CEREBRAS_API_KEY') || error.message.includes('GROQ_API_KEY')) {
+      errorMessage = 'Sequential learning service configuration error (missing CEREBRAS_API_KEY).';
       statusCode = 500;
     }
 
