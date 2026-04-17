@@ -6,6 +6,100 @@ class GlobalLearningService {
     this.model = null;
   }
 
+  normalizeText(text = '') {
+    return text
+      .replace(/\r/g, '\n')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  getMeaningfulParagraphs(docxText) {
+    return this.normalizeText(docxText)
+      .split(/\n+/)
+      .map(line => line.trim())
+      .filter(line =>
+        line.length > 35 &&
+        !/^\d+$/.test(line) &&
+        !/^page\s+\d+/i.test(line)
+      );
+  }
+
+  getMeaningfulSentences(docxText, limit = 8) {
+    return this.normalizeText(docxText)
+      .split(/(?<=[.!?])\s+/)
+      .map(sentence => sentence.trim())
+      .filter(sentence => sentence.length > 40)
+      .slice(0, limit);
+  }
+
+  extractTopKeywords(docxText, limit = 6) {
+    const stopWords = new Set([
+      'about', 'after', 'again', 'against', 'between', 'could', 'their', 'there',
+      'these', 'those', 'which', 'while', 'where', 'when', 'with', 'from', 'into',
+      'through', 'during', 'before', 'under', 'above', 'below', 'because', 'being',
+      'have', 'has', 'had', 'were', 'was', 'been', 'this', 'that', 'they', 'them',
+      'then', 'than', 'also', 'such', 'each', 'some', 'many', 'more', 'most', 'very',
+      'much', 'your', 'yours', 'student', 'students', 'document', 'content', 'review'
+    ]);
+
+    const counts = new Map();
+    const words = this.normalizeText(docxText)
+      .toLowerCase()
+      .match(/[a-z][a-z-]{3,}/g) || [];
+
+    for (const word of words) {
+      if (stopWords.has(word)) continue;
+      counts.set(word, (counts.get(word) || 0) + 1);
+    }
+
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([word]) => word.replace(/-/g, ' '));
+  }
+
+  buildSourceQuestion(docxText) {
+    const firstSentence = this.getMeaningfulSentences(docxText, 1)[0];
+    if (!firstSentence) {
+      return 'What are the main ideas, relationships, and applications in this material?';
+    }
+    const shortened = firstSentence.replace(/[.?!]+$/, '').slice(0, 110);
+    return `How does this material connect around: ${shortened}?`;
+  }
+
+  parseJsonFromModelResponse(text) {
+    if (!text) {
+      throw new Error('Empty model response');
+    }
+
+    const cleaned = text
+      .replace(/```json/gi, '```')
+      .replace(/```/g, '')
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+      .trim();
+
+    const candidates = [];
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      candidates.push(cleaned.slice(firstBrace, lastBrace + 1));
+    }
+    candidates.push(cleaned);
+
+    for (const candidate of candidates) {
+      try {
+        return JSON.parse(candidate);
+      } catch {
+        // try next candidate
+      }
+    }
+
+    throw new Error('Failed to parse JSON from model response');
+  }
+
   initializeModels() {
     if (!this.genAI) {
       try {
@@ -210,16 +304,18 @@ Be strict in your analysis - only classify content as educational if it genuinel
     }
 
     const prompt = `
-    You are creating a BIG PICTURE OVERVIEW for global learners who need to see the forest before the trees.
+    You are creating actual study material from the source document for a global learner.
 
-    Document Content:
+    SOURCE DOCUMENT CONTENT:
     ${docxText.substring(0, 3000)}${docxText.length > 3000 ? '...' : ''}
 
-    Global learners think holistically and need to understand:
-    1. The OVERALL PURPOSE and why this topic matters
-    2. How ALL the pieces fit together in the bigger context
-    3. The BROADER IMPLICATIONS and real-world significance
-    4. CONNECTIONS to other fields, concepts, or applications
+    Important rules:
+    1. Base every section on the actual source content above.
+    2. Do NOT explain what global learners are.
+    3. Do NOT give generic advice about learning styles unless it is tied to this document.
+    4. Summarize, organize, and connect the PDF's real topics, ideas, processes, and applications.
+    5. If a detail is missing from the source, do not invent it.
+    6. Write like a study guide for this specific PDF, not like a description of pedagogy.
 
     Create a comprehensive big picture overview with these sections:
 
@@ -252,15 +348,16 @@ Be strict in your analysis - only classify content as educational if it genuinel
         "globalImpact": "Broader societal or global implications"
       },
       "learningStrategy": {
-        "title": "Global Learning Approach",
-        "description": "How to approach learning this topic as a global learner",
-        "startingPoint": "Where to begin for maximum understanding",
-        "keyInsights": ["insight 1", "insight 2", "insight 3"],
-        "mentalModel": "The mental framework to use when thinking about this"
+        "title": "How To Approach This PDF",
+        "description": "How to study this specific document from big picture to details",
+        "startingPoint": "Where to begin for maximum understanding of this source",
+        "keyInsights": ["insight 1 from the source", "insight 2 from the source", "insight 3 from the source"],
+        "mentalModel": "The best high-level framework for understanding this specific source"
       }
     }
 
-    Focus on helping global learners see the complete picture and understand WHY everything matters.
+    Focus on helping the learner see the complete picture of THIS PDF and understand how its ideas fit together.
+    Return ONLY valid JSON.
     `;
 
     try {
@@ -270,17 +367,11 @@ Be strict in your analysis - only classify content as educational if it genuinel
 
       console.log('🤖 AI Big Picture Response:', text.substring(0, 500) + '...');
 
-      // Extract JSON from response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const bigPicture = JSON.parse(jsonMatch[0]);
-        console.log('✅ Successfully parsed big picture overview');
-        return bigPicture;
-      }
+      const bigPicture = this.parseJsonFromModelResponse(text);
+      console.log('✅ Successfully parsed big picture overview');
+      return bigPicture;
 
       // Fallback if JSON parsing fails
-      console.log('⚠️ JSON parsing failed, using intelligent fallback');
-      return this.getIntelligentFallbackBigPicture(docxText);
     } catch (error) {
       console.error('❌ Error generating big picture overview:', error);
       return this.getIntelligentFallbackBigPicture(docxText);
@@ -298,16 +389,18 @@ Be strict in your analysis - only classify content as educational if it genuinel
     }
 
     const prompt = `
-    You are creating an INTERCONNECTIONS MAP for global learners who need to see how everything connects.
+    You are creating actual study material from the source document for a global learner.
 
-    Document Content:
+    SOURCE DOCUMENT CONTENT:
     ${docxText.substring(0, 3000)}${docxText.length > 3000 ? '...' : ''}
 
-    Global learners need to understand:
-    1. How concepts RELATE to each other
-    2. PATTERNS and themes that run throughout
-    3. CAUSE and EFFECT relationships
-    4. INTERDEPENDENCIES between different parts
+    Important rules:
+    1. Base the map on the actual source content above.
+    2. Do NOT explain what global learners are.
+    3. Do NOT write generic statements about holistic learning.
+    4. Show the real relationships, dependencies, themes, and cause-effect chains found in the document.
+    5. If the source is limited, keep the output modest and grounded.
+    6. Write like a concept map for this specific PDF.
 
     Create a comprehensive interconnections map:
 
@@ -360,7 +453,8 @@ Be strict in your analysis - only classify content as educational if it genuinel
       }
     }
 
-    Focus on helping global learners see the web of connections and understand the systemic nature of the content.
+    Focus on helping the learner see the web of connections inside THIS PDF.
+    Return ONLY valid JSON.
     `;
 
     try {
@@ -370,17 +464,10 @@ Be strict in your analysis - only classify content as educational if it genuinel
 
       console.log('🤖 AI Interconnections Response:', text.substring(0, 500) + '...');
 
-      // Extract JSON from response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const interconnections = JSON.parse(jsonMatch[0]);
-        console.log('✅ Successfully parsed interconnections map');
-        return interconnections;
-      }
+      const interconnections = this.parseJsonFromModelResponse(text);
+      console.log('✅ Successfully parsed interconnections map');
+      return interconnections;
 
-      // Fallback if JSON parsing fails
-      console.log('⚠️ JSON parsing failed, using intelligent fallback');
-      return this.getIntelligentFallbackInterconnections(docxText);
     } catch (error) {
       console.error('❌ Error generating interconnections:', error);
       return this.getIntelligentFallbackInterconnections(docxText);
@@ -393,43 +480,49 @@ Be strict in your analysis - only classify content as educational if it genuinel
   getIntelligentFallbackBigPicture(docxText) {
     console.log('🔄 Creating intelligent fallback big picture overview');
 
-    const paragraphs = docxText.split('\n').filter(p => p.trim().length > 50);
-    const sentences = docxText.split(/[.!?]+/).filter(s => s.trim().length > 30).slice(0, 10);
+    const paragraphs = this.getMeaningfulParagraphs(docxText);
+    const sentences = this.getMeaningfulSentences(docxText, 6);
+    const keywords = this.extractTopKeywords(docxText, 5);
+    const summary = sentences[0] || paragraphs[0] || 'This material introduces a set of connected ideas from the source document.';
+    const context = sentences[1] || paragraphs[1] || summary;
+    const application = sentences[2] || paragraphs[2] || 'The material can be applied by connecting its main ideas to examples, uses, and outcomes shown in the source.';
+    const components = keywords.length > 0 ? keywords.map(keyword => keyword.replace(/\b\w/g, c => c.toUpperCase())) : ['Main Idea', 'Supporting Ideas', 'Applications'];
+    const insights = sentences.slice(0, 3).map(sentence => sentence.replace(/[.]+$/, ''));
 
     return {
       overallPurpose: {
         title: "Why This Matters",
-        description: "This document provides essential knowledge and understanding in its field of study.",
-        realWorldSignificance: "The concepts presented have practical applications and theoretical importance.",
-        keyQuestion: "How can we understand and apply these concepts effectively?"
+        description: summary,
+        realWorldSignificance: application,
+        keyQuestion: this.buildSourceQuestion(docxText)
       },
       bigPictureContext: {
         title: "The Bigger Picture",
-        description: "This content fits within a broader educational and practical framework.",
-        broaderField: "Academic and professional knowledge domain",
-        historicalContext: "Built upon established principles and ongoing research",
-        futureImplications: "Continues to evolve and influence related fields"
+        description: context,
+        broaderField: components.slice(0, 2).join(' and ') || 'Core subject concepts from the source material',
+        historicalContext: paragraphs[0] || summary,
+        futureImplications: paragraphs[1] || application
       },
       systemicView: {
         title: "How Everything Connects",
-        description: "The concepts work together to form a comprehensive understanding.",
-        mainComponents: ["Core Principles", "Practical Applications", "Theoretical Framework"],
-        relationships: "Each component supports and reinforces the others",
-        emergentProperties: "Together they create deeper insight and practical capability"
+        description: 'The source material becomes easier to understand when its major ideas are grouped and connected.',
+        mainComponents: components.slice(0, 3),
+        relationships: paragraphs[1] || 'The main ideas support one another and form a broader explanation when viewed together.',
+        emergentProperties: paragraphs[2] || 'Looking at the material as one system reveals the larger meaning behind the details.'
       },
       practicalRelevance: {
         title: "Real-World Applications",
-        description: "These concepts have direct relevance to practical situations.",
-        industries: ["Education", "Professional Practice", "Research"],
-        dailyLife: "Provides tools and understanding for everyday challenges",
-        globalImpact: "Contributes to broader knowledge and societal progress"
+        description: application,
+        industries: components.slice(0, 2),
+        dailyLife: sentences[3] || application,
+        globalImpact: sentences[4] || 'The document shows how understanding the whole topic helps learners connect ideas more effectively.'
       },
       learningStrategy: {
-        title: "Global Learning Approach",
-        description: "Approach this content by first understanding the overall framework.",
-        startingPoint: "Begin with the big picture and work toward specific details",
-        keyInsights: ["See the whole system first", "Understand connections", "Apply holistically"],
-        mentalModel: "Think of this as an interconnected web of related concepts"
+        title: "How To Approach This PDF",
+        description: "Start with the main message of the source, then connect each supporting idea back to that whole picture.",
+        startingPoint: summary,
+        keyInsights: insights.length > 0 ? insights : ['Identify the main topic first', 'Connect supporting ideas', 'Review details after the whole picture is clear'],
+        mentalModel: `Think of this PDF as a connected map built around ${components[0] || 'the main topic'}.`
       }
     };
   }
@@ -440,64 +533,55 @@ Be strict in your analysis - only classify content as educational if it genuinel
   getIntelligentFallbackInterconnections(docxText) {
     console.log('🔄 Creating intelligent fallback interconnections map');
 
+    const paragraphs = this.getMeaningfulParagraphs(docxText);
+    const sentences = this.getMeaningfulSentences(docxText, 7);
+    const keywords = this.extractTopKeywords(docxText, 6);
+    const coreNodes = (keywords.length > 0 ? keywords : ['main topic', 'supporting ideas', 'applications']).slice(0, 3);
+
     return {
       conceptNetwork: {
-        centralTheme: "Integrated Knowledge System",
-        coreNodes: [
-          {
-            name: "Foundation Concepts",
-            description: "Basic principles that support everything else",
-            connections: ["supports advanced concepts", "enables practical applications"],
-            importance: "Essential building blocks for understanding"
-          },
-          {
-            name: "Applied Knowledge",
-            description: "Practical implementation of theoretical concepts",
-            connections: ["builds on foundations", "creates real-world value"],
-            importance: "Bridges theory and practice"
-          },
-          {
-            name: "Systemic Understanding",
-            description: "Holistic view of how everything works together",
-            connections: ["integrates all concepts", "reveals emergent properties"],
-            importance: "Enables comprehensive mastery"
-          }
-        ],
-        emergentPatterns: ["Theory-Practice Integration", "Hierarchical Learning", "Systemic Thinking"]
+        centralTheme: paragraphs[0] || sentences[0] || 'Connected ideas from the source document',
+        coreNodes: coreNodes.map((node, index) => ({
+          name: node.replace(/\b\w/g, c => c.toUpperCase()),
+          description: sentences[index] || paragraphs[index] || `This idea appears as an important part of the source material.`,
+          connections: coreNodes.filter((_, innerIndex) => innerIndex !== index).map(other => `connects to ${other}`),
+          importance: `This helps explain the overall structure of the source material.`
+        })),
+        emergentPatterns: coreNodes
       },
       systemDynamics: {
         feedbackLoops: [
           {
-            name: "Learning Reinforcement Loop",
-            description: "Understanding leads to application, which deepens understanding",
+            name: "Source Idea Reinforcement",
+            description: sentences[1] || 'Understanding one major idea helps clarify the others in the document.',
             type: "reinforcing",
-            impact: "Accelerates learning and mastery"
+            impact: paragraphs[1] || 'This makes the full material easier to understand as a connected whole.'
           }
         ],
         causeEffectChains: [
           {
-            trigger: "Initial Understanding",
-            chain: ["Deeper Study", "Practical Application", "Mastery"],
-            significance: "Shows the path from novice to expert"
+            trigger: coreNodes[0] ? coreNodes[0].replace(/\b\w/g, c => c.toUpperCase()) : 'Main topic',
+            chain: coreNodes.slice(1).map(node => node.replace(/\b\w/g, c => c.toUpperCase())),
+            significance: sentences[2] || 'This shows how the document moves from central ideas to related details and applications.'
           }
         ]
       },
       crossDomainConnections: {
-        relatedFields: ["Education", "Psychology", "Systems Thinking"],
+        relatedFields: coreNodes.slice(0, 3).map(node => node.replace(/\b\w/g, c => c.toUpperCase())),
         analogies: [
           {
-            comparison: "Like building a house - foundation first, then structure",
-            explanation: "Emphasizes the importance of building knowledge systematically",
-            limitations: "Learning can also be non-linear and interconnected"
+            comparison: `This PDF works like a map centered on ${coreNodes[0] || 'the main topic'}.`,
+            explanation: 'The learner understands the details better after seeing how the major ideas connect.',
+            limitations: 'Some fine details still need close reading from the original material.'
           }
         ],
-        applications: ["Academic Study", "Professional Development", "Personal Growth"]
+        applications: sentences.slice(3, 5).map(sentence => sentence.replace(/[.]+$/, '')) || ['Apply the source ideas by connecting them back to the main topic']
       },
       holisticInsights: {
-        keyRealizations: ["Everything is connected", "Context matters", "Systems thinking is essential"],
-        paradoxes: ["Simple concepts can create complex systems", "Details matter but so does the big picture"],
-        unifyingPrinciples: ["Integration", "Application", "Continuous Learning"],
-        systemicImplications: "Understanding the whole system enables more effective learning and application"
+        keyRealizations: sentences.slice(0, 3).map(sentence => sentence.replace(/[.]+$/, '')),
+        paradoxes: ['The document has many parts, but they point back to one overall message', 'Details are clearer after the whole picture is understood'],
+        unifyingPrinciples: coreNodes.slice(0, 3).map(node => node.replace(/\b\w/g, c => c.toUpperCase())),
+        systemicImplications: paragraphs[2] || 'Seeing the whole structure helps the learner understand how the original material is organized and why the parts matter.'
       }
     };
   }

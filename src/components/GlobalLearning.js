@@ -18,7 +18,8 @@ const GlobalLearning = ({
   isActive,
   onClose,
   docxContent,
-  fileName
+  fileName,
+  pdfSource = null
 }) => {
   const [activeTab, setActiveTab] = useState('bigpicture');
   const [bigPicture, setBigPicture] = useState(null);
@@ -45,15 +46,15 @@ const GlobalLearning = ({
   ];
 
   useEffect(() => {
-    if (isActive && docxContent) {
+    if (isActive && (docxContent || pdfSource?.fileKey || pdfSource?.filePath)) {
       generateGlobalContent();
       // Track mode activation
       trackBehavior('mode_activated', { mode: 'global', fileName });
     }
-  }, [isActive, docxContent]);
+  }, [isActive, docxContent, pdfSource?.fileKey, pdfSource?.filePath]);
 
   const generateGlobalContent = async () => {
-    if (!docxContent || !docxContent.trim()) {
+    if ((!docxContent || !docxContent.trim()) && !pdfSource?.fileKey && !pdfSource?.filePath) {
       setError('No document content available for global analysis');
       return;
     }
@@ -65,11 +66,24 @@ const GlobalLearning = ({
       const response = await fetch('/api/global-learning/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ docxText: docxContent })
+        body: JSON.stringify({
+          docxText: docxContent,
+          fileKey: pdfSource?.fileKey,
+          filePath: pdfSource?.filePath,
+          mimeType: pdfSource?.mimeType,
+          fileName
+        })
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorResult = await response.json();
+          errorMessage = errorResult?.details || errorResult?.error || errorMessage;
+        } catch {
+          // ignore JSON parsing failure
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();

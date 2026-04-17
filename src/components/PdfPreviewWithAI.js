@@ -979,48 +979,8 @@ Sequential Learning works best with instructional content, lessons, or study mat
     try {
       console.log('🔄 Step 1: Setting loading state...');
       setIsGlobalLearningLoading(true);
-
-      console.log('📄 Step 2: Extracting PDF content...');
-      const extractedContent = pdfContent || await extractPdfContent();
-      console.log('✅ Content extracted, length:', extractedContent?.length);
-
-      if (!extractedContent || !extractedContent.trim()) {
-        console.error('❌ No content extracted!');
-        setGlobalLearningError('Failed to extract PDF content for global learning.');
-        setIsGlobalLearningLoading(false);
-        return;
-      }
-
-      console.log('🔍 Step 3: Analyzing content for educational value...');
-      const analysisResult = await analyzeContentForEducational(extractedContent, true);
-      if (analysisResult.cancelled) {
-        setIsGlobalLearningLoading(false);
-        return;
-      }
-      console.log('📊 Analysis result:', analysisResult);
-
-      if (analysisResult.verified === true && !analysisResult.isEducational) {
-        console.warn('⚠️ Content not educational, showing error');
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for global learning. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Global Learning works best with instructional content, lessons, or study materials.`;
-
-        setErrorSource('manual'); // Mark as manual click
-        setExtractionError(errorMessage); // Use extractionError to show modal
-        setIsGlobalLearningLoading(false);
-        return;
-      }
-
-      console.log('✅ Step 4: Content approved! Setting PDF content...');
-      setPdfContent(extractedContent);
-
-      console.log('🎯 Step 5: Setting showGlobalLearning to TRUE...');
+      console.log('🎯 Step 2: Opening Global Learning with actual PDF source...');
       setShowGlobalLearning(true);
-
       console.log('✅ === GLOBAL LEARNING SHOULD NOW BE VISIBLE ===');
 
     } catch (error) {
@@ -1610,6 +1570,11 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           }}
                           docxContent={pdfContent}
                           fileName={fileName}
+                          pdfSource={{
+                            fileKey: content?.cloudStorage?.key,
+                            filePath: content?.filePath || pdfUrl,
+                            mimeType: content?.mimeType || 'application/pdf'
+                          }}
                         />
                       )}
 
