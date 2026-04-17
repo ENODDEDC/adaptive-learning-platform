@@ -7,15 +7,16 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
  * Returns: { available: true/false, error: string }
  */
 export async function GET() {
-  const groqConfigured = !!process.env.GROQ_API_KEY;
+  const cerebrasConfigured = !!(process.env.CEREBRAS_API_KEY || process.env.GROQ_API_KEY);
   const apiKey = process.env.GOOGLE_API_KEY;
 
-  if (!apiKey && groqConfigured) {
-    console.log('✅ AI Health Check: Groq configured (Gemini not used for learning modes)');
+  if (!apiKey && cerebrasConfigured) {
+    console.log('✅ AI Health Check: Cerebras configured (Gemini not used for learning modes)');
     return NextResponse.json({
       available: true,
       gemini: false,
-      groqConfigured: true,
+      groqConfigured: false,
+      cerebrasConfigured: true,
       error: null
     });
   }
@@ -25,7 +26,8 @@ export async function GET() {
       available: false,
       gemini: false,
       groqConfigured: false,
-      error: 'No AI provider configured (set GOOGLE_API_KEY and/or GROQ_API_KEY)'
+      cerebrasConfigured: false,
+      error: 'No AI provider configured (set GOOGLE_API_KEY and/or CEREBRAS_API_KEY)'
     });
   }
 
@@ -41,7 +43,8 @@ export async function GET() {
     return NextResponse.json({
       available: true,
       gemini: true,
-      groqConfigured,
+      groqConfigured: false,
+      cerebrasConfigured,
       error: null
     });
   } catch (error) {
@@ -57,12 +60,13 @@ export async function GET() {
       errorMessage = 'Network connection error';
     }
 
-    if (groqConfigured) {
-      console.log('⚠️ Gemini check failed but Groq is configured — treating AI as available');
+    if (cerebrasConfigured) {
+      console.log('⚠️ Gemini check failed but Cerebras is configured — treating AI as available');
       return NextResponse.json({
         available: true,
         gemini: false,
-        groqConfigured: true,
+        groqConfigured: false,
+        cerebrasConfigured: true,
         error: null,
         geminiWarning: errorMessage
       });
@@ -72,6 +76,7 @@ export async function GET() {
       available: false,
       gemini: false,
       groqConfigured: false,
+      cerebrasConfigured: false,
       error: errorMessage
     });
   }

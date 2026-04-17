@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
+import { spawn } from 'child_process';
 import backblazeService from '@/services/backblazeService';
 
 function normalizeExtractedText(text) {
@@ -67,6 +69,7 @@ function extractTextFromPdfStructure(pdfBuffer) {
   }
 }
 
+
 async function extractTextWithPdfJs(pdfBuffer) {
   try {
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
@@ -101,6 +104,63 @@ async function extractTextWithPdfJs(pdfBuffer) {
   } catch (error) {
     console.warn('⚠️ pdfjs extraction failed:', error?.message);
     return { text: '', pageCount: 0 };
+  }
+}
+
+function getPopplerBinDir() {
+  const platform = process.platform;
+  if (platform === 'win32') {
+    return path.join(process.cwd(), 'node_modules', 'pdf-poppler', 'lib', 'win', 'poppler-0.51', 'bin');
+  }
+  throw new Error(`Poppler binary path not configured for platform: ${platform}`);
+}
+
+function runProcess(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      windowsHide: true,
+      ...options
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', data => { stdout += data.toString(); });
+    child.stderr.on('data', data => { stderr += data.toString(); });
+    child.on('error', reject);
+    child.on('close', code => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+      } else {
+        reject(new Error(stderr || stdout || `${path.basename(command)} exited with code ${code}`));
+      }
+    });
+  });
+}
+
+async function extractTextWithPoppler(pdfBuffer) {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-extract-poppler-'));
+  const pdfPath = path.join(tempDir, 'source.pdf');
+  fs.writeFileSync(pdfPath, pdfBuffer);
+
+  try {
+    const binDir = getPopplerBinDir();
+    const exe = path.join(binDir, 'pdftotext.exe');
+    const { stdout } = await runProcess(
+      exe,
+      ['-layout', '-enc', 'UTF-8', pdfPath, '-'],
+      { cwd: binDir }
+    );
+    return normalizeExtractedText(stdout || '');
+  } catch (error) {
+    console.warn('⚠️ Poppler extraction failed:', error?.message);
+    return '';
+  } finally {
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch {
+      // ignore cleanup errors
+    }
   }
 }
 
@@ -215,7 +275,25 @@ export async function POST(request) {
       });
     }
 
-    // Final fallback: best-effort extraction from PDF text objects, but reject PDF internals.
+    // Third parser path: poppler pdftotext, better for some encoded/layout-heavy PDFs.
+    const popplerText = await extractTextWithPoppler(pdfBuffer);
+    const popplerQuality = getExtractionQuality(popplerText);
+    if (popplerQuality.looksValid) {
+      return NextResponse.json({
+        success: true,
+        content: {
+          rawText: popplerQuality.cleaned,
+          pageCount: 'Unknown',
+          wordCount: popplerQuality.wordCount,
+          characterCount: popplerQuality.length,
+          meaningfulTextRatio: popplerQuality.alphaNumericRatio,
+          extractionMethod: 'poppler-pdftotext'
+        },
+        message: 'PDF text extracted using Poppler'
+      });
+    }
+
+    // Final parser path: best-effort extraction from PDF text objects, but reject PDF internals.
     const structureText = extractTextFromPdfStructure(pdfBuffer);
     const structureQuality = getExtractionQuality(structureText);
     if (structureQuality.looksValid) {
@@ -233,7 +311,7 @@ export async function POST(request) {
       });
     }
 
-    throw new Error('No clean extractable text found in PDF (possibly scanned, image-only, or encoded)');
+    throw new Error('No clean extractable text found in PDF (possibly scanned, image-only, encrypted, or highly encoded)');
 
   } catch (error) {
     console.error('❌ PDF extraction error:', error);

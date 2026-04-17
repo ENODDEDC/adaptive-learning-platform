@@ -7,6 +7,13 @@ import sharp from 'sharp';
 import backblazeService from '@/services/backblazeService';
 import { spawn } from 'child_process';
 
+const OPENAI_COMPAT_CHAT_URL = process.env.OPENAI_COMPAT_CHAT_URL || 'https://api.cerebras.ai/v1/chat/completions';
+const EDUCATIONAL_GATE_MODEL = 'llama3.1-8b';
+const PDF_VISION_MODEL = 'llama3.1-8b';
+const PDF_VISION_MAX_PAGES = 2;
+const PDF_VISION_MAX_TOKENS = 450;
+const PDF_VISION_PAGE_DELAY_MS = 2500;
+
 export async function POST(request) {
   console.log('🌍 =================================');
   console.log('🌍 GLOBAL LEARNING API ENDPOINT CALLED');
@@ -14,7 +21,7 @@ export async function POST(request) {
 
   try {
     console.log('📥 Parsing request body...');
-    const { docxText, fileKey, filePath, mimeType, fileName } = await request.json();
+    const { docxText, fileKey, filePath, mimeType, fileName, checkOnly = false } = await request.json();
 
     console.log('📝 Request data received:');
     console.log('  - Text length:', docxText?.length);
@@ -41,15 +48,26 @@ export async function POST(request) {
         filePath,
         fallbackText: docxText,
         fileName,
-        request
+        request,
+        checkOnly
       });
     } else {
+      if (checkOnly) {
+        const analysis = await globalLearningService.analyzeContentForEducation(docxText);
+        result = {
+          success: true,
+          checked: true,
+          isEducational: !!analysis.isEducational,
+          analysis
+        };
+      } else {
       console.log('🌍 Calling globalLearningService.generateGlobalContent...');
       console.log('🌍 About to call generateGlobalContent with params:', {
         textLength: docxText.length,
         textPreview: docxText.substring(0, 150) + '...'
       });
       result = await globalLearningService.generateGlobalContent(docxText);
+      }
     }
 
     console.log('✅ Global learning content generated successfully!');
@@ -94,6 +112,17 @@ export async function POST(request) {
         },
         { status: statusCode }
       );
+    } else if (error.message.includes('Could not extract readable source text from the PDF')) {
+      errorMessage = 'Could not extract readable text from this PDF. The file may be scanned/image-only, encrypted, or have unreadable text encoding.';
+      statusCode = 422;
+      return NextResponse.json(
+        {
+          error: errorMessage,
+          details: error.message,
+          type: 'PDF_EXTRACTION_FAILED'
+        },
+        { status: statusCode }
+      );
     } else if (error.message.includes('not available')) {
       errorMessage = 'Global learning service is temporarily unavailable';
       statusCode = 503;
@@ -102,7 +131,7 @@ export async function POST(request) {
       error.message.includes('rate_limit') ||
       error.message.includes('429')
     ) {
-      errorMessage = 'Global learning generation rate-limited by Groq. Wait a minute and retry.';
+      errorMessage = 'Global learning generation rate-limited by provider. Wait a minute and retry.';
       statusCode = 429;
     } else if (
       error.message.includes('request_too_large') ||
@@ -111,8 +140,8 @@ export async function POST(request) {
     ) {
       errorMessage = 'Document too large for the generation model. Try a shorter document.';
       statusCode = 413;
-    } else if (error.message.includes('API key') || error.message.includes('GROQ_API_KEY')) {
-      errorMessage = 'Global learning service configuration error (missing GROQ_API_KEY).';
+    } else if (error.message.includes('API key') || error.message.includes('CEREBRAS_API_KEY') || error.message.includes('GROQ_API_KEY')) {
+      errorMessage = 'Global learning service configuration error (missing CEREBRAS_API_KEY).';
       statusCode = 500;
     }
 
@@ -231,6 +260,200 @@ function looksReadableText(text = '') {
   return weirdRatio < 0.08 && artifactHits.length < 3;
 }
 
+function normalizeGateText(raw) {
+  if (!raw) return '';
+  return String(raw)
+    .replace(/[^\x20-\x7E\n\r\t]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizePdfText(text = '') {
+  return String(text || '')
+    .replace(/\r/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function getPdfTextQuality(text) {
+  const cleaned = normalizePdfText(text);
+  const length = cleaned.length;
+  const wordCount = cleaned.split(/\s+/).filter(Boolean).length;
+  const weirdRatio = length > 0
+    ? ((cleaned.match(/[^\x09\x0A\x0D\x20-\x7E]/g) || []).length / length)
+    : 0;
+  const artifactHits = cleaned.match(
+    /\b(endobj|endstream|stream|FontDescriptor|CIDFontType|CIDToGIDMap|BaseFont|FontBBox|CapHeight|ItalicAngle|Registry|Ordering|Supplement|Type0|Subtype|obj\s*<<)\b/gi
+  ) || [];
+
+  return {
+    cleaned,
+    looksValid: wordCount >= 40 && weirdRatio < 0.08 && artifactHits.length < 3
+  };
+}
+
+async function extractTextWithPdfParse(pdfBuffer) {
+  try {
+    const pdfParse = (await import('pdf-parse')).default;
+    const pdfData = await pdfParse(pdfBuffer);
+    return normalizePdfText(pdfData?.text || '');
+  } catch {
+    return '';
+  }
+}
+
+async function extractTextWithPdfJs(pdfBuffer) {
+  try {
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    const loadingTask = pdfjs.getDocument({
+      data: new Uint8Array(pdfBuffer),
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true
+    });
+
+    const pdf = await loadingTask.promise;
+    const pages = [];
+
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map(item => ('str' in item ? item.str : ''))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (pageText) {
+        pages.push(pageText);
+      }
+    }
+
+    return normalizePdfText(pages.join('\n\n'));
+  } catch {
+    return '';
+  }
+}
+
+function extractTextFromPdfStructure(pdfBuffer) {
+  try {
+    const raw = pdfBuffer.toString('latin1');
+    const matches = raw.match(/\((?:\\.|[^\\)]){4,}\)/g) || [];
+    const decoded = matches
+      .map(chunk => chunk.slice(1, -1))
+      .map(chunk =>
+        chunk
+          .replace(/\\n/g, ' ')
+          .replace(/\\r/g, ' ')
+          .replace(/\\t/g, ' ')
+          .replace(/\\\(/g, '(')
+          .replace(/\\\)/g, ')')
+          .replace(/\\\\/g, '\\')
+      )
+      .filter(text => /[A-Za-z]{2,}/.test(text));
+
+    return normalizePdfText(decoded.join(' '));
+  } catch {
+    return '';
+  }
+}
+
+async function extractReadableTextFromPdfBuffer(pdfBuffer) {
+  const candidates = [
+    await extractTextWithPdfParse(pdfBuffer),
+    await extractTextWithPdfJs(pdfBuffer),
+    extractTextFromPdfStructure(pdfBuffer)
+  ];
+
+  for (const candidate of candidates) {
+    const quality = getPdfTextQuality(candidate);
+    if (quality.looksValid) {
+      return quality.cleaned;
+    }
+  }
+
+  return '';
+}
+
+async function checkEducationalContent(content) {
+  const apiKey = process.env.CEREBRAS_API_KEY;
+  if (!apiKey) {
+    throw new Error('CEREBRAS_API_KEY is not configured');
+  }
+
+  const normalized = normalizeGateText(content).slice(0, 8000);
+  if (!normalized || normalized.length < 20) {
+    return {
+      success: true,
+      isEducational: false,
+      confidence: 0,
+      reasoning: 'Document text is empty or too short to analyze.',
+      topLabel: 'Empty or unusable content'
+    };
+  }
+
+  const systemPrompt = [
+    'You are a strict content classifier for an adaptive learning platform.',
+    'The platform has 8 learning modes that transform substantive informational content into study material.',
+    'Decide whether the given document text is suitable for learning modes.',
+    '',
+    'ACCEPT any document with substantive informational content such as lessons, tutorials, lecture notes, textbook chapters, articles, research papers, reports, case studies, technical documentation, manuals, how-to guides, project write-ups, reflections about a topic, and informational articles.',
+    '',
+    'REJECT only if clearly unusable for learning, such as advertisements, receipts, invoices, menus, price lists, blank forms without explanation, navigation menus, random binary noise, garbled text, or lorem ipsum filler.',
+    '',
+    'Reply with a single JSON object only.',
+    'Schema:',
+    '{ "isEducational": <true|false>, "confidence": <0-1 number>, "category": "<short label>", "reasoning": "<one sentence>" }'
+  ].join('\n');
+
+  const userPrompt = `Document excerpt to classify:\n\n"""\n${normalized}\n"""`;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const response = await fetch(OPENAI_COMPAT_CHAT_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: EDUCATIONAL_GATE_MODEL,
+        temperature: 0,
+        max_tokens: 250,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ]
+      })
+    });
+
+    if (response.status === 429 && attempt < 2) {
+      const details429 = await response.text().catch(() => '');
+      await sleep(getRetryDelayMs(details429));
+      continue;
+    }
+
+    if (!response.ok) {
+      const details = await response.text().catch(() => '');
+      throw new Error(`Educational gate failed (HTTP ${response.status}): ${details}`);
+    }
+
+    const json = await response.json();
+    const raw = json?.choices?.[0]?.message?.content || '';
+    const match = raw.match(/\{[\s\S]*\}/);
+    const parsed = match ? JSON.parse(match[0]) : JSON.parse(raw);
+    return {
+      success: true,
+      isEducational: !!parsed.isEducational,
+      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.5,
+      reasoning: parsed.reasoning || null,
+      topLabel: parsed.category || null
+    };
+  }
+
+  throw new Error('Educational gate failed after retries');
+}
+
 async function getPdfPageCount(pdfPath) {
   const binDir = getPopplerBinDir();
   const exe = path.join(binDir, 'pdfinfo.exe');
@@ -269,8 +492,8 @@ async function convertPdfPagesToImages(pdfBuffer, maxPages = 5) {
     for (const imageFile of imageFiles) {
       const fullPath = path.join(tempDir, imageFile);
       const jpegBuffer = await sharp(fullPath)
-        .resize({ width: 900, withoutEnlargement: true })
-        .jpeg({ quality: 45 })
+        .resize({ width: 700, withoutEnlargement: true })
+        .jpeg({ quality: 35 })
         .toBuffer();
 
       images.push(`data:image/jpeg;base64,${jpegBuffer.toString('base64')}`);
@@ -287,20 +510,20 @@ async function convertPdfPagesToImages(pdfBuffer, maxPages = 5) {
 }
 
 async function groqVisionRequest(content, maxTokens = 900) {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.CEREBRAS_API_KEY;
   if (!apiKey) {
-    throw new Error('GROQ_API_KEY is not configured');
+    throw new Error('CEREBRAS_API_KEY is not configured');
   }
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch(OPENAI_COMPAT_CHAT_URL, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        model: PDF_VISION_MODEL,
         temperature: 0.1,
         max_tokens: maxTokens,
         messages: [
@@ -316,7 +539,7 @@ async function groqVisionRequest(content, maxTokens = 900) {
       const json = await response.json();
       const text = json?.choices?.[0]?.message?.content;
       if (!text) {
-        throw new Error('Groq vision returned empty content');
+        throw new Error('Vision model returned empty content');
       }
       return text;
     }
@@ -326,50 +549,75 @@ async function groqVisionRequest(content, maxTokens = 900) {
       await sleep(getRetryDelayMs(details));
       continue;
     }
-    throw new Error(`Groq vision API error (HTTP ${response.status}): ${details}`);
+    throw new Error(`Vision API error (HTTP ${response.status}): ${details}`);
   }
 }
 
-async function generateGlobalLearningFromPdf({ fileKey, filePath, fallbackText, fileName, request }) {
+async function generateGlobalLearningFromPdf({ fileKey, filePath, fallbackText, fileName, request, checkOnly = false }) {
   const pdfBuffer = await loadPdfBuffer(fileKey, filePath, request);
-  const pageImages = await convertPdfPagesToImages(pdfBuffer, 3);
+  let reconstructedText = await extractReadableTextFromPdfBuffer(pdfBuffer);
 
-  if (pageImages.length === 0) {
-    if (fallbackText) {
-      return globalLearningService.generateGlobalContent(fallbackText);
-    }
-    throw new Error('Could not read any PDF pages for Global Learning');
+  if (!looksReadableText(reconstructedText) && looksReadableText(fallbackText)) {
+    reconstructedText = fallbackText;
   }
 
-  const ocrPages = [];
-  for (let index = 0; index < pageImages.length; index += 1) {
-    const pageText = await groqVisionRequest([
-      {
-        type: 'text',
-        text: `Extract the actual readable educational text from this PDF page.
+  if (!looksReadableText(reconstructedText) && process.env.ALLOW_GROQ_PDF_VISION_FALLBACK === 'true') {
+    const pageImages = await convertPdfPagesToImages(pdfBuffer, PDF_VISION_MAX_PAGES);
+    const ocrPages = [];
+
+    for (let index = 0; index < pageImages.length; index += 1) {
+      if (index > 0) {
+        await sleep(PDF_VISION_PAGE_DELAY_MS);
+      }
+
+      const pageText = await groqVisionRequest([
+        {
+          type: 'text',
+          text: `Extract the actual readable educational text from this PDF page.
 Return plain text only.
 Do not summarize.
 Do not explain.
 Ignore decorative elements, repeated page numbers, and UI artifacts.
 If part of the page is unclear, extract only what is readable.`
-      },
-      {
-        type: 'image_url',
-        image_url: { url: pageImages[index] }
-      }
-    ], 700);
+        },
+        {
+          type: 'image_url',
+          image_url: { url: pageImages[index] }
+        }
+      ], PDF_VISION_MAX_TOKENS);
 
-    if (looksReadableText(pageText)) {
-      ocrPages.push(`Page ${index + 1}:\n${pageText.trim()}`);
+      if (looksReadableText(pageText)) {
+        ocrPages.push(`Page ${index + 1}:\n${pageText.trim()}`);
+      }
+    }
+
+    const visionText = ocrPages.join('\n\n');
+    if (looksReadableText(visionText)) {
+      reconstructedText = visionText;
     }
   }
 
-  const reconstructedText = ocrPages.join('\n\n');
   if (!looksReadableText(reconstructedText)) {
-    if (looksReadableText(fallbackText)) {
-      return globalLearningService.generateGlobalContent(fallbackText);
-    }
-    throw new Error('Could not extract readable source text from the PDF pages');
+    throw new Error('Could not extract readable source text from the PDF');
+  }
+
+  const educationalCheck = await checkEducationalContent(reconstructedText);
+  if (!educationalCheck.isEducational) {
+    throw new Error(`Content is not suitable for global learning. ${educationalCheck.reasoning || 'Classified as non-educational content.'}`);
+  }
+
+  if (checkOnly) {
+    return {
+      success: true,
+      checked: true,
+      isEducational: true,
+      analysis: {
+        isEducational: true,
+        confidence: educationalCheck.confidence || 0.8,
+        reasoning: educationalCheck.reasoning || 'Content passed educational check.',
+        contentType: 'PDF document'
+      }
+    };
   }
 
   const result = await globalLearningService.generateGlobalContent(reconstructedText);
@@ -380,8 +628,8 @@ If part of the page is unclear, extract only what is readable.`
     analysis: {
       ...(result.analysis || {}),
       isEducational: true,
-      confidence: result.analysis?.confidence || 0.8,
-      reasoning: 'Generated from OCR text read from actual PDF page images using Groq vision',
+      confidence: educationalCheck.confidence || result.analysis?.confidence || 0.8,
+      reasoning: educationalCheck.reasoning || 'Generated from extracted source text read directly from the PDF',
       contentType: result.analysis?.contentType || 'PDF document'
     }
   };

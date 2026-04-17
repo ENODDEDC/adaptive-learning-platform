@@ -1,5 +1,5 @@
 /**
- * Groq-backed drop-in replacement for the subset of the
+ * OpenAI-compatible drop-in replacement for the subset of the
  * @google/generative-ai SDK that the learning-mode services use.
  *
  * Supported surface:
@@ -9,22 +9,37 @@
  *   const response = await result.response;
  *   const text = response.text();
  *
- * Learning-mode **content generation** defaults to
- * **`meta-llama/llama-4-scout-17b-16e-instruct`** — single non-agentic model
- * (no compound fan-out), good TPM on free tier.
- * Override with **GROQ_CONTENT_MODEL** / **GROQ_GENERATION_MODEL** / **GROQ_DEFAULT_MODEL**.
+ * Learning-mode **content generation** defaults to `llama3.1-8b` on Cerebras.
+ * Override with **CEREBRAS_CONTENT_MODEL** / **CEREBRAS_GENERATION_MODEL**
+ * / **CEREBRAS_DEFAULT_MODEL** (or legacy GROQ_* vars).
  * The educational gate is fixed to **`llama-3.1-8b-instant`** in
  * `src/app/api/content/educational-gate/route.js`.
  */
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const OPENAI_COMPAT_CHAT_URL = process.env.OPENAI_COMPAT_CHAT_URL || 'https://api.cerebras.ai/v1/chat/completions';
 /** Default for learning modes after the gate passes. */
-const DEFAULT_CONTENT_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
+const DEFAULT_CONTENT_MODEL = 'llama3.1-8b';
 const GROQ_MAX_ATTEMPTS = 3;
+
+function isGroqModelId(model) {
+  if (typeof model !== 'string') return false;
+  const value = model.trim().toLowerCase();
+  return (
+    value.startsWith('groq/') ||
+    value.startsWith('llama-') ||
+    value.startsWith('meta-llama/') ||
+    value.startsWith('openai/') ||
+    value.startsWith('qwen/') ||
+    value.startsWith('deepseek/')
+  );
+}
 
 /** Model id for learning-mode content generation (not the educational gate). */
 export function resolveGroqContentModel() {
   return (
+    process.env.CEREBRAS_CONTENT_MODEL ||
+    process.env.CEREBRAS_GENERATION_MODEL ||
+    process.env.CEREBRAS_DEFAULT_MODEL ||
     process.env.GROQ_CONTENT_MODEL ||
     process.env.GROQ_GENERATION_MODEL ||
     process.env.GROQ_DEFAULT_MODEL ||
@@ -36,7 +51,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/** Parse "Please try again in 12345ms" from Groq rate-limit bodies */
+/** Parse "Please try again in 12345ms" from provider rate-limit bodies */
 function groqRetryDelayMs(body) {
   if (!body || typeof body !== 'string') return null;
   const m = body.match(/try again in\s+([\d.]+)\s*ms/i);
@@ -64,12 +79,12 @@ function extractPromptFromGeminiInput(input) {
 
 async function groqGenerate({ apiKey, model, prompt, temperature = 0.2, maxTokens = 4096 }) {
   if (!apiKey) {
-    throw new Error('GROQ_API_KEY is not configured');
+    throw new Error('CEREBRAS_API_KEY is not configured');
   }
 
   let lastDetails = '';
   for (let attempt = 0; attempt < GROQ_MAX_ATTEMPTS; attempt++) {
-    const res = await fetch(GROQ_API_URL, {
+    const res = await fetch(OPENAI_COMPAT_CHAT_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -98,7 +113,7 @@ async function groqGenerate({ apiKey, model, prompt, temperature = 0.2, maxToken
 
     if (!res.ok) {
       const details = await res.text().catch(() => '');
-      const err = new Error(`Groq API error (HTTP ${res.status}): ${details}`);
+      const err = new Error(`Provider API error (HTTP ${res.status}): ${details}`);
       err.status = res.status;
       throw err;
     }
@@ -108,7 +123,7 @@ async function groqGenerate({ apiKey, model, prompt, temperature = 0.2, maxToken
     return text;
   }
 
-  const err = new Error(`Groq API error (HTTP 429): ${lastDetails}`);
+  const err = new Error(`Provider API error (HTTP 429): ${lastDetails}`);
   err.status = 429;
   throw err;
 }
@@ -154,11 +169,14 @@ class GroqGenerativeModel {
 
 export class GroqGenAI {
   constructor(apiKey) {
-    this.apiKey = apiKey;
+    this.apiKey = apiKey || process.env.CEREBRAS_API_KEY;
   }
 
-  getGenerativeModel() {
-    const groqModel = resolveGroqContentModel();
+  getGenerativeModel(config = {}) {
+    const requestedModel = config?.model;
+    const groqModel = isGroqModelId(requestedModel)
+      ? requestedModel
+      : resolveGroqContentModel();
     return new GroqGenerativeModel({ apiKey: this.apiKey, model: groqModel });
   }
 }

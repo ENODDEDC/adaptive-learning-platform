@@ -45,6 +45,7 @@ const PdfPreviewWithAI = ({
   const [isVisualLearningLoading, setIsVisualLearningLoading] = useState(false);
   const [isSequentialLearningLoading, setIsSequentialLearningLoading] = useState(false);
   const [isGlobalLearningLoading, setIsGlobalLearningLoading] = useState(false);
+  const [globalLearningStatusMessage, setGlobalLearningStatusMessage] = useState('');
   const [isSensingLearningLoading, setIsSensingLearningLoading] = useState(false);
   const [isIntuitiveLearningLoading, setIsIntuitiveLearningLoading] = useState(false);
   const [isActiveLearningLoading, setIsActiveLearningLoading] = useState(false);
@@ -85,6 +86,7 @@ const PdfPreviewWithAI = ({
   const [analysisMeta, setAnalysisMeta] = useState({ method: null, confidence: null, contentType: null, verified: false, unavailableReason: null, reasoning: null, evidence: [] });
   const [showAnalysisToast, setShowAnalysisToast] = useState(false);
   const [isAIAvailable, setIsAIAvailable] = useState(true);
+  const isVerifiedNonEducationalError = analysisMeta.verified === true && isContentEducational === false;
 
   // Automatic time tracking for ML classification
   useLearningModeTracking('aiNarrator', aiTutorActive);
@@ -380,6 +382,7 @@ AI learning features work best with instructional content, lessons, or study mat
       }
     } catch (error) {
       console.error('❌ Error extracting PDF content:', error);
+      setIsContentEducational(true);
       setAnalysisMeta(prev => ({
         ...prev,
         verified: false,
@@ -969,25 +972,47 @@ Sequential Learning works best with instructional content, lessons, or study mat
 
   // Global Learning Handler
   const handleGlobalLearningClick = async () => {
-    console.log('🌍 === GLOBAL LEARNING BUTTON CLICKED ===');
-    console.log('📊 Current state:', {
-      showGlobalLearning,
-      pdfContent: pdfContent?.length || 0,
-      isGlobalLearningLoading
-    });
-
     try {
-      console.log('🔄 Step 1: Setting loading state...');
       setIsGlobalLearningLoading(true);
-      console.log('🎯 Step 2: Opening Global Learning with actual PDF source...');
+      setGlobalLearningStatusMessage('Checking if this content is educational...');
+      const extractedContent = pdfContent || await extractPdfContent();
+      if (!extractedContent || !extractedContent.trim()) {
+        setIsContentEducational(true);
+        setErrorSource('manual');
+        setExtractionError('Could not read text from this PDF. It may be scanned/image-only or protected.\n\nTechnical details: extracted text is empty after /api/pdf-extract.');
+        return;
+      }
+
+      const analysisResult = await analyzeContentForEducational(extractedContent, true);
+      if (analysisResult.cancelled) {
+        return;
+      }
+
+      if (analysisResult.verified === true && !analysisResult.isEducational) {
+        const reason = analysisResult.reasoning || 'This content is not suitable for global learning.';
+        setErrorSource('manual');
+        setExtractionError(`This document does not appear to contain educational or learning material suitable for global learning.\n\nReason: ${reason}`);
+        return;
+      }
+
+      setIsContentEducational(true);
+      setPdfContent(extractedContent);
+      setGlobalLearningStatusMessage('Opening Global Learning...');
       setShowGlobalLearning(true);
-      console.log('✅ === GLOBAL LEARNING SHOULD NOW BE VISIBLE ===');
 
     } catch (error) {
-      console.error('❌ Error in handleGlobalLearningClick:', error);
-      setExtractionError(`Error analyzing document: ${error.message}`);
+      const message = String(error?.message || '');
+      const isRateLimited = /rate|quota|429/i.test(message);
+      const isExtractionFailure = /extract|No clean extractable text|readable source text/i.test(message);
+      const friendlyMessage = isRateLimited
+        ? `Rate limited right now. Please wait a moment, then try again.\n\nTechnical details: ${message || 'Unknown rate-limit response.'}`
+        : isExtractionFailure
+          ? `Could not read text from this PDF. It may be scanned/image-only or protected.\n\nTechnical details: ${message || 'Unknown extraction failure.'}`
+          : `Error analyzing document: ${message}`;
+      setIsContentEducational(true);
+      setExtractionError(friendlyMessage);
     } finally {
-      console.log('🏁 Step 6: Clearing loading state...');
+      setGlobalLearningStatusMessage('');
       setIsGlobalLearningLoading(false);
     }
   };
@@ -1312,18 +1337,21 @@ Reflective Learning works best with instructional content, lessons, or study mat
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                      Learning Features Not Available
+                      {isVerifiedNonEducationalError ? 'Learning Features Not Available' : 'Something Went Wrong'}
                     </h3>
                     <p className="text-xs text-gray-600 leading-relaxed mb-2">
-                      This document doesn't contain educational content. Zero-shot analysis allows learning modes only for instructional material.
+                      {isVerifiedNonEducationalError
+                        ? "This document doesn't contain educational content. Zero-shot analysis allows learning modes only for instructional material."
+                        : (extractionError || 'An unexpected error happened while preparing learning features.')}
                     </p>
-                    {(analysisMeta.unavailableReason || !analysisMeta.verified) && (
+                    {isVerifiedNonEducationalError && (analysisMeta.unavailableReason || !analysisMeta.verified) && (
                       <p className="text-[11px] text-amber-700 leading-relaxed mb-2">
                         Reason: {analysisMeta.unavailableReason || analysisMeta.reasoning || extractionError || 'Zero-shot metadata missing (analysis may not have executed for this action).'}
                       </p>
                     )}
 
                     {/* Quick Info */}
+                    {isVerifiedNonEducationalError && (
                     <div className="flex items-center gap-3 text-xs">
                       <div className="flex items-center gap-1">
                         <span className="text-gray-500">Type:</span>
@@ -1338,6 +1366,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                         </span>
                       </div>
                     </div>
+                    )}
                   </div>
 
                   {/* Close Button */}
@@ -1354,7 +1383,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
               <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs text-gray-500">
                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                  <span>{analysisMeta.verified ? 'Zero-shot Analysis (Verified)' : 'Zero-shot Analysis (Unavailable)'}</span>
+                  <span>{isVerifiedNonEducationalError ? (analysisMeta.verified ? 'Zero-shot Analysis (Verified)' : 'Zero-shot Analysis (Unavailable)') : 'Runtime Error'}</span>
                 </div>
                 <button
                   onClick={() => setExtractionError('')}
@@ -1459,13 +1488,25 @@ Reflective Learning works best with instructional content, lessons, or study mat
                 )}
 
                 {/* Loading State - Show when loading a mode OR planning to auto-load */}
-                {(isLoadingAnyMode || willAutoLoad) && !hasActiveLearningMode && (
+                {(isLoadingAnyMode || willAutoLoad) && !hasActiveLearningMode && !isGlobalLearningLoading && (
                   <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
                     <div className="text-center">
                       <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
                       <p className="text-lg font-medium text-gray-900 mb-2">Preparing Your Personalized Learning Experience</p>
                       <p className="text-sm text-gray-600">
                         {willAutoLoad ? 'Extracting content and preparing your recommended learning mode...' : 'Generating content based on your learning style...'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {isGlobalLearningLoading && !showGlobalLearning && (
+                  <div className="fixed inset-0 z-[10010] flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
+                    <div className="mx-4 w-full max-w-md rounded-2xl border border-white/50 bg-white/85 p-8 text-center shadow-2xl backdrop-blur-md">
+                      <div className="mx-auto mb-5 h-14 w-14 rounded-full border-4 border-orange-200 border-t-orange-600 animate-spin" />
+                      <p className="mb-2 text-lg font-semibold text-gray-900">Big Picture</p>
+                      <p className="text-sm text-gray-700">
+                        {globalLearningStatusMessage || 'Checking if this content is educational...'}
                       </p>
                     </div>
                   </div>

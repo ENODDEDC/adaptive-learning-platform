@@ -2,17 +2,17 @@ import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const OPENAI_COMPAT_CHAT_URL = process.env.OPENAI_COMPAT_CHAT_URL || 'https://api.cerebras.ai/v1/chat/completions';
 
 /** Learnability classifier only — fixed model (not learning-mode generation). */
-const GATE_MODEL = 'llama-3.1-8b-instant';
+const GATE_MODEL = 'llama3.1-8b';
 
 function gateModel() {
   return GATE_MODEL;
 }
 
 function gateMaxChars() {
-  const n = parseInt(process.env.GROQ_GATE_MAX_CHARS || '8000', 10);
+  const n = parseInt(process.env.CEREBRAS_GATE_MAX_CHARS || process.env.GROQ_GATE_MAX_CHARS || '8000', 10);
   if (!Number.isFinite(n) || n < 1500) return 8000;
   return Math.min(n, 12000);
 }
@@ -50,14 +50,14 @@ function extractJson(text) {
 
 export async function POST(request) {
   try {
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = process.env.CEREBRAS_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
         {
           success: false,
-          error: 'GROQ_API_KEY not configured',
-          method: 'groq-llama',
-          unavailableReason: 'Server missing GROQ_API_KEY environment variable.'
+          error: 'CEREBRAS_API_KEY not configured',
+          method: 'cerebras-llama',
+          unavailableReason: 'Server missing CEREBRAS_API_KEY environment variable.'
         },
         { status: 503 }
       );
@@ -71,7 +71,7 @@ export async function POST(request) {
         success: true,
         isEducational: false,
         confidence: 0,
-        method: 'groq-llama',
+        method: 'cerebras-llama',
         topLabel: 'Empty or unusable content',
         rejectionReason: 'Document text is empty or too short to analyze.',
         evidence: []
@@ -120,9 +120,9 @@ export async function POST(request) {
       ]
     };
 
-    let groqRes;
+    let gateRes;
     for (let attempt = 0; attempt < 3; attempt++) {
-      groqRes = await fetch(GROQ_API_URL, {
+      gateRes = await fetch(OPENAI_COMPAT_CHAT_URL, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -131,8 +131,8 @@ export async function POST(request) {
         body: JSON.stringify(requestBody)
       });
 
-      if (groqRes.status === 429 && attempt < 2) {
-        const body429 = await groqRes.text();
+      if (gateRes.status === 429 && attempt < 2) {
+        const body429 = await gateRes.text();
         const wait =
           groqRetryDelayMs(body429) ?? Math.min(1500 * 2 ** attempt, 20000);
         await sleep(wait);
@@ -141,31 +141,31 @@ export async function POST(request) {
       break;
     }
 
-    if (!groqRes.ok) {
-      const detailText = await groqRes.text().catch(() => '');
+    if (!gateRes.ok) {
+      const detailText = await gateRes.text().catch(() => '');
       return NextResponse.json(
         {
           success: false,
-          error: 'Groq classification failed',
+          error: 'Educational classification failed',
           details: detailText,
-          method: 'groq-llama',
-          unavailableReason: `Groq API error (HTTP ${groqRes.status})`
+          method: 'cerebras-llama',
+          unavailableReason: `Provider API error (HTTP ${gateRes.status})`
         },
         { status: 503 }
       );
     }
 
-    const groqJson = await groqRes.json();
-    const rawContent = groqJson?.choices?.[0]?.message?.content ?? '';
+    const gateJson = await gateRes.json();
+    const rawContent = gateJson?.choices?.[0]?.message?.content ?? '';
     const parsed = extractJson(rawContent);
 
     if (!parsed || typeof parsed.isEducational !== 'boolean') {
       return NextResponse.json(
         {
           success: false,
-          error: 'Groq returned unparseable response',
+          error: 'Provider returned unparseable response',
           details: rawContent,
-          method: 'groq-llama',
+          method: 'cerebras-llama',
           unavailableReason: 'Model did not return valid JSON.'
         },
         { status: 502 }
@@ -189,7 +189,7 @@ export async function POST(request) {
       isEducational: parsed.isEducational,
       confidence,
       margin: confidence,
-      method: 'groq-llama',
+      method: 'cerebras-llama',
       model,
       topLabel: parsed.category || (parsed.isEducational ? 'Learnable content' : 'Non-learnable content'),
       reasoning: parsed.reasoning || null,
@@ -210,7 +210,7 @@ export async function POST(request) {
         success: false,
         error: 'Educational gate failed',
         details,
-        method: 'groq-llama',
+        method: 'cerebras-llama',
         unavailableReason: details
       },
       { status: 503 }
@@ -219,12 +219,12 @@ export async function POST(request) {
 }
 
 export async function GET() {
-  const hasKey = !!process.env.GROQ_API_KEY;
+  const hasKey = !!process.env.CEREBRAS_API_KEY;
   return NextResponse.json({
     success: true,
-    method: 'groq-llama',
+    method: 'cerebras-llama',
     model: gateModel(),
     status: hasKey ? 'ready' : 'missing-key',
-    unavailableReason: hasKey ? null : 'GROQ_API_KEY not configured'
+    unavailableReason: hasKey ? null : 'CEREBRAS_API_KEY not configured'
   });
 }

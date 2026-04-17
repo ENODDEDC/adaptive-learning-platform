@@ -6,6 +6,14 @@ class GlobalLearningService {
     this.model = null;
   }
 
+  getGenerationModelName() {
+    return process.env.GROQ_GLOBAL_LEARNING_MODEL || 'llama3.1-8b';
+  }
+
+  getFallbackGenerationModelName() {
+    return process.env.GROQ_GLOBAL_LEARNING_FALLBACK_MODEL || 'llama3.1-8b';
+  }
+
   normalizeText(text = '') {
     return text
       .replace(/\r/g, '\n')
@@ -100,12 +108,71 @@ class GlobalLearningService {
     throw new Error('Failed to parse JSON from model response');
   }
 
+  async generateStrictJson(prompt, schemaDescription, modelOverride = null) {
+    this.initializeModels();
+    if (!this.model) {
+      throw new Error('Global learning model not available');
+    }
+    const activeModel = modelOverride
+      ? this.genAI.getGenerativeModel({ model: modelOverride })
+      : this.model;
+
+    const firstResult = await activeModel.generateContent(prompt);
+    const firstResponse = await firstResult.response;
+    const firstText = firstResponse.text();
+
+    try {
+      return this.parseJsonFromModelResponse(firstText);
+    } catch {
+      // Second pass: ask model to repair/normalize into valid JSON only.
+      const cappedBrokenJson = String(firstText || '').slice(0, 5000);
+      const repairPrompt = `
+Return ONLY valid JSON (no markdown, no comments) that matches this schema:
+${schemaDescription}
+
+Content to repair:
+${cappedBrokenJson}
+`;
+      const repairResult = await activeModel.generateContent(repairPrompt);
+      const repairResponse = await repairResult.response;
+      const repairText = repairResponse.text();
+      return this.parseJsonFromModelResponse(repairText);
+    }
+  }
+
+  async generateStrictJsonWith413Retry(buildPrompt, schemaDescription) {
+    const excerptLimits = [1800, 1200, 800, 500, 300];
+    const modelCandidates = [
+      this.getGenerationModelName(),
+      this.getFallbackGenerationModelName()
+    ];
+    let lastError = null;
+
+    for (const limit of excerptLimits) {
+      for (const modelName of modelCandidates) {
+        try {
+          const prompt = buildPrompt(limit);
+          return await this.generateStrictJson(prompt, schemaDescription, modelName);
+        } catch (error) {
+          const message = String(error?.message || '');
+          const is413 = /HTTP 413|Request Entity Too Large|request_too_large/i.test(message);
+          if (!is413) {
+            throw error;
+          }
+          lastError = error;
+        }
+      }
+    }
+
+    throw lastError || new Error('AI request too large after retries');
+  }
+
   initializeModels() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.CEREBRAS_API_KEY);
         this.model = this.genAI.getGenerativeModel({
-          model: "gemini-flash-lite-latest"
+          model: this.getGenerationModelName()
         });
         console.log('🌍 Global Learning Service initialized');
       } catch (error) {
@@ -303,11 +370,11 @@ Be strict in your analysis - only classify content as educational if it genuinel
       throw new Error('Google AI service not available');
     }
 
-    const prompt = `
+    const buildPrompt = (maxChars) => `
     You are creating actual study material from the source document for a global learner.
 
     SOURCE DOCUMENT CONTENT:
-    ${docxText.substring(0, 3000)}${docxText.length > 3000 ? '...' : ''}
+    ${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
 
     Important rules:
     1. Base every section on the actual source content above.
@@ -361,20 +428,50 @@ Be strict in your analysis - only classify content as educational if it genuinel
     `;
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      console.log('🤖 AI Big Picture Response:', text.substring(0, 500) + '...');
-
-      const bigPicture = this.parseJsonFromModelResponse(text);
+      const bigPicture = await this.generateStrictJsonWith413Retry(
+        buildPrompt,
+        `{
+  "overallPurpose": {
+    "title": "string",
+    "description": "string",
+    "realWorldSignificance": "string",
+    "keyQuestion": "string"
+  },
+  "bigPictureContext": {
+    "title": "string",
+    "description": "string",
+    "broaderField": "string",
+    "historicalContext": "string",
+    "futureImplications": "string"
+  },
+  "systemicView": {
+    "title": "string",
+    "description": "string",
+    "mainComponents": ["string"],
+    "relationships": "string",
+    "emergentProperties": "string"
+  },
+  "practicalRelevance": {
+    "title": "string",
+    "description": "string",
+    "industries": ["string"],
+    "dailyLife": "string",
+    "globalImpact": "string"
+  },
+  "learningStrategy": {
+    "title": "string",
+    "description": "string",
+    "startingPoint": "string",
+    "keyInsights": ["string"],
+    "mentalModel": "string"
+  }
+}`
+      );
       console.log('✅ Successfully parsed big picture overview');
       return bigPicture;
-
-      // Fallback if JSON parsing fails
     } catch (error) {
       console.error('❌ Error generating big picture overview:', error);
-      return this.getIntelligentFallbackBigPicture(docxText);
+      throw new Error(`AI failed to generate Big Picture JSON: ${error.message}`);
     }
   }
 
@@ -388,11 +485,11 @@ Be strict in your analysis - only classify content as educational if it genuinel
       throw new Error('Google AI service not available');
     }
 
-    const prompt = `
+    const buildPrompt = (maxChars) => `
     You are creating actual study material from the source document for a global learner.
 
     SOURCE DOCUMENT CONTENT:
-    ${docxText.substring(0, 3000)}${docxText.length > 3000 ? '...' : ''}
+    ${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
 
     Important rules:
     1. Base the map on the actual source content above.
@@ -458,19 +555,55 @@ Be strict in your analysis - only classify content as educational if it genuinel
     `;
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      console.log('🤖 AI Interconnections Response:', text.substring(0, 500) + '...');
-
-      const interconnections = this.parseJsonFromModelResponse(text);
+      const interconnections = await this.generateStrictJsonWith413Retry(
+        buildPrompt,
+        `{
+  "conceptNetwork": {
+    "centralTheme": "string",
+    "coreNodes": [{
+      "name": "string",
+      "description": "string",
+      "connections": ["string"],
+      "importance": "string"
+    }],
+    "emergentPatterns": ["string"]
+  },
+  "systemDynamics": {
+    "feedbackLoops": [{
+      "name": "string",
+      "description": "string",
+      "type": "reinforcing|balancing",
+      "impact": "string"
+    }],
+    "causeEffectChains": [{
+      "trigger": "string",
+      "chain": ["string"],
+      "significance": "string"
+    }]
+  },
+  "crossDomainConnections": {
+    "relatedFields": ["string"],
+    "analogies": [{
+      "comparison": "string",
+      "explanation": "string",
+      "limitations": "string"
+    }],
+    "applications": ["string"]
+  },
+  "holisticInsights": {
+    "keyRealizations": ["string"],
+    "paradoxes": ["string"],
+    "unifyingPrinciples": ["string"],
+    "systemicImplications": "string"
+  }
+}`
+      );
       console.log('✅ Successfully parsed interconnections map');
       return interconnections;
 
     } catch (error) {
       console.error('❌ Error generating interconnections:', error);
-      return this.getIntelligentFallbackInterconnections(docxText);
+      throw new Error(`AI failed to generate Interconnections JSON: ${error.message}`);
     }
   }
 
