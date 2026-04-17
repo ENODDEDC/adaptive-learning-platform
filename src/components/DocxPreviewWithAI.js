@@ -772,7 +772,7 @@ const DocxPreviewWithAI = ({
 
   const analyzeContentForEducational = async (content) => {
     try {
-      const response = await fetch('/api/ai-tutor/analyze-content', {
+      const response = await fetch('/api/content/educational-gate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content })
@@ -782,8 +782,8 @@ const DocxPreviewWithAI = ({
         const result = await response.json();
         return {
           isEducational: result.isEducational,
-          reasoning: result.reasoning,
-          contentType: result.contentType,
+          reasoning: `Zero-shot gate (${result.method || 'zero-shot'})`,
+          contentType: result.isEducational ? 'Educational Material' : 'Non-educational Document',
           confidence: result.confidence
         };
       }

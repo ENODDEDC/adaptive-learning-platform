@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GroqGenAI as GoogleGenerativeAI } from '@/lib/groqGenAI';
 
 class SequentialLearningService {
   constructor() {
@@ -9,7 +9,7 @@ class SequentialLearningService {
   initializeModels() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
         this.model = this.genAI.getGenerativeModel({
           model: "gemini-flash-lite-latest"
         });
@@ -24,14 +24,24 @@ class SequentialLearningService {
    * Analyze if content is educational using the SAME logic as AI Narrator
    */
   async analyzeContentForEducation(docxText) {
-    if (!docxText || docxText.trim().length < 50) {
-      return { 
-        isEducational: false, 
+    // The client already runs the educational gate (Groq-backed) before calling
+    // this endpoint, so skip the redundant re-analysis here to avoid a second
+    // LLM call per mode click. Always treat the content as educational.
+    if (!docxText || docxText.trim().length < 20) {
+      return {
+        isEducational: false,
         reasoning: 'Content too short to analyze',
         confidence: 0,
         contentType: 'Insufficient content'
       };
     }
+    return {
+      isEducational: true,
+      confidence: 1,
+      reasoning: 'Educational gate already verified at client layer',
+      contentType: 'Verified learnable content'
+    };
+    /* eslint-disable no-unreachable */
 
     try {
       console.log('🎯 Sequential Learning: Using same AI analysis logic as AI Narrator...');
@@ -171,11 +181,9 @@ Be strict in your analysis - only classify content as educational if it genuinel
 
       console.log('✅ Content approved for sequential learning generation');
 
-      // Generate both steps and concept flow
-      const [steps, conceptFlow] = await Promise.all([
-        this.generateStepBreakdown(docxText),
-        this.generateConceptFlow(docxText)
-      ]);
+      // Serialize LLM calls to avoid doubling TPM in one window (quality unchanged).
+      const steps = await this.generateStepBreakdown(docxText);
+      const conceptFlow = await this.generateConceptFlow(docxText);
 
       return {
         success: true,
@@ -185,7 +193,13 @@ Be strict in your analysis - only classify content as educational if it genuinel
       };
     } catch (error) {
       console.error('Error generating sequential content:', error);
-      throw new Error('Failed to generate sequential learning content');
+      // Preserve the original Groq / downstream error message so the API
+      // route can map it (rate_limit_exceeded, request_too_large, etc.).
+      const wrapped = new Error(
+        `Failed to generate sequential learning content: ${error?.message || error}`
+      );
+      wrapped.cause = error;
+      throw wrapped;
     }
   }
 

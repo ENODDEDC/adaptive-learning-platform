@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GroqGenAI as GoogleGenerativeAI } from '@/lib/groqGenAI';
 
 /**
  * Active Learning Service
@@ -15,7 +15,7 @@ class ActiveLearningService {
   initializeModels() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
         this.model = this.genAI.getGenerativeModel({
           model: "gemini-flash-lite-latest"
         });

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GroqGenAI as GoogleGenerativeAI } from '@/lib/groqGenAI';
 
 class SensingLearningService {
   constructor() {
@@ -9,7 +9,7 @@ class SensingLearningService {
   initializeModels() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
         this.model = this.genAI.getGenerativeModel({
           model: "gemini-flash-lite-latest"
         });
@@ -32,6 +32,15 @@ class SensingLearningService {
         contentType: 'Insufficient content'
       };
     }
+    // Client already passes the educational gate (Groq-backed) before calling
+    // this endpoint; skip the redundant LLM re-check.
+    return {
+      isEducational: true,
+      confidence: 1,
+      reasoning: 'Educational gate already verified at client layer',
+      contentType: 'Verified learnable content'
+    };
+    /* eslint-disable no-unreachable */
 
     try {
       console.log('🔬 Sensing Learning: Using same AI analysis logic as other learning features...');
@@ -170,11 +179,8 @@ Be strict in your analysis - only classify content as educational if it genuinel
 
       console.log('✅ Content approved for hands-on learning generation');
 
-      // Generate both interactive simulations and practical challenges
-      const [simulations, challenges] = await Promise.all([
-        this.generateInteractiveSimulations(docxText),
-        this.generatePracticalChallenges(docxText)
-      ]);
+      const simulations = await this.generateInteractiveSimulations(docxText);
+      const challenges = await this.generatePracticalChallenges(docxText);
 
       return {
         success: true,
@@ -184,7 +190,11 @@ Be strict in your analysis - only classify content as educational if it genuinel
       };
     } catch (error) {
       console.error('Error generating hands-on content:', error);
-      throw new Error('Failed to generate hands-on learning content');
+      const wrapped = new Error(
+        `Failed to generate hands-on learning content: ${error?.message || error}`
+      );
+      wrapped.cause = error;
+      throw wrapped;
     }
   }
 
@@ -235,8 +245,10 @@ Be strict in your analysis - only classify content as educational if it genuinel
           "dataPoints": [
             {
               "label": "Data Point Name",
-              "value": "sample value",
-              "description": "What this data represents"
+              "value": "sample or seed value shown before interaction",
+              "description": "What this data represents",
+              "fromElements": ["optional: exact names of interactiveElements that drive this readout"],
+              "combine": "sum | product | mean | min | max | first | last — how to merge numeric fromElements (default sum). For a single slider/input use one name and combine first."
             }
           ],
           "stepByStepGuide": [
@@ -248,6 +260,10 @@ Be strict in your analysis - only classify content as educational if it genuinel
         }
       ]
     }
+
+    For EVERY dataPoint, set "fromElements" to the interactive element NAME(s) whose values should update that readout live.
+    Use "combine": "first" when a single control maps to a readout; use "sum" or "product" when multiple numeric inputs feed one result.
+    Optional on a "button" element: same "fromElements" + "combine" so the UI can echo the same rule on Calculate.
 
     Focus on creating CONCRETE, MANIPULATABLE simulations that sensing learners can interact with directly.
     Base everything on FACTUAL content from the document.
@@ -405,7 +421,9 @@ Be strict in your analysis - only classify content as educational if it genuinel
           {
             label: "Sample Data Point",
             value: "100",
-            description: "Representative value from document content"
+            description: "Representative value from document content",
+            fromElements: ["Value Adjuster"],
+            combine: "first"
           }
         ],
         stepByStepGuide: [
@@ -444,7 +462,9 @@ Be strict in your analysis - only classify content as educational if it genuinel
             description: "Perform the calculation",
             defaultValue: "Calculate",
             range: "action",
-            unit: "click"
+            unit: "click",
+            fromElements: ["Input Variable 1", "Input Variable 2"],
+            combine: "sum"
           }
         ],
         learningObjectives: [
@@ -457,7 +477,9 @@ Be strict in your analysis - only classify content as educational if it genuinel
           {
             label: "Result",
             value: "calculated value",
-            description: "Output of the calculation"
+            description: "Output of the calculation",
+            fromElements: ["Input Variable 1", "Input Variable 2"],
+            combine: "sum"
           }
         ],
         stepByStepGuide: [

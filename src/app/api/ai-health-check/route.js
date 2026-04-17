@@ -7,39 +7,48 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
  * Returns: { available: true/false, error: string }
  */
 export async function GET() {
+  const groqConfigured = !!process.env.GROQ_API_KEY;
+  const apiKey = process.env.GOOGLE_API_KEY;
+
+  if (!apiKey && groqConfigured) {
+    console.log('✅ AI Health Check: Groq configured (Gemini not used for learning modes)');
+    return NextResponse.json({
+      available: true,
+      gemini: false,
+      groqConfigured: true,
+      error: null
+    });
+  }
+
+  if (!apiKey) {
+    return NextResponse.json({
+      available: false,
+      gemini: false,
+      groqConfigured: false,
+      error: 'No AI provider configured (set GOOGLE_API_KEY and/or GROQ_API_KEY)'
+    });
+  }
+
   try {
-    const apiKey = process.env.GOOGLE_API_KEY;
-
-    // Check if API key exists
-    if (!apiKey) {
-      return NextResponse.json({
-        available: false,
-        error: 'Google API key not configured'
-      });
-    }
-
-    // Try to initialize Gemini AI
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
-    // Send a minimal test request
     const result = await model.generateContent('Test');
     const response = await result.response;
-    const text = response.text();
+    response.text();
 
-    // If we got here, AI is working
     console.log('✅ AI Health Check: Gemini AI is available');
     return NextResponse.json({
       available: true,
+      gemini: true,
+      groqConfigured,
       error: null
     });
-
   } catch (error) {
     console.error('❌ AI Health Check Failed:', error.message);
-    
-    // Determine error type
+
     let errorMessage = 'AI service temporarily unavailable';
-    
+
     if (error.message.includes('API key not valid')) {
       errorMessage = 'Invalid API key';
     } else if (error.message.includes('quota')) {
@@ -48,8 +57,21 @@ export async function GET() {
       errorMessage = 'Network connection error';
     }
 
+    if (groqConfigured) {
+      console.log('⚠️ Gemini check failed but Groq is configured — treating AI as available');
+      return NextResponse.json({
+        available: true,
+        gemini: false,
+        groqConfigured: true,
+        error: null,
+        geminiWarning: errorMessage
+      });
+    }
+
     return NextResponse.json({
       available: false,
+      gemini: false,
+      groqConfigured: false,
       error: errorMessage
     });
   }

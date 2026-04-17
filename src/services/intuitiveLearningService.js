@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GroqGenAI as GoogleGenerativeAI } from '@/lib/groqGenAI';
 
 class IntuitiveLearningService {
   constructor() {
@@ -9,7 +9,7 @@ class IntuitiveLearningService {
   initializeModels() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
         this.model = this.genAI.getGenerativeModel({
           model: "gemini-flash-lite-latest"
         });
@@ -32,6 +32,15 @@ class IntuitiveLearningService {
         contentType: 'Insufficient content'
       };
     }
+    // Client already passes the educational gate (Groq-backed) before calling
+    // this endpoint; skip the redundant LLM re-check.
+    return {
+      isEducational: true,
+      confidence: 1,
+      reasoning: 'Educational gate already verified at client layer',
+      contentType: 'Verified learnable content'
+    };
+    /* eslint-disable no-unreachable */
 
     try {
       console.log('🔮 Intuitive Learning: Using same AI analysis logic as other learning features...');
@@ -170,11 +179,8 @@ Be strict in your analysis - only classify content as educational if it genuinel
 
       console.log('✅ Content approved for concept constellation generation');
 
-      // Generate both concept universe and insight patterns
-      const [conceptUniverse, insightPatterns] = await Promise.all([
-        this.generateConceptUniverse(docxText),
-        this.generateInsightPatterns(docxText)
-      ]);
+      const conceptUniverse = await this.generateConceptUniverse(docxText);
+      const insightPatterns = await this.generateInsightPatterns(docxText);
 
       return {
         success: true,

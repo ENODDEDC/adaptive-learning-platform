@@ -222,12 +222,10 @@ const CleanPDFViewer = ({
         <button
           data-tour={getTourAttribute(mode.name)}
           onClick={mode.handler}
-          disabled={mode.loading || !isAIAvailable}
-          title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
+          disabled={mode.loading}
+          title=""
           onMouseEnter={() => {
-            const tooltip = !isAIAvailable
-              ? `⚠️ AI Unavailable: ${aiHealthError}`
-              : isRecommended 
+            const tooltip = isRecommended
               ? '🎯 ML Personalized: This mode matches your learning style'
               : tooltipData[tooltipKey]?.description || mode.name;
             setShowTooltip({ mode: mode.name, content: tooltip });
@@ -565,8 +563,8 @@ const CleanPDFViewer = ({
                   <div className="relative">
                     <button
                       onClick={() => setShowMoreModes(!showMoreModes)}
-                      disabled={!isAIAvailable}
-                      title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : 'More AI modes'}
+                      disabled={false}
+                      title="More AI modes"
                       className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
                     >
                       <span>More</span>
@@ -582,8 +580,8 @@ const CleanPDFViewer = ({
                               mode.handler();
                               setShowMoreModes(false);
                             }}
-                            disabled={mode.loading || !isAIAvailable}
-                            title={!isAIAvailable ? `AI Unavailable: ${aiHealthError}` : ''}
+                            disabled={mode.loading}
+                            title=""
                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
                           >
                             <span className="text-lg">{tooltipData[mode.name === 'Step-by-Step' ? 'Sequential Learning' : mode.name === 'Big Picture' ? 'Global Learning' : mode.name === 'Hands-On' ? 'Hands-On Lab' : mode.name === 'Theory' ? 'Concept Constellation' : mode.name === 'Practice' ? 'Active Learning Hub' : mode.name === 'Reflect' ? 'Reflective Learning' : mode.name]?.icon || '📚'}</span>

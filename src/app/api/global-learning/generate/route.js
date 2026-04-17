@@ -75,11 +75,22 @@ export async function POST(request) {
     } else if (error.message.includes('not available')) {
       errorMessage = 'Global learning service is temporarily unavailable';
       statusCode = 503;
-    } else if (error.message.includes('quota')) {
-      errorMessage = 'Global learning generation quota exceeded';
+    } else if (
+      error.message.includes('quota') ||
+      error.message.includes('rate_limit') ||
+      error.message.includes('429')
+    ) {
+      errorMessage = 'Global learning generation rate-limited by Groq. Wait a minute and retry.';
       statusCode = 429;
-    } else if (error.message.includes('API key')) {
-      errorMessage = 'Global learning service configuration error';
+    } else if (
+      error.message.includes('request_too_large') ||
+      error.message.includes('Request Entity Too Large') ||
+      error.message.includes('413')
+    ) {
+      errorMessage = 'Document too large for the generation model. Try a shorter document.';
+      statusCode = 413;
+    } else if (error.message.includes('API key') || error.message.includes('GROQ_API_KEY')) {
+      errorMessage = 'Global learning service configuration error (missing GROQ_API_KEY).';
       statusCode = 500;
     }
 

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GroqGenAI as GoogleGenerativeAI } from '@/lib/groqGenAI';
 
 class GlobalLearningService {
   constructor() {
@@ -9,7 +9,7 @@ class GlobalLearningService {
   initializeModels() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
         this.model = this.genAI.getGenerativeModel({
           model: "gemini-flash-lite-latest"
         });
@@ -32,6 +32,16 @@ class GlobalLearningService {
         contentType: 'Insufficient content'
       };
     }
+    // Client already passes the educational gate (Groq-backed) before calling
+    // this endpoint; skip the redundant LLM re-check to save TPM and avoid
+    // false negatives from the second pass.
+    return {
+      isEducational: true,
+      confidence: 1,
+      reasoning: 'Educational gate already verified at client layer',
+      contentType: 'Verified learnable content'
+    };
+    /* eslint-disable no-unreachable */
 
     try {
       console.log('🌍 Global Learning: Using same AI analysis logic as other learning features...');
@@ -170,11 +180,8 @@ Be strict in your analysis - only classify content as educational if it genuinel
 
       console.log('✅ Content approved for global learning generation');
 
-      // Generate both big picture overview and interconnections
-      const [bigPicture, interconnections] = await Promise.all([
-        this.generateBigPictureOverview(docxText),
-        this.generateInterconnections(docxText)
-      ]);
+      const bigPicture = await this.generateBigPictureOverview(docxText);
+      const interconnections = await this.generateInterconnections(docxText);
 
       return {
         success: true,
@@ -184,7 +191,11 @@ Be strict in your analysis - only classify content as educational if it genuinel
       };
     } catch (error) {
       console.error('Error generating global content:', error);
-      throw new Error('Failed to generate global learning content');
+      const wrapped = new Error(
+        `Failed to generate global learning content: ${error?.message || error}`
+      );
+      wrapped.cause = error;
+      throw wrapped;
     }
   }
 

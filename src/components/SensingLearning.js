@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   XMarkIcon,
   ArrowPathIcon,
   ChevronLeftIcon,
   BeakerIcon,
-  PlayIcon,
   CheckCircleIcon,
   ClockIcon,
   CogIcon,
@@ -16,6 +15,140 @@ import {
 } from '@heroicons/react/24/outline';
 import { trackBehavior } from '@/utils/learningBehaviorTracker';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
+
+function parseInteractiveNumber(raw) {
+  if (raw === null || raw === undefined) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  const n = Number(s.replace(/[^\d.-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatReadoutNumber(n) {
+  if (n === null || n === undefined || Number.isNaN(n)) return '—';
+  const rounded = Math.round(n * 1000) / 1000;
+  if (Math.abs(rounded - Math.round(rounded)) < 1e-9) return String(Math.round(rounded));
+  return String(rounded).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+}
+
+function gatherNumericControlValues(sim, inputsByName) {
+  const nums = [];
+  (sim?.interactiveElements || []).forEach((el) => {
+    if (el.type === 'slider' || el.type === 'input') {
+      const v = parseInteractiveNumber(inputsByName?.[el.name] ?? el.defaultValue);
+      if (v !== null) nums.push(v);
+    }
+  });
+  return nums;
+}
+
+function combineNumericValues(nums, combineRaw) {
+  const mode = String(combineRaw || 'sum').toLowerCase();
+  if (!nums.length) return null;
+  switch (mode) {
+    case 'product':
+      return nums.reduce((a, b) => a * b, 1);
+    case 'mean':
+      return nums.reduce((a, b) => a + b, 0) / nums.length;
+    case 'min':
+      return Math.min(...nums);
+    case 'max':
+      return Math.max(...nums);
+    case 'first':
+      return nums[0];
+    case 'last':
+      return nums[nums.length - 1];
+    default:
+      return nums.reduce((a, b) => a + b, 0);
+  }
+}
+
+function gatherNumsFromElementNames(sim, inputsByName, names) {
+  const elements = sim?.interactiveElements || [];
+  const nums = [];
+  (names || []).forEach((name) => {
+    const el = elements.find((e) => e.name === name);
+    if (!el || (el.type !== 'slider' && el.type !== 'input')) return;
+    const v = parseInteractiveNumber(inputsByName?.[el.name] ?? el.defaultValue);
+    if (v !== null) nums.push(v);
+  });
+  return nums;
+}
+
+/** Uses dataPoint.fromElements + combine when present; else legacy inference. */
+function computeFromElementsBinding(sim, inputsByName, dp) {
+  if (!Array.isArray(dp.fromElements) || dp.fromElements.length === 0) return null;
+
+  const elements = sim?.interactiveElements || [];
+  const nums = [];
+  const texts = [];
+
+  dp.fromElements.forEach((name) => {
+    const el = elements.find((e) => e.name === name);
+    if (!el) return;
+    const raw = inputsByName?.[el.name] ?? el.defaultValue;
+    if (el.type === 'slider' || el.type === 'input') {
+      const n = parseInteractiveNumber(raw);
+      if (n !== null) nums.push(n);
+    } else {
+      texts.push(String(raw ?? ''));
+    }
+  });
+
+  if (nums.length) {
+    return formatReadoutNumber(combineNumericValues(nums, dp.combine));
+  }
+  if (texts.length) return texts.filter(Boolean).join(' · ');
+  return String(dp.value ?? '');
+}
+
+function computeLegacyReadoutForIndex(sim, inputsByName, dps, i) {
+  const nums = gatherNumericControlValues(sim, inputsByName);
+  if (nums.length === 0) return String(dps[i].value ?? '');
+  if (nums.length === 1) {
+    return i === 0 ? formatReadoutNumber(nums[0]) : String(dps[i].value ?? '');
+  }
+  const sum = nums.reduce((a, b) => a + b, 0);
+  const prod = nums.reduce((a, b) => a * b, 1);
+  const mean = sum / nums.length;
+  if (i === 0) return formatReadoutNumber(sum);
+  if (i === 1) return formatReadoutNumber(prod);
+  if (i < nums.length) return formatReadoutNumber(nums[i]);
+  return formatReadoutNumber(mean);
+}
+
+/** Map dataPoints to live strings (schema-driven + fallback). */
+function getLiveReadoutValues(sim, inputsByName) {
+  const dps = sim?.dataPoints || [];
+  if (!dps.length) return [];
+  return dps.map((dp, i) => {
+    if (Array.isArray(dp.fromElements) && dp.fromElements.length > 0) {
+      return computeFromElementsBinding(sim, inputsByName, dp);
+    }
+    return computeLegacyReadoutForIndex(sim, inputsByName, dps, i);
+  });
+}
+
+function resolveButtonAggregation(sim) {
+  const btn = (sim?.interactiveElements || []).find((e) => e.type === 'button');
+  if (btn && Array.isArray(btn.fromElements) && btn.fromElements.length > 0) {
+    return { names: btn.fromElements, combine: btn.combine };
+  }
+  const dp0 = sim?.dataPoints?.[0];
+  if (dp0 && Array.isArray(dp0.fromElements) && dp0.fromElements.length > 0) {
+    return { names: dp0.fromElements, combine: dp0.combine };
+  }
+  return { names: null, combine: 'sum' };
+}
+
+function parseSliderBounds(range) {
+  const s = String(range ?? '');
+  const parts = s.split(/[-–]/).map((p) => parseFloat(String(p).trim()));
+  if (parts.length >= 2 && parts.every((n) => Number.isFinite(n))) {
+    return { min: parts[0], max: parts[1] };
+  }
+  return { min: 0, max: 100 };
+}
 
 const SensingLearning = ({
   isActive,
@@ -32,6 +165,7 @@ const SensingLearning = ({
   const [activeChallenge, setActiveChallenge] = useState(0);
   const [simulationInputs, setSimulationInputs] = useState({});
   const [challengeProgress, setChallengeProgress] = useState({});
+  const [calcNoticeBySim, setCalcNoticeBySim] = useState({});
 
   // Automatic time tracking for ML classification
   useLearningModeTracking('sensingLearning', isActive);
@@ -120,6 +254,27 @@ const SensingLearning = ({
     }
   };
 
+  const hasFullContent = simulations.length > 0 && challenges.length > 0;
+
+  const requestRegenerate = () => {
+    if (!window.confirm('Regenerate hands-on lab? This runs the AI again and uses more API quota.')) return;
+    generateSensingContent();
+  };
+
+  const activeSimForReadouts = simulations[activeSimulation];
+  const activeSimInputsForReadouts = simulationInputs[activeSimulation] || {};
+  const liveReadoutValues = useMemo(
+    () =>
+      activeSimForReadouts
+        ? getLiveReadoutValues(activeSimForReadouts, activeSimInputsForReadouts)
+        : [],
+    [activeSimForReadouts, activeSimInputsForReadouts]
+  );
+
+  useEffect(() => {
+    setCalcNoticeBySim({});
+  }, [activeSimulation]);
+
   const handleSimulationInputChange = (simIndex, elementName, value) => {
     setSimulationInputs(prev => ({
       ...prev,
@@ -128,6 +283,12 @@ const SensingLearning = ({
         [elementName]: value
       }
     }));
+    setCalcNoticeBySim((prev) => {
+      if (!prev[simIndex]) return prev;
+      const next = { ...prev };
+      delete next[simIndex];
+      return next;
+    });
     // Track interaction
     trackBehavior('interactive_element_used', { 
       mode: 'sensing', 
@@ -136,6 +297,41 @@ const SensingLearning = ({
       value 
     });
   };
+
+  const handleSimulationCalculate = useCallback(
+    (simIndex) => {
+      const sim = simulations[simIndex];
+      const inputs = simulationInputs[simIndex] || {};
+      const { names, combine } = resolveButtonAggregation(sim);
+      const nums = names?.length
+        ? gatherNumsFromElementNames(sim, inputs, names)
+        : gatherNumericControlValues(sim, inputs);
+      const result = nums.length ? combineNumericValues(nums, combine) : NaN;
+
+      trackBehavior('simulation_calculate', {
+        mode: 'sensing',
+        simIndex,
+        binding: names || 'all_numeric',
+        combine: combine || 'sum',
+        inputs: nums,
+        result: Number.isFinite(result) ? result : null
+      });
+
+      if (Number.isFinite(result)) {
+        const mode = String(combine || 'sum').toLowerCase();
+        setCalcNoticeBySim((prev) => ({
+          ...prev,
+          [simIndex]: `Result: ${formatReadoutNumber(result)} (${mode})`
+        }));
+      } else {
+        setCalcNoticeBySim((prev) => ({
+          ...prev,
+          [simIndex]: 'Set numeric values on the linked controls, then tap Calculate.'
+        }));
+      }
+    },
+    [simulations, simulationInputs]
+  );
 
   const handleChallengeStepComplete = (challengeIndex, stepIndex) => {
     setChallengeProgress(prev => ({
@@ -225,204 +421,198 @@ const SensingLearning = ({
     const currentInputs = simulationInputs[activeSimulation] || {};
 
     return (
-      <div className="space-y-6">
-        {/* Interactive Lab Explanation */}
-        <div className="bg-teal-50 border border-teal-200 rounded-xl p-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-teal-100 rounded-lg">
-              <BeakerIcon className="w-5 h-5 text-teal-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-teal-900 mb-2">Interactive Lab for Sensing Learners</h3>
-              <p className="text-teal-800 text-sm leading-relaxed mb-3">
-                Sensing learners need <strong>hands-on, concrete experiences</strong>. This lab provides interactive simulations 
-                where you can manipulate variables, see immediate results, and verify concepts through direct experimentation.
-              </p>
-              <div className="text-xs text-teal-700 mb-3">
-                <p><strong>Purpose:</strong> "Let me try it myself and see what happens when I change this..."</p>
-              </div>
-              {/* Enhanced Learning Tips */}
-              <div className="bg-teal-100 rounded-lg p-3 mt-3">
-                <h4 className="text-xs font-semibold text-teal-800 mb-2">🔬 Hands-On Learning Tips:</h4>
-                <ul className="text-xs text-teal-700 space-y-1">
-                  <li>• Experiment with different values to see what happens</li>
-                  <li>• Follow the step-by-step guide for best results</li>
-                  <li>• Pay attention to real-world applications</li>
-                  <li>• Verify results match your expectations</li>
-                </ul>
-              </div>
-            </div>
+      <div className="space-y-5">
+        <div className="rounded-2xl border border-teal-200/70 bg-white shadow-sm overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-teal-100/80 bg-teal-50/40 px-4 py-3 sm:px-5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-teal-800">Lab runs</p>
+            <span className="text-xs font-medium text-slate-600 tabular-nums">
+              {activeSimulation + 1} / {simulations.length}
+            </span>
           </div>
-        </div>
-
-        {/* Simulation Selector */}
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Available Simulations</h3>
-            <span className="text-sm text-gray-600">{activeSimulation + 1} of {simulations.length}</span>
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          <div className="flex gap-2 overflow-x-auto px-4 py-3 sm:px-5">
             {simulations.map((sim, index) => (
               <button
                 key={index}
+                type="button"
                 onClick={() => setActiveSimulation(index)}
-                className={`flex-shrink-0 px-4 py-2 rounded-lg border-2 transition-all ${
+                className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-left text-sm transition-all ${
                   index === activeSimulation
-                    ? 'border-teal-500 bg-teal-50 text-teal-900'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    ? 'border-teal-600 bg-teal-600 text-white shadow-md'
+                    : 'border-slate-200 bg-slate-50 text-slate-800 hover:border-teal-300 hover:bg-teal-50/60'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  {sim.type === 'calculator' && <CalculatorIcon className="w-4 h-4" />}
-                  {sim.type === 'graph' && <ChartBarIcon className="w-4 h-4" />}
-                  {sim.type === 'experiment' && <BeakerIcon className="w-4 h-4" />}
-                  {sim.type === 'data_analysis' && <ChartBarIcon className="w-4 h-4" />}
-                  {sim.type === 'virtual_lab' && <CogIcon className="w-4 h-4" />}
-                  <span className="text-sm font-medium">{sim.title}</span>
-                </div>
+                {sim.type === 'calculator' && <CalculatorIcon className="h-4 w-4 shrink-0 opacity-90" />}
+                {sim.type === 'graph' && <ChartBarIcon className="h-4 w-4 shrink-0 opacity-90" />}
+                {sim.type === 'experiment' && <BeakerIcon className="h-4 w-4 shrink-0 opacity-90" />}
+                {sim.type === 'data_analysis' && <ChartBarIcon className="h-4 w-4 shrink-0 opacity-90" />}
+                {sim.type === 'virtual_lab' && <CogIcon className="h-4 w-4 shrink-0 opacity-90" />}
+                <span className="max-w-[200px] truncate font-medium">{sim.title}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Current Simulation */}
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-lg">
-              {currentSim.type === 'calculator' && <CalculatorIcon className="w-6 h-6 text-white" />}
-              {currentSim.type === 'graph' && <ChartBarIcon className="w-6 h-6 text-white" />}
-              {currentSim.type === 'experiment' && <BeakerIcon className="w-6 h-6 text-white" />}
-              {currentSim.type === 'data_analysis' && <ChartBarIcon className="w-6 h-6 text-white" />}
-              {currentSim.type === 'virtual_lab' && <CogIcon className="w-6 h-6 text-white" />}
+        <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+          <header className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 flex-1 gap-3">
+              <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-sm">
+                {currentSim.type === 'calculator' && <CalculatorIcon className="h-6 w-6" />}
+                {currentSim.type === 'graph' && <ChartBarIcon className="h-6 w-6" />}
+                {currentSim.type === 'experiment' && <BeakerIcon className="h-6 w-6" />}
+                {currentSim.type === 'data_analysis' && <ChartBarIcon className="h-6 w-6" />}
+                {currentSim.type === 'virtual_lab' && <CogIcon className="h-6 w-6" />}
+              </span>
+              <div className="min-w-0">
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">{currentSim.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600">{currentSim.description}</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-bold text-gray-900">{currentSim.title}</h3>
-              <p className="text-sm text-gray-600">{currentSim.description}</p>
+            <div className="flex shrink-0 items-center gap-1.5 self-start rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
+              <ClockIcon className="h-4 w-4 text-slate-500" />
+              {currentSim.estimatedTime}
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-              <ClockIcon className="w-4 h-4" />
-              <span>{currentSim.estimatedTime}</span>
-            </div>
-          </div>
+          </header>
 
-          {/* Interactive Controls */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <h4 className="font-semibold text-gray-900 mb-3">🎛️ Interactive Controls</h4>
-            <div className="grid md:grid-cols-2 gap-4">
-              {currentSim.interactiveElements?.map((element, index) => (
-                <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {element.name}
-                  </label>
-                  <p className="text-xs text-gray-600 mb-3">{element.description}</p>
-                  
-                  {element.type === 'slider' && (
-                    <div className="space-y-2">
-                      <input
-                        type="range"
-                        min={element.range.split('-')[0]}
-                        max={element.range.split('-')[1]}
-                        value={currentInputs[element.name] || element.defaultValue}
-                        onChange={(e) => handleSimulationInputChange(activeSimulation, element.name, e.target.value)}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>{element.range.split('-')[0]} {element.unit}</span>
-                        <span className="font-medium text-teal-600">
-                          {currentInputs[element.name] || element.defaultValue} {element.unit}
-                        </span>
-                        <span>{element.range.split('-')[1]} {element.unit}</span>
+          <div className="grid gap-5 p-5 lg:grid-cols-12 lg:gap-6 lg:p-6">
+            <div className="lg:col-span-5">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Controls</p>
+              <div className="space-y-3">
+                {currentSim.interactiveElements?.map((element, index) => (
+                  <div
+                    key={index}
+                    className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 shadow-sm"
+                  >
+                    <label className="block text-sm font-semibold text-slate-900">{element.name}</label>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{element.description}</p>
+
+                    {element.type === 'slider' && (
+                      <div className="mt-3 space-y-2">
+                        <input
+                          type="range"
+                          min={parseSliderBounds(element.range).min}
+                          max={parseSliderBounds(element.range).max}
+                          step="any"
+                          value={currentInputs[element.name] ?? element.defaultValue}
+                          onChange={(e) => handleSimulationInputChange(activeSimulation, element.name, e.target.value)}
+                          className="slider h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-teal-600"
+                        />
+                        <div className="flex justify-between text-[11px] text-slate-500">
+                          <span>
+                            {parseSliderBounds(element.range).min} {element.unit}
+                          </span>
+                          <span className="font-semibold text-teal-700">
+                            {currentInputs[element.name] ?? element.defaultValue} {element.unit}
+                          </span>
+                          <span>
+                            {parseSliderBounds(element.range).max} {element.unit}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {element.type === 'input' && (
-                    <input
-                      type="number"
-                      value={currentInputs[element.name] || element.defaultValue}
-                      onChange={(e) => handleSimulationInputChange(activeSimulation, element.name, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder={`Enter ${element.unit}`}
-                    />
-                  )}
+                    {element.type === 'input' && (
+                      <input
+                        type="number"
+                        value={currentInputs[element.name] ?? element.defaultValue}
+                        onChange={(e) => handleSimulationInputChange(activeSimulation, element.name, e.target.value)}
+                        className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                        placeholder={element.unit ? `Value (${element.unit})` : 'Value'}
+                      />
+                    )}
 
-                  {element.type === 'dropdown' && (
-                    <select
-                      value={currentInputs[element.name] || element.defaultValue}
-                      onChange={(e) => handleSimulationInputChange(activeSimulation, element.name, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    >
-                      {(Array.isArray(element.range) ? element.range : []).map((option, optIndex) => (
-                        <option key={optIndex} value={option}>{option}</option>
-                      ))}
-                    </select>
-                  )}
+                    {element.type === 'dropdown' && (
+                      <select
+                        value={currentInputs[element.name] ?? element.defaultValue}
+                        onChange={(e) => handleSimulationInputChange(activeSimulation, element.name, e.target.value)}
+                        className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                      >
+                        {(Array.isArray(element.range) ? element.range : []).map((option, optIndex) => (
+                          <option key={optIndex} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    )}
 
-                  {element.type === 'button' && (
-                    <button
-                      onClick={() => {
-                        // Simulate calculation or action
-                        console.log('Button clicked:', element.name);
-                      }}
-                      className="w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-                    >
-                      {element.defaultValue}
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Results Display */}
-          <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg p-4 mb-6 border border-teal-200">
-            <h4 className="font-semibold text-teal-900 mb-3">📊 Live Results</h4>
-            <div className="grid md:grid-cols-3 gap-4">
-              {currentSim.dataPoints?.map((dataPoint, index) => (
-                <div key={index} className="bg-white rounded-lg p-3 border border-teal-200">
-                  <div className="text-lg font-bold text-teal-900">{dataPoint.value}</div>
-                  <div className="text-sm font-medium text-teal-700">{dataPoint.label}</div>
-                  <div className="text-xs text-teal-600">{dataPoint.description}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Step-by-Step Guide */}
-          <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
-            <h4 className="font-semibold text-blue-900 mb-3">📋 Step-by-Step Guide</h4>
-            <ol className="space-y-2">
-              {currentSim.stepByStepGuide?.map((step, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">
-                    {index + 1}
+                    {element.type === 'button' && (
+                      <button
+                        type="button"
+                        onClick={() => handleSimulationCalculate(activeSimulation)}
+                        className="mt-3 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700"
+                      >
+                        {element.defaultValue || 'Calculate'}
+                      </button>
+                    )}
                   </div>
-                  <span className="text-sm text-blue-800">{step}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:col-span-7">
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Live readouts</p>
+              <p className="mb-3 text-xs text-slate-500">
+                Each readout uses the lab JSON bindings when present (which controls feed it and how they combine).
+                Otherwise values are inferred from your controls. Calculate uses the same binding as the button or main
+                result when defined.
+              </p>
+              {calcNoticeBySim[activeSimulation] && (
+                <p className="mb-3 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs text-teal-900">
+                  {calcNoticeBySim[activeSimulation]}
+                </p>
+              )}
+              <div className="rounded-xl border border-teal-100 bg-gradient-to-br from-teal-50/80 to-cyan-50/50 p-4">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {currentSim.dataPoints?.map((dataPoint, index) => (
+                    <div
+                      key={index}
+                      className="rounded-xl border border-white/80 bg-white/95 p-3 shadow-sm ring-1 ring-teal-100/60"
+                    >
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700/90">
+                        {dataPoint.label}
+                      </p>
+                      <p className="mt-1 text-xl font-bold tabular-nums text-teal-900">
+                        {liveReadoutValues[index] ?? String(dataPoint.value ?? '')}
+                      </p>
+                      <p className="mt-1 text-xs leading-snug text-slate-600">{dataPoint.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 px-5 py-5 sm:px-6">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Lab guide</p>
+            <ol className="space-y-3">
+              {currentSim.stepByStepGuide?.map((step, index) => (
+                <li key={index} className="flex gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-sky-200 bg-white text-xs font-bold text-sky-800 shadow-sm">
+                    {index + 1}
+                  </span>
+                  <p className="min-w-0 flex-1 text-sm leading-relaxed text-slate-700">{step}</p>
                 </li>
               ))}
             </ol>
           </div>
 
-          {/* Learning Objectives & Real-World Application */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-              <h4 className="font-semibold text-green-900 mb-3">🎯 Learning Objectives</h4>
-              <ul className="space-y-1">
+          <div className="grid gap-4 border-t border-slate-100 bg-slate-50/40 p-5 sm:grid-cols-2 sm:p-6">
+            <div className="rounded-xl border border-emerald-100 bg-white p-4 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800">Objectives</p>
+              <ul className="mt-3 space-y-2">
                 {currentSim.learningObjectives?.map((objective, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-green-800">{objective}</span>
+                  <li key={index} className="flex gap-2 text-sm text-slate-700">
+                    <CheckCircleIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                    <span>{objective}</span>
                   </li>
                 ))}
               </ul>
             </div>
-
-            <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-              <h4 className="font-semibold text-orange-900 mb-3">🌍 Real-World Application</h4>
-              <p className="text-sm text-orange-800">{currentSim.realWorldApplication}</p>
+            <div className="rounded-xl border border-amber-100 bg-white p-4 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-900">Real-world tie-in</p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-700">{currentSim.realWorldApplication}</p>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     );
   };
@@ -475,210 +665,191 @@ const SensingLearning = ({
     const currentProgress = challengeProgress[activeChallenge] || { currentStep: 0, completedCheckpoints: [] };
 
     return (
-      <div className="space-y-6">
-        {/* Practical Challenges Explanation */}
-        <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-cyan-100 rounded-lg">
-              <PuzzlePieceIcon className="w-5 h-5 text-cyan-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-cyan-900 mb-2">Practical Challenges for Sensing Learners</h3>
-              <p className="text-cyan-800 text-sm leading-relaxed mb-3">
-                Sensing learners learn best through <strong>hands-on problem solving</strong>. These challenges provide 
-                concrete tasks with step-by-step procedures, immediate feedback, and measurable outcomes.
-              </p>
-              <div className="text-xs text-cyan-700 mb-3">
-                <p><strong>Purpose:</strong> "Give me a real problem to solve with clear steps and concrete results"</p>
-              </div>
-              {/* Enhanced Learning Strategy */}
-              <div className="bg-cyan-100 rounded-lg p-3 mt-3">
-                <h4 className="text-xs font-semibold text-cyan-800 mb-2">🎯 Challenge Strategy:</h4>
-                <ul className="text-xs text-cyan-700 space-y-1">
-                  <li>• Follow procedures step-by-step for best results</li>
-                  <li>• Complete checkpoints to track your progress</li>
-                  <li>• Use provided materials and resources</li>
-                  <li>• Verify results against success metrics</li>
-                </ul>
-              </div>
-            </div>
+      <div className="space-y-5">
+        <div className="overflow-hidden rounded-2xl border border-cyan-200/70 bg-white shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cyan-100/80 bg-cyan-50/40 px-4 py-3 sm:px-5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-cyan-900">Challenges</p>
+            <span className="text-xs font-medium text-slate-600 tabular-nums">
+              {activeChallenge + 1} / {challenges.length}
+            </span>
           </div>
-        </div>
-
-        {/* Challenge Selector */}
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Available Challenges</h3>
-            <span className="text-sm text-gray-600">{activeChallenge + 1} of {challenges.length}</span>
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          <div className="flex gap-2 overflow-x-auto px-4 py-3 sm:px-5">
             {challenges.map((challenge, index) => (
               <button
                 key={index}
+                type="button"
                 onClick={() => setActiveChallenge(index)}
-                className={`flex-shrink-0 px-4 py-2 rounded-lg border-2 transition-all ${
+                className={`flex min-w-[160px] max-w-[260px] shrink-0 flex-col rounded-xl border px-3.5 py-2.5 text-left transition-all ${
                   index === activeChallenge
-                    ? 'border-cyan-500 bg-cyan-50 text-cyan-900'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    ? 'border-cyan-600 bg-cyan-600 text-white shadow-md'
+                    : 'border-slate-200 bg-slate-50 text-slate-800 hover:border-cyan-300 hover:bg-cyan-50/50'
                 }`}
               >
-                <div className="text-sm font-medium">{challenge.title}</div>
-                <div className="text-xs text-gray-500">{challenge.category}</div>
+                <span className="truncate text-sm font-semibold">{challenge.title}</span>
+                {challenge.category && (
+                  <span
+                    className={`mt-0.5 truncate text-[11px] ${
+                      index === activeChallenge ? 'text-cyan-100' : 'text-slate-500'
+                    }`}
+                  >
+                    {challenge.category}
+                  </span>
+                )}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Current Challenge */}
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg">
-              <PuzzlePieceIcon className="w-6 h-6 text-white" />
+        <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+          <header className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 flex-1 gap-3">
+              <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-sm">
+                <PuzzlePieceIcon className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">{currentChallenge.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600">{currentChallenge.description}</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-bold text-gray-900">{currentChallenge.title}</h3>
-              <p className="text-sm text-gray-600">{currentChallenge.description}</p>
+            <div className="flex shrink-0 items-center gap-1.5 self-start rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
+              <ClockIcon className="h-4 w-4 text-slate-500" />
+              {currentChallenge.estimatedTime}
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-              <ClockIcon className="w-4 h-4" />
-              <span>{currentChallenge.estimatedTime}</span>
-            </div>
-          </div>
+          </header>
 
-          {/* Challenge Info */}
-          <div className="grid md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-2">📋 Materials Needed</h4>
-              <ul className="space-y-1">
+          <div className="grid gap-4 p-5 sm:grid-cols-3 sm:p-6">
+            <div className="rounded-xl border border-sky-100 bg-sky-50/40 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-sky-900">Materials</p>
+              <ul className="mt-3 space-y-2">
                 {currentChallenge.materials?.map((material, index) => (
-                  <li key={index} className="text-sm text-blue-800 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                  <li key={index} className="flex gap-2 text-sm text-slate-700">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />
                     {material}
                   </li>
                 ))}
               </ul>
             </div>
-
-            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-              <h4 className="font-semibold text-green-900 mb-2">🎯 Success Metrics</h4>
-              <ul className="space-y-1">
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-900">Success metrics</p>
+              <ul className="mt-3 space-y-2">
                 {currentChallenge.successMetrics?.map((metric, index) => (
-                  <li key={index} className="text-sm text-green-800 flex items-center gap-2">
-                    <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                  <li key={index} className="flex gap-2 text-sm text-slate-700">
+                    <CheckCircleIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                     {metric}
                   </li>
                 ))}
               </ul>
             </div>
-
-            <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-              <h4 className="font-semibold text-orange-900 mb-2">🌍 Real-World Connection</h4>
-              <p className="text-sm text-orange-800">{currentChallenge.realWorldConnection}</p>
+            <div className="rounded-xl border border-amber-100 bg-amber-50/30 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-950">Real-world link</p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-700">{currentChallenge.realWorldConnection}</p>
             </div>
           </div>
 
-          {/* Procedure Steps */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <h4 className="font-semibold text-gray-900 mb-4">📝 Step-by-Step Procedure</h4>
+          <div className="border-t border-slate-100 px-5 py-5 sm:px-6">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Procedure</p>
             <div className="space-y-4">
-              {currentChallenge.procedure?.map((step, index) => (
-                <div
-                  key={index}
-                  className={`bg-white rounded-lg p-4 border-2 transition-all ${
-                    index < currentProgress.currentStep
-                      ? 'border-green-500 bg-green-50'
-                      : index === currentProgress.currentStep
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                      index < currentProgress.currentStep
-                        ? 'bg-green-600'
-                        : index === currentProgress.currentStep
-                        ? 'bg-blue-600'
-                        : 'bg-gray-400'
-                    }`}>
-                      {index < currentProgress.currentStep ? '✓' : step.step}
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="font-semibold text-gray-900 mb-2">Step {step.step}</h5>
-                      <p className="text-sm text-gray-700 mb-2">{step.instruction}</p>
-                      
-                      <div className="grid md:grid-cols-2 gap-3">
-                        <div className="bg-blue-50 rounded p-3 border border-blue-200">
-                          <h6 className="text-xs font-semibold text-blue-900 mb-1">Expected Result</h6>
-                          <p className="text-xs text-blue-800">{step.expectedResult}</p>
+              {currentChallenge.procedure?.map((step, index) => {
+                const done = index < currentProgress.currentStep;
+                const active = index === currentProgress.currentStep;
+                return (
+                  <div
+                    key={index}
+                    className={`rounded-xl border p-4 transition-colors ${
+                      done
+                        ? 'border-emerald-200 bg-emerald-50/50'
+                        : active
+                          ? 'border-sky-300 bg-sky-50/60 ring-1 ring-sky-200/80'
+                          : 'border-slate-200 bg-white'
+                    }`}
+                  >
+                    <div className="flex gap-3">
+                      <span
+                        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ${
+                          done ? 'bg-emerald-600' : active ? 'bg-sky-600' : 'bg-slate-400'
+                        }`}
+                      >
+                        {done ? '✓' : step.step}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Step {step.step}</p>
+                        <p className="mt-1 text-sm font-medium text-slate-900">{step.instruction}</p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-lg border border-sky-100 bg-white/90 px-3 py-2">
+                            <p className="text-[10px] font-semibold uppercase text-sky-800">Expected</p>
+                            <p className="mt-1 text-xs text-slate-700">{step.expectedResult}</p>
+                          </div>
+                          <div className="rounded-lg border border-amber-100 bg-white/90 px-3 py-2">
+                            <p className="text-[10px] font-semibold uppercase text-amber-900">Tips</p>
+                            <p className="mt-1 text-xs text-slate-700">{step.tips}</p>
+                          </div>
                         </div>
-                        <div className="bg-yellow-50 rounded p-3 border border-yellow-200">
-                          <h6 className="text-xs font-semibold text-yellow-900 mb-1">Tips</h6>
-                          <p className="text-xs text-yellow-800">{step.tips}</p>
-                        </div>
+                        {index >= currentProgress.currentStep && (
+                          <button
+                            type="button"
+                            onClick={() => handleChallengeStepComplete(activeChallenge, index)}
+                            className="mt-3 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700"
+                          >
+                            Mark complete
+                          </button>
+                        )}
                       </div>
-
-                      {index >= currentProgress.currentStep && (
-                        <button
-                          onClick={() => handleChallengeStepComplete(activeChallenge, index)}
-                          className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                        >
-                          Mark Complete
-                        </button>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          {/* Checkpoints */}
-          <div className="bg-purple-50 rounded-lg p-4 mb-6 border border-purple-200">
-            <h4 className="font-semibold text-purple-900 mb-4">🏁 Progress Checkpoints</h4>
-            <div className="grid md:grid-cols-2 gap-4">
-              {currentChallenge.checkpoints?.map((checkpoint, index) => (
-                <div
-                  key={index}
-                  className={`bg-white rounded-lg p-3 border-2 transition-all ${
-                    currentProgress.completedCheckpoints.includes(index)
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-purple-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
+          <div className="border-t border-slate-100 bg-violet-50/30 px-5 py-5 sm:px-6">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-violet-900">Checkpoints</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {currentChallenge.checkpoints?.map((checkpoint, index) => {
+                const cpDone = currentProgress.completedCheckpoints.includes(index);
+                return (
+                  <div
+                    key={index}
+                    className={`flex gap-3 rounded-xl border p-3.5 ${
+                      cpDone ? 'border-emerald-200 bg-emerald-50/60' : 'border-violet-100 bg-white'
+                    }`}
+                  >
                     <button
+                      type="button"
                       onClick={() => handleCheckpointComplete(activeChallenge, index)}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs ${
-                        currentProgress.completedCheckpoints.includes(index)
-                          ? 'bg-green-600'
-                          : 'bg-purple-600 hover:bg-purple-700'
+                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white transition ${
+                        cpDone ? 'bg-emerald-600' : 'bg-violet-600 hover:bg-violet-700'
                       }`}
+                      aria-pressed={cpDone}
                     >
-                      {currentProgress.completedCheckpoints.includes(index) ? '✓' : index + 1}
+                      {cpDone ? '✓' : index + 1}
                     </button>
-                    <div className="flex-1">
-                      <h5 className="font-semibold text-purple-900 mb-1">{checkpoint.checkpoint}</h5>
-                      <p className="text-xs text-purple-800 mb-2">{checkpoint.criteria}</p>
-                      <p className="text-xs text-gray-600">{checkpoint.troubleshooting}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-violet-950">{checkpoint.checkpoint}</p>
+                      <p className="mt-1 text-xs text-slate-600">{checkpoint.criteria}</p>
+                      <p className="mt-2 text-[11px] leading-relaxed text-slate-500">{checkpoint.troubleshooting}</p>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          {/* Extension Activities */}
-          <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-            <h4 className="font-semibold text-indigo-900 mb-3">🚀 Extension Activities</h4>
-            <div className="grid md:grid-cols-2 gap-3">
-              {currentChallenge.extensionActivities?.map((activity, index) => (
-                <div key={index} className="bg-white rounded-lg p-3 border border-indigo-200">
-                  <span className="text-sm text-indigo-800">{activity}</span>
-                </div>
-              ))}
+          {currentChallenge.extensionActivities?.length > 0 && (
+            <div className="border-t border-slate-100 px-5 py-4 sm:px-6">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Extensions</p>
+              <div className="flex flex-wrap gap-2">
+                {currentChallenge.extensionActivities.map((activity, index) => (
+                  <span
+                    key={index}
+                    className="rounded-lg border border-indigo-200/80 bg-indigo-50/80 px-2.5 py-1.5 text-xs font-medium text-indigo-950"
+                  >
+                    {activity}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+        </section>
       </div>
     );
   };
@@ -710,37 +881,44 @@ const SensingLearning = ({
         </div>
 
         <div className="flex items-center space-x-3">
-          <button
-            onClick={generateSensingContent}
-            disabled={loading}
-            className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50"
-            title="Regenerate hands-on content"
-          >
-            {loading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Generating...</span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <ArrowPathIcon className="w-4 h-4" />
-                <span>Generate</span>
-              </div>
-            )}
-          </button>
+          {!hasFullContent && !loading && (
+            <button
+              type="button"
+              onClick={generateSensingContent}
+              className="rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 px-4 py-2 text-white transition hover:from-teal-600 hover:to-cyan-700"
+              title="Generate hands-on content"
+            >
+              <span className="flex items-center gap-2">
+                <ArrowPathIcon className="h-4 w-4" />
+                Generate
+              </span>
+            </button>
+          )}
+          {hasFullContent && !loading && (
+            <button
+              type="button"
+              onClick={requestRegenerate}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
+              title="Runs the AI again; uses more quota"
+            >
+              <span className="flex items-center gap-2">
+                <ArrowPathIcon className="h-4 w-4 text-slate-500" />
+                Regenerate
+              </span>
+            </button>
+          )}
+          {loading && (
+            <div className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2 text-sm text-teal-900">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-teal-600 border-t-transparent" />
+              Generating…
+            </div>
+          )}
         </div>
       </div>
 
       {/* Tab Selector with Explanations */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          {/* Purpose Explanation */}
-          <div className="text-center mb-4">
-            <p className="text-sm text-gray-600">
-              Sensing learners need <strong>hands-on experiences</strong> and <strong>concrete problem solving</strong>
-            </p>
-          </div>
-
+      <div className="border-b border-gray-200 bg-gray-50 p-4">
+        <div className="mx-auto max-w-7xl">
           {/* Tabs */}
           <div className="flex items-center justify-center space-x-1">
             {tabs.map((tab) => {
@@ -777,7 +955,7 @@ const SensingLearning = ({
 
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="mx-auto max-w-7xl p-6">
           {activeTab === 'simulations' && renderSimulations()}
           {activeTab === 'challenges' && renderChallenges()}
         </div>

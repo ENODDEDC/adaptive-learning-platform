@@ -1,4 +1,36 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GroqGenAI as GoogleGenerativeAI } from '@/lib/groqGenAI';
+
+function normalizeConcepts(raw) {
+  const c = raw && typeof raw === 'object' ? raw : {};
+  const rel = Array.isArray(c.relationships)
+    ? c.relationships
+        .filter((r) => r && typeof r === 'object')
+        .map((r) => ({
+          from: String(r.from ?? ''),
+          to: String(r.to ?? ''),
+          type: String(r.type ?? 'relates to')
+        }))
+    : [];
+  return {
+    mainTopic:
+      typeof c.mainTopic === 'string' && c.mainTopic.trim()
+        ? c.mainTopic.trim()
+        : 'Document',
+    keyConcepts: Array.isArray(c.keyConcepts) && c.keyConcepts.length
+      ? c.keyConcepts.map(String).filter(Boolean)
+      : ['Main ideas'],
+    processes:
+      Array.isArray(c.processes) && c.processes.length
+        ? c.processes.map(String).filter(Boolean)
+        : ['Overview'],
+    relationships: rel,
+    categories:
+      Array.isArray(c.categories) && c.categories.length
+        ? c.categories.map(String).filter(Boolean)
+        : ['General'],
+    visualType: typeof c.visualType === 'string' ? c.visualType : 'diagram'
+  };
+}
 
 class VisualContentService {
   constructor() {
@@ -9,7 +41,7 @@ class VisualContentService {
   initializeModels() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
         this.imageModel = this.genAI.getGenerativeModel({ 
           model: "gemini-flash-lite-latest" 
         });
@@ -21,134 +53,25 @@ class VisualContentService {
   }
 
   /**
-   * Analyze if content is educational using the SAME logic as AI Narrator
+   * The client already runs the educational gate (/api/content/educational-gate).
+   * Re-running an LLM classifier here wastes Groq tokens and often throws with the
+   * text-only shim, so we always accept and rely on the client gate.
    */
   async analyzeContentForEducation(docxText) {
     if (!docxText || docxText.trim().length < 50) {
-      return { 
-        isEducational: false, 
+      return {
+        isEducational: false,
         reasoning: 'Content too short to analyze',
         confidence: 0,
         contentType: 'Insufficient content'
       };
     }
-
-    try {
-      console.log('🎨 Visual Learning: Using same AI analysis logic as AI Narrator...');
-      
-      // Use the same AI analysis logic as the AI Narrator API
-      this.initializeModels();
-      
-      if (!this.genAI) {
-        throw new Error('Google AI service not available');
-      }
-
-      // Truncate content if too long (same as AI Narrator)
-      const maxLength = 4000;
-      const truncatedContent = docxText.length > maxLength 
-        ? docxText.substring(0, maxLength) + "..."
-        : docxText;
-
-      const prompt = `
-You are an AI content analyzer. Your task is to determine if the given document content is educational/learning material that would be suitable for AI narration.
-
-Educational content includes:
-- Lessons, tutorials, or instructional materials
-- Academic subjects (math, science, history, literature, etc.)
-- Study materials, textbooks, or course content
-- Explanatory content that teaches concepts
-- Research papers or academic articles
-- Training materials or how-to guides
-- Educational exercises or examples
-
-Non-educational content includes:
-- Administrative announcements or memos
-- Schedules, calendars, or event listings
-- Policy documents or procedures
-- Forms, applications, or certificates
-- Personal letters or informal communications
-- News updates or notifications
-- Business documents (invoices, receipts, etc.)
-- Meeting minutes or agendas
-
-Analyze the following document content and determine if it's educational material suitable for AI narration:
-
-DOCUMENT CONTENT:
-${truncatedContent}
-
-Respond with ONLY a JSON object containing:
-{
-  "isEducational": boolean,
-  "confidence": number (0-1),
-  "reasoning": "Brief explanation of your decision",
-  "contentType": "Brief description of what type of content this is"
-}
-
-Be strict in your analysis - only classify content as educational if it genuinely contains learning material that students could benefit from AI narration assistance.`;
-
-      const model = this.genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const aiResponse = response.text().trim();
-      
-      // Parse the AI response (same logic as AI Narrator API)
-      let analysisResult;
-      try {
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          analysisResult = JSON.parse(jsonMatch[0]);
-        } else {
-          analysisResult = JSON.parse(aiResponse);
-        }
-      } catch (parseError) {
-        console.error('❌ Error parsing AI response:', parseError);
-        
-        // Fallback analysis if AI response is malformed (same as AI Narrator)
-        const content_lower = docxText.toLowerCase();
-        const hasEducationalTerms = /\b(learn|study|understand|concept|theory|lesson|tutorial|chapter|example|exercise|definition|explanation)\b/i.test(content_lower);
-        const hasAdminTerms = /\b(announcement|memo|schedule|meeting|policy|form|application|notice|reminder)\b/i.test(content_lower);
-        
-        const fallbackResult = hasEducationalTerms && !hasAdminTerms;
-        
-        return {
-          isEducational: fallbackResult,
-          confidence: 0.3,
-          reasoning: 'Fallback analysis due to AI response parsing failure',
-          contentType: 'Unknown - analyzed with basic heuristics'
-        };
-      }
-
-      console.log('🎨 Visual Learning AI Analysis Result:', {
-        isEducational: analysisResult.isEducational,
-        confidence: analysisResult.confidence,
-        reasoning: analysisResult.reasoning,
-        contentType: analysisResult.contentType
-      });
-
-      return {
-        isEducational: analysisResult.isEducational || false,
-        confidence: analysisResult.confidence || 0.5,
-        reasoning: analysisResult.reasoning || 'Analysis completed',
-        contentType: analysisResult.contentType || 'Unknown'
-      };
-
-    } catch (error) {
-      console.error('❌ Error in AI content analysis:', error);
-      
-      // Fallback analysis if AI fails (same as AI Narrator)
-      const content_lower = docxText.toLowerCase();
-      const hasEducationalTerms = /\b(learn|study|understand|concept|theory|lesson|tutorial|chapter|example|exercise|definition|explanation)\b/i.test(content_lower);
-      const hasAdminTerms = /\b(announcement|memo|schedule|meeting|policy|form|application|notice|reminder)\b/i.test(content_lower);
-      
-      const fallbackResult = hasEducationalTerms && !hasAdminTerms;
-      
-      return {
-        isEducational: fallbackResult,
-        confidence: 0.3,
-        reasoning: 'Fallback analysis due to AI service unavailability',
-        contentType: 'Unknown - analyzed with basic heuristics'
-      };
-    }
+    return {
+      isEducational: true,
+      confidence: 1,
+      reasoning: 'Accepted by client-side educational gate',
+      contentType: 'Educational Material'
+    };
   }
 
   /**
@@ -156,48 +79,22 @@ Be strict in your analysis - only classify content as educational if it genuinel
    */
   async generateVisualContent(docxText, contentType = 'diagram') {
     this.initializeModels();
-    
-    if (!this.imageModel) {
+
+    if (!this.genAI) {
       throw new Error('Visual content model not available');
     }
 
-    try {
-      // First, analyze if content is educational
-      const analysis = await this.analyzeContentForEducation(docxText);
-      
-      if (!analysis.isEducational) {
-        throw new Error(`Content is not suitable for visual learning materials. ${analysis.reasoning}`);
-      }
-
-      console.log('✅ Content approved for visual learning generation');
-      
-      // Extract key concepts from the document
-      const concepts = await this.extractKeyConcepts(docxText);
-      
-      // Generate appropriate visual content based on type
-      let visualContent;
-      switch (contentType) {
-        case 'diagram':
-          visualContent = await this.generateDiagram(concepts, docxText);
-          break;
-        case 'infographic':
-          visualContent = await this.generateInfographic(concepts, docxText);
-          break;
-        case 'mindmap':
-          visualContent = await this.generateMindMap(concepts, docxText);
-          break;
-        case 'flowchart':
-          visualContent = await this.generateFlowchart(concepts, docxText);
-          break;
-        default:
-          visualContent = await this.generateDiagram(concepts, docxText);
-      }
-
-      return visualContent;
-    } catch (error) {
-      console.error('Error generating visual content:', error);
-      throw new Error('Failed to generate visual content');
+    const analysis = await this.analyzeContentForEducation(docxText);
+    if (!analysis.isEducational) {
+      throw new Error(`Content is not suitable for visual learning materials. ${analysis.reasoning}`);
     }
+
+    const concepts = normalizeConcepts(await this.extractKeyConcepts(docxText));
+    const normalizedType = ['diagram', 'infographic', 'mindmap', 'flowchart'].includes(contentType)
+      ? contentType
+      : 'diagram';
+
+    return await this.generateVisualWithFallback(concepts, docxText, normalizedType);
   }
 
   /**
@@ -205,61 +102,69 @@ Be strict in your analysis - only classify content as educational if it genuinel
    */
   async extractKeyConcepts(docxText) {
     this.initializeModels();
-    
+
     if (!this.genAI) {
       throw new Error('Google AI service not available');
     }
 
-    const prompt = `
-    Analyze this document and extract the main concepts, topics, and key information that would be useful for creating visual learning materials.
+    const trimmed = typeof docxText === 'string' ? docxText.replace(/\s+/g, ' ').trim() : '';
+    const excerpt = trimmed.length > 6000 ? trimmed.slice(0, 6000) : trimmed;
 
-    Document Content:
-    ${docxText}
+    const prompt = [
+      'You analyze a document and return ONLY a JSON object (no prose, no markdown, no code fences).',
+      'Extract the real subject and concepts from the document — do not return placeholders.',
+      'Schema:',
+      '{',
+      '  "mainTopic": "<short subject of the document, under 60 chars>",',
+      '  "keyConcepts": ["<concept1>", "<concept2>", "<concept3>", "<concept4>", "<concept5>"],',
+      '  "processes": ["<step1>", "<step2>", "<step3>"],',
+      '  "relationships": [{"from": "<concept>", "to": "<concept>", "type": "<short verb>"}],',
+      '  "categories": ["<category1>", "<category2>"],',
+      '  "visualType": "diagram"',
+      '}',
+      'Rules:',
+      '- 3 to 6 keyConcepts, each under 40 chars.',
+      '- 3 to 5 processes (or summarize main stages if not procedural).',
+      '- 0 to 4 relationships.',
+      '- Use words taken from the document, not generic labels like "Concept 1".',
+      '',
+      'Document excerpt:',
+      '"""',
+      excerpt,
+      '"""'
+    ].join('\n');
 
-    Extract and return a JSON object with:
-    {
-      "mainTopic": "Main subject of the document",
-      "keyConcepts": ["concept1", "concept2", "concept3"],
-      "processes": ["step1", "step2", "step3"],
-      "relationships": [{"from": "concept1", "to": "concept2", "type": "causes"}],
-      "categories": ["category1", "category2"],
-      "visualType": "diagram|infographic|mindmap|flowchart"
-    }
-
-    Focus on concepts that would benefit from visual representation.
-    `;
+    const fallback = () =>
+      normalizeConcepts({
+        mainTopic: 'Document Overview',
+        keyConcepts: ['Main idea', 'Supporting detail', 'Key term'],
+        processes: ['Introduction', 'Body', 'Conclusion'],
+        relationships: [],
+        categories: ['General'],
+        visualType: 'diagram'
+      });
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-flash-lite-latest' });
       const result = await model.generateContent(prompt);
       const response = await result.response;
-      const text = response.text();
-      
-      // Extract JSON from response
+      const text = response.text() || '';
+
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          return normalizeConcepts(parsed);
+        } catch (parseErr) {
+          console.warn('⚠️ Concepts JSON parse failed, using fallback:', parseErr?.message);
+        }
+      } else {
+        console.warn('⚠️ Concepts response contained no JSON, using fallback');
       }
-      
-      // Fallback if JSON parsing fails
-      return {
-        mainTopic: "Document Analysis",
-        keyConcepts: ["Key Concept 1", "Key Concept 2"],
-        processes: ["Step 1", "Step 2"],
-        relationships: [],
-        categories: ["General"],
-        visualType: "diagram"
-      };
+      return fallback();
     } catch (error) {
-      console.error('Error extracting concepts:', error);
-      return {
-        mainTopic: "Document Analysis",
-        keyConcepts: ["Key Concept 1", "Key Concept 2"],
-        processes: ["Step 1", "Step 2"],
-        relationships: [],
-        categories: ["General"],
-        visualType: "diagram"
-      };
+      console.error('Error extracting concepts:', error?.message || error);
+      return fallback();
     }
   }
 
@@ -392,18 +297,30 @@ Be strict in your analysis - only classify content as educational if it genuinel
     }
 
     try {
-      const response = await this.imageModel.generateContent({
+      const result = await this.imageModel.generateContent({
         contents: [{ parts: [{ text: prompt }] }]
       });
+      const genResponse =
+        result?.response != null && typeof result.response.then === 'function'
+          ? await result.response
+          : result?.response ?? result;
 
-      if (!response || !response.candidates || !response.candidates[0]) {
+      const candidate =
+        genResponse?.candidates?.[0] ??
+        result?.candidates?.[0] ??
+        (genResponse?.response?.candidates?.[0] ?? null);
+
+      // Groq (and other text-only shims): no image candidates → use CSS wireframe path
+      if (!candidate) {
+        if (typeof genResponse?.text === 'function') {
+          throw new Error('QUOTA_EXCEEDED_FALLBACK_TO_TEXT_DESCRIPTION');
+        }
         throw new Error('No response received from image generation API');
       }
 
-      const candidate = response.candidates[0];
       if (candidate.content && candidate.content.parts && candidate.content.parts[0]) {
         const part = candidate.content.parts[0];
-        
+
         if (part.inlineData && part.inlineData.data) {
           return {
             success: true,
@@ -416,12 +333,14 @@ Be strict in your analysis - only classify content as educational if it genuinel
       throw new Error('No image data found in response');
     } catch (error) {
       console.error('Error generating image:', error);
-      
-      // Check if it's a quota exceeded error
-      if (error.message && error.message.includes('quota') || error.message && error.message.includes('429')) {
+
+      if (
+        error.message &&
+        (error.message.includes('quota') || error.message.includes('429'))
+      ) {
         throw new Error('QUOTA_EXCEEDED_FALLBACK_TO_TEXT_DESCRIPTION');
       }
-      
+
       throw new Error('Failed to generate image');
     }
   }
@@ -521,23 +440,90 @@ Be strict in your analysis - only classify content as educational if it genuinel
       const response = await result.response;
       const text = response.text();
 
-      // Extract JSON from response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const wireframeData = JSON.parse(jsonMatch[0]);
-        return {
-          success: true,
-          wireframeData: wireframeData,
-          isWireframe: true,
-          contentType: contentType
-        };
+        try {
+          const wireframeData = JSON.parse(jsonMatch[0]);
+          return {
+            success: true,
+            wireframeData,
+            isWireframe: true,
+            contentType
+          };
+        } catch (parseErr) {
+          console.warn('⚠️ Wireframe JSON parse failed, using synthesized fallback:', parseErr?.message);
+        }
+      } else {
+        console.warn('⚠️ No JSON object in wireframe response, using synthesized fallback');
       }
 
-      throw new Error('Could not parse wireframe data from response');
+      return this.buildFallbackWireframe(concepts, contentType);
     } catch (error) {
-      console.error('Error generating wireframe:', error);
-      throw new Error('Failed to generate wireframe');
+      console.error('Error generating wireframe (using synthesized fallback):', error?.message || error);
+      return this.buildFallbackWireframe(concepts, contentType);
     }
+  }
+
+  /** Synthesize a minimal wireframe from extracted concepts when the model fails. */
+  buildFallbackWireframe(concepts, contentType) {
+    const c = normalizeConcepts(concepts);
+    const palette = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
+    const title = c.mainTopic || 'Document';
+
+    const items =
+      contentType === 'flowchart'
+        ? c.processes.slice(0, 5)
+        : c.keyConcepts.slice(0, 5);
+
+    const sections = items.length
+      ? items.map((t, i) => ({
+          id: `s${i + 1}`,
+          title: String(t).slice(0, 40),
+          content: [String(t).slice(0, 60)],
+          color: palette[i % palette.length]
+        }))
+      : [
+          {
+            id: 's1',
+            title: 'Overview',
+            content: [title.slice(0, 60)],
+            color: palette[0]
+          }
+        ];
+
+    const connections =
+      contentType === 'flowchart'
+        ? sections.slice(0, -1).map((s, i) => ({
+            from: s.id,
+            to: sections[i + 1].id,
+            type: 'arrow',
+            label: 'next'
+          }))
+        : [];
+
+    return {
+      success: true,
+      isWireframe: true,
+      contentType,
+      wireframeData: {
+        title,
+        description: `Auto-generated ${contentType} for ${title}`,
+        layout: {
+          type: contentType === 'flowchart' ? 'flex' : 'grid',
+          direction: contentType === 'flowchart' ? 'horizontal' : 'both',
+          columns: Math.min(3, sections.length),
+          rows: Math.ceil(sections.length / 3)
+        },
+        sections,
+        connections,
+        style: {
+          theme: 'professional',
+          primaryColor: palette[0],
+          secondaryColor: palette[1],
+          accentColor: palette[2]
+        }
+      }
+    };
   }
 
   /**
@@ -554,14 +540,12 @@ Be strict in your analysis - only classify content as educational if it genuinel
 
       console.log('✅ Content approved for multiple visual learning generation');
       
-      const concepts = await this.extractKeyConcepts(docxText);
+      const concepts = normalizeConcepts(await this.extractKeyConcepts(docxText));
       
-      const [diagram, infographic, mindmap, flowchart] = await Promise.all([
-        this.generateVisualWithFallback(concepts, docxText, 'diagram'),
-        this.generateVisualWithFallback(concepts, docxText, 'infographic'),
-        this.generateVisualWithFallback(concepts, docxText, 'mindmap'),
-        this.generateVisualWithFallback(concepts, docxText, 'flowchart')
-      ]);
+      const diagram = await this.generateVisualWithFallback(concepts, docxText, 'diagram');
+      const infographic = await this.generateVisualWithFallback(concepts, docxText, 'infographic');
+      const mindmap = await this.generateVisualWithFallback(concepts, docxText, 'mindmap');
+      const flowchart = await this.generateVisualWithFallback(concepts, docxText, 'flowchart');
 
       return {
         success: true,
@@ -576,7 +560,7 @@ Be strict in your analysis - only classify content as educational if it genuinel
       };
     } catch (error) {
       console.error('Error generating multiple visuals:', error);
-      throw new Error('Failed to generate visual content');
+      throw new Error(error?.message || 'Failed to generate visual content');
     }
   }
 
@@ -607,8 +591,14 @@ Be strict in your analysis - only classify content as educational if it genuinel
       return visualContent;
     } catch (error) {
       console.log(`🔄 Image generation failed for ${contentType}, falling back to text description...`);
-      
-      if (error.message.includes('QUOTA_EXCEEDED_FALLBACK_TO_TEXT_DESCRIPTION')) {
+
+      const useWireframeFallback =
+        error.message?.includes('QUOTA_EXCEEDED_FALLBACK_TO_TEXT_DESCRIPTION') ||
+        error.message?.includes('Failed to generate image') ||
+        error.message?.includes('No image data found') ||
+        error.message?.includes('No response received from image generation');
+
+      if (useWireframeFallback) {
         try {
           // Get the original prompt based on content type
           let prompt;

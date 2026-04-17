@@ -33,6 +33,7 @@ const PdfPreviewWithAI = ({
 }) => {
   const [showAITutor, setShowAITutor] = useState(false);
   const [showVisualContent, setShowVisualContent] = useState(false);
+  const [activeVisualType, setActiveVisualType] = useState('diagram');
   const [showSequentialLearning, setShowSequentialLearning] = useState(false);
   const [showGlobalLearning, setShowGlobalLearning] = useState(false);
   const [showSensingLearning, setShowSensingLearning] = useState(false);
@@ -81,6 +82,9 @@ const PdfPreviewWithAI = ({
   const [filteredRecommendations, setFilteredRecommendations] = useState([]); // Recommendations excluding AI Narrator
   const [errorSource, setErrorSource] = useState('manual'); // Track if error is from 'auto-load' or 'manual' click
   const [isContentEducational, setIsContentEducational] = useState(true); // Track if content is educational (default true until analyzed)
+  const [analysisMeta, setAnalysisMeta] = useState({ method: null, confidence: null, contentType: null, verified: false, unavailableReason: null, reasoning: null, evidence: [] });
+  const [showAnalysisToast, setShowAnalysisToast] = useState(false);
+  const [isAIAvailable, setIsAIAvailable] = useState(true);
 
   // Automatic time tracking for ML classification
   useLearningModeTracking('aiNarrator', aiTutorActive);
@@ -128,13 +132,17 @@ const PdfPreviewWithAI = ({
         const response = await fetch('/api/learning-style/profile');
         if (response.ok) {
           const data = await response.json();
-          const modes = data.profile?.recommendedModes ||
+          const profile = data.data?.profile || data.profile || {};
+          const modes = profile.recommendedModes ||
+            data.profile?.recommendedModes ||
             data.data?.profile?.recommendedModes ||
             data.recommendedModes || [];
+          const hasBeenClassified =
+            profile.hasBeenClassified === true || (Number(profile.predictionCount) || 0) > 0;
 
-          console.log('📊 Recommendations received:', modes);
+          console.log('📊 Recommendations received:', modes, 'classified:', hasBeenClassified);
 
-          if (modes.length > 0) {
+          if (modes.length > 0 && hasBeenClassified) {
             setAllRecommendations(modes);
 
             // Include ALL modes in carousel (including AI Narrator)
@@ -161,6 +169,8 @@ const PdfPreviewWithAI = ({
               setCurrentRecommendationIndex(0);
               console.log('ℹ️ Only AI Narrator available, will show PDF view');
             }
+          } else if (modes.length > 0 && !hasBeenClassified) {
+            console.log('ℹ️ Recommendations exist but learning style not classified yet — skip auto-load / ML chrome');
           } else {
             console.log('ℹ️ No recommendations available (user not classified yet)');
           }
@@ -172,6 +182,23 @@ const PdfPreviewWithAI = ({
     fetchRecommendations();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch('/api/ai-health-check');
+        const data = await response.json();
+        if (cancelled) return;
+        setIsAIAvailable(!!data.available);
+      } catch {
+        if (!cancelled) setIsAIAvailable(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Auto-load top recommendation after PDF content is extracted (EXCEPT AI Narrator)
   useEffect(() => {
     if (!topRecommendation || !pdfContent || autoLoadAttempted) return;
@@ -181,6 +208,7 @@ const PdfPreviewWithAI = ({
       console.log('⚠️ Skipping auto-load: AI service is unavailable');
       setAutoLoadAttempted(true);
       setShowPdfView(true); // Show PDF view by default
+      setWillAutoLoad(false); // Otherwise loading overlay stays forever (willAutoLoad + !hasActiveLearningMode)
       return;
     }
 
@@ -209,7 +237,16 @@ const PdfPreviewWithAI = ({
           mode: topRecommendation.mode
         });
 
-        // If NOT educational, show the modal immediately
+        // Gate error (Groq 400, etc.): never treat as "non-educational" or hide mode buttons
+        if (analysisResult.verified !== true) {
+          console.warn('⚠️ Educational gate unavailable during auto-load — skipping auto-open, keeping modes visible');
+          setIsContentEducational(true);
+          setWillAutoLoad(false);
+          setShowPdfView(true);
+          return;
+        }
+
+        // Only block when the model actually returned a negative verdict
         if (!analysisResult.isEducational) {
           console.log('⚠️ Non-educational content detected during auto-load - showing notification');
 
@@ -265,7 +302,7 @@ AI learning features work best with instructional content, lessons, or study mat
     };
 
     autoLoadWithAnalysis();
-  }, [topRecommendation, pdfContent, autoLoadAttempted]);
+  }, [topRecommendation, pdfContent, autoLoadAttempted, isAIAvailable]);
 
   // Detect cache status when PDF loads - check localStorage FIRST
   useEffect(() => {
@@ -339,10 +376,16 @@ AI learning features work best with instructional content, lessons, or study mat
         }
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to extract content');
+        throw new Error(errorData.details || errorData.error || 'Failed to extract content');
       }
     } catch (error) {
       console.error('❌ Error extracting PDF content:', error);
+      setAnalysisMeta(prev => ({
+        ...prev,
+        verified: false,
+        unavailableReason: `PDF extraction failed: ${error.message}`,
+        reasoning: error.message
+      }));
       setExtractionError(error.message);
       throw error;
     }
@@ -631,29 +674,123 @@ AI learning features work best with instructional content, lessons, or study mat
     }
   }, [aiTutorActive]);
 
-  const analyzeContentForEducational = async (content) => {
+  const analyzeContentForEducational = async (contentToAnalyze, requireUserConfirm = false) => {
+    const cleanEvidenceLines = (items) => {
+      if (!Array.isArray(items)) return [];
+      return items
+        .map(item => (typeof item?.text === 'string' ? item.text : ''))
+        .map(text => text.replace(/\s+/g, ' ').trim())
+        .filter(text => text.length >= 20)
+        .filter(text => /^[\x20-\x7E]+$/.test(text))
+        .slice(0, 2);
+    };
+
     try {
-      const response = await fetch('/api/ai-tutor/analyze-content', {
+      // Cheap local zero-shot gate only (no generative credits)
+      const gateRes = await fetch('/api/content/educational-gate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ content: contentToAnalyze })
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        return {
-          isEducational: result.isEducational,
-          reasoning: result.reasoning,
-          contentType: result.contentType,
-          confidence: result.confidence
-        };
+      let gate = null;
+      try {
+        gate = await gateRes.json();
+      } catch {
+        gate = null;
       }
-      return { isEducational: false, reasoning: 'Analysis failed', confidence: 0 };
+      if (gateRes.ok) {
+        if (gate?.success) {
+          const rejectionReason =
+            typeof gate.rejectionReason === 'string'
+              ? gate.rejectionReason
+              : !gate.isEducational && gate.topLabel
+                ? `Classified as: ${gate.topLabel} (${typeof gate.confidence === 'number' ? Math.round(gate.confidence * 100) + '%' : 'N/A'})`
+                : null;
+          const gateResult = {
+            isEducational: !!gate.isEducational,
+            reasoning: rejectionReason || `Zero-shot gate (${gate.method})`,
+            contentType: gate.isEducational ? 'Educational Material' : 'Non-educational Document',
+            confidence: typeof gate.confidence === 'number' ? gate.confidence : 0,
+            margin: typeof gate.margin === 'number' ? gate.margin : 0,
+            method: gate.method,
+            verified: true,
+            unavailableReason: rejectionReason,
+            rejectionReason,
+            decision: gate.decision || null,
+            evidence: Array.isArray(gate.evidence) ? gate.evidence : []
+          };
+          setAnalysisMeta({
+            method: gateResult.method || null,
+            confidence: typeof gateResult.confidence === 'number' ? gateResult.confidence : null,
+            contentType: gateResult.contentType || null,
+            verified: true,
+            unavailableReason: rejectionReason,
+            reasoning: gateResult.reasoning || null,
+            evidence: Array.isArray(gate.evidence) ? gate.evidence : []
+          });
+          setShowAnalysisToast(true);
+          return gateResult;
+        }
+      }
+      const fallbackResult = {
+        isEducational: false,
+        reasoning:
+          gate?.unavailableReason ||
+          gate?.details ||
+          gate?.error ||
+          `Zero-shot service returned HTTP ${gateRes.status}`,
+        contentType: 'unknown',
+        confidence: null,
+        method: 'zero-shot',
+        verified: false,
+        unavailableReason:
+          gate?.unavailableReason ||
+          gate?.details ||
+          gate?.error ||
+          `Zero-shot service returned HTTP ${gateRes.status}`
+      };
+      setAnalysisMeta({
+        method: fallbackResult.method,
+        confidence: fallbackResult.confidence,
+        contentType: fallbackResult.contentType,
+        verified: false,
+        unavailableReason: fallbackResult.unavailableReason,
+        reasoning: fallbackResult.reasoning,
+        evidence: []
+      });
+      setShowAnalysisToast(true);
+      return fallbackResult;
     } catch (error) {
       console.error('❌ Error analyzing content:', error);
-      return { isEducational: false, reasoning: 'Network error during analysis', confidence: 0 };
+      const errorResult = {
+        isEducational: false,
+        reasoning: 'Network error during zero-shot analysis',
+        contentType: 'unknown',
+        confidence: null,
+        method: 'zero-shot',
+        verified: false,
+        unavailableReason: 'Network error during zero-shot analysis'
+      };
+      setAnalysisMeta({
+        method: errorResult.method,
+        confidence: errorResult.confidence,
+        contentType: errorResult.contentType,
+        verified: false,
+        unavailableReason: errorResult.unavailableReason,
+        reasoning: errorResult.reasoning,
+        evidence: []
+      });
+      setShowAnalysisToast(true);
+      return errorResult;
     }
   };
+
+  useEffect(() => {
+    if (!showAnalysisToast) return;
+    const timer = setTimeout(() => setShowAnalysisToast(false), 4500);
+    return () => clearTimeout(timer);
+  }, [showAnalysisToast]);
 
   const handleAITutorClick = async () => {
     if (aiTutorActive) {
@@ -682,7 +819,11 @@ AI learning features work best with instructional content, lessons, or study mat
       console.log('📄 First 200 chars:', extractedContent.substring(0, 200));
       console.log('📊 Word count:', extractedContent.split(/\s+/).length);
 
-      const analysisResult = await analyzeContentForEducational(extractedContent);
+      const analysisResult = await analyzeContentForEducational(extractedContent, true);
+      if (analysisResult.cancelled) {
+        setIsAITutorLoading(false);
+        return;
+      }
 
       console.log('🤖 AI Analysis Result for PDF:', {
         isEducational: analysisResult.isEducational,
@@ -691,7 +832,7 @@ AI learning features work best with instructional content, lessons, or study mat
         contentType: analysisResult.contentType
       });
 
-      if (!analysisResult.isEducational) {
+      if (analysisResult.verified === true && !analysisResult.isEducational) {
         const errorMessage = `This document does not appear to contain educational or learning material suitable for AI narration. 
 
 AI Analysis: ${analysisResult.reasoning}
@@ -749,9 +890,13 @@ DEBUG INFO:
       }
 
       // Analyze if content is educational
-      const analysisResult = await analyzeContentForEducational(extractedContent);
+      const analysisResult = await analyzeContentForEducational(extractedContent, true);
+      if (analysisResult.cancelled) {
+        setIsVisualLearningLoading(false);
+        return;
+      }
 
-      if (!analysisResult.isEducational) {
+      if (analysisResult.verified === true && !analysisResult.isEducational) {
         const errorMessage = `This document does not appear to contain educational or learning material suitable for visual learning materials. 
 
 AI Analysis: ${analysisResult.reasoning}
@@ -790,9 +935,13 @@ Visual Learning works best with instructional content, lessons, or study materia
         return;
       }
 
-      const analysisResult = await analyzeContentForEducational(extractedContent);
+      const analysisResult = await analyzeContentForEducational(extractedContent, true);
+      if (analysisResult.cancelled) {
+        setIsSequentialLearningLoading(false);
+        return;
+      }
 
-      if (!analysisResult.isEducational) {
+      if (analysisResult.verified === true && !analysisResult.isEducational) {
         const errorMessage = `This document does not appear to contain educational or learning material suitable for sequential learning. 
 
 AI Analysis: ${analysisResult.reasoning}
@@ -843,10 +992,14 @@ Sequential Learning works best with instructional content, lessons, or study mat
       }
 
       console.log('🔍 Step 3: Analyzing content for educational value...');
-      const analysisResult = await analyzeContentForEducational(extractedContent);
+      const analysisResult = await analyzeContentForEducational(extractedContent, true);
+      if (analysisResult.cancelled) {
+        setIsGlobalLearningLoading(false);
+        return;
+      }
       console.log('📊 Analysis result:', analysisResult);
 
-      if (!analysisResult.isEducational) {
+      if (analysisResult.verified === true && !analysisResult.isEducational) {
         console.warn('⚠️ Content not educational, showing error');
         const errorMessage = `This document does not appear to contain educational or learning material suitable for global learning. 
 
@@ -891,9 +1044,13 @@ Global Learning works best with instructional content, lessons, or study materia
         return;
       }
 
-      const analysisResult = await analyzeContentForEducational(extractedContent);
+      const analysisResult = await analyzeContentForEducational(extractedContent, true);
+      if (analysisResult.cancelled) {
+        setIsSensingLearningLoading(false);
+        return;
+      }
 
-      if (!analysisResult.isEducational) {
+      if (analysisResult.verified === true && !analysisResult.isEducational) {
         const errorMessage = `This document does not appear to contain educational or learning material suitable for sensing learning. 
 
 AI Analysis: ${analysisResult.reasoning}
@@ -931,9 +1088,13 @@ Sensing Learning works best with instructional content, lessons, or study materi
         return;
       }
 
-      const analysisResult = await analyzeContentForEducational(extractedContent);
+      const analysisResult = await analyzeContentForEducational(extractedContent, true);
+      if (analysisResult.cancelled) {
+        setIsIntuitiveLearningLoading(false);
+        return;
+      }
 
-      if (!analysisResult.isEducational) {
+      if (analysisResult.verified === true && !analysisResult.isEducational) {
         const errorMessage = `This document does not appear to contain educational or learning material suitable for intuitive learning. 
 
 AI Analysis: ${analysisResult.reasoning}
@@ -971,9 +1132,13 @@ Intuitive Learning works best with instructional content, lessons, or study mate
         return;
       }
 
-      const analysisResult = await analyzeContentForEducational(extractedContent);
+      const analysisResult = await analyzeContentForEducational(extractedContent, true);
+      if (analysisResult.cancelled) {
+        setIsActiveLearningLoading(false);
+        return;
+      }
 
-      if (!analysisResult.isEducational) {
+      if (analysisResult.verified === true && !analysisResult.isEducational) {
         const errorMessage = `This document does not appear to contain educational or learning material suitable for active learning. 
 
 AI Analysis: ${analysisResult.reasoning}
@@ -1011,9 +1176,13 @@ Active Learning works best with instructional content, lessons, or study materia
         return;
       }
 
-      const analysisResult = await analyzeContentForEducational(extractedContent);
+      const analysisResult = await analyzeContentForEducational(extractedContent, true);
+      if (analysisResult.cancelled) {
+        setIsReflectiveLearningLoading(false);
+        return;
+      }
 
-      if (!analysisResult.isEducational) {
+      if (analysisResult.verified === true && !analysisResult.isEducational) {
         const errorMessage = `This document does not appear to contain educational or learning material suitable for reflective learning. 
 
 AI Analysis: ${analysisResult.reasoning}
@@ -1147,6 +1316,24 @@ Reflective Learning works best with instructional content, lessons, or study mat
       />
 
       <div className="w-full h-full flex relative">
+        {showAnalysisToast && analysisMeta.method === 'zero-shot' && (
+          <div className="fixed top-6 right-6 z-50 pointer-events-none">
+            <div className={`rounded-xl shadow-2xl max-w-sm border-l-4 overflow-hidden ${analysisMeta.verified ? 'bg-green-50 border-green-500' : 'bg-amber-50 border-amber-500'}`}>
+              <div className="p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                  Zero-shot Analysis Result
+                </h3>
+                <p className="text-xs text-gray-700">
+                  {analysisMeta.verified ? 'Educational content detected.' : 'Analysis unavailable.'}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Confidence: {typeof analysisMeta.confidence === 'number' ? `${Math.round(analysisMeta.confidence * 100)}%` : 'N/A'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Toast Notification - Compact Design */}
         {extractionError && (
           <div className="fixed bottom-6 left-6 z-50 pointer-events-auto animate-slide-up">
@@ -1165,21 +1352,30 @@ Reflective Learning works best with instructional content, lessons, or study mat
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                      AI Learning Features Not Available
+                      Learning Features Not Available
                     </h3>
                     <p className="text-xs text-gray-600 leading-relaxed mb-2">
-                      This document doesn't contain educational content. AI features work best with lessons, tutorials, and study materials.
+                      This document doesn't contain educational content. Zero-shot analysis allows learning modes only for instructional material.
                     </p>
+                    {(analysisMeta.unavailableReason || !analysisMeta.verified) && (
+                      <p className="text-[11px] text-amber-700 leading-relaxed mb-2">
+                        Reason: {analysisMeta.unavailableReason || analysisMeta.reasoning || extractionError || 'Zero-shot metadata missing (analysis may not have executed for this action).'}
+                      </p>
+                    )}
 
                     {/* Quick Info */}
                     <div className="flex items-center gap-3 text-xs">
                       <div className="flex items-center gap-1">
                         <span className="text-gray-500">Type:</span>
-                        <span className="font-medium text-gray-700">Personal Document</span>
+                        <span className="font-medium text-gray-700">
+                          {analysisMeta.contentType || 'Unknown'}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <span className="text-gray-500">Confidence:</span>
-                        <span className="font-medium text-green-600">100%</span>
+                        <span className="font-medium text-green-600">
+                          {typeof analysisMeta.confidence === 'number' ? `${Math.round(analysisMeta.confidence * 100)}%` : 'N/A'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1198,7 +1394,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
               <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs text-gray-500">
                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                  <span>AI Analysis</span>
+                  <span>{analysisMeta.verified ? 'Zero-shot Analysis (Verified)' : 'Zero-shot Analysis (Unavailable)'}</span>
                 </div>
                 <button
                   onClick={() => setExtractionError('')}
@@ -1388,8 +1584,8 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           }}
                           docxContent={pdfContent}
                           fileName={fileName}
-                          onVisualTypeChange={(type) => console.log('Visual type changed:', type)}
-                          activeVisualType="diagram"
+                          onVisualTypeChange={setActiveVisualType}
+                          activeVisualType={activeVisualType}
                         />
                       )}
 
