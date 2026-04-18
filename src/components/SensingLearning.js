@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { JetBrains_Mono } from 'next/font/google';
 import {
-  XMarkIcon,
   ArrowPathIcon,
   ChevronLeftIcon,
   BeakerIcon,
@@ -15,6 +16,17 @@ import {
 } from '@heroicons/react/24/outline';
 import { trackBehavior } from '@/utils/learningBehaviorTracker';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
+
+const IMMERSIVE_SENSING_EVENT = 'assist-ed-immersive-sensing';
+
+const labMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-sensing-mono',
+  display: 'swap'
+});
+
+const readoutType = 'font-[family-name:var(--font-sensing-mono),ui-monospace,monospace] tabular-nums';
 
 function parseInteractiveNumber(raw) {
   if (raw === null || raw === undefined) return null;
@@ -50,12 +62,7 @@ function patternIcon(sim) {
   return 'slider';
 }
 
-const SensingLearning = ({
-  isActive,
-  onClose,
-  docxContent,
-  fileName
-}) => {
+const SensingLearning = ({ isActive, onClose, docxContent, fileName }) => {
   const [activeTab, setActiveTab] = useState('simulations');
   const [simulations, setSimulations] = useState([]);
   const [challenges, setChallenges] = useState([]);
@@ -66,28 +73,34 @@ const SensingLearning = ({
   const [simulationInputs, setSimulationInputs] = useState({});
   const [challengeProgress, setChallengeProgress] = useState({});
 
-  // Automatic time tracking for ML classification
   useLearningModeTracking('sensingLearning', isActive);
 
-  const tabs = [
-    {
-      key: 'simulations',
-      name: 'Interactive Lab',
-      icon: BeakerIcon,
-      description: 'Hands-on simulations and experiments'
-    },
-    {
-      key: 'challenges',
-      name: 'Practical Challenges',
-      icon: PuzzlePieceIcon,
-      description: 'Real-world problem solving'
+  const tabs = useMemo(
+    () => [
+      { key: 'simulations', name: 'Lab', icon: BeakerIcon },
+      { key: 'challenges', name: 'Challenges', icon: PuzzlePieceIcon }
+    ],
+    []
+  );
+
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined' || !isActive) return undefined;
+    document.body.setAttribute('data-immersive-sensing', 'true');
+    window.dispatchEvent(new CustomEvent(IMMERSIVE_SENSING_EVENT, { detail: { open: true } }));
+    try {
+      window.dispatchEvent(new Event('collapseMainSidebar'));
+    } catch {
+      // ignore
     }
-  ];
+    return () => {
+      document.body.removeAttribute('data-immersive-sensing');
+      window.dispatchEvent(new CustomEvent(IMMERSIVE_SENSING_EVENT, { detail: { open: false } }));
+    };
+  }, [isActive]);
 
   useEffect(() => {
     if (isActive && docxContent) {
       generateSensingContent();
-      // Track mode activation
       trackBehavior('mode_activated', { mode: 'sensing', fileName });
     }
   }, [isActive, docxContent]);
@@ -112,12 +125,9 @@ const SensingLearning = ({
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
           const errorData = await response.json();
-          errorMessage =
-            errorData?.details ||
-            errorData?.error ||
-            errorMessage;
+          errorMessage = errorData?.details || errorData?.error || errorMessage;
         } catch {
-          // ignore JSON parse failure
+          // ignore
         }
         throw new Error(errorMessage);
       }
@@ -127,8 +137,7 @@ const SensingLearning = ({
       if (result.success) {
         setSimulations(result.simulations || []);
         setChallenges(result.challenges || []);
-        
-        // Initialize simulation inputs
+
         if (result.simulations && result.simulations.length > 0) {
           const initialInputs = {};
           result.simulations.forEach((sim, simIndex) => {
@@ -148,7 +157,6 @@ const SensingLearning = ({
           setSimulationInputs(initialInputs);
         }
 
-        // Initialize challenge progress
         if (result.challenges && result.challenges.length > 0) {
           const initialProgress = {};
           result.challenges.forEach((challenge, challengeIndex) => {
@@ -163,9 +171,9 @@ const SensingLearning = ({
       } else {
         throw new Error(result.error || 'Failed to generate sensing learning content');
       }
-    } catch (error) {
-      console.error('Error generating sensing content:', error);
-      setError(error.message);
+    } catch (err) {
+      console.error('Error generating sensing content:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -174,51 +182,44 @@ const SensingLearning = ({
   const hasFullContent = simulations.length > 0 && challenges.length > 0;
 
   const requestRegenerate = () => {
-    if (!window.confirm('Regenerate hands-on lab? This runs the AI again and uses more API quota.')) return;
+    if (!window.confirm('Regenerate lab? Uses more API quota.')) return;
     generateSensingContent();
   };
 
   const handleSimulationInputChange = (simIndex, elementName, value) => {
-    setSimulationInputs(prev => ({
+    setSimulationInputs((prev) => ({
       ...prev,
       [simIndex]: {
         ...prev[simIndex],
         [elementName]: value
       }
     }));
-    // Track interaction
-    trackBehavior('interactive_element_used', { 
-      mode: 'sensing', 
+    trackBehavior('interactive_element_used', {
+      mode: 'sensing',
       elementType: 'simulation_input',
       elementName,
-      value 
+      value
     });
   };
 
   const handleChallengeStepComplete = (challengeIndex, stepIndex) => {
-    setChallengeProgress(prev => ({
+    setChallengeProgress((prev) => ({
       ...prev,
       [challengeIndex]: {
         ...prev[challengeIndex],
         currentStep: Math.max(prev[challengeIndex]?.currentStep || 0, stepIndex + 1)
       }
     }));
-    // Track step completion
-    trackBehavior('step_completed', { 
-      mode: 'sensing', 
-      challengeIndex, 
-      stepIndex 
-    });
+    trackBehavior('step_completed', { mode: 'sensing', challengeIndex, stepIndex });
   };
 
   const handleCheckpointComplete = (challengeIndex, checkpointIndex) => {
-    setChallengeProgress(prev => {
+    setChallengeProgress((prev) => {
       const currentProgress = prev[challengeIndex] || { completedCheckpoints: [] };
       const newCheckpoints = [...currentProgress.completedCheckpoints];
       if (!newCheckpoints.includes(checkpointIndex)) {
         newCheckpoints.push(checkpointIndex);
       }
-      
       return {
         ...prev,
         [challengeIndex]: {
@@ -227,36 +228,63 @@ const SensingLearning = ({
         }
       };
     });
-    // Track checkpoint completion
-    trackBehavior('checkpoint_completed', { 
-      mode: 'sensing', 
-      challengeIndex, 
-      checkpointIndex 
-    });
+    trackBehavior('checkpoint_completed', { mode: 'sensing', challengeIndex, checkpointIndex });
   };
+
+  const renderHeaderTabs = () => (
+    <nav
+      className="inline-flex w-full max-w-[min(100%,260px)] rounded-md border border-cyan-900/50 bg-slate-950/90 p-0.5 sm:w-auto sm:max-w-none"
+      role="tablist"
+      aria-label="Hands-on lab views"
+    >
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const selected = tab.key === activeTab;
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => {
+              setActiveTab(tab.key);
+              trackBehavior('tab_switched', { mode: 'sensing', tab: tab.key });
+            }}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium transition sm:flex-initial sm:px-3 sm:text-sm ${
+              selected
+                ? 'bg-cyan-500/20 text-cyan-100 shadow-inner ring-1 ring-cyan-500/40'
+                : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0 opacity-90 sm:h-4 sm:w-4" />
+            <span className="truncate">{tab.name}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
 
   const renderSimulations = () => {
     if (loading) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"></div>
-          <p className="text-gray-600">Setting up interactive lab...</p>
+        <div className="flex min-h-[min(70vh,420px)] flex-col items-center justify-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/40">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-600 border-t-cyan-400" />
+          <p className="text-sm text-slate-400">Setting up instruments…</p>
         </div>
       );
     }
 
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="text-red-500 text-center">
-            <p className="text-lg font-semibold">Lab Setup Failed</p>
-            <p className="text-sm text-gray-600 mt-2">{error}</p>
-          </div>
+        <div className="flex min-h-[min(70vh,380px)] flex-col items-center justify-center gap-4 rounded-2xl border border-red-900/40 bg-red-950/25 px-6 text-center">
+          <p className="text-lg font-semibold text-red-200">Lab failed</p>
+          <p className="max-w-md text-sm text-slate-400">{error}</p>
           <button
+            type="button"
             onClick={generateSensingContent}
-            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            className="rounded-lg border border-cyan-700 bg-cyan-600 px-5 py-2 text-sm font-medium text-white hover:bg-cyan-500"
           >
-            Try Again
+            Try again
           </button>
         </div>
       );
@@ -264,16 +292,14 @@ const SensingLearning = ({
 
     if (!simulations || simulations.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="text-gray-500 text-center">
-            <p className="text-lg font-semibold">No Simulations Available</p>
-            <p className="text-sm text-gray-600 mt-2">Click generate to create interactive experiments</p>
-          </div>
+        <div className="flex min-h-[min(70vh,380px)] flex-col items-center justify-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/30 px-6 text-center">
+          <p className="text-base font-medium text-slate-200">No lab runs yet</p>
           <button
+            type="button"
             onClick={generateSensingContent}
-            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            className="rounded-lg border border-cyan-600 bg-cyan-600/90 px-5 py-2 text-sm font-medium text-white hover:bg-cyan-500"
           >
-            Generate Lab
+            Generate
           </button>
         </div>
       );
@@ -283,24 +309,24 @@ const SensingLearning = ({
     const currentInputs = simulationInputs[activeSimulation] || {};
 
     return (
-      <div className="space-y-5">
-        <div className="rounded-2xl border border-teal-200/70 bg-white shadow-sm overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-teal-100/80 bg-teal-50/40 px-4 py-3 sm:px-5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-teal-800">Lab runs</p>
-            <span className="text-xs font-medium text-slate-600 tabular-nums">
+      <div className="space-y-4 sm:space-y-5">
+        <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/40">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-3 py-2 sm:px-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-600/90">Runs</p>
+            <span className="text-xs font-medium tabular-nums text-slate-500">
               {activeSimulation + 1} / {simulations.length}
             </span>
           </div>
-          <div className="flex gap-2 overflow-x-auto px-4 py-3 sm:px-5">
+          <div className="flex gap-2 overflow-x-auto px-3 py-2.5 sm:px-4">
             {simulations.map((sim, index) => (
               <button
                 key={index}
                 type="button"
                 onClick={() => setActiveSimulation(index)}
-                className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-left text-sm transition-all ${
+                className={`flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition ${
                   index === activeSimulation
-                    ? 'border-teal-600 bg-teal-600 text-white shadow-md'
-                    : 'border-slate-200 bg-slate-50 text-slate-800 hover:border-teal-300 hover:bg-teal-50/60'
+                    ? 'border-cyan-500/60 bg-cyan-950/80 text-cyan-50 shadow-sm ring-1 ring-cyan-500/30'
+                    : 'border-slate-700 bg-slate-950/60 text-slate-300 hover:border-cyan-800 hover:bg-slate-900'
                 }`}
               >
                 {patternIcon(sim) === 'calc' && <CalculatorIcon className="h-4 w-4 shrink-0 opacity-90" />}
@@ -312,32 +338,32 @@ const SensingLearning = ({
           </div>
         </div>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-          <header className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/35">
+          <header className="flex flex-col gap-3 border-b border-slate-800 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
             <div className="flex min-w-0 flex-1 gap-3">
-              <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-sm">
-                {patternIcon(currentSim) === 'calc' && <CalculatorIcon className="h-6 w-6" />}
-                {patternIcon(currentSim) === 'dropdown' && <CogIcon className="h-6 w-6" />}
-                {patternIcon(currentSim) === 'slider' && <ChartBarIcon className="h-6 w-6" />}
+              <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-cyan-800/60 bg-cyan-950/50 text-cyan-300">
+                {patternIcon(currentSim) === 'calc' && <CalculatorIcon className="h-5 w-5" />}
+                {patternIcon(currentSim) === 'dropdown' && <CogIcon className="h-5 w-5" />}
+                {patternIcon(currentSim) === 'slider' && <ChartBarIcon className="h-5 w-5" />}
               </span>
               <div className="min-w-0">
-                <h3 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">{currentSim.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-slate-600">{currentSim.description}</p>
+                <h3 className="text-lg font-semibold tracking-tight text-slate-50 sm:text-xl">{currentSim.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-slate-400">{currentSim.description}</p>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5 self-start rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
-              <ClockIcon className="h-4 w-4 text-slate-500" />
+            <div className="flex shrink-0 items-center gap-1.5 self-start rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-medium text-slate-400">
+              <ClockIcon className="h-3.5 w-3.5 text-cyan-600" />
               {currentSim.estimatedTime}
             </div>
           </header>
 
-          <div className="grid gap-5 p-5 lg:grid-cols-12 lg:gap-6 lg:p-6">
+          <div className="grid gap-5 p-4 lg:grid-cols-12 lg:gap-6 lg:p-5">
             <div className="lg:col-span-5">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Controls</p>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Controls</p>
               <div className="space-y-3">
                 {currentSim.labPattern === 'slider_readout' && (
-                  <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 shadow-sm">
-                    <label className="block text-sm font-semibold text-slate-900">{currentSim.sliderLabel}</label>
+                  <div className="rounded-lg border border-slate-700 bg-slate-950/70 p-4">
+                    <label className="block text-sm font-medium text-slate-200">{currentSim.sliderLabel}</label>
                     <div className="mt-3 space-y-2">
                       <input
                         type="range"
@@ -353,13 +379,13 @@ const SensingLearning = ({
                             labPattern: 'slider_readout'
                           });
                         }}
-                        className="slider h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-teal-600"
+                        className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-zinc-700 accent-cyan-400"
                       />
                       <div className="flex justify-between text-[11px] text-slate-500">
                         <span>
                           {currentSim.sliderMin} {currentSim.sliderUnit}
                         </span>
-                        <span className="font-semibold text-teal-700">
+                        <span className={`font-semibold text-cyan-400 ${readoutType}`}>
                           {currentInputs.slider ?? currentSim.sliderDefault} {currentSim.sliderUnit}
                         </span>
                         <span>
@@ -372,8 +398,8 @@ const SensingLearning = ({
 
                 {currentSim.labPattern === 'dual_input_calculate' && (
                   <>
-                    <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 shadow-sm">
-                      <label className="block text-sm font-semibold text-slate-900">{currentSim.inputALabel}</label>
+                    <div className="rounded-lg border border-slate-700 bg-slate-950/70 p-4">
+                      <label className="block text-sm font-medium text-slate-200">{currentSim.inputALabel}</label>
                       <input
                         type="number"
                         value={currentInputs.inputA ?? String(currentSim.inputADefault)}
@@ -385,11 +411,11 @@ const SensingLearning = ({
                             labPattern: 'dual_input_calculate'
                           });
                         }}
-                        className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                        className="mt-3 w-full rounded-md border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
                       />
                     </div>
-                    <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 shadow-sm">
-                      <label className="block text-sm font-semibold text-slate-900">{currentSim.inputBLabel}</label>
+                    <div className="rounded-lg border border-slate-700 bg-slate-950/70 p-4">
+                      <label className="block text-sm font-medium text-slate-200">{currentSim.inputBLabel}</label>
                       <input
                         type="number"
                         value={currentInputs.inputB ?? String(currentSim.inputBDefault)}
@@ -401,15 +427,15 @@ const SensingLearning = ({
                             labPattern: 'dual_input_calculate'
                           });
                         }}
-                        className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                        className="mt-3 w-full rounded-md border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
                       />
                     </div>
                   </>
                 )}
 
                 {currentSim.labPattern === 'dropdown_readout' && (
-                  <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 shadow-sm">
-                    <label className="block text-sm font-semibold text-slate-900">{currentSim.dropdownLabel}</label>
+                  <div className="rounded-lg border border-slate-700 bg-slate-950/70 p-4">
+                    <label className="block text-sm font-medium text-slate-200">{currentSim.dropdownLabel}</label>
                     <select
                       value={
                         currentSim.options?.includes(currentInputs.dropdown)
@@ -424,10 +450,10 @@ const SensingLearning = ({
                           labPattern: 'dropdown_readout'
                         });
                       }}
-                      className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                      className="mt-3 w-full rounded-md border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
                     >
                       {(currentSim.options || []).map((option, optIndex) => (
-                        <option key={optIndex} value={option}>
+                        <option key={optIndex} value={option} className="bg-slate-900">
                           {option}
                         </option>
                       ))}
@@ -438,32 +464,30 @@ const SensingLearning = ({
             </div>
 
             <div className="lg:col-span-7">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Live readout</p>
-              <div className="rounded-xl border border-teal-100 bg-gradient-to-br from-teal-50/80 to-cyan-50/50 p-4">
-                <div className="grid gap-3 sm:grid-cols-1">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Readout</p>
+              <div className="rounded-lg border border-cyan-800/40 bg-gradient-to-br from-cyan-950/50 to-slate-950/80 p-4 ring-1 ring-cyan-500/10">
+                <div className="grid gap-3">
                   {currentSim.labPattern === 'slider_readout' && (
-                    <div className="rounded-xl border border-white/80 bg-white/95 p-4 shadow-sm ring-1 ring-teal-100/60">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700/90">
+                    <div className="rounded-lg border border-slate-700/80 bg-slate-950/80 p-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-600/90">
                         {currentSim.readoutLabel}
                       </p>
-                      <p className="mt-1 text-2xl font-bold tabular-nums text-teal-900">
-                        {formatReadoutNumber(
-                          parseInteractiveNumber(currentInputs.slider ?? currentSim.sliderDefault)
-                        )}{' '}
+                      <p className={`mt-1 text-3xl font-semibold text-cyan-300 ${readoutType}`}>
+                        {formatReadoutNumber(parseInteractiveNumber(currentInputs.slider ?? currentSim.sliderDefault))}{' '}
                         {currentSim.sliderUnit}
                       </p>
                       {currentSim.readoutDescription && (
-                        <p className="mt-2 text-xs leading-snug text-slate-600">{currentSim.readoutDescription}</p>
+                        <p className="mt-2 text-xs leading-snug text-slate-500">{currentSim.readoutDescription}</p>
                       )}
                     </div>
                   )}
                   {currentSim.labPattern === 'dual_input_calculate' && (
-                    <div className="rounded-xl border border-white/80 bg-white/95 p-4 shadow-sm ring-1 ring-teal-100/60">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700/90">
+                    <div className="rounded-lg border border-slate-700/80 bg-slate-950/80 p-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-600/90">
                         {currentSim.readoutLabel}{' '}
                         <span className="normal-case text-slate-500">({currentSim.combine})</span>
                       </p>
-                      <p className="mt-1 text-2xl font-bold tabular-nums text-teal-900">
+                      <p className={`mt-1 text-3xl font-semibold text-cyan-300 ${readoutType}`}>
                         {(() => {
                           const a = parseInteractiveNumber(currentInputs.inputA ?? currentSim.inputADefault);
                           const b = parseInteractiveNumber(currentInputs.inputB ?? currentSim.inputBDefault);
@@ -473,16 +497,14 @@ const SensingLearning = ({
                         })()}
                       </p>
                       {currentSim.readoutDescription && (
-                        <p className="mt-2 text-xs leading-snug text-slate-600">{currentSim.readoutDescription}</p>
+                        <p className="mt-2 text-xs leading-snug text-slate-500">{currentSim.readoutDescription}</p>
                       )}
                     </div>
                   )}
                   {currentSim.labPattern === 'dropdown_readout' && (
-                    <div className="rounded-xl border border-white/80 bg-white/95 p-4 shadow-sm ring-1 ring-teal-100/60">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700/90">
-                        {currentSim.readoutTitle}
-                      </p>
-                      <p className="mt-2 text-sm font-medium leading-relaxed text-slate-800">
+                    <div className="rounded-lg border border-slate-700/80 bg-slate-950/80 p-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-600/90">{currentSim.readoutTitle}</p>
+                      <p className="mt-2 text-sm font-medium leading-relaxed text-slate-200">
                         {(() => {
                           const opts = currentSim.options || [];
                           const raw = currentInputs.dropdown ?? currentSim.defaultOption;
@@ -498,35 +520,35 @@ const SensingLearning = ({
             </div>
           </div>
 
-          <div className="border-t border-slate-100 px-5 py-5 sm:px-6">
-            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Lab guide</p>
+          <div className="border-t border-slate-800 px-4 py-4 sm:px-5">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Procedure</p>
             <ol className="space-y-3">
               {currentSim.stepByStepGuide?.map((step, index) => (
                 <li key={index} className="flex gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-sky-200 bg-white text-xs font-bold text-sky-800 shadow-sm">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-cyan-900/60 bg-cyan-950/40 text-xs font-bold text-cyan-400">
                     {index + 1}
                   </span>
-                  <p className="min-w-0 flex-1 text-sm leading-relaxed text-slate-700">{step}</p>
+                  <p className="min-w-0 flex-1 text-sm leading-relaxed text-slate-400">{step}</p>
                 </li>
               ))}
             </ol>
           </div>
 
-          <div className="grid gap-4 border-t border-slate-100 bg-slate-50/40 p-5 sm:grid-cols-2 sm:p-6">
-            <div className="rounded-xl border border-emerald-100 bg-white p-4 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800">Objectives</p>
+          <div className="grid gap-4 border-t border-slate-800 bg-slate-950/30 p-4 sm:grid-cols-2 sm:p-5">
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Objectives</p>
               <ul className="mt-3 space-y-2">
                 {currentSim.learningObjectives?.map((objective, index) => (
-                  <li key={index} className="flex gap-2 text-sm text-slate-700">
-                    <CheckCircleIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  <li key={index} className="flex gap-2 text-sm text-slate-300">
+                    <CheckCircleIcon className="mt-0.5 h-4 w-4 shrink-0 text-teal-500" />
                     <span>{objective}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="rounded-xl border border-amber-100 bg-white p-4 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-900">Real-world tie-in</p>
-              <p className="mt-3 text-sm leading-relaxed text-slate-700">{currentSim.realWorldApplication}</p>
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Real world</p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-400">{currentSim.realWorldApplication}</p>
             </div>
           </div>
         </section>
@@ -537,25 +559,24 @@ const SensingLearning = ({
   const renderChallenges = () => {
     if (loading) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="w-12 h-12 border-4 border-cyan-200 border-t-cyan-600 rounded-full animate-spin"></div>
-          <p className="text-gray-600">Preparing practical challenges...</p>
+        <div className="flex min-h-[min(70vh,420px)] flex-col items-center justify-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/40">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-600 border-t-teal-400" />
+          <p className="text-sm text-slate-400">Loading challenges…</p>
         </div>
       );
     }
 
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="text-red-500 text-center">
-            <p className="text-lg font-semibold">Challenge Setup Failed</p>
-            <p className="text-sm text-gray-600 mt-2">{error}</p>
-          </div>
+        <div className="flex min-h-[min(70vh,380px)] flex-col items-center justify-center gap-4 rounded-2xl border border-red-900/40 bg-red-950/25 px-6 text-center">
+          <p className="text-lg font-semibold text-red-200">Setup failed</p>
+          <p className="max-w-md text-sm text-slate-400">{error}</p>
           <button
+            type="button"
             onClick={generateSensingContent}
-            className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
+            className="rounded-lg border border-teal-600 bg-teal-600 px-5 py-2 text-sm font-medium text-white hover:bg-teal-500"
           >
-            Try Again
+            Try again
           </button>
         </div>
       );
@@ -563,16 +584,14 @@ const SensingLearning = ({
 
     if (!challenges || challenges.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="text-gray-500 text-center">
-            <p className="text-lg font-semibold">No Challenges Available</p>
-            <p className="text-sm text-gray-600 mt-2">Click generate to create practical challenges</p>
-          </div>
+        <div className="flex min-h-[min(70vh,380px)] flex-col items-center justify-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/30 px-6 text-center">
+          <p className="text-base font-medium text-slate-200">No challenges yet</p>
           <button
+            type="button"
             onClick={generateSensingContent}
-            className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
+            className="rounded-lg border border-teal-600 bg-teal-600/90 px-5 py-2 text-sm font-medium text-white hover:bg-teal-500"
           >
-            Generate Challenges
+            Generate
           </button>
         </div>
       );
@@ -582,32 +601,30 @@ const SensingLearning = ({
     const currentProgress = challengeProgress[activeChallenge] || { currentStep: 0, completedCheckpoints: [] };
 
     return (
-      <div className="space-y-5">
-        <div className="overflow-hidden rounded-2xl border border-cyan-200/70 bg-white shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cyan-100/80 bg-cyan-50/40 px-4 py-3 sm:px-5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-cyan-900">Challenges</p>
-            <span className="text-xs font-medium text-slate-600 tabular-nums">
+      <div className="space-y-4 sm:space-y-5">
+        <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/40">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-3 py-2 sm:px-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-500/90">Pick task</p>
+            <span className="text-xs font-medium tabular-nums text-slate-500">
               {activeChallenge + 1} / {challenges.length}
             </span>
           </div>
-          <div className="flex gap-2 overflow-x-auto px-4 py-3 sm:px-5">
+          <div className="flex gap-2 overflow-x-auto px-3 py-2.5 sm:px-4">
             {challenges.map((challenge, index) => (
               <button
                 key={index}
                 type="button"
                 onClick={() => setActiveChallenge(index)}
-                className={`flex min-w-[160px] max-w-[260px] shrink-0 flex-col rounded-xl border px-3.5 py-2.5 text-left transition-all ${
+                className={`flex min-w-[140px] max-w-[240px] shrink-0 flex-col rounded-lg border px-3 py-2 text-left transition ${
                   index === activeChallenge
-                    ? 'border-cyan-600 bg-cyan-600 text-white shadow-md'
-                    : 'border-slate-200 bg-slate-50 text-slate-800 hover:border-cyan-300 hover:bg-cyan-50/50'
+                    ? 'border-teal-500/50 bg-teal-950/70 text-teal-50 ring-1 ring-teal-500/30'
+                    : 'border-slate-700 bg-slate-950/60 text-slate-300 hover:border-teal-900 hover:bg-slate-900'
                 }`}
               >
                 <span className="truncate text-sm font-semibold">{challenge.title}</span>
                 {challenge.category && (
                   <span
-                    className={`mt-0.5 truncate text-[11px] ${
-                      index === activeChallenge ? 'text-cyan-100' : 'text-slate-500'
-                    }`}
+                    className={`mt-0.5 truncate text-[11px] ${index === activeChallenge ? 'text-teal-200/80' : 'text-slate-500'}`}
                   >
                     {challenge.category}
                   </span>
@@ -617,54 +634,54 @@ const SensingLearning = ({
           </div>
         </div>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-          <header className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/35">
+          <header className="flex flex-col gap-3 border-b border-slate-800 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
             <div className="flex min-w-0 flex-1 gap-3">
-              <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-sm">
-                <PuzzlePieceIcon className="h-6 w-6" />
+              <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-teal-800/50 bg-teal-950/40 text-teal-300">
+                <PuzzlePieceIcon className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <h3 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">{currentChallenge.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-slate-600">{currentChallenge.description}</p>
+                <h3 className="text-lg font-semibold tracking-tight text-slate-50 sm:text-xl">{currentChallenge.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-slate-400">{currentChallenge.description}</p>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5 self-start rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
-              <ClockIcon className="h-4 w-4 text-slate-500" />
+            <div className="flex shrink-0 items-center gap-1.5 self-start rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-medium text-slate-400">
+              <ClockIcon className="h-3.5 w-3.5 text-teal-500" />
               {currentChallenge.estimatedTime}
             </div>
           </header>
 
-          <div className="grid gap-4 p-5 sm:grid-cols-3 sm:p-6">
-            <div className="rounded-xl border border-sky-100 bg-sky-50/40 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-sky-900">Materials</p>
+          <div className="grid gap-4 p-4 sm:grid-cols-3 sm:p-5">
+            <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Materials</p>
               <ul className="mt-3 space-y-2">
                 {currentChallenge.materials?.map((material, index) => (
-                  <li key={index} className="flex gap-2 text-sm text-slate-700">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />
+                  <li key={index} className="flex gap-2 text-sm text-slate-300">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500" />
                     {material}
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-900">Success metrics</p>
+            <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Success</p>
               <ul className="mt-3 space-y-2">
                 {currentChallenge.successMetrics?.map((metric, index) => (
-                  <li key={index} className="flex gap-2 text-sm text-slate-700">
-                    <CheckCircleIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  <li key={index} className="flex gap-2 text-sm text-slate-300">
+                    <CheckCircleIcon className="mt-0.5 h-4 w-4 shrink-0 text-teal-500" />
                     {metric}
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="rounded-xl border border-amber-100 bg-amber-50/30 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-950">Real-world link</p>
-              <p className="mt-3 text-sm leading-relaxed text-slate-700">{currentChallenge.realWorldConnection}</p>
+            <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Link out</p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-400">{currentChallenge.realWorldConnection}</p>
             </div>
           </div>
 
-          <div className="border-t border-slate-100 px-5 py-5 sm:px-6">
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Procedure</p>
+          <div className="border-t border-slate-800 px-4 py-4 sm:px-5">
+            <p className="mb-4 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Steps</p>
             <div className="space-y-4">
               {currentChallenge.procedure?.map((step, index) => {
                 const done = index < currentProgress.currentStep;
@@ -672,40 +689,40 @@ const SensingLearning = ({
                 return (
                   <div
                     key={index}
-                    className={`rounded-xl border p-4 transition-colors ${
+                    className={`rounded-lg border p-4 transition-colors ${
                       done
-                        ? 'border-emerald-200 bg-emerald-50/50'
+                        ? 'border-teal-900/60 bg-teal-950/25'
                         : active
-                          ? 'border-sky-300 bg-sky-50/60 ring-1 ring-sky-200/80'
-                          : 'border-slate-200 bg-white'
+                          ? 'border-cyan-600/40 bg-cyan-950/20 ring-1 ring-cyan-500/25'
+                          : 'border-slate-800 bg-slate-950/40'
                     }`}
                   >
                     <div className="flex gap-3">
                       <span
-                        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ${
-                          done ? 'bg-emerald-600' : active ? 'bg-sky-600' : 'bg-slate-400'
+                        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${
+                          done ? 'bg-teal-600' : active ? 'bg-cyan-600' : 'bg-slate-600'
                         }`}
                       >
                         {done ? '✓' : step.step}
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Step {step.step}</p>
-                        <p className="mt-1 text-sm font-medium text-slate-900">{step.instruction}</p>
+                        <p className="mt-1 text-sm font-medium text-slate-100">{step.instruction}</p>
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                          <div className="rounded-lg border border-sky-100 bg-white/90 px-3 py-2">
-                            <p className="text-[10px] font-semibold uppercase text-sky-800">Expected</p>
-                            <p className="mt-1 text-xs text-slate-700">{step.expectedResult}</p>
+                          <div className="rounded-md border border-slate-800 bg-slate-900/60 px-3 py-2">
+                            <p className="text-[10px] font-semibold uppercase text-slate-500">Expected</p>
+                            <p className="mt-1 text-xs text-slate-400">{step.expectedResult}</p>
                           </div>
-                          <div className="rounded-lg border border-amber-100 bg-white/90 px-3 py-2">
-                            <p className="text-[10px] font-semibold uppercase text-amber-900">Tips</p>
-                            <p className="mt-1 text-xs text-slate-700">{step.tips}</p>
+                          <div className="rounded-md border border-slate-800 bg-slate-900/60 px-3 py-2">
+                            <p className="text-[10px] font-semibold uppercase text-slate-500">Tips</p>
+                            <p className="mt-1 text-xs text-slate-400">{step.tips}</p>
                           </div>
                         </div>
                         {index >= currentProgress.currentStep && (
                           <button
                             type="button"
                             onClick={() => handleChallengeStepComplete(activeChallenge, index)}
-                            className="mt-3 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700"
+                            className="mt-3 rounded-md bg-cyan-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-cyan-500"
                           >
                             Mark complete
                           </button>
@@ -718,32 +735,32 @@ const SensingLearning = ({
             </div>
           </div>
 
-          <div className="border-t border-slate-100 bg-violet-50/30 px-5 py-5 sm:px-6">
-            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-violet-900">Checkpoints</p>
+          <div className="border-t border-slate-800 bg-slate-950/40 px-4 py-4 sm:px-5">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Checkpoints</p>
             <div className="grid gap-3 sm:grid-cols-2">
               {currentChallenge.checkpoints?.map((checkpoint, index) => {
                 const cpDone = currentProgress.completedCheckpoints.includes(index);
                 return (
                   <div
                     key={index}
-                    className={`flex gap-3 rounded-xl border p-3.5 ${
-                      cpDone ? 'border-emerald-200 bg-emerald-50/60' : 'border-violet-100 bg-white'
+                    className={`flex gap-3 rounded-lg border p-3.5 ${
+                      cpDone ? 'border-teal-800/60 bg-teal-950/30' : 'border-slate-800 bg-slate-900/50'
                     }`}
                   >
                     <button
                       type="button"
                       onClick={() => handleCheckpointComplete(activeChallenge, index)}
                       className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white transition ${
-                        cpDone ? 'bg-emerald-600' : 'bg-violet-600 hover:bg-violet-700'
+                        cpDone ? 'bg-teal-600' : 'bg-cyan-700 hover:bg-cyan-600'
                       }`}
                       aria-pressed={cpDone}
                     >
                       {cpDone ? '✓' : index + 1}
                     </button>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-violet-950">{checkpoint.checkpoint}</p>
-                      <p className="mt-1 text-xs text-slate-600">{checkpoint.criteria}</p>
-                      <p className="mt-2 text-[11px] leading-relaxed text-slate-500">{checkpoint.troubleshooting}</p>
+                      <p className="text-sm font-semibold text-slate-100">{checkpoint.checkpoint}</p>
+                      <p className="mt-1 text-xs text-slate-500">{checkpoint.criteria}</p>
+                      <p className="mt-2 text-[11px] leading-relaxed text-slate-600">{checkpoint.troubleshooting}</p>
                     </div>
                   </div>
                 );
@@ -752,13 +769,13 @@ const SensingLearning = ({
           </div>
 
           {currentChallenge.extensionActivities?.length > 0 && (
-            <div className="border-t border-slate-100 px-5 py-4 sm:px-6">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Extensions</p>
+            <div className="border-t border-slate-800 px-4 py-4 sm:px-5">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Extensions</p>
               <div className="flex flex-wrap gap-2">
                 {currentChallenge.extensionActivities.map((activity, index) => (
                   <span
                     key={index}
-                    className="rounded-lg border border-indigo-200/80 bg-indigo-50/80 px-2.5 py-1.5 text-xs font-medium text-indigo-950"
+                    className="rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs font-medium text-slate-300"
                   >
                     {activity}
                   </span>
@@ -773,112 +790,84 @@ const SensingLearning = ({
 
   if (!isActive) return null;
 
-  return (
-    <div className="fixed inset-0 bg-white z-[10001] flex flex-col" style={{ paddingTop: document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={onClose}
-            className="p-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200"
-            title="Back to document"
-          >
-            <ChevronLeftIcon className="w-6 h-6" />
-          </button>
-
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl">
-              <BeakerIcon className="w-6 h-6 text-white" />
+  const shell = (
+    <div
+      className={`fixed inset-0 left-0 top-0 z-[100020] flex flex-col bg-slate-950 text-slate-100 antialiased ${labMono.variable} font-sans`}
+      style={{
+        paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0',
+        backgroundImage:
+          'radial-gradient(ellipse 90% 60% at 50% -25%, rgba(6,182,212,0.08), transparent 50%), radial-gradient(ellipse 60% 40% at 100% 100%, rgba(13,148,136,0.06), transparent)'
+      }}
+    >
+      <header className="border-b border-slate-800/90 bg-slate-950/95 px-3 py-2 backdrop-blur-md sm:px-4">
+        <div className="mx-auto flex max-w-[min(1200px,calc(100%-0.25rem))] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-cyan-200"
+              title="Back"
+            >
+              <ChevronLeftIcon className="h-5 w-5" />
+            </button>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-cyan-900/50 bg-cyan-950/50 text-cyan-400">
+              <BeakerIcon className="h-5 w-5" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Hands-On Lab</h2>
-              <p className="text-sm text-gray-600 font-medium">{fileName}</p>
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-sm font-semibold text-slate-50 sm:text-base">Hands-On Lab</h2>
+              <p className="truncate text-xs text-slate-500">{fileName}</p>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center space-x-3">
-          {!hasFullContent && !loading && (
-            <button
-              type="button"
-              onClick={generateSensingContent}
-              className="rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 px-4 py-2 text-white transition hover:from-teal-600 hover:to-cyan-700"
-              title="Generate hands-on content"
-            >
-              <span className="flex items-center gap-2">
-                <ArrowPathIcon className="h-4 w-4" />
-                Generate
-              </span>
-            </button>
-          )}
-          {hasFullContent && !loading && (
-            <button
-              type="button"
-              onClick={requestRegenerate}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
-              title="Runs the AI again; uses more quota"
-            >
-              <span className="flex items-center gap-2">
-                <ArrowPathIcon className="h-4 w-4 text-slate-500" />
-                Regenerate
-              </span>
-            </button>
-          )}
-          {loading && (
-            <div className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2 text-sm text-teal-900">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-teal-600 border-t-transparent" />
-              Generating…
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Tab Selector with Explanations */}
-      <div className="border-b border-gray-200 bg-gray-50 p-4">
-        <div className="mx-auto max-w-7xl">
-          {/* Tabs */}
-          <div className="flex items-center justify-center space-x-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = tab.key === activeTab;
-
-              return (
-                <div key={tab.key} className="relative">
-                  <button
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                      isActive
-                        ? 'bg-teal-600 text-white shadow-md'
-                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{tab.name}</span>
-                  </button>
-
-                  {/* Tooltip-style explanation */}
-                  {isActive && (
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap">
-                      {tab.key === 'simulations' ? 'Interactive experiments you can manipulate' : 'Step-by-step challenges with concrete outcomes'}
-                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-                    </div>
-                  )}
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
+            {renderHeaderTabs()}
+            <div className="flex shrink-0 items-center gap-1.5">
+              {!hasFullContent && !loading && (
+                <button
+                  type="button"
+                  onClick={generateSensingContent}
+                  className="rounded-lg border border-cyan-600 bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500 sm:text-sm"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <ArrowPathIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    Generate
+                  </span>
+                </button>
+              )}
+              {hasFullContent && !loading && (
+                <button
+                  type="button"
+                  onClick={requestRegenerate}
+                  className="rounded-lg border border-slate-600 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-800 sm:px-3 sm:text-sm"
+                  title="Uses more API quota"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <ArrowPathIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Regenerate</span>
+                  </span>
+                </button>
+              )}
+              {loading && (
+                <div className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-400">
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-600 border-t-cyan-400 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">…</span>
                 </div>
-              );
-            })}
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
-        <div className="mx-auto max-w-7xl p-6">
+      <div className="sensing-learning-scroll flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="mx-auto max-w-[min(1200px,calc(100%-1rem))] px-4 py-5 sm:px-6 sm:py-6">
           {activeTab === 'simulations' && renderSimulations()}
           {activeTab === 'challenges' && renderChallenges()}
         </div>
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(shell, document.body) : null;
 };
 
 export default SensingLearning;

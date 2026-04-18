@@ -119,13 +119,14 @@ const Layout = ({ children }) => {
     };
   }, []);
 
-  // Full-screen learning overlays (constellation, global): hide main sidebar — sync body flags + events
+  // Full-screen learning overlays (constellation, global, sensing lab): hide main sidebar — body flags + events
   useEffect(() => {
     if (typeof document === 'undefined' || typeof window === 'undefined') return undefined;
     const syncFromBody = () =>
       setImmersiveLearningShell(
         document.body.hasAttribute('data-immersive-constellation') ||
-          document.body.hasAttribute('data-immersive-global')
+          document.body.hasAttribute('data-immersive-global') ||
+          document.body.hasAttribute('data-immersive-sensing')
       );
 
     const onConstellation = (e) => {
@@ -144,18 +145,28 @@ const Layout = ({ children }) => {
       }
     };
 
+    const onSensing = (e) => {
+      if (e?.detail && typeof e.detail.open === 'boolean' && e.detail.open) {
+        setImmersiveLearningShell(true);
+      } else {
+        syncFromBody();
+      }
+    };
+
     syncFromBody();
     window.addEventListener('assist-ed-immersive-constellation', onConstellation);
     window.addEventListener('assist-ed-immersive-global', onGlobal);
+    window.addEventListener('assist-ed-immersive-sensing', onSensing);
     const observer = new MutationObserver(() => syncFromBody());
     observer.observe(document.body, {
       attributes: true,
-      attributeFilter: ['data-immersive-constellation', 'data-immersive-global']
+      attributeFilter: ['data-immersive-constellation', 'data-immersive-global', 'data-immersive-sensing']
     });
 
     return () => {
       window.removeEventListener('assist-ed-immersive-constellation', onConstellation);
       window.removeEventListener('assist-ed-immersive-global', onGlobal);
+      window.removeEventListener('assist-ed-immersive-sensing', onSensing);
       observer.disconnect();
     };
   }, []);

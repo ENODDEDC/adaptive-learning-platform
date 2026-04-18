@@ -2465,3 +2465,29 @@ Slide-up animation for bottom notifications */
 .global-learning-scroll::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, rgb(113 113 122) 0%, rgb(82 82 91) 100%);
 }
+
+/* Hands-On Lab (sensing) — vertical scrollbar, teal/cyan tint */
+.sensing-learning-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(8 145 178 / 0.55) rgb(15 23 42);
+}
+
+.sensing-learning-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.sensing-learning-scroll::-webkit-scrollbar-track {
+  background: rgb(15 23 42);
+  border-radius: 9999px;
+  margin-block: 6px;
+}
+
+.sensing-learning-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgb(6 182 212 / 0.45) 0%, rgb(13 148 136 / 0.4) 100%);
+  border-radius: 9999px;
+  border: 2px solid rgb(15 23 42);
+}
+
+.sensing-learning-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgb(34 211 238 / 0.55) 0%, rgb(20 184 166 / 0.5) 100%);
+}
