@@ -9,15 +9,102 @@ class SensingLearningService {
   initializeModels() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.CEREBRAS_API_KEY);
         this.model = this.genAI.getGenerativeModel({
-          model: "gemini-flash-lite-latest"
+          model: "llama3.1-8b"
         });
         console.log('🔬 Sensing Learning Service initialized');
       } catch (error) {
         console.error('❌ Error initializing Sensing Learning Service:', error);
       }
     }
+  }
+
+  parseJsonFromModelResponse(text) {
+    if (!text) throw new Error('Empty model response');
+    const cleaned = text
+      .replace(/```json/gi, '```')
+      .replace(/```/g, '')
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+      .trim();
+
+    const candidates = [];
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      candidates.push(cleaned.slice(firstBrace, lastBrace + 1));
+    }
+    candidates.push(cleaned);
+
+    for (const candidate of candidates) {
+      try {
+        return JSON.parse(candidate);
+      } catch {
+        // try next candidate
+      }
+    }
+    throw new Error('Failed to parse JSON from model response');
+  }
+
+  async generateStrictJson(prompt, schemaDescription) {
+    this.initializeModels();
+    if (!this.model) throw new Error('Sensing learning model not available');
+
+    const firstResult = await this.model.generateContent(prompt);
+    const firstResponse = await firstResult.response;
+    const firstText = firstResponse.text();
+
+    try {
+      return this.parseJsonFromModelResponse(firstText);
+    } catch {
+      const repairPrompt = `
+Return ONLY valid JSON (no markdown, no comments) that matches this schema:
+${schemaDescription}
+
+Content to repair:
+${String(firstText || '').slice(0, 5000)}
+`;
+      const repairResult = await this.model.generateContent(repairPrompt);
+      const repairResponse = await repairResult.response;
+      return this.parseJsonFromModelResponse(repairResponse.text());
+    }
+  }
+
+  async generateStrictJsonWith413Retry(buildPrompt, schemaDescription) {
+    const excerptLimits = [2200, 1600, 1200, 800, 500];
+    let lastError = null;
+    for (const limit of excerptLimits) {
+      try {
+        return await this.generateStrictJson(buildPrompt(limit), schemaDescription);
+      } catch (error) {
+        const message = String(error?.message || '');
+        const is413 = /HTTP 413|Request Entity Too Large|request_too_large/i.test(message);
+        if (!is413) throw error;
+        lastError = error;
+      }
+    }
+    throw lastError || new Error('AI request too large after retries');
+  }
+
+  normalizeSimulationsPayload(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload.simulations)) return payload.simulations;
+    if (Array.isArray(payload.interactiveSimulations)) return payload.interactiveSimulations;
+    if (Array.isArray(payload.labs)) return payload.labs;
+    if (Array.isArray(payload.items)) return payload.items;
+    if (Array.isArray(payload)) return payload;
+    return [];
+  }
+
+  normalizeChallengesPayload(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload.challenges)) return payload.challenges;
+    if (Array.isArray(payload.practicalChallenges)) return payload.practicalChallenges;
+    if (Array.isArray(payload.tasks)) return payload.tasks;
+    if (Array.isArray(payload.items)) return payload.items;
+    if (Array.isArray(payload)) return payload;
+    return [];
   }
 
   /**
@@ -208,11 +295,11 @@ Be strict in your analysis - only classify content as educational if it genuinel
       throw new Error('Google AI service not available');
     }
 
-    const prompt = `
+    const buildPrompt = (maxChars) => `
     You are creating INTERACTIVE SIMULATIONS for sensing learners who need hands-on, concrete experiences.
 
     Document Content:
-    ${docxText.substring(0, 3000)}${docxText.length > 3000 ? '...' : ''}
+    ${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
 
     Sensing learners need:
     1. CONCRETE, manipulatable elements they can interact with
@@ -269,28 +356,50 @@ Be strict in your analysis - only classify content as educational if it genuinel
     Base everything on FACTUAL content from the document.
     `;
 
-    try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      console.log('🤖 AI Simulations Response:', text.substring(0, 500) + '...');
-
-      // Extract JSON from response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const simulations = JSON.parse(jsonMatch[0]);
-        console.log('✅ Successfully parsed simulations:', simulations.simulations?.length || 0);
-        return simulations.simulations || [];
-      }
-
-      // Fallback if JSON parsing fails
-      console.log('⚠️ JSON parsing failed, using intelligent fallback');
-      return this.getIntelligentFallbackSimulations(docxText);
-    } catch (error) {
-      console.error('❌ Error generating simulations:', error);
-      return this.getIntelligentFallbackSimulations(docxText);
+    const simulationsPayload = await this.generateStrictJsonWith413Retry(
+      buildPrompt,
+      `{
+  "simulations": [
+    {
+      "title": "string",
+      "description": "string",
+      "type": "calculator|graph|experiment|data_analysis|virtual_lab",
+      "difficulty": "beginner|intermediate|advanced",
+      "estimatedTime": "string",
+      "interactiveElements": [
+        { "name": "string", "type": "slider|input|dropdown|button|graph", "description": "string", "defaultValue": "string", "range": "string or array", "unit": "string" }
+      ],
+      "learningObjectives": ["string"],
+      "realWorldApplication": "string",
+      "dataPoints": [
+        { "label": "string", "value": "string", "description": "string", "fromElements": ["string"], "combine": "sum|product|mean|min|max|first|last" }
+      ],
+      "stepByStepGuide": ["string"],
+      "expectedOutcomes": "string"
     }
+  ]
+}`
+    );
+
+    let simulations = this.normalizeSimulationsPayload(simulationsPayload);
+
+    // Recovery pass: ask explicitly for a bare simulations array if model used a wrong shape.
+    if (!simulations.length) {
+      const rescuePayload = await this.generateStrictJsonWith413Retry(
+        (maxChars) => `
+Return ONLY JSON in this exact shape:
+{ "simulations": [ { "title": "string", "description": "string", "type": "calculator|graph|experiment|data_analysis|virtual_lab", "difficulty": "beginner|intermediate|advanced", "estimatedTime": "string", "interactiveElements": [ { "name": "string", "type": "slider|input|dropdown|button|graph", "description": "string", "defaultValue": "string", "range": "string or array", "unit": "string" } ], "learningObjectives": ["string"], "realWorldApplication": "string", "dataPoints": [ { "label": "string", "value": "string", "description": "string", "fromElements": ["string"], "combine": "sum|product|mean|min|max|first|last" } ], "stepByStepGuide": ["string"], "expectedOutcomes": "string" } ] }
+
+Source document excerpt:
+${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
+`,
+        `{ "simulations": [ { "title": "string", "description": "string" } ] }`
+      );
+      simulations = this.normalizeSimulationsPayload(rescuePayload);
+    }
+
+    if (!simulations.length) throw new Error('AI returned no interactive simulations');
+    return simulations;
   }
 
   /**
@@ -303,11 +412,11 @@ Be strict in your analysis - only classify content as educational if it genuinel
       throw new Error('Google AI service not available');
     }
 
-    const prompt = `
+    const buildPrompt = (maxChars) => `
     You are creating PRACTICAL CHALLENGES for sensing learners who learn by doing.
 
     Document Content:
-    ${docxText.substring(0, 3000)}${docxText.length > 3000 ? '...' : ''}
+    ${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
 
     Sensing learners need:
     1. HANDS-ON tasks they can complete
@@ -356,28 +465,50 @@ Be strict in your analysis - only classify content as educational if it genuinel
     Base everything on PRACTICAL applications from the document.
     `;
 
-    try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      console.log('🤖 AI Challenges Response:', text.substring(0, 500) + '...');
-
-      // Extract JSON from response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const challenges = JSON.parse(jsonMatch[0]);
-        console.log('✅ Successfully parsed challenges:', challenges.challenges?.length || 0);
-        return challenges.challenges || [];
-      }
-
-      // Fallback if JSON parsing fails
-      console.log('⚠️ JSON parsing failed, using intelligent fallback');
-      return this.getIntelligentFallbackChallenges(docxText);
-    } catch (error) {
-      console.error('❌ Error generating challenges:', error);
-      return this.getIntelligentFallbackChallenges(docxText);
+    const challengesPayload = await this.generateStrictJsonWith413Retry(
+      buildPrompt,
+      `{
+  "challenges": [
+    {
+      "title": "string",
+      "description": "string",
+      "difficulty": "beginner|intermediate|advanced",
+      "estimatedTime": "string",
+      "category": "calculation|analysis|experiment|problem_solving|data_collection",
+      "materials": ["string"],
+      "procedure": [
+        { "step": 1, "instruction": "string", "expectedResult": "string", "tips": "string" }
+      ],
+      "checkpoints": [
+        { "checkpoint": "string", "criteria": "string", "troubleshooting": "string" }
+      ],
+      "successMetrics": ["string"],
+      "realWorldConnection": "string",
+      "extensionActivities": ["string"],
+      "resources": ["string"]
     }
+  ]
+}`
+    );
+
+    let challenges = this.normalizeChallengesPayload(challengesPayload);
+
+    if (!challenges.length) {
+      const rescuePayload = await this.generateStrictJsonWith413Retry(
+        (maxChars) => `
+Return ONLY JSON in this exact shape:
+{ "challenges": [ { "title": "string", "description": "string", "difficulty": "beginner|intermediate|advanced", "estimatedTime": "string", "category": "calculation|analysis|experiment|problem_solving|data_collection", "materials": ["string"], "procedure": [ { "step": 1, "instruction": "string", "expectedResult": "string", "tips": "string" } ], "checkpoints": [ { "checkpoint": "string", "criteria": "string", "troubleshooting": "string" } ], "successMetrics": ["string"], "realWorldConnection": "string", "extensionActivities": ["string"], "resources": ["string"] } ] }
+
+Source document excerpt:
+${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
+`,
+        `{ "challenges": [ { "title": "string", "description": "string" } ] }`
+      );
+      challenges = this.normalizeChallengesPayload(rescuePayload);
+    }
+
+    if (!challenges.length) throw new Error('AI returned no practical challenges');
+    return challenges;
   }
 
   /**

@@ -210,7 +210,17 @@ const SensingLearning = ({
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage =
+            errorData?.details ||
+            errorData?.error ||
+            errorMessage;
+        } catch {
+          // ignore JSON parse failure
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
