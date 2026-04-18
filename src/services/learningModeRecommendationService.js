@@ -1,4 +1,5 @@
 import { GroqGenAI as GoogleGenerativeAI } from '@/lib/groqGenAI';
+import { databaseModeToButtonLabel } from '@/constants/learningModeLabels';
 
 class LearningModeRecommendationService {
   constructor() {
@@ -109,31 +110,23 @@ Response (JSON only, exactly 4 modes):`;
    * Convert database mode names to button display names
    */
   convertToButtonName(databaseName) {
-    const nameMap = {
-      'Active Learning Hub': 'Practice',
-      'Reflective Learning': 'Reflect',
-      'Hands-On Lab': 'Hands-On',
-      'Concept Constellation': 'Theory',
-      'Sequential Learning': 'Step-by-Step',
-      'Global Learning': 'Big Picture',
-      'Visual Learning': 'Visual Learning',
-      'AI Narrator': 'AI Narrator'
-    };
-    return nameMap[databaseName] || databaseName;
+    return databaseModeToButtonLabel(databaseName);
   }
 
   /**
    * Intelligent fallback recommendations - ALWAYS returns exactly 4 modes (one per FSLSM dimension)
    */
   async getFallbackRecommendations(content, fileName) {
-    // Ultimate fallback - EXACTLY 4 recommendations covering all 4 FSLSM dimensions
-    // Return button display names for direct matching
-    return [
-      { "mode": "Visual Learning", "reason": "Visual aids enhance comprehension for most content types" },
-      { "mode": "Practice", "reason": "Interactive engagement improves retention and understanding" },
-      { "mode": "Hands-On", "reason": "Practical examples help solidify learning concepts" },
-      { "mode": "Step-by-Step", "reason": "Structured step-by-step approach supports systematic learning" }
+    const raw = [
+      { mode: 'Visual Learning', reason: 'Visual aids enhance comprehension for most content types' },
+      { mode: 'Active Learning Hub', reason: 'Interactive engagement improves retention and understanding' },
+      { mode: 'Hands-On Lab', reason: 'Practical examples help solidify learning concepts' },
+      { mode: 'Sequential Learning', reason: 'Structured step-by-step approach supports systematic learning' }
     ];
+    return raw.map((rec) => ({
+      ...rec,
+      mode: this.convertToButtonName(rec.mode)
+    }));
   }
 
   /**
@@ -142,52 +135,44 @@ Response (JSON only, exactly 4 modes):`;
   getTooltips() {
     return {
       "AI Narrator": {
-        title: "AI Narrator",
+        title: "Listen along",
         description: "AI-generated tutorial content, interactive quizzes, document summaries, and study tips in Taglish with optional audio narration",
-        bestFor: "Comprehensive learning, quiz practice, audio learning, study guidance",
-        icon: "🎧"
+        bestFor: "Comprehensive learning, quiz practice, audio learning, study guidance"
       },
       "Visual Learning": {
-        title: "Visual Learning",
+        title: "Diagrams",
         description: "Create concept diagrams, infographics, mind maps, and flowcharts from your document content",
-        bestFor: "Visual learners, complex processes, data relationships",
-        icon: "📊"
+        bestFor: "Visual learners, complex processes, data relationships"
       },
       "Sequential Learning": {
-        title: "Sequential Learning",
+        title: "Step-by-step",
         description: "Break content into step-by-step modules with concept flow mapping and structured progression",
-        bestFor: "Systematic learning, procedures, building knowledge progressively",
-        icon: "📋"
+        bestFor: "Systematic learning, procedures, building knowledge progressively"
       },
       "Global Learning": {
-        title: "Global Learning",
+        title: "Overview",
         description: "Get comprehensive overviews, context mapping, and big-picture understanding of topics",
-        bestFor: "Understanding scope, connecting themes, holistic perspective",
-        icon: "🌍"
+        bestFor: "Understanding scope, connecting themes, holistic perspective"
       },
       "Hands-On Lab": {
-        title: "Hands-On Lab",
+        title: "Examples",
         description: "Practice with real-world scenarios, interactive exercises, and practical applications",
-        bestFor: "Applied learning, skill development, experiential practice",
-        icon: "🔬"
+        bestFor: "Applied learning, skill development, experiential practice"
       },
       "Concept Constellation": {
-        title: "Concept Constellation",
+        title: "Patterns",
         description: "Explore interconnected concept universes, discover hidden patterns, and find creative insights",
-        bestFor: "Pattern recognition, creative thinking, theoretical exploration",
-        icon: "🔮"
+        bestFor: "Pattern recognition, creative thinking, theoretical exploration"
       },
       "Active Learning Hub": {
-        title: "Active Learning Hub",
+        title: "Practice",
         description: "Engage in simulated discussions, collaborative exercises, and immediate application activities",
-        bestFor: "Interactive engagement, group-style learning, hands-on practice",
-        icon: "🎯"
+        bestFor: "Interactive engagement, group-style learning, hands-on practice"
       },
       "Reflective Learning": {
-        title: "Reflective Learning",
+        title: "Think deeper",
         description: "Deep analysis, self-assessment activities, and contemplative learning experiences",
-        bestFor: "Critical thinking, self-evaluation, philosophical reflection",
-        icon: "🤔"
+        bestFor: "Critical thinking, self-evaluation, philosophical reflection"
       }
     };
   }

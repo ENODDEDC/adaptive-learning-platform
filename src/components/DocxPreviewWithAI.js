@@ -7,8 +7,11 @@ import {
   XMarkIcon,
   BookOpenIcon,
   EyeIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
+import { LEARNING_MODE_LABELS, buttonLabelToDatabaseMode } from '@/constants/learningModeLabels';
+import { LearningModeToolbarIcon, LearningModeTooltipGlyph } from '@/constants/learningModeUi';
 import AITutorModal from './AITutorModal';
 import VisualContentModal from './VisualContentModal';
 import VisualDocxOverlay from './VisualDocxOverlay';
@@ -1467,17 +1470,18 @@ Reflective Learning Processor works best with instructional content, lessons, or
   const sectionCount = headings.length;
 
   // Helper function to check if a mode is recommended
-  const isRecommended = (modeName) => {
-    const isRec = recommendations.some(rec => rec.mode === modeName);
+  const normalizeRecMode = (mode) => buttonLabelToDatabaseMode[mode] || mode;
+
+  const isRecommended = (databaseModeName) => {
+    const isRec = recommendations.some((rec) => normalizeRecMode(rec.mode) === databaseModeName);
     if (isRec) {
-      console.log(`✨ ${modeName} is RECOMMENDED!`);
+      console.log(`✨ ${databaseModeName} is RECOMMENDED!`);
     }
     return isRec;
   };
 
-  // Helper function to get recommendation reason
-  const getRecommendationReason = (modeName) => {
-    const rec = recommendations.find(r => r.mode === modeName);
+  const getRecommendationReason = (databaseModeName) => {
+    const rec = recommendations.find((r) => normalizeRecMode(r.mode) === databaseModeName);
     return rec ? rec.reason : '';
   };
 
@@ -1566,9 +1570,9 @@ Reflective Learning Processor works best with instructional content, lessons, or
                     {isAINarratorLoading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <SparklesIcon className="w-4 h-4" />
+                      <LearningModeToolbarIcon databaseMode="AI Narrator" className="w-4 h-4 text-white" />
                     )}
-                    <span className="hidden sm:inline">AI Narrator</span>
+                    <span className="hidden sm:inline">{LEARNING_MODE_LABELS['AI Narrator']}</span>
 
                     {/* Recommended Indicator */}
                     {isRecommended('AI Narrator') && (
@@ -1582,7 +1586,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                   {showTooltip === 'AI Narrator' && tooltips['AI Narrator'] && (
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
                       <div className="flex items-start gap-3">
-                        <div className="text-2xl">{tooltips['AI Narrator'].icon}</div>
+                        <LearningModeTooltipGlyph databaseMode="AI Narrator" />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 mb-1">{tooltips['AI Narrator'].title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{tooltips['AI Narrator'].description}</p>
@@ -1592,7 +1596,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                           {isRecommended('AI Narrator') && (
                             <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                               <div className="text-xs text-yellow-800">
-                                <strong>🎯 Why recommended:</strong> {getRecommendationReason('AI Narrator')}
+                                <strong className="inline-flex items-center gap-1"><StarIcon className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden />Why recommended:</strong> {getRecommendationReason('AI Narrator')}
                               </div>
                             </div>
                           )}
@@ -1616,18 +1620,16 @@ Reflective Learning Processor works best with instructional content, lessons, or
                     {isExtractingContent ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                      </svg>
+                      <LearningModeToolbarIcon databaseMode="Visual Learning" className="w-4 h-4 text-white" />
                     )}
-                    <span className="hidden sm:inline">Visual</span>
+                    <span className="hidden sm:inline">{LEARNING_MODE_LABELS['Visual Learning']}</span>
                   </button>
 
                   {/* Quick Preview Tooltip */}
                   {showTooltip === 'Visual Learning' && tooltips['Visual Learning'] && (
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
                       <div className="flex items-start gap-3">
-                        <div className="text-2xl">{tooltips['Visual Learning'].icon}</div>
+                        <LearningModeTooltipGlyph databaseMode="Visual Learning" />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Visual Learning'].title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{tooltips['Visual Learning'].description}</p>
@@ -1655,11 +1657,9 @@ Reflective Learning Processor works best with instructional content, lessons, or
                     {isSequentialLearningLoading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clipRule="evenodd" />
-                      </svg>
+                      <LearningModeToolbarIcon databaseMode="Sequential Learning" className="w-4 h-4 text-white" />
                     )}
-                    <span className="hidden sm:inline">Step-by-Step</span>
+                    <span className="hidden sm:inline">{LEARNING_MODE_LABELS['Sequential Learning']}</span>
 
                     {/* Recommended Badge */}
                     {isRecommended('Sequential Learning') && (
@@ -1673,7 +1673,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                   {showTooltip === 'Sequential Learning' && tooltips['Sequential Learning'] && (
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
                       <div className="flex items-start gap-3">
-                        <div className="text-2xl">{tooltips['Sequential Learning'].icon}</div>
+                        <LearningModeTooltipGlyph databaseMode="Sequential Learning" />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Sequential Learning'].title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{tooltips['Sequential Learning'].description}</p>
@@ -1683,7 +1683,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                           {isRecommended('Sequential Learning') && (
                             <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                               <div className="text-xs text-yellow-800">
-                                <strong>🎯 Why recommended:</strong> {getRecommendationReason('Sequential Learning')}
+                                <strong className="inline-flex items-center gap-1"><StarIcon className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden />Why recommended:</strong> {getRecommendationReason('Sequential Learning')}
                               </div>
                             </div>
                           )}
@@ -1708,11 +1708,9 @@ Reflective Learning Processor works best with instructional content, lessons, or
                     {isGlobalLearningLoading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
-                      </svg>
+                      <LearningModeToolbarIcon databaseMode="Global Learning" className="w-4 h-4 text-white" />
                     )}
-                    <span className="hidden sm:inline">Big Picture</span>
+                    <span className="hidden sm:inline">{LEARNING_MODE_LABELS['Global Learning']}</span>
 
                     {/* Recommended Badge */}
                     {isRecommended('Global Learning') && (
@@ -1726,7 +1724,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                   {showTooltip === 'Global Learning' && tooltips['Global Learning'] && (
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
                       <div className="flex items-start gap-3">
-                        <div className="text-2xl">{tooltips['Global Learning'].icon}</div>
+                        <LearningModeTooltipGlyph databaseMode="Global Learning" />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Global Learning'].title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{tooltips['Global Learning'].description}</p>
@@ -1736,7 +1734,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                           {isRecommended('Global Learning') && (
                             <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                               <div className="text-xs text-yellow-800">
-                                <strong>🎯 Why recommended:</strong> {getRecommendationReason('Global Learning')}
+                                <strong className="inline-flex items-center gap-1"><StarIcon className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden />Why recommended:</strong> {getRecommendationReason('Global Learning')}
                               </div>
                             </div>
                           )}
@@ -1761,11 +1759,9 @@ Reflective Learning Processor works best with instructional content, lessons, or
                     {isSensingLearningLoading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414v3.758a1 1 0 01-.293.707l-4 4C.817 14.769 2.156 18 4.828 18h10.343c2.673 0 4.012-3.231 2.122-5.121l-4-4A1 1 0 0113 8.172V4.414l.707-.707A1 1 0 0013 2H7zm2 6.172V4h2v4.172a3 3 0 00.879 2.12l1.027 1.028a4 4 0 00-2.171.102l-.47.156a4 4 0 01-2.53 0l-.563-.187a1.993 1.993 0 00-.114-.035l1.063-1.063A3 3 0 009 8.172z" clipRule="evenodd" />
-                      </svg>
+                      <LearningModeToolbarIcon databaseMode="Hands-On Lab" className="w-4 h-4 text-white" />
                     )}
-                    <span className="hidden sm:inline">Hands-On</span>
+                    <span className="hidden sm:inline">{LEARNING_MODE_LABELS['Hands-On Lab']}</span>
 
                     {/* Recommended Badge */}
                     {isRecommended('Hands-On Lab') && (
@@ -1779,7 +1775,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                   {showTooltip === 'Hands-On Lab' && tooltips['Hands-On Lab'] && (
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
                       <div className="flex items-start gap-3">
-                        <div className="text-2xl">{tooltips['Hands-On Lab'].icon}</div>
+                        <LearningModeTooltipGlyph databaseMode="Hands-On Lab" />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Hands-On Lab'].title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{tooltips['Hands-On Lab'].description}</p>
@@ -1789,7 +1785,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                           {isRecommended('Hands-On Lab') && (
                             <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                               <div className="text-xs text-yellow-800">
-                                <strong>🎯 Why recommended:</strong> {getRecommendationReason('Hands-On Lab')}
+                                <strong className="inline-flex items-center gap-1"><StarIcon className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden />Why recommended:</strong> {getRecommendationReason('Hands-On Lab')}
                               </div>
                             </div>
                           )}
@@ -1814,9 +1810,9 @@ Reflective Learning Processor works best with instructional content, lessons, or
                     {isIntuitiveLearningLoading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <EyeIcon className="w-4 h-4" />
+                      <LearningModeToolbarIcon databaseMode="Concept Constellation" className="w-4 h-4 text-white" />
                     )}
-                    <span className="hidden sm:inline">Theory</span>
+                    <span className="hidden sm:inline">{LEARNING_MODE_LABELS['Concept Constellation']}</span>
 
                     {/* Recommended Badge */}
                     {isRecommended('Concept Constellation') && (
@@ -1830,7 +1826,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                   {showTooltip === 'Concept Constellation' && tooltips['Concept Constellation'] && (
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
                       <div className="flex items-start gap-3">
-                        <div className="text-2xl">{tooltips['Concept Constellation'].icon}</div>
+                        <LearningModeTooltipGlyph databaseMode="Concept Constellation" />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Concept Constellation'].title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{tooltips['Concept Constellation'].description}</p>
@@ -1840,7 +1836,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                           {isRecommended('Concept Constellation') && (
                             <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                               <div className="text-xs text-yellow-800">
-                                <strong>🎯 Why recommended:</strong> {getRecommendationReason('Concept Constellation')}
+                                <strong className="inline-flex items-center gap-1"><StarIcon className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden />Why recommended:</strong> {getRecommendationReason('Concept Constellation')}
                               </div>
                             </div>
                           )}
@@ -1865,11 +1861,9 @@ Reflective Learning Processor works best with instructional content, lessons, or
                     {isActiveLearningLoading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                      <LearningModeToolbarIcon databaseMode="Active Learning Hub" className="w-4 h-4 text-white" />
                     )}
-                    <span className="hidden sm:inline">Practice</span>
+                    <span className="hidden sm:inline">{LEARNING_MODE_LABELS['Active Learning Hub']}</span>
 
                     {/* Recommended Badge */}
                     {isRecommended('Active Learning Hub') && (
@@ -1883,7 +1877,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                   {showTooltip === 'Active Learning Hub' && tooltips['Active Learning Hub'] && (
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
                       <div className="flex items-start gap-3">
-                        <div className="text-2xl">{tooltips['Active Learning Hub'].icon}</div>
+                        <LearningModeTooltipGlyph databaseMode="Active Learning Hub" />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Active Learning Hub'].title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{tooltips['Active Learning Hub'].description}</p>
@@ -1893,7 +1887,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                           {isRecommended('Active Learning Hub') && (
                             <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                               <div className="text-xs text-yellow-800">
-                                <strong>🎯 Why recommended:</strong> {getRecommendationReason('Active Learning Hub')}
+                                <strong className="inline-flex items-center gap-1"><StarIcon className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden />Why recommended:</strong> {getRecommendationReason('Active Learning Hub')}
                               </div>
                             </div>
                           )}
@@ -1934,7 +1928,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                   {showTooltip === 'Reflective Learning' && tooltips['Reflective Learning'] && (
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
                       <div className="flex items-start gap-3">
-                        <div className="text-2xl">{tooltips['Reflective Learning'].icon}</div>
+                        <LearningModeTooltipGlyph databaseMode="Reflective Learning" />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 mb-1">{tooltips['Reflective Learning'].title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{tooltips['Reflective Learning'].description}</p>
@@ -1944,7 +1938,7 @@ Reflective Learning Processor works best with instructional content, lessons, or
                           {isRecommended('Reflective Learning') && (
                             <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                               <div className="text-xs text-yellow-800">
-                                <strong>🎯 Why recommended:</strong> {getRecommendationReason('Reflective Learning')}
+                                <strong className="inline-flex items-center gap-1"><StarIcon className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden />Why recommended:</strong> {getRecommendationReason('Reflective Learning')}
                               </div>
                             </div>
                           )}

@@ -15,50 +15,35 @@ import {
   XMarkIcon,
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
-import learningModeRecommendationService from '../services/learningModeRecommendationService';
 import DocumentViewerTour from './DocumentViewerTour';
+import { databaseModeToButtonLabel, buttonLabelToDatabaseMode } from '../constants/learningModeLabels';
+import { LearningModeToolbarIcon } from '../constants/learningModeUi';
 
-// Tooltip data for learning modes
+// Hover copy for learning modes (database keys)
 const tooltipData = {
   'AI Narrator': {
-    title: 'AI Narrator',
-    description: 'Listen to AI-powered narration of your document. Perfect for auditory learners and multitasking while learning.',
-    icon: '🎙️'
+    description: 'Listen to AI-powered narration of your document. Perfect for auditory learners and multitasking while learning.'
   },
   'Visual Learning': {
-    title: 'Visual Learning',
-    description: 'Transform content into visual formats like diagrams, flowcharts, and infographics. See concepts come to life.',
-    icon: '🎨'
+    description: 'Transform content into visual formats like diagrams, flowcharts, and infographics. See concepts come to life.'
   },
   'Sequential Learning': {
-    title: 'Sequential Learning',
-    description: 'Learn step-by-step in a logical, linear progression. Perfect for building foundational knowledge systematically.',
-    icon: '📚'
+    description: 'Learn step-by-step in a logical, linear progression. Perfect for building foundational knowledge systematically.'
   },
   'Global Learning': {
-    title: 'Global Learning',
-    description: 'See the big picture first, then dive into details. Understand how concepts interconnect and relate to each other.',
-    icon: '🌍'
+    description: 'See the big picture first, then dive into details. Understand how concepts interconnect and relate to each other.'
   },
   'Hands-On Lab': {
-    title: 'Hands-On Lab (Sensing)',
-    description: 'Learn through practical experiments, real-world examples, and concrete applications. Experience concepts in action.',
-    icon: '🧪'
+    description: 'Learn through practical experiments, real-world examples, and concrete applications. Experience concepts in action.'
   },
   'Concept Constellation': {
-    title: 'Concept Constellation (Intuitive)',
-    description: 'Discover patterns, explore theories, and make innovative connections. Think abstractly and creatively.',
-    icon: '👁️'
+    description: 'Discover patterns, explore theories, and make innovative connections. Think abstractly and creatively.'
   },
   'Active Learning Hub': {
-    title: 'Active Learning Hub',
-    description: 'Engage actively through discussions, problem-solving, and hands-on activities. Learn by doing and experimenting.',
-    icon: '✋'
+    description: 'Engage actively through discussions, problem-solving, and hands-on activities. Learn by doing and experimenting.'
   },
   'Reflective Learning': {
-    title: 'Reflective Learning Processor',
-    description: 'Think deeply, observe carefully, and learn through contemplation. Process information thoughtfully before acting.',
-    icon: '🤔'
+    description: 'Think deeply, observe carefully, and learn through contemplation. Process information thoughtfully before acting.'
   }
 };
 
@@ -115,46 +100,20 @@ const CleanPDFViewer = ({
   const iframeRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Convert button display names to database names for matching
-  const getButtonToDatabaseName = (buttonName) => {
-    const nameMap = {
-      'AI Narrator': 'AI Narrator',
-      'Visual Learning': 'Visual Learning',
-      'Step-by-Step': 'Sequential Learning',
-      'Big Picture': 'Global Learning',
-      'Hands-On': 'Hands-On Lab',
-      'Theory': 'Concept Constellation',
-      'Practice': 'Active Learning Hub',
-      'Reflect': 'Reflective Learning'
-    };
-    return nameMap[buttonName] || buttonName;
-  };
+  const getButtonToDatabaseName = (buttonName) =>
+    buttonLabelToDatabaseMode[buttonName] || buttonName;
 
-  // Convert database names to button display names
-  const getModeDisplayName = (databaseName) => {
-    const nameMap = {
-      'AI Narrator': 'AI Narrator',
-      'Visual Learning': 'Visual Learning',
-      'Sequential Learning': 'Step-by-Step',
-      'Global Learning': 'Big Picture',
-      'Hands-On Lab': 'Hands-On',
-      'Concept Constellation': 'Theory',
-      'Active Learning Hub': 'Practice',
-      'Reflective Learning': 'Reflect'
-    };
-    return nameMap[databaseName] || databaseName;
-  };
+  const getModeDisplayName = (databaseName) => databaseModeToButtonLabel(databaseName);
 
-  // Organize modes into recommended and other
   const allModes = [
-    { name: 'AI Narrator', handler: onAITutorClick, loading: isAITutorLoading, color: 'from-purple-500 to-indigo-600' },
-    { name: 'Visual Learning', handler: onVisualLearningClick, loading: isVisualLearningLoading, color: 'from-green-500 to-emerald-600' },
-    { name: 'Step-by-Step', handler: onSequentialLearningClick, loading: isSequentialLearningLoading, color: 'from-blue-500 to-cyan-600' },
-    { name: 'Big Picture', handler: onGlobalLearningClick, loading: isGlobalLearningLoading, color: 'from-orange-500 to-red-600' },
-    { name: 'Hands-On', handler: onSensingLearningClick, loading: isSensingLearningLoading, color: 'from-teal-500 to-green-600' },
-    { name: 'Theory', handler: onIntuitiveLearningClick, loading: isIntuitiveLearningLoading, color: 'from-pink-500 to-rose-600' },
-    { name: 'Practice', handler: onActiveLearningClick, loading: isActiveLearningLoading, color: 'from-yellow-500 to-orange-600' },
-    { name: 'Reflect', handler: onReflectiveLearningClick, loading: isReflectiveLearningLoading, color: 'from-indigo-500 to-purple-600' }
+    { dbKey: 'AI Narrator', name: databaseModeToButtonLabel('AI Narrator'), handler: onAITutorClick, loading: isAITutorLoading, color: 'from-purple-500 to-indigo-600' },
+    { dbKey: 'Visual Learning', name: databaseModeToButtonLabel('Visual Learning'), handler: onVisualLearningClick, loading: isVisualLearningLoading, color: 'from-green-500 to-emerald-600' },
+    { dbKey: 'Sequential Learning', name: databaseModeToButtonLabel('Sequential Learning'), handler: onSequentialLearningClick, loading: isSequentialLearningLoading, color: 'from-blue-500 to-cyan-600' },
+    { dbKey: 'Global Learning', name: databaseModeToButtonLabel('Global Learning'), handler: onGlobalLearningClick, loading: isGlobalLearningLoading, color: 'from-orange-500 to-red-600' },
+    { dbKey: 'Hands-On Lab', name: databaseModeToButtonLabel('Hands-On Lab'), handler: onSensingLearningClick, loading: isSensingLearningLoading, color: 'from-teal-500 to-green-600' },
+    { dbKey: 'Concept Constellation', name: databaseModeToButtonLabel('Concept Constellation'), handler: onIntuitiveLearningClick, loading: isIntuitiveLearningLoading, color: 'from-pink-500 to-rose-600' },
+    { dbKey: 'Active Learning Hub', name: databaseModeToButtonLabel('Active Learning Hub'), handler: onActiveLearningClick, loading: isActiveLearningLoading, color: 'from-yellow-500 to-orange-600' },
+    { dbKey: 'Reflective Learning', name: databaseModeToButtonLabel('Reflective Learning'), handler: onReflectiveLearningClick, loading: isReflectiveLearningLoading, color: 'from-indigo-500 to-purple-600' }
   ];
 
   const recommendedModeNames = allRecommendations.map(r => getModeDisplayName(r.mode));
@@ -194,39 +153,32 @@ const CleanPDFViewer = ({
 
   // Render a single mode button
   const renderModeButton = (mode, isRecommended = false) => {
-    const tooltipKey = mode.name === 'Step-by-Step' ? 'Sequential Learning' :
-                       mode.name === 'Big Picture' ? 'Global Learning' :
-                       mode.name === 'Hands-On' ? 'Hands-On Lab' :
-                       mode.name === 'Theory' ? 'Concept Constellation' :
-                       mode.name === 'Practice' ? 'Active Learning Hub' :
-                       mode.name === 'Reflect' ? 'Reflective Learning' :
-                       mode.name;
+    const tooltipKey = mode.dbKey;
 
-    // Get data-tour attribute based on mode name
-    const getTourAttribute = (name) => {
+    const getTourAttribute = (dbKey) => {
       const tourMap = {
         'AI Narrator': 'ai-narrator',
         'Visual Learning': 'visual-learning',
-        'Step-by-Step': 'step-by-step',
-        'Big Picture': 'big-picture',
-        'Hands-On': 'hands-on',
-        'Theory': 'theory',
-        'Practice': 'practice',
-        'Reflect': 'reflect'
+        'Sequential Learning': 'step-by-step',
+        'Global Learning': 'big-picture',
+        'Hands-On Lab': 'hands-on',
+        'Concept Constellation': 'theory',
+        'Active Learning Hub': 'practice',
+        'Reflective Learning': 'reflect'
       };
-      return tourMap[name] || '';
+      return tourMap[dbKey] || '';
     };
 
     return (
       <div key={mode.name} className="relative group">
         <button
-          data-tour={getTourAttribute(mode.name)}
+          data-tour={getTourAttribute(mode.dbKey)}
           onClick={mode.handler}
           disabled={mode.loading}
           title=""
           onMouseEnter={() => {
             const tooltip = isRecommended
-              ? '🎯 ML Personalized: This mode matches your learning style'
+              ? 'Personalized for you: this mode matches your learning style.'
               : tooltipData[tooltipKey]?.description || mode.name;
             setShowTooltip({ mode: mode.name, content: tooltip });
           }}
@@ -236,7 +188,7 @@ const CleanPDFViewer = ({
           {mode.loading ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           ) : (
-            <span className="text-lg">{tooltipData[tooltipKey]?.icon || '📚'}</span>
+            <LearningModeToolbarIcon databaseMode={tooltipKey} className="w-4 h-4 text-white" />
           )}
           <span className="hidden sm:inline font-medium">{mode.name}</span>
           {isRecommended && (
@@ -290,7 +242,7 @@ const CleanPDFViewer = ({
     if (isPersonalized) {
       return {
         ring: 'ring-2 ring-green-500 ring-offset-2',
-        tooltip: '🎯 ML Personalized: This mode matches your learning style based on your behavior'
+        tooltip: 'Personalized for you: this mode matches your learning style based on your behavior.'
       };
     }
     return { ring: '', tooltip: '' };
@@ -584,7 +536,7 @@ const CleanPDFViewer = ({
                             title=""
                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
                           >
-                            <span className="text-lg">{tooltipData[mode.name === 'Step-by-Step' ? 'Sequential Learning' : mode.name === 'Big Picture' ? 'Global Learning' : mode.name === 'Hands-On' ? 'Hands-On Lab' : mode.name === 'Theory' ? 'Concept Constellation' : mode.name === 'Practice' ? 'Active Learning Hub' : mode.name === 'Reflect' ? 'Reflective Learning' : mode.name]?.icon || '📚'}</span>
+                            <LearningModeToolbarIcon databaseMode={mode.dbKey} className="w-5 h-5 text-gray-600" />
                             <span className="font-medium">{mode.name}</span>
                             {mode.loading && (
                               <div className="ml-auto w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>

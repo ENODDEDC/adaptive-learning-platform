@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { CogIcon, ChartBarIcon, ArrowPathIcon, CheckCircleIcon, SparklesIcon, AcademicCapIcon, LightBulbIcon, EyeIcon, BookOpenIcon, BeakerIcon, BoltIcon, ShieldCheckIcon, RocketLaunchIcon } from '@heroicons/react/24/outline';
+import { databaseModeToButtonLabel } from '@/constants/learningModeLabels';
 
 const LearningPreferences = () => {
   const [profile, setProfile] = useState(null);
@@ -104,20 +105,7 @@ const LearningPreferences = () => {
     return preferences[dimension] || 'Unknown';
   };
 
-  // Convert database mode names to button display names
-  const getModeDisplayName = (modeName) => {
-    const nameMap = {
-      'Active Learning Hub': 'Practice',
-      'Reflective Learning': 'Reflect',
-      'Hands-On Lab': 'Hands-On',
-      'Concept Constellation': 'Theory',
-      'Sequential Learning': 'Step-by-Step',
-      'Global Learning': 'Big Picture',
-      'Visual Learning': 'Visual Learning',
-      'AI Narrator': 'AI Narrator'
-    };
-    return nameMap[modeName] || modeName;
-  };
+  const getModeDisplayName = (modeName) => databaseModeToButtonLabel(modeName);
 
   // Create segmented bar visualization
   const renderSegmentedBar = (value, leftColor, rightColor) => {

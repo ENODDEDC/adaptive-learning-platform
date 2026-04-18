@@ -19,6 +19,7 @@ import ActiveLearning from './ActiveLearning';
 import ReflectiveLearning from './ReflectiveLearning';
 import CacheIndicator from './CacheIndicator';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
+import { databaseModeToButtonLabel } from '@/constants/learningModeLabels';
 
 /**
  * PDF Preview Component with AI Narrator Integration
@@ -1504,7 +1505,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                   <div className="fixed inset-0 z-[10010] flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
                     <div className="mx-4 w-full max-w-md rounded-2xl border border-white/50 bg-white/85 p-8 text-center shadow-2xl backdrop-blur-md">
                       <div className="mx-auto mb-5 h-14 w-14 rounded-full border-4 border-orange-200 border-t-orange-600 animate-spin" />
-                      <p className="mb-2 text-lg font-semibold text-gray-900">Big Picture</p>
+                      <p className="mb-2 text-lg font-semibold text-gray-900">{databaseModeToButtonLabel('Global Learning')}</p>
                       <p className="text-sm text-gray-700">
                         {globalLearningStatusMessage || 'Checking if this content is educational...'}
                       </p>
