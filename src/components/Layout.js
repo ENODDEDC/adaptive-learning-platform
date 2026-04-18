@@ -128,7 +128,8 @@ const Layout = ({ children }) => {
           document.body.hasAttribute('data-immersive-global') ||
           document.body.hasAttribute('data-immersive-sensing') ||
           document.body.hasAttribute('data-immersive-sequential') ||
-          document.body.hasAttribute('data-immersive-active-learning')
+          document.body.hasAttribute('data-immersive-active-learning') ||
+          document.body.hasAttribute('data-immersive-reflective-learning')
       );
 
     const onConstellation = (e) => {
@@ -171,12 +172,21 @@ const Layout = ({ children }) => {
       }
     };
 
+    const onReflectiveLearning = (e) => {
+      if (e?.detail && typeof e.detail.open === 'boolean' && e.detail.open) {
+        setImmersiveLearningShell(true);
+      } else {
+        syncFromBody();
+      }
+    };
+
     syncFromBody();
     window.addEventListener('assist-ed-immersive-constellation', onConstellation);
     window.addEventListener('assist-ed-immersive-global', onGlobal);
     window.addEventListener('assist-ed-immersive-sensing', onSensing);
     window.addEventListener('assist-ed-immersive-sequential', onSequential);
     window.addEventListener('assist-ed-immersive-active-learning', onActiveLearning);
+    window.addEventListener('assist-ed-immersive-reflective-learning', onReflectiveLearning);
     const observer = new MutationObserver(() => syncFromBody());
     observer.observe(document.body, {
       attributes: true,
@@ -185,7 +195,8 @@ const Layout = ({ children }) => {
         'data-immersive-global',
         'data-immersive-sensing',
         'data-immersive-sequential',
-        'data-immersive-active-learning'
+        'data-immersive-active-learning',
+        'data-immersive-reflective-learning'
       ]
     });
 
@@ -195,6 +206,7 @@ const Layout = ({ children }) => {
       window.removeEventListener('assist-ed-immersive-sensing', onSensing);
       window.removeEventListener('assist-ed-immersive-sequential', onSequential);
       window.removeEventListener('assist-ed-immersive-active-learning', onActiveLearning);
+      window.removeEventListener('assist-ed-immersive-reflective-learning', onReflectiveLearning);
       observer.disconnect();
     };
   }, []);
