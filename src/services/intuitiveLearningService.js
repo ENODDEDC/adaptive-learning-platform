@@ -9,9 +9,9 @@ class IntuitiveLearningService {
   initializeModels() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.CEREBRAS_API_KEY);
         this.model = this.genAI.getGenerativeModel({
-          model: "gemini-flash-lite-latest"
+          model: 'llama3.1-8b'
         });
         console.log('🔮 Intuitive Learning Service initialized');
       } catch (error) {
@@ -20,147 +20,388 @@ class IntuitiveLearningService {
     }
   }
 
-  /**
-   * Analyze if content is educational using the SAME logic as other learning features
-   */
-  async analyzeContentForEducation(docxText) {
-    if (!docxText || docxText.trim().length < 50) {
-      return { 
-        isEducational: false, 
-        reasoning: 'Content too short to analyze',
-        confidence: 0,
-        contentType: 'Insufficient content'
-      };
+  parseJsonFromModelResponse(text) {
+    if (!text) throw new Error('Empty model response');
+    const cleaned = text
+      .replace(/```json/gi, '```')
+      .replace(/```/g, '')
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+      .trim();
+
+    const candidates = [];
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      candidates.push(cleaned.slice(firstBrace, lastBrace + 1));
     }
-    // Client already passes the educational gate (Groq-backed) before calling
-    // this endpoint; skip the redundant LLM re-check.
+    candidates.push(cleaned);
+
+    for (const candidate of candidates) {
+      try {
+        return JSON.parse(candidate);
+      } catch {
+        // try next candidate
+      }
+    }
+    throw new Error('Failed to parse JSON from model response');
+  }
+
+  async generateStrictJson(prompt, schemaDescription) {
+    this.initializeModels();
+    if (!this.model) throw new Error('Intuitive learning model not available');
+
+    const firstResult = await this.model.generateContent(prompt);
+    const firstResponse = await firstResult.response;
+    const firstText = firstResponse.text();
+
+    try {
+      return this.parseJsonFromModelResponse(firstText);
+    } catch {
+      const repairPrompt = `
+Return ONLY valid JSON (no markdown, no comments) that matches this schema:
+${schemaDescription}
+
+Content to repair:
+${String(firstText || '').slice(0, 5000)}
+`;
+      const repairResult = await this.model.generateContent(repairPrompt);
+      const repairResponse = await repairResult.response;
+      return this.parseJsonFromModelResponse(repairResponse.text());
+    }
+  }
+
+  async generateStrictJsonWith413Retry(buildPrompt, schemaDescription) {
+    const excerptLimits = [2200, 1600, 1200, 800, 500];
+    let lastError = null;
+    for (const limit of excerptLimits) {
+      try {
+        return await this.generateStrictJson(buildPrompt(limit), schemaDescription);
+      } catch (error) {
+        const message = String(error?.message || '');
+        const is413 = /HTTP 413|Request Entity Too Large|request_too_large/i.test(message);
+        if (!is413) throw error;
+        lastError = error;
+      }
+    }
+    throw lastError || new Error('AI request too large after retries');
+  }
+
+  /**
+   * Client runs educational gate before opening; skip duplicate LLM check.
+   */
+  async analyzeContentForEducation(_docxText) {
     return {
       isEducational: true,
       confidence: 1,
       reasoning: 'Educational gate already verified at client layer',
       contentType: 'Verified learnable content'
     };
-    /* eslint-disable no-unreachable */
+  }
 
-    try {
-      console.log('🔮 Intuitive Learning: Using same AI analysis logic as other learning features...');
-      
-      this.initializeModels();
-      
-      if (!this.genAI) {
-        throw new Error('Google AI service not available');
-      }
+  unwrapConceptUniversePayload(payload) {
+    if (!payload || typeof payload !== 'object') return null;
+    if (Array.isArray(payload.conceptClusters)) return payload;
+    if (payload.conceptUniverse && typeof payload.conceptUniverse === 'object') {
+      return payload.conceptUniverse;
+    }
+    return null;
+  }
 
-      // Truncate content if too long (same as other features)
-      const maxLength = 4000;
-      const truncatedContent = docxText.length > maxLength 
-        ? docxText.substring(0, maxLength) + "..."
-        : docxText;
+  unwrapInsightPatternsPayload(payload) {
+    if (!payload || typeof payload !== 'object') return null;
+    if (Array.isArray(payload.insightMoments)) return payload;
+    if (payload.insightPatterns && typeof payload.insightPatterns === 'object') {
+      return payload.insightPatterns;
+    }
+    return null;
+  }
 
-      const prompt = `
-You are an AI content analyzer. Your task is to determine if the given document content is educational/learning material that would be suitable for conceptual pattern discovery and intuitive learning.
+  clamp01(n, fallback = 0.5) {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return fallback;
+    return Math.min(1, Math.max(0, x));
+  }
 
-Educational content includes:
-- Lessons, tutorials, or instructional materials
-- Academic subjects (math, science, history, literature, etc.)
-- Study materials, textbooks, or course content
-- Explanatory content that teaches concepts
-- Research papers or academic articles
-- Training materials or how-to guides
-- Educational exercises or examples
+  normalizeConceptUniverse(raw) {
+    const data = this.unwrapConceptUniversePayload(raw);
+    if (!data) return null;
 
-Non-educational content includes:
-- Administrative announcements or memos
-- Schedules, calendars, or event listings
-- Policy documents or procedures
-- Forms, applications, or certificates
-- Personal letters or informal communications
-- News updates or notifications
-- Business documents (invoices, receipts, etc.)
-- Meeting minutes or agendas
+    const conceptClusters = (Array.isArray(data.conceptClusters) ? data.conceptClusters : []).map((cluster) => ({
+      name: String(cluster?.name || 'Cluster').slice(0, 200),
+      theme: String(cluster?.theme || '').slice(0, 500),
+      description: String(cluster?.description || '').slice(0, 2000),
+      abstractionLevel: ['high', 'medium', 'low'].includes(String(cluster?.abstractionLevel))
+        ? cluster.abstractionLevel
+        : 'high',
+      concepts: (Array.isArray(cluster?.concepts) ? cluster.concepts : []).map((c) => ({
+        name: String(c?.name || 'Concept').slice(0, 200),
+        description: String(c?.description || '').slice(0, 1500),
+        type: String(c?.type || 'pattern').slice(0, 80),
+        abstractionLevel: ['high', 'medium', 'low'].includes(String(c?.abstractionLevel))
+          ? c.abstractionLevel
+          : 'medium',
+        connections: (Array.isArray(c?.connections) ? c.connections : []).map((x) => String(x)).filter(Boolean),
+        implications: (Array.isArray(c?.implications) ? c.implications : []).map((x) => String(x)).filter(Boolean),
+        position: {
+          x: this.clamp01(c?.position?.x, 0.5),
+          y: this.clamp01(c?.position?.y, 0.5),
+          z: this.clamp01(c?.position?.z, 0.5)
+        },
+        size: this.clamp01(c?.size, 0.7),
+        color: /^#[0-9a-fA-F]{6}$/.test(String(c?.color)) ? c.color : '#6366f1',
+        energy: this.clamp01(c?.energy, 0.7)
+      })),
+      emergentProperties: (Array.isArray(cluster?.emergentProperties) ? cluster.emergentProperties : [])
+        .map((x) => String(x))
+        .filter(Boolean),
+      futureDirections: (Array.isArray(cluster?.futureDirections) ? cluster.futureDirections : [])
+        .map((x) => String(x))
+        .filter(Boolean),
+      crossClusterConnections: (Array.isArray(cluster?.crossClusterConnections)
+        ? cluster.crossClusterConnections
+        : []
+      )
+        .map((x) => String(x))
+        .filter(Boolean)
+    }));
 
-Analyze the following document content and determine if it's educational material suitable for conceptual pattern discovery:
+    const hiddenPatterns = (Array.isArray(data.hiddenPatterns) ? data.hiddenPatterns : []).map((p) => ({
+      name: String(p?.name || 'Pattern').slice(0, 200),
+      description: String(p?.description || '').slice(0, 1500),
+      type: String(p?.type || 'recurring_theme').slice(0, 80),
+      strength: this.clamp01(p?.strength, 0.6),
+      conceptsInvolved: (Array.isArray(p?.conceptsInvolved) ? p.conceptsInvolved : [])
+        .map((x) => String(x))
+        .filter(Boolean),
+      insight: String(p?.insight || '').slice(0, 1000),
+      implications: (Array.isArray(p?.implications) ? p.implications : []).map((x) => String(x)).filter(Boolean)
+    }));
 
-DOCUMENT CONTENT:
-${truncatedContent}
+    const theoreticalFrameworks = (Array.isArray(data.theoreticalFrameworks) ? data.theoreticalFrameworks : []).map(
+      (f) => ({
+        name: String(f?.name || 'Framework').slice(0, 200),
+        description: String(f?.description || '').slice(0, 2000),
+        scope: String(f?.scope || 'domain').slice(0, 40),
+        concepts: (Array.isArray(f?.concepts) ? f.concepts : []).map((x) => String(x)).filter(Boolean),
+        principles: (Array.isArray(f?.principles) ? f.principles : []).map((x) => String(x)).filter(Boolean),
+        applications: (Array.isArray(f?.applications) ? f.applications : []).map((x) => String(x)).filter(Boolean),
+        limitations: (Array.isArray(f?.limitations) ? f.limitations : []).map((x) => String(x)).filter(Boolean),
+        extensions: (Array.isArray(f?.extensions) ? f.extensions : []).map((x) => String(x)).filter(Boolean)
+      })
+    );
 
-Respond with ONLY a JSON object containing:
+    const innovationOpportunities = (Array.isArray(data.innovationOpportunities) ? data.innovationOpportunities : []).map(
+      (o) => ({
+        name: String(o?.name || 'Opportunity').slice(0, 200),
+        description: String(o?.description || '').slice(0, 2000),
+        conceptCombination: (Array.isArray(o?.conceptCombination) ? o.conceptCombination : [])
+          .map((x) => String(x))
+          .filter(Boolean),
+        novelty: this.clamp01(o?.novelty, 0.6),
+        feasibility: this.clamp01(o?.feasibility, 0.6),
+        impact: this.clamp01(o?.impact, 0.6),
+        timeline: String(o?.timeline || 'medium future').slice(0, 40),
+        requirements: (Array.isArray(o?.requirements) ? o.requirements : []).map((x) => String(x)).filter(Boolean)
+      })
+    );
+
+    return {
+      conceptClusters,
+      hiddenPatterns,
+      theoreticalFrameworks,
+      innovationOpportunities
+    };
+  }
+
+  normalizeInsightPatterns(raw) {
+    const data = this.unwrapInsightPatternsPayload(raw);
+    if (!data) return null;
+
+    const insightMoments = (Array.isArray(data.insightMoments) ? data.insightMoments : []).map((m) => ({
+      title: String(m?.title || 'Insight').slice(0, 200),
+      description: String(m?.description || '').slice(0, 2000),
+      type: String(m?.type || 'connection').slice(0, 80),
+      depth: String(m?.depth || 'medium').slice(0, 40),
+      conceptsConnected: (Array.isArray(m?.conceptsConnected) ? m.conceptsConnected : [])
+        .map((x) => String(x))
+        .filter(Boolean),
+      reasoning: String(m?.reasoning || '').slice(0, 1500),
+      implications: (Array.isArray(m?.implications) ? m.implications : []).map((x) => String(x)).filter(Boolean),
+      analogies: (Array.isArray(m?.analogies) ? m.analogies : []).map((x) => String(x)).filter(Boolean),
+      questions: (Array.isArray(m?.questions) ? m.questions : []).map((x) => String(x)).filter(Boolean),
+      explorationPaths: (Array.isArray(m?.explorationPaths) ? m.explorationPaths : [])
+        .map((x) => String(x))
+        .filter(Boolean)
+    }));
+
+    const conceptualBridges = (Array.isArray(data.conceptualBridges) ? data.conceptualBridges : []).map((b) => ({
+      name: String(b?.name || 'Bridge').slice(0, 200),
+      description: String(b?.description || '').slice(0, 1500),
+      fromConcept: String(b?.fromConcept || '').slice(0, 200),
+      toConcept: String(b?.toConcept || '').slice(0, 200),
+      bridgeType: String(b?.bridgeType || 'analogy').slice(0, 80),
+      strength: this.clamp01(b?.strength, 0.7),
+      novelty: this.clamp01(b?.novelty, 0.7),
+      explanation: String(b?.explanation || '').slice(0, 2000),
+      examples: (Array.isArray(b?.examples) ? b.examples : []).map((x) => String(x)).filter(Boolean),
+      implications: (Array.isArray(b?.implications) ? b.implications : []).map((x) => String(x)).filter(Boolean)
+    }));
+
+    const emergentThemes = (Array.isArray(data.emergentThemes) ? data.emergentThemes : []).map((t) => ({
+      name: String(t?.name || 'Theme').slice(0, 200),
+      description: String(t?.description || '').slice(0, 2000),
+      concepts: (Array.isArray(t?.concepts) ? t.concepts : []).map((x) => String(x)).filter(Boolean),
+      abstractionLevel: String(t?.abstractionLevel || 'high').slice(0, 20),
+      universality: String(t?.universality || 'document-specific').slice(0, 40),
+      manifestations: (Array.isArray(t?.manifestations) ? t.manifestations : []).map((x) => String(x)).filter(Boolean),
+      evolution: String(t?.evolution || '').slice(0, 1000),
+      crossDomainApplications: (Array.isArray(t?.crossDomainApplications) ? t.crossDomainApplications : [])
+        .map((x) => String(x))
+        .filter(Boolean)
+    }));
+
+    const futureScenarios = (Array.isArray(data.futureScenarios) ? data.futureScenarios : []).map((s) => ({
+      name: String(s?.name || 'Scenario').slice(0, 200),
+      description: String(s?.description || '').slice(0, 2000),
+      basedOnConcepts: (Array.isArray(s?.basedOnConcepts) ? s.basedOnConcepts : []).map((x) => String(x)).filter(Boolean),
+      timeline: String(s?.timeline || '5-10 years').slice(0, 40),
+      probability: this.clamp01(s?.probability, 0.6),
+      impact: this.clamp01(s?.impact, 0.7),
+      requirements: (Array.isArray(s?.requirements) ? s.requirements : []).map((x) => String(x)).filter(Boolean),
+      indicators: (Array.isArray(s?.indicators) ? s.indicators : []).map((x) => String(x)).filter(Boolean),
+      implications: (Array.isArray(s?.implications) ? s.implications : []).map((x) => String(x)).filter(Boolean)
+    }));
+
+    const paradoxes = (Array.isArray(data.paradoxes) ? data.paradoxes : []).map((p) => ({
+      name: String(p?.name || 'Paradox').slice(0, 200),
+      description: String(p?.description || '').slice(0, 1500),
+      contradiction: String(p?.contradiction || '').slice(0, 1000),
+      resolution: String(p?.resolution || '').slice(0, 1000),
+      insights: (Array.isArray(p?.insights) ? p.insights : []).map((x) => String(x)).filter(Boolean),
+      examples: (Array.isArray(p?.examples) ? p.examples : []).map((x) => String(x)).filter(Boolean),
+      implications: (Array.isArray(p?.implications) ? p.implications : []).map((x) => String(x)).filter(Boolean)
+    }));
+
+    return {
+      insightMoments,
+      conceptualBridges,
+      emergentThemes,
+      futureScenarios,
+      paradoxes
+    };
+  }
+
+  conceptUniverseSchemaDescription() {
+    return `Top-level JSON object with keys: conceptClusters, hiddenPatterns, theoreticalFrameworks, innovationOpportunities.
+conceptClusters: array of { name, theme, description, abstractionLevel: "high"|"medium"|"low", concepts: array of { name, description, type, abstractionLevel, connections: string[], implications: string[], position: {x,y,z} numbers 0-1, size 0-1, color "#RRGGBB", energy 0-1 }, emergentProperties: string[], futureDirections: string[], crossClusterConnections: string[] }.
+hiddenPatterns: array of { name, description, type, strength 0-1, conceptsInvolved: string[], insight, implications: string[] }.
+theoreticalFrameworks: array of { name, description, scope, concepts: string[], principles: string[], applications: string[], limitations: string[], extensions: string[] }.
+innovationOpportunities: array of { name, description, conceptCombination: string[], novelty, feasibility, impact (0-1), timeline, requirements: string[] }.`;
+  }
+
+  insightPatternsSchemaDescription() {
+    return `Top-level JSON with: insightMoments, conceptualBridges, emergentThemes, futureScenarios, paradoxes (arrays may be empty except include at least 2 insightMoments, 2 conceptualBridges, 2 emergentThemes, 2 futureScenarios).
+insightMoments: { title, description, type, depth, conceptsConnected: string[], reasoning, implications: string[], analogies: string[], questions: string[], explorationPaths: string[] }.
+conceptualBridges: { name, description, fromConcept, toConcept, bridgeType, strength, novelty, explanation, examples: string[], implications: string[] }.
+emergentThemes: { name, description, concepts: string[], abstractionLevel, universality, manifestations: string[], evolution, crossDomainApplications: string[] }.
+futureScenarios: { name, description, basedOnConcepts: string[], timeline, probability, impact, requirements: string[], indicators: string[], implications: string[] }.
+paradoxes: { name, description, contradiction, resolution, insights: string[], examples: string[], implications: string[] }.`;
+  }
+
+  async generateConceptUniverse(docxText) {
+    this.initializeModels();
+    if (!this.genAI) throw new Error('Intuitive learning service not available');
+
+    const schema = this.conceptUniverseSchemaDescription();
+
+    const buildPrompt = (maxChars) => `
+You are building a CONCEPT CONSTELLATION for intuitive learners from the SOURCE DOCUMENT below.
+Ground every cluster, concept name, pattern, framework, and opportunity in ideas that appear or are clearly implied in the text.
+Do not invent unrelated domains. Use precise terminology from the document where possible.
+
+SOURCE DOCUMENT:
+${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '\n[...truncated...]' : ''}
+
+Return ONLY valid JSON (no markdown) with this structure:
 {
-  "isEducational": boolean,
-  "confidence": number (0-1),
-  "reasoning": "Brief explanation of your decision",
-  "contentType": "Brief description of what type of content this is"
+  "conceptClusters": [ ... at least 2 clusters, each with at least 3 concepts ... ],
+  "hiddenPatterns": [ ... at least 2 ... ],
+  "theoreticalFrameworks": [ ... at least 2 ... ],
+  "innovationOpportunities": [ ... at least 2 ... ]
 }
 
-Be strict in your analysis - only classify content as educational if it genuinely contains learning material that students could benefit from conceptual pattern discovery.`;
+${schema}
+`;
 
-      const model = this.genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const aiResponse = response.text().trim();
-      
-      // Parse the AI response (same logic as other features)
-      let analysisResult;
-      try {
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          analysisResult = JSON.parse(jsonMatch[0]);
-        } else {
-          analysisResult = JSON.parse(aiResponse);
-        }
-      } catch (parseError) {
-        console.error('❌ Error parsing AI response:', parseError);
-        
-        // Fallback analysis if AI response is malformed
-        const content_lower = docxText.toLowerCase();
-        const hasEducationalTerms = /\b(learn|study|understand|concept|theory|lesson|tutorial|chapter|example|exercise|definition|explanation)\b/i.test(content_lower);
-        const hasAdminTerms = /\b(announcement|memo|schedule|meeting|policy|form|application|notice|reminder)\b/i.test(content_lower);
-        
-        const fallbackResult = hasEducationalTerms && !hasAdminTerms;
-        
-        return {
-          isEducational: fallbackResult,
-          confidence: 0.3,
-          reasoning: 'Fallback analysis due to AI response parsing failure',
-          contentType: 'Unknown - analyzed with basic heuristics'
-        };
-      }
+    let payload = await this.generateStrictJsonWith413Retry(buildPrompt, schema);
 
-      console.log('🔮 Intuitive Learning AI Analysis Result:', {
-        isEducational: analysisResult.isEducational,
-        confidence: analysisResult.confidence,
-        reasoning: analysisResult.reasoning,
-        contentType: analysisResult.contentType
-      });
-
-      return {
-        isEducational: analysisResult.isEducational || false,
-        confidence: analysisResult.confidence || 0.5,
-        reasoning: analysisResult.reasoning || 'Analysis completed',
-        contentType: analysisResult.contentType || 'Unknown'
-      };
-
-    } catch (error) {
-      console.error('❌ Error in AI content analysis:', error);
-      
-      // Fallback analysis if AI fails
-      const content_lower = docxText.toLowerCase();
-      const hasEducationalTerms = /\b(learn|study|understand|concept|theory|lesson|tutorial|chapter|example|exercise|definition|explanation)\b/i.test(content_lower);
-      const hasAdminTerms = /\b(announcement|memo|schedule|meeting|policy|form|application|notice|reminder)\b/i.test(content_lower);
-      
-      const fallbackResult = hasEducationalTerms && !hasAdminTerms;
-      
-      return {
-        isEducational: fallbackResult,
-        confidence: 0.3,
-        reasoning: 'Fallback analysis due to AI service unavailability',
-        contentType: 'Unknown - analyzed with basic heuristics'
-      };
+    let universe = this.normalizeConceptUniverse(payload);
+    if (!universe?.conceptClusters?.length) {
+      const rescue = (maxChars) => `
+Return ONLY JSON. Keys: conceptClusters, hiddenPatterns, theoreticalFrameworks, innovationOpportunities.
+Minimum: 2 clusters with 3+ concepts each; 2 hidden patterns; 2 frameworks; 2 innovation opportunities.
+All content must reflect this document:
+${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '\n[...truncated...]' : ''}
+`;
+      payload = await this.generateStrictJsonWith413Retry(rescue, schema);
+      universe = this.normalizeConceptUniverse(payload);
     }
+
+    if (!universe?.conceptClusters?.length) {
+      throw new Error('AI returned no concept constellation (missing conceptClusters)');
+    }
+
+    return universe;
+  }
+
+  async generateInsightPatterns(docxText) {
+    this.initializeModels();
+    if (!this.genAI) throw new Error('Intuitive learning service not available');
+
+    const schema = this.insightPatternsSchemaDescription();
+
+    const buildPrompt = (maxChars) => `
+You are surfacing INSIGHT PATTERNS for intuitive learners from the SOURCE DOCUMENT.
+Every insight, bridge, theme, and scenario must trace to the document (paraphrase is fine; do not fabricate unrelated topics).
+
+SOURCE DOCUMENT:
+${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '\n[...truncated...]' : ''}
+
+Return ONLY valid JSON (no markdown) with:
+{
+  "insightMoments": [ ... at least 2 ... ],
+  "conceptualBridges": [ ... at least 2 ... ],
+  "emergentThemes": [ ... at least 2 ... ],
+  "futureScenarios": [ ... at least 2 ... ],
+  "paradoxes": [ 0 or more ]
+}
+
+${schema}
+`;
+
+    let payload = await this.generateStrictJsonWith413Retry(buildPrompt, schema);
+
+    let insights = this.normalizeInsightPatterns(payload);
+    if (!insights?.insightMoments?.length) {
+      const rescue = (maxChars) => `
+Return ONLY JSON with keys insightMoments, conceptualBridges, emergentThemes, futureScenarios, paradoxes.
+Include at least 2 items in each of the first four arrays. Tie everything to this document:
+${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '\n[...truncated...]' : ''}
+`;
+      payload = await this.generateStrictJsonWith413Retry(rescue, schema);
+      insights = this.normalizeInsightPatterns(payload);
+    }
+
+    if (!insights?.insightMoments?.length) {
+      throw new Error('AI returned no insight patterns (missing insightMoments)');
+    }
+
+    return insights;
   }
 
   /**
-   * Generate concept constellation content from document text (with educational analysis)
+   * Generate concept constellation + pattern discovery from document text.
    */
   async generateConceptConstellation(docxText) {
     this.initializeModels();
@@ -170,9 +411,8 @@ Be strict in your analysis - only classify content as educational if it genuinel
     }
 
     try {
-      // First, analyze if content is educational
       const analysis = await this.analyzeContentForEducation(docxText);
-      
+
       if (!analysis.isEducational) {
         throw new Error(`Content is not suitable for conceptual pattern discovery. ${analysis.reasoning}`);
       }
@@ -190,519 +430,12 @@ Be strict in your analysis - only classify content as educational if it genuinel
       };
     } catch (error) {
       console.error('Error generating concept constellation:', error);
-      throw new Error('Failed to generate conceptual pattern discovery content');
+      const wrapped = new Error(
+        `Failed to generate intuitive learning content: ${error?.message || error}`
+      );
+      wrapped.cause = error;
+      throw wrapped;
     }
-  }
-
-  /**
-   * Generate concept universe for intuitive exploration
-   */
-  async generateConceptUniverse(docxText) {
-    this.initializeModels();
-
-    if (!this.genAI) {
-      throw new Error('Google AI service not available');
-    }
-
-    const prompt = `
-    You are creating a CONCEPT UNIVERSE for intuitive learners who think in patterns, abstractions, and big-picture connections.
-
-    Document Content:
-    ${docxText.substring(0, 3000)}${docxText.length > 3000 ? '...' : ''}
-
-    Intuitive learners need:
-    1. ABSTRACT concepts and theoretical frameworks
-    2. HIDDEN patterns and non-obvious connections
-    3. BIG PICTURE understanding and overarching themes
-    4. FUTURE possibilities and innovative applications
-    5. CREATIVE insights and "aha!" moments
-
-    Create a concept universe based on the document content:
-
-    {
-      "conceptClusters": [
-        {
-          "name": "Cluster Name",
-          "theme": "Overarching abstract theme",
-          "description": "What this cluster represents conceptually",
-          "abstractionLevel": "high|medium|low",
-          "concepts": [
-            {
-              "name": "Concept Name",
-              "description": "Abstract description of the concept",
-              "type": "theory|principle|framework|pattern|paradigm",
-              "abstractionLevel": "high|medium|low",
-              "connections": ["concept it connects to", "another connection"],
-              "implications": ["future possibility 1", "innovative application 2"],
-              "position": {"x": 0.5, "y": 0.3, "z": 0.7},
-              "size": 0.8,
-              "color": "#6366f1",
-              "energy": 0.9
-            }
-          ],
-          "emergentProperties": ["property that emerges from this cluster"],
-          "futureDirections": ["where this cluster might lead"],
-          "crossClusterConnections": ["other cluster it relates to"]
-        }
-      ],
-      "hiddenPatterns": [
-        {
-          "name": "Pattern Name",
-          "description": "Non-obvious pattern discovered in the content",
-          "type": "recurring_theme|underlying_structure|implicit_relationship|emergent_property",
-          "strength": 0.8,
-          "conceptsInvolved": ["concept 1", "concept 2", "concept 3"],
-          "insight": "The deeper insight this pattern reveals",
-          "implications": ["what this pattern suggests about the future"]
-        }
-      ],
-      "theoreticalFrameworks": [
-        {
-          "name": "Framework Name",
-          "description": "Overarching theoretical structure",
-          "scope": "local|domain|universal",
-          "concepts": ["concepts it organizes"],
-          "principles": ["underlying principles"],
-          "applications": ["where this framework applies"],
-          "limitations": ["where it breaks down"],
-          "extensions": ["how it could be extended"]
-        }
-      ],
-      "innovationOpportunities": [
-        {
-          "name": "Opportunity Name",
-          "description": "Creative possibility emerging from concept combinations",
-          "conceptCombination": ["concept 1", "concept 2"],
-          "novelty": 0.9,
-          "feasibility": 0.7,
-          "impact": 0.8,
-          "timeline": "near|medium|far future",
-          "requirements": ["what would be needed to realize this"]
-        }
-      ]
-    }
-
-    Focus on ABSTRACT thinking, PATTERN recognition, and BIG PICTURE connections.
-    Create content that inspires "aha!" moments and creative insights.
-    `;
-
-    try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      console.log('🤖 AI Concept Universe Response:', text.substring(0, 500) + '...');
-
-      // Extract JSON from response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const conceptUniverse = JSON.parse(jsonMatch[0]);
-        console.log('✅ Successfully parsed concept universe');
-        return conceptUniverse;
-      }
-
-      // Fallback if JSON parsing fails
-      console.log('⚠️ JSON parsing failed, using intelligent fallback');
-      return this.getIntelligentFallbackConceptUniverse(docxText);
-    } catch (error) {
-      console.error('❌ Error generating concept universe:', error);
-      return this.getIntelligentFallbackConceptUniverse(docxText);
-    }
-  }
-
-  /**
-   * Generate insight patterns for pattern discovery
-   */
-  async generateInsightPatterns(docxText) {
-    this.initializeModels();
-
-    if (!this.genAI) {
-      throw new Error('Google AI service not available');
-    }
-
-    const prompt = `
-    You are creating INSIGHT PATTERNS for intuitive learners who excel at seeing hidden connections and abstract relationships.
-
-    Document Content:
-    ${docxText.substring(0, 3000)}${docxText.length > 3000 ? '...' : ''}
-
-    Intuitive learners need:
-    1. DEEP insights that aren't immediately obvious
-    2. CREATIVE connections between disparate ideas
-    3. FUTURE implications and possibilities
-    4. ABSTRACT relationships and patterns
-
-    Create insight patterns based on the document content:
-
-    {
-      "insightMoments": [
-        {
-          "title": "Insight Title",
-          "description": "The key insight or realization",
-          "type": "connection|pattern|implication|possibility|paradox",
-          "depth": "surface|medium|deep|profound",
-          "conceptsConnected": ["concept 1", "concept 2", "concept 3"],
-          "reasoning": "Why this insight is significant",
-          "implications": ["what this means for understanding", "future possibilities"],
-          "analogies": ["similar patterns in other domains"],
-          "questions": ["thought-provoking questions this raises"],
-          "explorationPaths": ["directions for further investigation"]
-        }
-      ],
-      "conceptualBridges": [
-        {
-          "name": "Bridge Name",
-          "description": "Connection between seemingly unrelated concepts",
-          "fromConcept": "Starting concept",
-          "toConcept": "Connected concept",
-          "bridgeType": "analogy|causation|correlation|transformation|emergence",
-          "strength": 0.8,
-          "novelty": 0.9,
-          "explanation": "How these concepts are actually related",
-          "examples": ["concrete examples of this connection"],
-          "implications": ["what this connection reveals"]
-        }
-      ],
-      "emergentThemes": [
-        {
-          "name": "Theme Name",
-          "description": "Overarching theme that emerges from multiple concepts",
-          "concepts": ["contributing concepts"],
-          "abstractionLevel": "high|medium|low",
-          "universality": "document-specific|domain-wide|universal",
-          "manifestations": ["how this theme appears in different contexts"],
-          "evolution": "how this theme might develop over time",
-          "crossDomainApplications": ["where else this theme might apply"]
-        }
-      ],
-      "futureScenarios": [
-        {
-          "name": "Scenario Name",
-          "description": "Possible future development based on current concepts",
-          "basedOnConcepts": ["foundational concepts"],
-          "timeline": "1-5 years|5-10 years|10+ years",
-          "probability": 0.7,
-          "impact": 0.8,
-          "requirements": ["what needs to happen for this scenario"],
-          "indicators": ["early signs this scenario is developing"],
-          "implications": ["what this would mean for the field"]
-        }
-      ],
-      "paradoxes": [
-        {
-          "name": "Paradox Name",
-          "description": "Apparent contradiction that reveals deeper truth",
-          "contradiction": "What seems contradictory",
-          "resolution": "How the paradox resolves at a higher level",
-          "insights": ["what this paradox teaches us"],
-          "examples": ["instances of this paradox"],
-          "implications": ["how this changes our understanding"]
-        }
-      ]
-    }
-
-    Focus on CREATIVE insights, ABSTRACT connections, and FUTURE possibilities.
-    Generate content that sparks curiosity and "aha!" moments.
-    `;
-
-    try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      console.log('🤖 AI Insight Patterns Response:', text.substring(0, 500) + '...');
-
-      // Extract JSON from response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const insightPatterns = JSON.parse(jsonMatch[0]);
-        console.log('✅ Successfully parsed insight patterns');
-        return insightPatterns;
-      }
-
-      // Fallback if JSON parsing fails
-      console.log('⚠️ JSON parsing failed, using intelligent fallback');
-      return this.getIntelligentFallbackInsightPatterns(docxText);
-    } catch (error) {
-      console.error('❌ Error generating insight patterns:', error);
-      return this.getIntelligentFallbackInsightPatterns(docxText);
-    }
-  }
-
-  /**
-   * Intelligent fallback for concept universe
-   */
-  getIntelligentFallbackConceptUniverse(docxText) {
-    console.log('🔄 Creating intelligent fallback concept universe');
-
-    return {
-      conceptClusters: [
-        {
-          name: "Core Theoretical Framework",
-          theme: "Foundational concepts and principles",
-          description: "The fundamental theoretical structure underlying the document content",
-          abstractionLevel: "high",
-          concepts: [
-            {
-              name: "Primary Concept",
-              description: "The main theoretical concept explored in the document",
-              type: "theory",
-              abstractionLevel: "high",
-              connections: ["Secondary Concept", "Applied Principle"],
-              implications: ["Future research directions", "Practical applications"],
-              position: { x: 0.5, y: 0.5, z: 0.5 },
-              size: 1.0,
-              color: "#6366f1",
-              energy: 0.9
-            },
-            {
-              name: "Secondary Concept",
-              description: "Supporting theoretical framework that complements the primary concept",
-              type: "framework",
-              abstractionLevel: "medium",
-              connections: ["Primary Concept", "Practical Application"],
-              implications: ["Enhanced understanding", "Cross-domain applications"],
-              position: { x: 0.3, y: 0.7, z: 0.4 },
-              size: 0.8,
-              color: "#8b5cf6",
-              energy: 0.7
-            },
-            {
-              name: "Applied Principle",
-              description: "Practical manifestation of the theoretical concepts",
-              type: "principle",
-              abstractionLevel: "medium",
-              connections: ["Primary Concept", "Real-world Implementation"],
-              implications: ["Immediate applications", "Validation opportunities"],
-              position: { x: 0.7, y: 0.3, z: 0.6 },
-              size: 0.7,
-              color: "#06b6d4",
-              energy: 0.8
-            }
-          ],
-          emergentProperties: ["Synergistic understanding", "Holistic perspective"],
-          futureDirections: ["Advanced theoretical development", "Interdisciplinary integration"],
-          crossClusterConnections: ["Implementation Strategies", "Innovation Opportunities"]
-        },
-        {
-          name: "Implementation Strategies",
-          theme: "Practical application and methodology",
-          description: "How theoretical concepts translate into practical implementation",
-          abstractionLevel: "medium",
-          concepts: [
-            {
-              name: "Methodological Approach",
-              description: "Systematic approach to applying the concepts",
-              type: "pattern",
-              abstractionLevel: "medium",
-              connections: ["Applied Principle", "Practical Outcomes"],
-              implications: ["Scalable solutions", "Measurable results"],
-              position: { x: 0.2, y: 0.4, z: 0.8 },
-              size: 0.6,
-              color: "#10b981",
-              energy: 0.6
-            },
-            {
-              name: "Practical Outcomes",
-              description: "Observable results and measurable impacts",
-              type: "paradigm",
-              abstractionLevel: "low",
-              connections: ["Methodological Approach", "Future Innovations"],
-              implications: ["Validation of theory", "Continuous improvement"],
-              position: { x: 0.8, y: 0.6, z: 0.2 },
-              size: 0.5,
-              color: "#f59e0b",
-              energy: 0.5
-            }
-          ],
-          emergentProperties: ["Systematic effectiveness", "Adaptive methodology"],
-          futureDirections: ["Optimization strategies", "Scalability solutions"],
-          crossClusterConnections: ["Core Theoretical Framework", "Innovation Opportunities"]
-        }
-      ],
-      hiddenPatterns: [
-        {
-          name: "Recursive Enhancement Pattern",
-          description: "The document reveals a pattern where concepts build upon themselves in increasingly sophisticated ways",
-          type: "recurring_theme",
-          strength: 0.8,
-          conceptsInvolved: ["Primary Concept", "Applied Principle", "Methodological Approach"],
-          insight: "Understanding deepens through iterative application and reflection",
-          implications: ["Continuous learning cycles", "Exponential knowledge growth"]
-        },
-        {
-          name: "Cross-Domain Applicability",
-          description: "Concepts show potential for application across multiple domains and contexts",
-          type: "emergent_property",
-          strength: 0.7,
-          conceptsInvolved: ["Secondary Concept", "Practical Outcomes"],
-          insight: "Universal principles transcend specific implementation contexts",
-          implications: ["Broader impact potential", "Interdisciplinary opportunities"]
-        }
-      ],
-      theoreticalFrameworks: [
-        {
-          name: "Integrated Learning Framework",
-          description: "A comprehensive approach to understanding and applying the document's concepts",
-          scope: "domain",
-          concepts: ["Primary Concept", "Secondary Concept", "Applied Principle"],
-          principles: ["Systematic understanding", "Practical application", "Continuous improvement"],
-          applications: ["Educational contexts", "Professional development", "Research initiatives"],
-          limitations: ["Context-specific constraints", "Resource requirements"],
-          extensions: ["Advanced applications", "Cross-domain integration"]
-        }
-      ],
-      innovationOpportunities: [
-        {
-          name: "Conceptual Synthesis Innovation",
-          description: "Opportunity to create novel solutions by combining theoretical and practical elements",
-          conceptCombination: ["Primary Concept", "Methodological Approach"],
-          novelty: 0.8,
-          feasibility: 0.7,
-          impact: 0.9,
-          timeline: "medium future",
-          requirements: ["Advanced understanding", "Implementation resources", "Collaborative effort"]
-        },
-        {
-          name: "Cross-Domain Application",
-          description: "Potential to apply concepts in entirely new domains and contexts",
-          conceptCombination: ["Secondary Concept", "Practical Outcomes"],
-          novelty: 0.9,
-          feasibility: 0.6,
-          impact: 0.8,
-          timeline: "far future",
-          requirements: ["Domain expertise", "Adaptation strategies", "Validation methods"]
-        }
-      ]
-    };
-  }
-
-  /**
-   * Intelligent fallback for insight patterns
-   */
-  getIntelligentFallbackInsightPatterns(docxText) {
-    console.log('🔄 Creating intelligent fallback insight patterns');
-
-    return {
-      insightMoments: [
-        {
-          title: "Conceptual Integration Insight",
-          description: "The realization that seemingly separate concepts are actually interconnected parts of a larger system",
-          type: "connection",
-          depth: "deep",
-          conceptsConnected: ["Primary Concept", "Secondary Concept", "Applied Principle"],
-          reasoning: "Understanding the systemic nature reveals deeper patterns and possibilities",
-          implications: ["Holistic understanding", "Enhanced problem-solving capabilities"],
-          analogies: ["Ecosystem interdependence", "Neural network connectivity"],
-          questions: ["How do these connections manifest in other contexts?", "What other systems exhibit similar patterns?"],
-          explorationPaths: ["Cross-domain pattern analysis", "System dynamics investigation"]
-        },
-        {
-          title: "Future Possibility Recognition",
-          description: "Seeing potential applications and developments that aren't immediately obvious",
-          type: "possibility",
-          depth: "profound",
-          conceptsConnected: ["Methodological Approach", "Practical Outcomes"],
-          reasoning: "Current trends and patterns suggest emerging opportunities for innovation",
-          implications: ["Proactive development strategies", "Competitive advantages"],
-          analogies: ["Technological evolution patterns", "Natural selection processes"],
-          questions: ["What conditions would accelerate these developments?", "How can we prepare for these possibilities?"],
-          explorationPaths: ["Trend analysis", "Scenario planning", "Innovation strategy development"]
-        }
-      ],
-      conceptualBridges: [
-        {
-          name: "Theory-Practice Bridge",
-          description: "The connection between abstract theoretical concepts and concrete practical applications",
-          fromConcept: "Primary Concept",
-          toConcept: "Practical Outcomes",
-          bridgeType: "transformation",
-          strength: 0.9,
-          novelty: 0.7,
-          explanation: "Abstract principles become concrete through systematic application and adaptation",
-          examples: ["Scientific theories leading to technologies", "Philosophical ideas influencing policies"],
-          implications: ["Validates theoretical understanding", "Enables practical innovation"]
-        },
-        {
-          name: "Cross-Contextual Application Bridge",
-          description: "How concepts from one domain can be applied in entirely different contexts",
-          fromConcept: "Methodological Approach",
-          toConcept: "Secondary Concept",
-          bridgeType: "analogy",
-          strength: 0.8,
-          novelty: 0.9,
-          explanation: "Similar patterns and principles operate across different domains and scales",
-          examples: ["Biological processes inspiring algorithms", "Social dynamics informing organizational design"],
-          implications: ["Expands application possibilities", "Reveals universal principles"]
-        }
-      ],
-      emergentThemes: [
-        {
-          name: "Adaptive Intelligence",
-          description: "The theme of systems and approaches that learn and improve over time",
-          concepts: ["Primary Concept", "Methodological Approach", "Practical Outcomes"],
-          abstractionLevel: "high",
-          universality: "universal",
-          manifestations: ["Self-improving systems", "Evolutionary processes", "Learning organizations"],
-          evolution: "Increasing sophistication and autonomy over time",
-          crossDomainApplications: ["Artificial intelligence", "Organizational development", "Educational systems"]
-        },
-        {
-          name: "Systemic Integration",
-          description: "The recurring theme of parts working together to create emergent properties",
-          concepts: ["Secondary Concept", "Applied Principle"],
-          abstractionLevel: "high",
-          universality: "domain-wide",
-          manifestations: ["Holistic approaches", "Interdisciplinary collaboration", "Systems thinking"],
-          evolution: "Growing recognition of interconnectedness and complexity",
-          crossDomainApplications: ["Complex systems science", "Ecological thinking", "Integrated design"]
-        }
-      ],
-      futureScenarios: [
-        {
-          name: "Advanced Integration Scenario",
-          description: "A future where the concepts become fully integrated into standard practice and thinking",
-          basedOnConcepts: ["Primary Concept", "Methodological Approach"],
-          timeline: "5-10 years",
-          probability: 0.8,
-          impact: 0.9,
-          requirements: ["Widespread adoption", "Educational integration", "Technological support"],
-          indicators: ["Increasing implementation", "Academic curriculum inclusion", "Industry standards development"],
-          implications: ["Transformed practices", "Enhanced capabilities", "New opportunities"]
-        },
-        {
-          name: "Cross-Domain Revolution Scenario",
-          description: "A future where these concepts revolutionize multiple fields simultaneously",
-          basedOnConcepts: ["Secondary Concept", "Applied Principle"],
-          timeline: "10+ years",
-          probability: 0.6,
-          impact: 1.0,
-          requirements: ["Paradigm shifts", "Interdisciplinary collaboration", "Breakthrough innovations"],
-          indicators: ["Cross-field adoption", "Hybrid disciplines emergence", "Fundamental rethinking"],
-          implications: ["Paradigmatic changes", "New fields of study", "Societal transformation"]
-        }
-      ],
-      paradoxes: [
-        {
-          name: "Simplicity-Complexity Paradox",
-          description: "The apparent contradiction between simple principles and complex applications",
-          contradiction: "Simple concepts lead to complex implementations",
-          resolution: "Simplicity at one level enables complexity at another level",
-          insights: ["Hierarchical organization of complexity", "Emergent properties from simple rules"],
-          examples: ["Simple mathematical rules creating complex patterns", "Basic principles enabling sophisticated systems"],
-          implications: ["Focus on fundamental principles", "Embrace emergent complexity"]
-        },
-        {
-          name: "Stability-Change Paradox",
-          description: "The tension between maintaining stability and enabling continuous change",
-          contradiction: "Systems need both stability and adaptability",
-          resolution: "Dynamic stability through controlled change and adaptive mechanisms",
-          insights: ["Balance between structure and flexibility", "Evolution through stable foundations"],
-          examples: ["Living systems maintaining identity while changing", "Organizations preserving culture while innovating"],
-          implications: ["Design for adaptive stability", "Manage change systematically"]
-        }
-      ]
-    };
   }
 }
 

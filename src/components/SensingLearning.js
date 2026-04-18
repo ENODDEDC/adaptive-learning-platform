@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   XMarkIcon,
   ArrowPathIcon,
@@ -31,17 +31,6 @@ function formatReadoutNumber(n) {
   return String(rounded).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
 }
 
-function gatherNumericControlValues(sim, inputsByName) {
-  const nums = [];
-  (sim?.interactiveElements || []).forEach((el) => {
-    if (el.type === 'slider' || el.type === 'input') {
-      const v = parseInteractiveNumber(inputsByName?.[el.name] ?? el.defaultValue);
-      if (v !== null) nums.push(v);
-    }
-  });
-  return nums;
-}
-
 function combineNumericValues(nums, combineRaw) {
   const mode = String(combineRaw || 'sum').toLowerCase();
   if (!nums.length) return null;
@@ -50,104 +39,15 @@ function combineNumericValues(nums, combineRaw) {
       return nums.reduce((a, b) => a * b, 1);
     case 'mean':
       return nums.reduce((a, b) => a + b, 0) / nums.length;
-    case 'min':
-      return Math.min(...nums);
-    case 'max':
-      return Math.max(...nums);
-    case 'first':
-      return nums[0];
-    case 'last':
-      return nums[nums.length - 1];
     default:
       return nums.reduce((a, b) => a + b, 0);
   }
 }
 
-function gatherNumsFromElementNames(sim, inputsByName, names) {
-  const elements = sim?.interactiveElements || [];
-  const nums = [];
-  (names || []).forEach((name) => {
-    const el = elements.find((e) => e.name === name);
-    if (!el || (el.type !== 'slider' && el.type !== 'input')) return;
-    const v = parseInteractiveNumber(inputsByName?.[el.name] ?? el.defaultValue);
-    if (v !== null) nums.push(v);
-  });
-  return nums;
-}
-
-/** Uses dataPoint.fromElements + combine when present; else legacy inference. */
-function computeFromElementsBinding(sim, inputsByName, dp) {
-  if (!Array.isArray(dp.fromElements) || dp.fromElements.length === 0) return null;
-
-  const elements = sim?.interactiveElements || [];
-  const nums = [];
-  const texts = [];
-
-  dp.fromElements.forEach((name) => {
-    const el = elements.find((e) => e.name === name);
-    if (!el) return;
-    const raw = inputsByName?.[el.name] ?? el.defaultValue;
-    if (el.type === 'slider' || el.type === 'input') {
-      const n = parseInteractiveNumber(raw);
-      if (n !== null) nums.push(n);
-    } else {
-      texts.push(String(raw ?? ''));
-    }
-  });
-
-  if (nums.length) {
-    return formatReadoutNumber(combineNumericValues(nums, dp.combine));
-  }
-  if (texts.length) return texts.filter(Boolean).join(' · ');
-  return String(dp.value ?? '');
-}
-
-function computeLegacyReadoutForIndex(sim, inputsByName, dps, i) {
-  const nums = gatherNumericControlValues(sim, inputsByName);
-  if (nums.length === 0) return String(dps[i].value ?? '');
-  if (nums.length === 1) {
-    return i === 0 ? formatReadoutNumber(nums[0]) : String(dps[i].value ?? '');
-  }
-  const sum = nums.reduce((a, b) => a + b, 0);
-  const prod = nums.reduce((a, b) => a * b, 1);
-  const mean = sum / nums.length;
-  if (i === 0) return formatReadoutNumber(sum);
-  if (i === 1) return formatReadoutNumber(prod);
-  if (i < nums.length) return formatReadoutNumber(nums[i]);
-  return formatReadoutNumber(mean);
-}
-
-/** Map dataPoints to live strings (schema-driven + fallback). */
-function getLiveReadoutValues(sim, inputsByName) {
-  const dps = sim?.dataPoints || [];
-  if (!dps.length) return [];
-  return dps.map((dp, i) => {
-    if (Array.isArray(dp.fromElements) && dp.fromElements.length > 0) {
-      return computeFromElementsBinding(sim, inputsByName, dp);
-    }
-    return computeLegacyReadoutForIndex(sim, inputsByName, dps, i);
-  });
-}
-
-function resolveButtonAggregation(sim) {
-  const btn = (sim?.interactiveElements || []).find((e) => e.type === 'button');
-  if (btn && Array.isArray(btn.fromElements) && btn.fromElements.length > 0) {
-    return { names: btn.fromElements, combine: btn.combine };
-  }
-  const dp0 = sim?.dataPoints?.[0];
-  if (dp0 && Array.isArray(dp0.fromElements) && dp0.fromElements.length > 0) {
-    return { names: dp0.fromElements, combine: dp0.combine };
-  }
-  return { names: null, combine: 'sum' };
-}
-
-function parseSliderBounds(range) {
-  const s = String(range ?? '');
-  const parts = s.split(/[-–]/).map((p) => parseFloat(String(p).trim()));
-  if (parts.length >= 2 && parts.every((n) => Number.isFinite(n))) {
-    return { min: parts[0], max: parts[1] };
-  }
-  return { min: 0, max: 100 };
+function patternIcon(sim) {
+  if (sim?.labPattern === 'dual_input_calculate') return 'calc';
+  if (sim?.labPattern === 'dropdown_readout') return 'dropdown';
+  return 'slider';
 }
 
 const SensingLearning = ({
@@ -165,7 +65,6 @@ const SensingLearning = ({
   const [activeChallenge, setActiveChallenge] = useState(0);
   const [simulationInputs, setSimulationInputs] = useState({});
   const [challengeProgress, setChallengeProgress] = useState({});
-  const [calcNoticeBySim, setCalcNoticeBySim] = useState({});
 
   // Automatic time tracking for ML classification
   useLearningModeTracking('sensingLearning', isActive);
@@ -233,10 +132,18 @@ const SensingLearning = ({
         if (result.simulations && result.simulations.length > 0) {
           const initialInputs = {};
           result.simulations.forEach((sim, simIndex) => {
-            initialInputs[simIndex] = {};
-            sim.interactiveElements?.forEach(element => {
-              initialInputs[simIndex][element.name] = element.defaultValue;
-            });
+            if (sim.labPattern === 'slider_readout') {
+              initialInputs[simIndex] = { slider: String(sim.sliderDefault ?? 0) };
+            } else if (sim.labPattern === 'dual_input_calculate') {
+              initialInputs[simIndex] = {
+                inputA: String(sim.inputADefault ?? 0),
+                inputB: String(sim.inputBDefault ?? 0)
+              };
+            } else if (sim.labPattern === 'dropdown_readout') {
+              initialInputs[simIndex] = { dropdown: sim.defaultOption ?? sim.options?.[0] ?? '' };
+            } else {
+              initialInputs[simIndex] = { slider: '0' };
+            }
           });
           setSimulationInputs(initialInputs);
         }
@@ -271,20 +178,6 @@ const SensingLearning = ({
     generateSensingContent();
   };
 
-  const activeSimForReadouts = simulations[activeSimulation];
-  const activeSimInputsForReadouts = simulationInputs[activeSimulation] || {};
-  const liveReadoutValues = useMemo(
-    () =>
-      activeSimForReadouts
-        ? getLiveReadoutValues(activeSimForReadouts, activeSimInputsForReadouts)
-        : [],
-    [activeSimForReadouts, activeSimInputsForReadouts]
-  );
-
-  useEffect(() => {
-    setCalcNoticeBySim({});
-  }, [activeSimulation]);
-
   const handleSimulationInputChange = (simIndex, elementName, value) => {
     setSimulationInputs(prev => ({
       ...prev,
@@ -293,12 +186,6 @@ const SensingLearning = ({
         [elementName]: value
       }
     }));
-    setCalcNoticeBySim((prev) => {
-      if (!prev[simIndex]) return prev;
-      const next = { ...prev };
-      delete next[simIndex];
-      return next;
-    });
     // Track interaction
     trackBehavior('interactive_element_used', { 
       mode: 'sensing', 
@@ -307,41 +194,6 @@ const SensingLearning = ({
       value 
     });
   };
-
-  const handleSimulationCalculate = useCallback(
-    (simIndex) => {
-      const sim = simulations[simIndex];
-      const inputs = simulationInputs[simIndex] || {};
-      const { names, combine } = resolveButtonAggregation(sim);
-      const nums = names?.length
-        ? gatherNumsFromElementNames(sim, inputs, names)
-        : gatherNumericControlValues(sim, inputs);
-      const result = nums.length ? combineNumericValues(nums, combine) : NaN;
-
-      trackBehavior('simulation_calculate', {
-        mode: 'sensing',
-        simIndex,
-        binding: names || 'all_numeric',
-        combine: combine || 'sum',
-        inputs: nums,
-        result: Number.isFinite(result) ? result : null
-      });
-
-      if (Number.isFinite(result)) {
-        const mode = String(combine || 'sum').toLowerCase();
-        setCalcNoticeBySim((prev) => ({
-          ...prev,
-          [simIndex]: `Result: ${formatReadoutNumber(result)} (${mode})`
-        }));
-      } else {
-        setCalcNoticeBySim((prev) => ({
-          ...prev,
-          [simIndex]: 'Set numeric values on the linked controls, then tap Calculate.'
-        }));
-      }
-    },
-    [simulations, simulationInputs]
-  );
 
   const handleChallengeStepComplete = (challengeIndex, stepIndex) => {
     setChallengeProgress(prev => ({
@@ -451,11 +303,9 @@ const SensingLearning = ({
                     : 'border-slate-200 bg-slate-50 text-slate-800 hover:border-teal-300 hover:bg-teal-50/60'
                 }`}
               >
-                {sim.type === 'calculator' && <CalculatorIcon className="h-4 w-4 shrink-0 opacity-90" />}
-                {sim.type === 'graph' && <ChartBarIcon className="h-4 w-4 shrink-0 opacity-90" />}
-                {sim.type === 'experiment' && <BeakerIcon className="h-4 w-4 shrink-0 opacity-90" />}
-                {sim.type === 'data_analysis' && <ChartBarIcon className="h-4 w-4 shrink-0 opacity-90" />}
-                {sim.type === 'virtual_lab' && <CogIcon className="h-4 w-4 shrink-0 opacity-90" />}
+                {patternIcon(sim) === 'calc' && <CalculatorIcon className="h-4 w-4 shrink-0 opacity-90" />}
+                {patternIcon(sim) === 'dropdown' && <CogIcon className="h-4 w-4 shrink-0 opacity-90" />}
+                {patternIcon(sim) === 'slider' && <ChartBarIcon className="h-4 w-4 shrink-0 opacity-90" />}
                 <span className="max-w-[200px] truncate font-medium">{sim.title}</span>
               </button>
             ))}
@@ -466,11 +316,9 @@ const SensingLearning = ({
           <header className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 flex-1 gap-3">
               <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-sm">
-                {currentSim.type === 'calculator' && <CalculatorIcon className="h-6 w-6" />}
-                {currentSim.type === 'graph' && <ChartBarIcon className="h-6 w-6" />}
-                {currentSim.type === 'experiment' && <BeakerIcon className="h-6 w-6" />}
-                {currentSim.type === 'data_analysis' && <ChartBarIcon className="h-6 w-6" />}
-                {currentSim.type === 'virtual_lab' && <CogIcon className="h-6 w-6" />}
+                {patternIcon(currentSim) === 'calc' && <CalculatorIcon className="h-6 w-6" />}
+                {patternIcon(currentSim) === 'dropdown' && <CogIcon className="h-6 w-6" />}
+                {patternIcon(currentSim) === 'slider' && <ChartBarIcon className="h-6 w-6" />}
               </span>
               <div className="min-w-0">
                 <h3 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">{currentSim.title}</h3>
@@ -487,105 +335,164 @@ const SensingLearning = ({
             <div className="lg:col-span-5">
               <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Controls</p>
               <div className="space-y-3">
-                {currentSim.interactiveElements?.map((element, index) => (
-                  <div
-                    key={index}
-                    className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 shadow-sm"
-                  >
-                    <label className="block text-sm font-semibold text-slate-900">{element.name}</label>
-                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{element.description}</p>
-
-                    {element.type === 'slider' && (
-                      <div className="mt-3 space-y-2">
-                        <input
-                          type="range"
-                          min={parseSliderBounds(element.range).min}
-                          max={parseSliderBounds(element.range).max}
-                          step="any"
-                          value={currentInputs[element.name] ?? element.defaultValue}
-                          onChange={(e) => handleSimulationInputChange(activeSimulation, element.name, e.target.value)}
-                          className="slider h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-teal-600"
-                        />
-                        <div className="flex justify-between text-[11px] text-slate-500">
-                          <span>
-                            {parseSliderBounds(element.range).min} {element.unit}
-                          </span>
-                          <span className="font-semibold text-teal-700">
-                            {currentInputs[element.name] ?? element.defaultValue} {element.unit}
-                          </span>
-                          <span>
-                            {parseSliderBounds(element.range).max} {element.unit}
-                          </span>
-                        </div>
+                {currentSim.labPattern === 'slider_readout' && (
+                  <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 shadow-sm">
+                    <label className="block text-sm font-semibold text-slate-900">{currentSim.sliderLabel}</label>
+                    <div className="mt-3 space-y-2">
+                      <input
+                        type="range"
+                        min={currentSim.sliderMin}
+                        max={currentSim.sliderMax}
+                        step={currentSim.sliderStep || 'any'}
+                        value={currentInputs.slider ?? String(currentSim.sliderDefault)}
+                        onChange={(e) => {
+                          handleSimulationInputChange(activeSimulation, 'slider', e.target.value);
+                          trackBehavior('interactive_element_used', {
+                            mode: 'sensing',
+                            elementType: 'slider',
+                            labPattern: 'slider_readout'
+                          });
+                        }}
+                        className="slider h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-teal-600"
+                      />
+                      <div className="flex justify-between text-[11px] text-slate-500">
+                        <span>
+                          {currentSim.sliderMin} {currentSim.sliderUnit}
+                        </span>
+                        <span className="font-semibold text-teal-700">
+                          {currentInputs.slider ?? currentSim.sliderDefault} {currentSim.sliderUnit}
+                        </span>
+                        <span>
+                          {currentSim.sliderMax} {currentSim.sliderUnit}
+                        </span>
                       </div>
-                    )}
+                    </div>
+                  </div>
+                )}
 
-                    {element.type === 'input' && (
+                {currentSim.labPattern === 'dual_input_calculate' && (
+                  <>
+                    <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 shadow-sm">
+                      <label className="block text-sm font-semibold text-slate-900">{currentSim.inputALabel}</label>
                       <input
                         type="number"
-                        value={currentInputs[element.name] ?? element.defaultValue}
-                        onChange={(e) => handleSimulationInputChange(activeSimulation, element.name, e.target.value)}
+                        value={currentInputs.inputA ?? String(currentSim.inputADefault)}
+                        onChange={(e) => {
+                          handleSimulationInputChange(activeSimulation, 'inputA', e.target.value);
+                          trackBehavior('interactive_element_used', {
+                            mode: 'sensing',
+                            elementType: 'input',
+                            labPattern: 'dual_input_calculate'
+                          });
+                        }}
                         className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                        placeholder={element.unit ? `Value (${element.unit})` : 'Value'}
                       />
-                    )}
-
-                    {element.type === 'dropdown' && (
-                      <select
-                        value={currentInputs[element.name] ?? element.defaultValue}
-                        onChange={(e) => handleSimulationInputChange(activeSimulation, element.name, e.target.value)}
+                    </div>
+                    <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 shadow-sm">
+                      <label className="block text-sm font-semibold text-slate-900">{currentSim.inputBLabel}</label>
+                      <input
+                        type="number"
+                        value={currentInputs.inputB ?? String(currentSim.inputBDefault)}
+                        onChange={(e) => {
+                          handleSimulationInputChange(activeSimulation, 'inputB', e.target.value);
+                          trackBehavior('interactive_element_used', {
+                            mode: 'sensing',
+                            elementType: 'input',
+                            labPattern: 'dual_input_calculate'
+                          });
+                        }}
                         className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                      >
-                        {(Array.isArray(element.range) ? element.range : []).map((option, optIndex) => (
-                          <option key={optIndex} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    )}
+                      />
+                    </div>
+                  </>
+                )}
 
-                    {element.type === 'button' && (
-                      <button
-                        type="button"
-                        onClick={() => handleSimulationCalculate(activeSimulation)}
-                        className="mt-3 w-full rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700"
-                      >
-                        {element.defaultValue || 'Calculate'}
-                      </button>
-                    )}
+                {currentSim.labPattern === 'dropdown_readout' && (
+                  <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 shadow-sm">
+                    <label className="block text-sm font-semibold text-slate-900">{currentSim.dropdownLabel}</label>
+                    <select
+                      value={
+                        currentSim.options?.includes(currentInputs.dropdown)
+                          ? currentInputs.dropdown
+                          : currentSim.defaultOption
+                      }
+                      onChange={(e) => {
+                        handleSimulationInputChange(activeSimulation, 'dropdown', e.target.value);
+                        trackBehavior('interactive_element_used', {
+                          mode: 'sensing',
+                          elementType: 'dropdown',
+                          labPattern: 'dropdown_readout'
+                        });
+                      }}
+                      className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                    >
+                      {(currentSim.options || []).map((option, optIndex) => (
+                        <option key={optIndex} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
             <div className="lg:col-span-7">
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Live readouts</p>
-              <p className="mb-3 text-xs text-slate-500">
-                Each readout uses the lab JSON bindings when present (which controls feed it and how they combine).
-                Otherwise values are inferred from your controls. Calculate uses the same binding as the button or main
-                result when defined.
-              </p>
-              {calcNoticeBySim[activeSimulation] && (
-                <p className="mb-3 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs text-teal-900">
-                  {calcNoticeBySim[activeSimulation]}
-                </p>
-              )}
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Live readout</p>
               <div className="rounded-xl border border-teal-100 bg-gradient-to-br from-teal-50/80 to-cyan-50/50 p-4">
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {currentSim.dataPoints?.map((dataPoint, index) => (
-                    <div
-                      key={index}
-                      className="rounded-xl border border-white/80 bg-white/95 p-3 shadow-sm ring-1 ring-teal-100/60"
-                    >
+                <div className="grid gap-3 sm:grid-cols-1">
+                  {currentSim.labPattern === 'slider_readout' && (
+                    <div className="rounded-xl border border-white/80 bg-white/95 p-4 shadow-sm ring-1 ring-teal-100/60">
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700/90">
-                        {dataPoint.label}
+                        {currentSim.readoutLabel}
                       </p>
-                      <p className="mt-1 text-xl font-bold tabular-nums text-teal-900">
-                        {liveReadoutValues[index] ?? String(dataPoint.value ?? '')}
+                      <p className="mt-1 text-2xl font-bold tabular-nums text-teal-900">
+                        {formatReadoutNumber(
+                          parseInteractiveNumber(currentInputs.slider ?? currentSim.sliderDefault)
+                        )}{' '}
+                        {currentSim.sliderUnit}
                       </p>
-                      <p className="mt-1 text-xs leading-snug text-slate-600">{dataPoint.description}</p>
+                      {currentSim.readoutDescription && (
+                        <p className="mt-2 text-xs leading-snug text-slate-600">{currentSim.readoutDescription}</p>
+                      )}
                     </div>
-                  ))}
+                  )}
+                  {currentSim.labPattern === 'dual_input_calculate' && (
+                    <div className="rounded-xl border border-white/80 bg-white/95 p-4 shadow-sm ring-1 ring-teal-100/60">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700/90">
+                        {currentSim.readoutLabel}{' '}
+                        <span className="normal-case text-slate-500">({currentSim.combine})</span>
+                      </p>
+                      <p className="mt-1 text-2xl font-bold tabular-nums text-teal-900">
+                        {(() => {
+                          const a = parseInteractiveNumber(currentInputs.inputA ?? currentSim.inputADefault);
+                          const b = parseInteractiveNumber(currentInputs.inputB ?? currentSim.inputBDefault);
+                          if (a === null || b === null) return '—';
+                          const v = combineNumericValues([a, b], currentSim.combine);
+                          return v === null ? '—' : formatReadoutNumber(v);
+                        })()}
+                      </p>
+                      {currentSim.readoutDescription && (
+                        <p className="mt-2 text-xs leading-snug text-slate-600">{currentSim.readoutDescription}</p>
+                      )}
+                    </div>
+                  )}
+                  {currentSim.labPattern === 'dropdown_readout' && (
+                    <div className="rounded-xl border border-white/80 bg-white/95 p-4 shadow-sm ring-1 ring-teal-100/60">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700/90">
+                        {currentSim.readoutTitle}
+                      </p>
+                      <p className="mt-2 text-sm font-medium leading-relaxed text-slate-800">
+                        {(() => {
+                          const opts = currentSim.options || [];
+                          const raw = currentInputs.dropdown ?? currentSim.defaultOption;
+                          const sel = opts.includes(raw) ? raw : opts[0];
+                          const i = Math.max(0, opts.indexOf(sel));
+                          return currentSim.optionDescriptions?.[i] || sel || '—';
+                        })()}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

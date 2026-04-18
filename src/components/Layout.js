@@ -30,6 +30,7 @@ const Layout = ({ children }) => {
     return false;
   });
   const [upcomingTasksExpanded, setUpcomingTasksExpanded] = useState(true);
+  const [immersiveConstellation, setImmersiveConstellation] = useState(false);
   const {
     isCreateCourseModalOpen,
     closeCreateCourseModal,
@@ -118,6 +119,30 @@ const Layout = ({ children }) => {
     };
   }, []);
 
+  // Concept Constellation: hide main sidebar (body flag + direct window event — MutationObserver can miss timing)
+  useEffect(() => {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return undefined;
+    const syncFromBody = () => setImmersiveConstellation(document.body.hasAttribute('data-immersive-constellation'));
+
+    const onImmersiveEvent = (e) => {
+      if (e?.detail && typeof e.detail.open === 'boolean') {
+        setImmersiveConstellation(e.detail.open);
+      } else {
+        syncFromBody();
+      }
+    };
+
+    syncFromBody();
+    window.addEventListener('assist-ed-immersive-constellation', onImmersiveEvent);
+    const observer = new MutationObserver(() => syncFromBody());
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-immersive-constellation'] });
+
+    return () => {
+      window.removeEventListener('assist-ed-immersive-constellation', onImmersiveEvent);
+      observer.disconnect();
+    };
+  }, []);
+
 
   const isAuthPage = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/complete-registration'].some(
     path => pathname === path || (path !== '/' && pathname?.startsWith(path))
@@ -161,11 +186,17 @@ const Layout = ({ children }) => {
 
   // Prevent hydration mismatch by using consistent initial state
   const sidebarState = isSidebarCollapsed;
-  const mainContentMargin = isSidebarCollapsed ? 'ml-16' : 'ml-52';
+  const mainContentMargin = immersiveConstellation
+    ? 'ml-0'
+    : isSidebarCollapsed
+      ? 'ml-16'
+      : 'ml-52';
 
   return (
     <div className="bg-base-light overflow-hidden" style={{ height: `${viewportHeight}px` }}>
-      <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
+      {!immersiveConstellation && (
+        <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
+      )}
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
         onClose={closeCreateCourseModal}
@@ -274,7 +305,9 @@ const Layout = ({ children }) => {
           }
         }}
       />
-      <div className={`transition-all duration-500 ease-in-out ${mainContentMargin} h-full overflow-hidden pl-4 flex flex-col`}>
+      <div
+        className={`transition-all duration-500 ease-in-out ${mainContentMargin} h-full overflow-hidden flex flex-col ${immersiveConstellation ? 'pl-0' : 'pl-4'}`}
+      >
         <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
         <main className="flex-1 overflow-hidden">
           {React.isValidElement(children) && typeof children.type !== 'string'

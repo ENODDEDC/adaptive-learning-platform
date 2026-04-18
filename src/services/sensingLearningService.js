@@ -107,6 +107,180 @@ ${String(firstText || '').slice(0, 5000)}
     return [];
   }
 
+  static LAB_PATTERNS = new Set(['slider_readout', 'dual_input_calculate', 'dropdown_readout']);
+
+  coerceNumber(value, fallback = 0) {
+    const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''));
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  parseSliderBoundsFromRange(range) {
+    const s = String(range ?? '');
+    const parts = s.split(/[-–]/).map((p) => parseFloat(String(p).trim()));
+    if (parts.length >= 2 && parts.every((n) => Number.isFinite(n))) {
+      return { min: parts[0], max: parts[1] };
+    }
+    return { min: 0, max: 100 };
+  }
+
+  /**
+   * Normalize one simulation to a fixed labPattern the UI can render reliably.
+   */
+  normalizeSimulation(sim) {
+    if (!sim || typeof sim !== 'object') return null;
+    const pattern = String(sim.labPattern || '').trim();
+    if (SensingLearningService.LAB_PATTERNS.has(pattern)) {
+      return this.normalizeFixedPatternSim(pattern, sim);
+    }
+    return this.legacySimulationToFixedPattern(sim);
+  }
+
+  normalizeFixedPatternSim(pattern, sim) {
+    const base = {
+      labPattern: pattern,
+      title: String(sim.title || 'Interactive lab').slice(0, 200),
+      description: String(sim.description || '').slice(0, 2000),
+      difficulty: ['beginner', 'intermediate', 'advanced'].includes(String(sim.difficulty))
+        ? sim.difficulty
+        : 'beginner',
+      estimatedTime: String(sim.estimatedTime || '10–15 min').slice(0, 40),
+      learningObjectives: Array.isArray(sim.learningObjectives)
+        ? sim.learningObjectives.map((x) => String(x)).filter(Boolean).slice(0, 8)
+        : [],
+      stepByStepGuide: Array.isArray(sim.stepByStepGuide)
+        ? sim.stepByStepGuide.map((x) => String(x)).filter(Boolean).slice(0, 12)
+        : [],
+      expectedOutcomes: String(sim.expectedOutcomes || '').slice(0, 1500),
+      realWorldApplication: String(sim.realWorldApplication || '').slice(0, 1500)
+    };
+
+    if (pattern === 'slider_readout') {
+      let min = this.coerceNumber(sim.sliderMin, 0);
+      let max = this.coerceNumber(sim.sliderMax, 100);
+      if (min > max) [min, max] = [max, min];
+      if (min === max) max = min + 1;
+      let def = this.coerceNumber(sim.sliderDefault, min);
+      def = Math.min(max, Math.max(min, def));
+      return {
+        ...base,
+        sliderLabel: String(sim.sliderLabel || 'Value').slice(0, 120),
+        sliderMin: min,
+        sliderMax: max,
+        sliderDefault: def,
+        sliderStep: Math.max(0.0001, this.coerceNumber(sim.sliderStep, (max - min) / 100 || 1)),
+        sliderUnit: String(sim.sliderUnit || '').slice(0, 24),
+        readoutLabel: String(sim.readoutLabel || 'Current value').slice(0, 120),
+        readoutDescription: String(sim.readoutDescription || '').slice(0, 500)
+      };
+    }
+
+    if (pattern === 'dual_input_calculate') {
+      const combineRaw = String(sim.combine || 'sum').toLowerCase();
+      const combine = ['sum', 'product', 'mean'].includes(combineRaw) ? combineRaw : 'sum';
+      return {
+        ...base,
+        inputALabel: String(sim.inputALabel || 'Input A').slice(0, 120),
+        inputBLabel: String(sim.inputBLabel || 'Input B').slice(0, 120),
+        inputADefault: this.coerceNumber(sim.inputADefault, 0),
+        inputBDefault: this.coerceNumber(sim.inputBDefault, 0),
+        combine,
+        readoutLabel: String(sim.readoutLabel || 'Result').slice(0, 120),
+        readoutDescription: String(sim.readoutDescription || '').slice(0, 500)
+      };
+    }
+
+    if (pattern === 'dropdown_readout') {
+      let options = Array.isArray(sim.options) ? sim.options.map((x) => String(x).trim()).filter(Boolean) : [];
+      if (options.length < 2) options = ['Option A', 'Option B'];
+      let descriptions = Array.isArray(sim.optionDescriptions)
+        ? sim.optionDescriptions.map((x) => String(x)).slice(0, options.length)
+        : [];
+      while (descriptions.length < options.length) {
+        descriptions.push(`About: ${options[descriptions.length]}`);
+      }
+      let defaultOption = String(sim.defaultOption || options[0]);
+      if (!options.includes(defaultOption)) defaultOption = options[0];
+      return {
+        ...base,
+        dropdownLabel: String(sim.dropdownLabel || 'Choose').slice(0, 120),
+        options,
+        optionDescriptions: descriptions.slice(0, options.length),
+        defaultOption,
+        readoutTitle: String(sim.readoutTitle || 'Selection').slice(0, 120)
+      };
+    }
+
+    return null;
+  }
+
+  legacySimulationToFixedPattern(sim) {
+    const elements = Array.isArray(sim.interactiveElements) ? sim.interactiveElements : [];
+    const dropdown = elements.find((e) => e.type === 'dropdown');
+    const sliders = elements.filter((e) => e.type === 'slider');
+    const numericLike = elements.filter((e) => e.type === 'slider' || e.type === 'input');
+
+    if (dropdown) {
+      const opts = Array.isArray(dropdown.range)
+        ? dropdown.range.map((x) => String(x).trim()).filter(Boolean)
+        : String(dropdown.range || '')
+            .split(/[,|]/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+      return this.normalizeFixedPatternSim('dropdown_readout', {
+        ...sim,
+        dropdownLabel: dropdown.name || 'Choose',
+        options: opts.length >= 2 ? opts : ['A', 'B'],
+        optionDescriptions: (opts.length >= 2 ? opts : ['A', 'B']).map(
+          (_, i) => String(dropdown.description || sim.description || `Item ${i + 1}`)
+        ),
+        defaultOption: String(dropdown.defaultValue || opts[0] || 'A')
+      });
+    }
+
+    if (numericLike.length >= 2) {
+      const a = numericLike[0];
+      const b = numericLike[1];
+      const dp0 = Array.isArray(sim.dataPoints) ? sim.dataPoints[0] : null;
+      const combine = String(dp0?.combine || 'sum').toLowerCase();
+      return this.normalizeFixedPatternSim('dual_input_calculate', {
+        ...sim,
+        inputALabel: a.name || 'Input A',
+        inputBLabel: b.name || 'Input B',
+        inputADefault: this.coerceNumber(a.defaultValue, 0),
+        inputBDefault: this.coerceNumber(b.defaultValue, 0),
+        combine: ['sum', 'product', 'mean'].includes(combine) ? combine : 'sum',
+        readoutLabel: dp0?.label || 'Result',
+        readoutDescription: dp0?.description || ''
+      });
+    }
+
+    const el = sliders[0] || numericLike[0];
+    if (el) {
+      const { min, max } = this.parseSliderBoundsFromRange(el.range);
+      const dp0 = Array.isArray(sim.dataPoints) ? sim.dataPoints[0] : null;
+      return this.normalizeFixedPatternSim('slider_readout', {
+        ...sim,
+        sliderLabel: el.name || 'Value',
+        sliderMin: min,
+        sliderMax: max,
+        sliderDefault: this.coerceNumber(el.defaultValue, min),
+        sliderUnit: el.unit || '',
+        readoutLabel: dp0?.label || 'Readout',
+        readoutDescription: dp0?.description || el.description || ''
+      });
+    }
+
+    return this.normalizeFixedPatternSim('slider_readout', {
+      ...sim,
+      sliderLabel: 'Explore',
+      sliderMin: 0,
+      sliderMax: 10,
+      sliderDefault: 0,
+      readoutLabel: 'Value',
+      readoutDescription: sim.description || ''
+    });
+  }
+
   /**
    * Analyze if content is educational using the SAME logic as other learning features
    */
@@ -296,108 +470,120 @@ Be strict in your analysis - only classify content as educational if it genuinel
     }
 
     const buildPrompt = (maxChars) => `
-    You are creating INTERACTIVE SIMULATIONS for sensing learners who need hands-on, concrete experiences.
+    You are creating INTERACTIVE LABS for sensing learners. The UI only supports THREE fixed patterns.
+    You MUST set "labPattern" on every simulation to exactly one of:
+    - "slider_readout" — one numeric slider and one live numeric readout tied to that slider
+    - "dual_input_calculate" — two numeric inputs and one readout = sum OR product OR mean of the two
+    - "dropdown_readout" — a dropdown of string options and a text readout that explains the selected option
 
     Document Content:
     ${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
 
-    Sensing learners need:
-    1. CONCRETE, manipulatable elements they can interact with
-    2. REAL DATA and factual information they can verify
-    3. STEP-BY-STEP procedures with immediate feedback
-    4. PRACTICAL applications they can see and touch
+    Return JSON with exactly 3 simulations when the document allows; use each labPattern at least once (order flexible).
+    All copy, numbers, ranges, and option text must come from the document's ideas (no generic placeholders like "Option 1").
 
-    Create interactive simulations based on the document content:
+    Schema examples (each object must match ONE pattern only):
 
-    {
-      "simulations": [
-        {
-          "title": "Simulation Name",
-          "description": "What this simulation teaches and how it works",
-          "type": "calculator|graph|experiment|data_analysis|virtual_lab",
-          "difficulty": "beginner|intermediate|advanced",
-          "estimatedTime": "10-15 min",
-          "interactiveElements": [
-            {
-              "name": "Element Name",
-              "type": "slider|input|dropdown|button|graph",
-              "description": "What this element controls",
-              "defaultValue": "default setting",
-              "range": "min-max values or options",
-              "unit": "measurement unit if applicable"
-            }
-          ],
-          "learningObjectives": ["objective 1", "objective 2", "objective 3"],
-          "realWorldApplication": "How this applies in practice",
-          "dataPoints": [
-            {
-              "label": "Data Point Name",
-              "value": "sample or seed value shown before interaction",
-              "description": "What this data represents",
-              "fromElements": ["optional: exact names of interactiveElements that drive this readout"],
-              "combine": "sum | product | mean | min | max | first | last — how to merge numeric fromElements (default sum). For a single slider/input use one name and combine first."
-            }
-          ],
-          "stepByStepGuide": [
-            "Step 1: Clear instruction",
-            "Step 2: What to do next",
-            "Step 3: Expected result"
-          ],
-          "expectedOutcomes": "What learners should observe and learn"
-        }
-      ]
-    }
+    slider_readout:
+    { "labPattern":"slider_readout", "title":"...", "description":"...", "difficulty":"beginner|intermediate|advanced",
+      "estimatedTime":"10-15 min", "sliderLabel":"...", "sliderMin":0, "sliderMax":100, "sliderDefault":10,
+      "sliderStep":1, "sliderUnit":"", "readoutLabel":"...", "readoutDescription":"...",
+      "learningObjectives":["..."], "realWorldApplication":"...", "stepByStepGuide":["..."], "expectedOutcomes":"..." }
 
-    For EVERY dataPoint, set "fromElements" to the interactive element NAME(s) whose values should update that readout live.
-    Use "combine": "first" when a single control maps to a readout; use "sum" or "product" when multiple numeric inputs feed one result.
-    Optional on a "button" element: same "fromElements" + "combine" so the UI can echo the same rule on Calculate.
+    dual_input_calculate:
+    { "labPattern":"dual_input_calculate", "title":"...", "description":"...", "difficulty":"...",
+      "estimatedTime":"...", "inputALabel":"...", "inputBLabel":"...", "inputADefault":1, "inputBDefault":2,
+      "combine":"sum|product|mean", "readoutLabel":"...", "readoutDescription":"...",
+      "learningObjectives":["..."], "realWorldApplication":"...", "stepByStepGuide":["..."], "expectedOutcomes":"..." }
 
-    Focus on creating CONCRETE, MANIPULATABLE simulations that sensing learners can interact with directly.
-    Base everything on FACTUAL content from the document.
+    dropdown_readout:
+    { "labPattern":"dropdown_readout", "title":"...", "description":"...", "difficulty":"...",
+      "estimatedTime":"...", "dropdownLabel":"...", "options":["...","..."],
+      "optionDescriptions":["...","..."] (same length as options), "defaultOption": must equal options[0] or another option value,
+      "readoutTitle":"...", "learningObjectives":["..."], "realWorldApplication":"...", "stepByStepGuide":["..."], "expectedOutcomes":"..." }
+
+    Do NOT include interactiveElements, dataPoints, buttons, graphs, or any other controls.
     `;
 
-    const simulationsPayload = await this.generateStrictJsonWith413Retry(
-      buildPrompt,
-      `{
+    const schemaDescription = `{
   "simulations": [
     {
+      "labPattern": "slider_readout",
       "title": "string",
       "description": "string",
-      "type": "calculator|graph|experiment|data_analysis|virtual_lab",
       "difficulty": "beginner|intermediate|advanced",
       "estimatedTime": "string",
-      "interactiveElements": [
-        { "name": "string", "type": "slider|input|dropdown|button|graph", "description": "string", "defaultValue": "string", "range": "string or array", "unit": "string" }
-      ],
+      "sliderLabel": "string",
+      "sliderMin": 0,
+      "sliderMax": 100,
+      "sliderDefault": 0,
+      "sliderStep": 1,
+      "sliderUnit": "string",
+      "readoutLabel": "string",
+      "readoutDescription": "string",
       "learningObjectives": ["string"],
       "realWorldApplication": "string",
-      "dataPoints": [
-        { "label": "string", "value": "string", "description": "string", "fromElements": ["string"], "combine": "sum|product|mean|min|max|first|last" }
-      ],
+      "stepByStepGuide": ["string"],
+      "expectedOutcomes": "string"
+    },
+    {
+      "labPattern": "dual_input_calculate",
+      "title": "string",
+      "description": "string",
+      "difficulty": "beginner|intermediate|advanced",
+      "estimatedTime": "string",
+      "inputALabel": "string",
+      "inputBLabel": "string",
+      "inputADefault": 0,
+      "inputBDefault": 0,
+      "combine": "sum|product|mean",
+      "readoutLabel": "string",
+      "readoutDescription": "string",
+      "learningObjectives": ["string"],
+      "realWorldApplication": "string",
+      "stepByStepGuide": ["string"],
+      "expectedOutcomes": "string"
+    },
+    {
+      "labPattern": "dropdown_readout",
+      "title": "string",
+      "description": "string",
+      "difficulty": "beginner|intermediate|advanced",
+      "estimatedTime": "string",
+      "dropdownLabel": "string",
+      "options": ["string"],
+      "optionDescriptions": ["string"],
+      "defaultOption": "string",
+      "readoutTitle": "string",
+      "learningObjectives": ["string"],
+      "realWorldApplication": "string",
       "stepByStepGuide": ["string"],
       "expectedOutcomes": "string"
     }
   ]
-}`
-    );
+}`;
 
-    let simulations = this.normalizeSimulationsPayload(simulationsPayload);
+    const simulationsPayload = await this.generateStrictJsonWith413Retry(buildPrompt, schemaDescription);
 
-    // Recovery pass: ask explicitly for a bare simulations array if model used a wrong shape.
-    if (!simulations.length) {
+    let rawList = this.normalizeSimulationsPayload(simulationsPayload);
+
+    // Recovery pass: fixed patterns only
+    if (!rawList.length) {
       const rescuePayload = await this.generateStrictJsonWith413Retry(
         (maxChars) => `
-Return ONLY JSON in this exact shape:
-{ "simulations": [ { "title": "string", "description": "string", "type": "calculator|graph|experiment|data_analysis|virtual_lab", "difficulty": "beginner|intermediate|advanced", "estimatedTime": "string", "interactiveElements": [ { "name": "string", "type": "slider|input|dropdown|button|graph", "description": "string", "defaultValue": "string", "range": "string or array", "unit": "string" } ], "learningObjectives": ["string"], "realWorldApplication": "string", "dataPoints": [ { "label": "string", "value": "string", "description": "string", "fromElements": ["string"], "combine": "sum|product|mean|min|max|first|last" } ], "stepByStepGuide": ["string"], "expectedOutcomes": "string" } ] }
+Return ONLY JSON: { "simulations": [ ... ] }
+Each item MUST have "labPattern" exactly "slider_readout" OR "dual_input_calculate" OR "dropdown_readout" and all fields for that pattern from the schema.
+No interactiveElements or dataPoints.
 
-Source document excerpt:
+Document excerpt:
 ${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
 `,
-        `{ "simulations": [ { "title": "string", "description": "string" } ] }`
+        schemaDescription
       );
-      simulations = this.normalizeSimulationsPayload(rescuePayload);
+      rawList = this.normalizeSimulationsPayload(rescuePayload);
     }
 
+    const simulations = rawList.map((s) => this.normalizeSimulation(s)).filter(Boolean);
     if (!simulations.length) throw new Error('AI returned no interactive simulations');
     return simulations;
   }
