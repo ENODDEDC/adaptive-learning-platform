@@ -2439,3 +2439,29 @@ Slide-up animation for bottom notifications */
   scrollbar-width: thin;
   scrollbar-color: #888 #f1f1f1;
 }
+
+/* Global Learning overlay — vertical scrollbar (zinc, matches shell) */
+.global-learning-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(82 82 91) rgb(24 24 27);
+}
+
+.global-learning-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.global-learning-scroll::-webkit-scrollbar-track {
+  background: rgb(24 24 27);
+  border-radius: 9999px;
+  margin-block: 6px;
+}
+
+.global-learning-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgb(91 91 102) 0%, rgb(63 63 70) 100%);
+  border-radius: 9999px;
+  border: 2px solid rgb(24 24 27);
+}
+
+.global-learning-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgb(113 113 122) 0%, rgb(82 82 91) 100%);
+}

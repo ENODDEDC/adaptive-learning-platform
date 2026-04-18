@@ -643,7 +643,7 @@ const GlobalLearning = ({ isActive, onClose, docxContent, fileName, pdfSource = 
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="global-learning-scroll flex-1 overflow-y-auto overflow-x-hidden">
         <div className="mx-auto max-w-[min(1200px,calc(100%-1rem))] px-4 py-5 sm:px-6 sm:py-7">
           {activeTab === 'bigpicture' && renderBigPicture()}
           {activeTab === 'interconnections' && renderInterconnections()}
