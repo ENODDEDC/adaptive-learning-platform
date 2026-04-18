@@ -1,6 +1,20 @@
 import { NextResponse } from 'next/server';
 import visualContentService from '@/services/visualContentService';
 
+function coerceDocxText(raw) {
+  if (raw == null) return '';
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object') {
+    if (typeof raw.text === 'string') return raw.text;
+    if (typeof raw.rawText === 'string') return raw.rawText;
+  }
+  try {
+    return String(raw);
+  } catch {
+    return '';
+  }
+}
+
 export async function POST(request) {
   console.log('🎨 =================================');
   console.log('🎨 VISUAL CONTENT API ENDPOINT CALLED');
@@ -8,7 +22,9 @@ export async function POST(request) {
   
   try {
     console.log('📥 Parsing request body...');
-    const { docxText, contentType = 'diagram' } = await request.json();
+    const body = await request.json();
+    const docxText = coerceDocxText(body?.docxText);
+    const contentType = body?.contentType ?? 'diagram';
     
     console.log('📝 Request data received:');
     console.log('  - Text length:', docxText?.length);

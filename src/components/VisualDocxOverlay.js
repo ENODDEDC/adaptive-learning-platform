@@ -1,20 +1,53 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { 
-  XMarkIcon, 
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import {
   ArrowPathIcon,
   ChevronLeftIcon,
-  ChevronRightIcon,
   PhotoIcon,
-  DocumentTextIcon
+  ChartBarIcon,
+  MapIcon,
+  ArrowsRightLeftIcon,
+  Squares2X2Icon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import VisualWireframe from './VisualWireframe';
+import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
+import { trackBehavior } from '@/utils/learningBehaviorTracker';
 
-const VisualDocxOverlay = ({ 
-  isActive, 
-  onClose, 
-  docxContent, 
+const IMMERSIVE_VISUAL_EVENT = 'assist-ed-immersive-visual-learning';
+
+const VISUAL_TYPES = [
+  {
+    key: 'diagram',
+    name: 'Overview',
+    hint: 'How pieces connect',
+    Icon: Squares2X2Icon
+  },
+  {
+    key: 'infographic',
+    name: 'Summary',
+    hint: 'Scan key points',
+    Icon: ChartBarIcon
+  },
+  {
+    key: 'mindmap',
+    name: 'Network',
+    hint: 'Ideas linked',
+    Icon: MapIcon
+  },
+  {
+    key: 'flowchart',
+    name: 'Steps',
+    hint: 'Order of work',
+    Icon: ArrowsRightLeftIcon
+  }
+];
+
+const VisualDocxOverlay = ({
+  isActive,
+  onClose,
+  docxContent,
   fileName,
   onVisualTypeChange,
   activeVisualType = 'diagram'
@@ -24,60 +57,26 @@ const VisualDocxOverlay = ({
   const [error, setError] = useState(null);
   const [concepts, setConcepts] = useState(null);
 
-  const visualTypes = [
-    {
-      key: 'diagram',
-      name: 'Concept Overview',
-      icon: PhotoIcon,
-      description: 'Key concepts in organized cards',
-      tooltip: 'Displays main concepts in a structured grid layout',
-      color: 'from-blue-500 to-blue-600',
-      hoverColor: 'from-blue-600 to-blue-700',
-      activeColor: 'bg-blue-600'
-    },
-    {
-      key: 'infographic',
-      name: 'Summary Dashboard',
-      icon: DocumentTextIcon,
-      description: 'Key metrics and data points',
-      tooltip: 'Shows important statistics and insights in dashboard format',
-      color: 'from-emerald-500 to-emerald-600',
-      hoverColor: 'from-emerald-600 to-emerald-700',
-      activeColor: 'bg-emerald-600'
-    },
-    {
-      key: 'mindmap',
-      name: 'Concept Network',
-      icon: PhotoIcon,
-      description: 'Interconnected concept relationships',
-      tooltip: 'Shows how concepts connect and relate to each other',
-      color: 'from-purple-500 to-purple-600',
-      hoverColor: 'from-purple-600 to-purple-700',
-      activeColor: 'bg-purple-600'
-    },
-    {
-      key: 'flowchart',
-      name: 'Process Timeline',
-      icon: DocumentTextIcon,
-      description: 'Step-by-step process sequence',
-      tooltip: 'Displays processes in chronological timeline format',
-      color: 'from-orange-500 to-orange-600',
-      hoverColor: 'from-orange-600 to-orange-700',
-      activeColor: 'bg-orange-600'
+  useLearningModeTracking('visualLearning', isActive);
+
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined' || !isActive) return undefined;
+    document.body.setAttribute('data-immersive-visual-learning', 'true');
+    window.dispatchEvent(new CustomEvent(IMMERSIVE_VISUAL_EVENT, { detail: { open: true } }));
+    try {
+      window.dispatchEvent(new Event('collapseMainSidebar'));
+    } catch {
+      // ignore
     }
-  ];
+    return () => {
+      document.body.removeAttribute('data-immersive-visual-learning');
+      window.dispatchEvent(new CustomEvent(IMMERSIVE_VISUAL_EVENT, { detail: { open: false } }));
+    };
+  }, [isActive]);
 
-  const currentVisualType = visualTypes.find(v => v.key === activeVisualType) || visualTypes[0];
-
-  useEffect(() => {
-    if (isActive && docxContent) {
-      generateAllVisuals();
-    }
-  }, [isActive, docxContent]);
-
-  const generateAllVisuals = async () => {
+  const generateAllVisuals = useCallback(async () => {
     if (!docxContent || !docxContent.trim()) {
-      setError('No document content available for visual generation');
+      setError('No document text to visualize.');
       return;
     }
 
@@ -92,100 +91,147 @@ const VisualDocxOverlay = ({
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody.error || `Request failed (${response.status})`);
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
         setVisuals(result.visuals || {});
         setConcepts(result.concepts || null);
+        trackBehavior('visual_batch_generated', { mode: 'visualLearning', fileName });
       } else {
-        throw new Error(result.error || 'Failed to generate visuals');
+        throw new Error(result.error || 'Generation failed');
       }
-    } catch (error) {
-      console.error('Error generating visuals:', error);
-      setError(error.message);
+    } catch (e) {
+      console.error('Visual generation:', e);
+      setError(e.message || 'Could not generate visuals');
     } finally {
       setLoading(false);
     }
-  };
+  }, [docxContent, fileName]);
 
-  const generateSingleVisual = async (type) => {
-    if (!docxContent || !docxContent.trim()) {
-      setError('No document content available for visual generation');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/visual-content/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          docxText: docxContent,
-          contentType: type
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+  const generateSingleVisual = useCallback(
+    async (type) => {
+      if (!docxContent || !docxContent.trim()) {
+        setError('No document text to visualize.');
+        return;
       }
 
-      const result = await response.json();
-      
-      if (result.success) {
-        setVisuals(prev => ({
-          ...prev,
-          [type]: result.visual
-        }));
-        setConcepts(result.concepts || concepts);
-      } else {
-        throw new Error(result.error || 'Failed to generate visual');
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch('/api/visual-content/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            docxText: docxContent,
+            contentType: type
+          })
+        });
+
+        if (!response.ok) {
+          const errBody = await response.json().catch(() => ({}));
+          throw new Error(errBody.error || `Request failed (${response.status})`);
+        }
+
+        const result = await response.json();
+        const piece = result.visualContent ?? result.visual;
+
+        if (result.success && piece) {
+          setVisuals((prev) => ({ ...prev, [type]: piece }));
+          if (result.concepts) setConcepts(result.concepts);
+          trackBehavior('visual_single_generated', { mode: 'visualLearning', type, fileName });
+        } else {
+          throw new Error(result.error || 'Generation failed');
+        }
+      } catch (e) {
+        console.error(`Visual ${type}:`, e);
+        setError(e.message || 'Could not generate');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error(`Error generating ${type}:`, error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
+    },
+    [docxContent, fileName]
+  );
+
+  useEffect(() => {
+    if (isActive && docxContent) {
+      generateAllVisuals();
     }
-  };
+  }, [isActive, docxContent, generateAllVisuals]);
+
+  useEffect(() => {
+    if (!isActive) {
+      setVisuals({});
+      setConcepts(null);
+      setError(null);
+    }
+  }, [isActive]);
 
   const handleVisualTypeChange = (newType) => {
     onVisualTypeChange(newType);
-    
-    // Generate the visual if it doesn't exist
+    trackBehavior('tab_switched', { mode: 'visualLearning', tab: newType });
     if (!visuals[newType]) {
       generateSingleVisual(newType);
     }
   };
 
-  const renderVisualContent = () => {
-    const visual = visuals[activeVisualType];
-    
-    if (loading) {
+  const currentMeta = VISUAL_TYPES.find((v) => v.key === activeVisualType) || VISUAL_TYPES[0];
+  const visual = visuals[activeVisualType];
+
+  const downloadImage = (imageData, mimeType, suffix) => {
+    try {
+      const link = document.createElement('a');
+      link.href = `data:${mimeType || 'image/png'};base64,${imageData}`;
+      link.download = `${(fileName || 'document').replace(/\.[^/.]+$/, '')}_${suffix}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const formatMarkdownText = (text) => {
+    if (!text) return '';
+    let formatted = text
+      .replace(/^### (.*$)/gim, '<h3 class="text-base font-semibold text-slate-100 mt-3 mb-1">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-lg font-semibold text-slate-50 mt-4 mb-2">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-xl font-bold text-white mt-4 mb-2">$1</h1>')
+      .replace(/^[\s]*[\*\-] (.*$)/gim, '<li class="ml-3 mb-1 text-slate-300">$1</li>')
+      .replace(/^[\s]*\d+\. (.*$)/gim, '<li class="ml-3 mb-1 text-slate-300">$1</li>')
+      .replace(/\n/g, '<br>');
+    formatted = formatted.replace(/(<li class="ml-3 mb-1 text-slate-300">.*?<\/li>(?:<br>)*)+/g, (match) => {
+      const clean = match.replace(/<br>/g, '');
+      return `<ul class="list-disc list-inside space-y-1 my-2 text-slate-300">${clean}</ul>`;
+    });
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100">$1</strong>');
+    return formatted;
+  };
+
+  const renderMainVisual = () => {
+    if (loading && !visual) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-          <p className="text-gray-600">Generating {currentVisualType.name}...</p>
+        <div className="flex min-h-[320px] flex-1 flex-col items-center justify-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-10">
+          <div className="h-11 w-11 animate-spin rounded-full border-2 border-slate-600 border-t-emerald-400" />
+          <p className="text-center text-sm text-slate-400">Building {currentMeta.name.toLowerCase()} from your document…</p>
         </div>
       );
     }
 
-    if (error) {
+    if (error && !visual) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="text-red-500 text-center">
-            <p className="text-lg font-semibold">Visual Generation Failed</p>
-            <p className="text-sm text-gray-600 mt-2">{error}</p>
-          </div>
+        <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-2xl border border-red-900/40 bg-red-950/20 p-8 text-center">
+          <p className="text-sm text-red-200/90">{error}</p>
           <button
-            onClick={generateAllVisuals}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            type="button"
+            onClick={() => generateAllVisuals()}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-500"
           >
-            Try Again
+            Try again
           </button>
         </div>
       );
@@ -193,183 +239,209 @@ const VisualDocxOverlay = ({
 
     if (!visual) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="text-gray-500 text-center">
-            <p className="text-lg font-semibold">No Visual Available</p>
-            <p className="text-sm text-gray-600 mt-2">Click generate to create {currentVisualType.name}</p>
-          </div>
+        <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-8 text-center">
+          <PhotoIcon className="h-10 w-10 text-slate-600" />
+          <p className="text-sm text-slate-400">Nothing for this view yet.</p>
           <button
+            type="button"
             onClick={() => generateSingleVisual(activeVisualType)}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            disabled={loading}
+            className="rounded-lg border border-emerald-700/50 bg-emerald-950/40 px-4 py-2 text-sm font-medium text-emerald-100 hover:bg-emerald-900/50 disabled:opacity-50"
           >
-            Generate {currentVisualType.name}
+            Generate {currentMeta.name}
           </button>
         </div>
       );
     }
 
-    // Handle wireframe visual
+    if (visual.error) {
+      return (
+        <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-amber-900/35 bg-amber-950/15 p-8 text-center">
+          <p className="text-sm text-amber-100/90">{visual.error}</p>
+          <button
+            type="button"
+            onClick={() => generateSingleVisual(activeVisualType)}
+            className="rounded-lg bg-slate-800 px-4 py-2 text-sm text-slate-100 hover:bg-slate-700"
+          >
+            Regenerate
+          </button>
+        </div>
+      );
+    }
+
     if (visual.isWireframe && visual.wireframeData) {
       return (
-        <div className="space-y-4">
-          <VisualWireframe
-            wireframeData={visual.wireframeData}
-            contentType={activeVisualType}
+        <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
+          <VisualWireframe wireframeData={visual.wireframeData} contentType={activeVisualType} />
+        </div>
+      );
+    }
+
+    if (visual.isFallback && visual.textDescription) {
+      return (
+        <div className="rounded-2xl border border-amber-900/30 bg-amber-950/10 p-5 sm:p-6">
+          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-amber-200/80">Text layout (no image)</p>
+          <div
+            className="prose prose-invert prose-sm max-w-none text-slate-300"
+            dangerouslySetInnerHTML={{ __html: formatMarkdownText(visual.textDescription) }}
           />
         </div>
       );
     }
 
-    // Handle fallback text description
-    if (visual.isFallback && visual.textDescription) {
+    if (visual.imageData) {
       return (
-        <div className="space-y-4">
-          
-          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-6 border border-yellow-200">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <DocumentTextIcon className="w-6 h-6 text-yellow-600" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900 mb-3">Visual Design Description</h4>
-                <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                  <div dangerouslySetInnerHTML={{ __html: formatMarkdownText(visual.textDescription) }} />
-                </div>
-              </div>
-            </div>
+        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-xl">
+          <div className="absolute right-3 top-3 z-10 flex gap-2">
+            <button
+              type="button"
+              onClick={() => downloadImage(visual.imageData, visual.mimeType, activeVisualType)}
+              className="rounded-lg border border-slate-600 bg-slate-950/90 p-2 text-slate-200 backdrop-blur hover:bg-slate-800"
+              title="Download PNG"
+            >
+              <ArrowDownTrayIcon className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => generateSingleVisual(activeVisualType)}
+              disabled={loading}
+              className="rounded-lg border border-slate-600 bg-slate-950/90 p-2 text-slate-200 backdrop-blur hover:bg-slate-800 disabled:opacity-50"
+              title="Regenerate"
+            >
+              <ArrowPathIcon className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex max-h-[min(72vh,900px)] min-h-[240px] items-center justify-center overflow-auto p-3 sm:p-5">
+            <img
+              src={`data:${visual.mimeType || 'image/png'};base64,${visual.imageData}`}
+              alt={`${currentMeta.name} — ${fileName || 'document'}`}
+              className="max-h-full w-auto max-w-full rounded-lg object-contain"
+            />
           </div>
         </div>
       );
     }
 
-    // Handle normal image content
-    return (
-      <div className="space-y-6">
-        {visual.imageData && (
-          <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-lg">
-            <img
-              src={`data:image/png;base64,${visual.imageData}`}
-              alt={`${currentVisualType.name} for ${fileName}`}
-              className="w-full h-auto object-contain"
-              style={{ maxHeight: '500px' }}
-            />
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const formatMarkdownText = (text) => {
-    if (!text) return '';
-    let formatted = text
-      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-gray-900 mt-4 mb-2">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold text-gray-900 mt-6 mb-3">$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-gray-900 mt-6 mb-4">$1</h1>')
-      .replace(/^[\s]*[\*\-] (.*$)/gim, '<li class="ml-4 mb-1">$1</li>')
-      .replace(/^[\s]*\d+\. (.*$)/gim, '<li class="ml-4 mb-1">$1</li>')
-      .replace(/\n/g, '<br>');
-
-    formatted = formatted.replace(/(<li class="ml-4 mb-1">.*?<\/li>(?:<br>)*)+/g, (match) => {
-      const cleanMatch = match.replace(/<br>/g, '');
-      return `<ul class="list-disc list-inside space-y-1 my-3">${cleanMatch}</ul>`;
-    });
-
-    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>');
-    formatted = formatted.replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g, '<em class="italic">$1</em>');
-    return formatted;
+    return null;
   };
 
   if (!isActive) return null;
 
   return (
-    <div className="absolute inset-0 bg-white z-50 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50">
-        <div className="flex items-center space-x-4">
+    <div className="fixed inset-0 z-[100015] flex flex-col bg-slate-950 text-slate-100 antialiased">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800/90 px-3 py-2.5 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2">
           <button
+            type="button"
             onClick={onClose}
-            className="p-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+            className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-emerald-200"
             title="Back to document"
           >
-            <ChevronLeftIcon className="w-6 h-6" />
+            <ChevronLeftIcon className="h-5 w-5" />
           </button>
-
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg">
-              <PhotoIcon className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Visual Learning</h2>
-              <p className="text-sm text-gray-600 font-medium">{fileName}</p>
-            </div>
+          <div className="min-w-0">
+            <h1 className="truncate text-sm font-semibold text-white sm:text-base">Visual</h1>
+            <p className="truncate text-xs text-slate-500">{fileName}</p>
           </div>
         </div>
-
-        <div className="flex items-center space-x-3">
+        <div className="flex shrink-0 items-center gap-2">
           <button
+            type="button"
+            onClick={() => generateSingleVisual(activeVisualType)}
+            disabled={loading}
+            className="hidden rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-800 sm:inline-flex sm:items-center sm:gap-1.5 disabled:opacity-50"
+          >
+            <ArrowPathIcon className="h-3.5 w-3.5" />
+            This view
+          </button>
+          <button
+            type="button"
             onClick={generateAllVisuals}
             disabled={loading}
-            className="group relative px-6 py-3 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-800 text-white rounded-2xl hover:from-purple-700 hover:via-purple-800 hover:to-indigo-900 transition-all duration-300 disabled:opacity-50 shadow-lg hover:shadow-2xl font-semibold text-sm tracking-wide overflow-hidden"
-            title="Generate all visual learning formats"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-slate-950 hover:bg-emerald-500 disabled:opacity-50 sm:text-sm"
           >
-            {/* Animated background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%]"></div>
-
-            {loading ? (
-              <div className="flex items-center space-x-3 relative z-10">
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span className="font-medium">Generating...</span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-3 relative z-10">
-                <div className="p-1 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors duration-300">
-                  <ArrowPathIcon className="w-4 h-4" />
-                </div>
-                <span className="font-semibold tracking-wide">Generate All</span>
-              </div>
-            )}
+            {loading ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-900/30 border-t-slate-900" /> : <ArrowPathIcon className="h-4 w-4" />}
+            Refresh all
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Visual Type Selector - Compact Design */}
-      <div className="p-2 border-b border-gray-200 bg-gray-50/50">
-        <div className="flex items-center justify-center space-x-1 overflow-x-auto">
-          {visualTypes.map((type) => {
-            const Icon = type.icon;
-            const isActive = type.key === activeVisualType;
-            const hasVisual = visuals[type.key];
-
-            return (
-              <button
-                key={type.key}
-                onClick={() => handleVisualTypeChange(type.key)}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 whitespace-nowrap ${
-                  isActive
-                    ? `${type.activeColor} text-white shadow-md`
-                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 hover:border-gray-300'
-                }`}
-                title={type.tooltip}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{type.name}</span>
-                {hasVisual && (
-                  <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-green-500'}`} />
-                )}
-              </button>
-            );
-          })}
+      <details className="group shrink-0 border-b border-slate-800/80 bg-slate-900/35 [&_summary::-webkit-details-marker]:hidden">
+        <summary className="cursor-pointer list-none px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500 transition hover:bg-slate-800/50 hover:text-slate-400">
+          <span className="inline-flex items-center gap-2">
+            From your document
+            <span className="text-slate-600 group-open:rotate-180 motion-safe:transition-transform">▼</span>
+          </span>
+        </summary>
+        <div className="max-h-44 overflow-y-auto border-t border-slate-800/60 px-3 py-2">
+          {concepts ? (
+            <div className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <p className="mb-1 text-[10px] uppercase text-slate-500">Focus</p>
+                <p className="font-medium text-emerald-100/95">{concepts.mainTopic}</p>
+              </div>
+              {concepts.keyConcepts?.length ? (
+                <div>
+                  <p className="mb-1 text-[10px] uppercase text-slate-500">Ideas</p>
+                  <ul className="space-y-1 text-slate-300">
+                    {concepts.keyConcepts.slice(0, 8).map((c, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="font-mono text-slate-600">{i + 1}.</span>
+                        <span>{c}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {concepts.processes?.length ? (
+                <div>
+                  <p className="mb-1 text-[10px] uppercase text-slate-500">Steps</p>
+                  <ol className="list-decimal space-y-1 pl-4 text-slate-300">
+                    {concepts.processes.slice(0, 6).map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ol>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">{loading ? 'Extracting structure…' : 'Open a document with text, then refresh.'}</p>
+          )}
         </div>
-      </div>
+      </details>
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto p-8">
-          <div className="w-full">
-            {renderVisualContent()}
-          </div>
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-slate-800/80 px-2 py-2 sm:px-3" aria-label="Visual type">
+            {VISUAL_TYPES.map((t) => {
+              const on = activeVisualType === t.key;
+              const Icon = t.Icon;
+              const ready = Boolean(visuals[t.key]);
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => handleVisualTypeChange(t.key)}
+                  className={`flex min-w-[7.5rem] shrink-0 flex-col items-start rounded-xl border px-3 py-2 text-left transition sm:min-w-0 sm:flex-1 ${
+                    on
+                      ? 'border-emerald-600/50 bg-emerald-950/35 text-emerald-50 ring-1 ring-emerald-500/25'
+                      : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                  }`}
+                >
+                  <span className="flex w-full items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 opacity-90" />
+                    <span className="text-xs font-semibold sm:text-sm">{t.name}</span>
+                    {ready ? <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" title="Ready" /> : null}
+                  </span>
+                  <span className="mt-0.5 hidden text-[10px] text-slate-500 sm:block">{t.hint}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+        <div className="active-learning-scroll min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
+          <div className="mx-auto max-w-[min(1200px,100%)]">{renderMainVisual()}</div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

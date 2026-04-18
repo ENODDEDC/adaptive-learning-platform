@@ -1,5 +1,27 @@
 import { GroqGenAI as GoogleGenerativeAI } from '@/lib/groqGenAI';
 
+/** Coerce client / PDF pipeline payloads so `.trim()` never throws. */
+function normalizeDocxText(docxText) {
+  if (docxText == null) return '';
+  if (typeof docxText === 'string') return docxText;
+  if (typeof docxText === 'object') {
+    if (typeof docxText.text === 'string') return docxText.text;
+    if (typeof docxText.rawText === 'string') return docxText.rawText;
+  }
+  try {
+    return String(docxText);
+  } catch {
+    return '';
+  }
+}
+
+/** Short excerpt so image / wireframe prompts stay grounded in the real document. */
+function clipDocExcerpt(docxText, maxLen = 2000) {
+  const t = normalizeDocxText(docxText).replace(/\s+/g, ' ').trim();
+  if (!t) return '';
+  return t.length <= maxLen ? t : `${t.slice(0, maxLen)}…`;
+}
+
 function normalizeConcepts(raw) {
   const c = raw && typeof raw === 'object' ? raw : {};
   const rel = Array.isArray(c.relationships)
@@ -58,7 +80,8 @@ class VisualContentService {
    * text-only shim, so we always accept and rely on the client gate.
    */
   async analyzeContentForEducation(docxText) {
-    if (!docxText || docxText.trim().length < 50) {
+    const text = normalizeDocxText(docxText).trim();
+    if (!text || text.length < 50) {
       return {
         isEducational: false,
         reasoning: 'Content too short to analyze',
@@ -78,11 +101,8 @@ class VisualContentService {
    * Generate visual content based on document text (with educational analysis)
    */
   async generateVisualContent(docxText, contentType = 'diagram') {
+    docxText = normalizeDocxText(docxText);
     this.initializeModels();
-
-    if (!this.genAI) {
-      throw new Error('Visual content model not available');
-    }
 
     const analysis = await this.analyzeContentForEducation(docxText);
     if (!analysis.isEducational) {
@@ -103,12 +123,22 @@ class VisualContentService {
   async extractKeyConcepts(docxText) {
     this.initializeModels();
 
-    if (!this.genAI) {
-      throw new Error('Google AI service not available');
-    }
-
-    const trimmed = typeof docxText === 'string' ? docxText.replace(/\s+/g, ' ').trim() : '';
+    const trimmed = normalizeDocxText(docxText).replace(/\s+/g, ' ').trim();
     const excerpt = trimmed.length > 6000 ? trimmed.slice(0, 6000) : trimmed;
+
+    const fallback = () =>
+      normalizeConcepts({
+        mainTopic: 'Document Overview',
+        keyConcepts: ['Main idea', 'Supporting detail', 'Key term'],
+        processes: ['Introduction', 'Body', 'Conclusion'],
+        relationships: [],
+        categories: ['General'],
+        visualType: 'diagram'
+      });
+
+    if (!this.genAI) {
+      return fallback();
+    }
 
     const prompt = [
       'You analyze a document and return ONLY a JSON object (no prose, no markdown, no code fences).',
@@ -133,16 +163,6 @@ class VisualContentService {
       excerpt,
       '"""'
     ].join('\n');
-
-    const fallback = () =>
-      normalizeConcepts({
-        mainTopic: 'Document Overview',
-        keyConcepts: ['Main idea', 'Supporting detail', 'Key term'],
-        processes: ['Introduction', 'Body', 'Conclusion'],
-        relationships: [],
-        categories: ['General'],
-        visualType: 'diagram'
-      });
 
     try {
       const model = this.genAI.getGenerativeModel({ model: 'gemini-flash-lite-latest' });
@@ -172,6 +192,7 @@ class VisualContentService {
    * Generate a diagram based on concepts
    */
   async generateDiagram(concepts, docxText) {
+    const excerpt = clipDocExcerpt(docxText);
     const prompt = `
     Create a clear, educational diagram that visualizes the main concepts from this document.
 
@@ -179,6 +200,9 @@ class VisualContentService {
     Key Concepts: ${concepts.keyConcepts.join(', ')}
     Processes: ${concepts.processes.join(', ')}
     Relationships: ${concepts.relationships.map(r => `${r.from} ${r.type} ${r.to}`).join(', ')}
+
+    Source excerpt (use for accuracy of labels and relationships; do not copy long passages verbatim):
+    """${excerpt}"""
 
     Create a professional, clean diagram that:
     - Uses clear labels and text
@@ -199,12 +223,16 @@ class VisualContentService {
    * Generate an infographic based on concepts
    */
   async generateInfographic(concepts, docxText) {
+    const excerpt = clipDocExcerpt(docxText);
     const prompt = `
     Create an educational infographic that summarizes the key information from this document.
 
     Main Topic: ${concepts.mainTopic}
     Key Concepts: ${concepts.keyConcepts.join(', ')}
     Categories: ${concepts.categories.join(', ')}
+
+    Source excerpt (facts and terms must match this material):
+    """${excerpt}"""
 
     Design a modern infographic that:
     - Has a clear title and subtitle
@@ -226,12 +254,16 @@ class VisualContentService {
    * Generate a concept network based on concepts
    */
   async generateMindMap(concepts, docxText) {
+    const excerpt = clipDocExcerpt(docxText);
     const prompt = `
     Create a concept network that shows the relationships and connections between concepts from this document.
 
     Main Topic: ${concepts.mainTopic}
     Key Concepts: ${concepts.keyConcepts.join(', ')}
     Categories: ${concepts.categories.join(', ')}
+
+    Source excerpt (node labels must reflect ideas from this text):
+    """${excerpt}"""
 
     IMPORTANT: This is a CONCEPT NETWORK, NOT a mind map. Do not use the word "mind map" anywhere in the image.
 
@@ -258,12 +290,16 @@ class VisualContentService {
    * Generate a process timeline based on processes
    */
   async generateFlowchart(concepts, docxText) {
+    const excerpt = clipDocExcerpt(docxText);
     const prompt = `
     Create a process timeline that shows the sequential steps and workflow described in this document.
 
     Main Topic: ${concepts.mainTopic}
     Processes: ${concepts.processes.join(', ')}
     Key Concepts: ${concepts.keyConcepts.join(', ')}
+
+    Source excerpt (step wording should follow this document):
+    """${excerpt}"""
 
     IMPORTANT: This is a PROCESS TIMELINE, NOT a flowchart. Do not use the word "flowchart" anywhere in the image.
 
@@ -348,19 +384,23 @@ class VisualContentService {
   /**
    * Generate CSS-based visual wireframe instead of image
    */
-  async generateVisualWireframe(prompt, contentType, concepts) {
+  async generateVisualWireframe(prompt, contentType, concepts, docxText = '') {
     this.initializeModels();
-    
-    if (!this.genAI) {
-      throw new Error('Text generation model not available');
-    }
 
     try {
+      if (!this.genAI) {
+        return this.buildFallbackWireframe(concepts, contentType);
+      }
+
+      const excerpt = clipDocExcerpt(docxText, 1500);
       const wireframePrompt = `
       Create a detailed wireframe structure using HTML/CSS for a ${contentType} about: ${concepts?.mainTopic || 'document content'}
       
       Key Concepts: ${concepts?.keyConcepts?.join(', ') || 'general concepts'}
       Processes: ${concepts?.processes?.join(', ') || 'general processes'}
+
+      Source excerpt (all section titles and bullets must be grounded in this material, not generic placeholders):
+      """${excerpt}"""
       
       IMPORTANT: For mind maps, keep section titles SHORT (2-4 words max) and content items concise (1-2 lines max) to prevent overlap issues.
       
@@ -530,6 +570,7 @@ class VisualContentService {
    * Generate multiple visual content types (with educational analysis)
    */
   async generateMultipleVisuals(docxText) {
+    docxText = normalizeDocxText(docxText);
     try {
       // First, analyze if content is educational
       const analysis = await this.analyzeContentForEducation(docxText);
@@ -619,7 +660,7 @@ class VisualContentService {
               prompt = 'Visual content description';
           }
 
-          const fallbackContent = await this.generateVisualWireframe(prompt, contentType, concepts);
+          const fallbackContent = await this.generateVisualWireframe(prompt, contentType, concepts, docxText);
           return fallbackContent;
         } catch (fallbackError) {
           console.error(`Error generating wireframe fallback for ${contentType}:`, fallbackError);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { 
   XMarkIcon, 
   PhotoIcon, 
@@ -8,10 +8,11 @@ import {
   ChartBarIcon,
   MapIcon,
   ArrowPathIcon,
-  ArrowDownTrayIcon,
-  EyeIcon
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import VisualWireframe from './VisualWireframe';
+
+const IMMERSIVE_VISUAL_EVENT = 'assist-ed-immersive-visual-learning';
 
 const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
   const [activeTab, setActiveTab] = useState('diagram');
@@ -20,6 +21,21 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [generatingAll, setGeneratingAll] = useState(false);
+
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined' || !isOpen) return undefined;
+    document.body.setAttribute('data-immersive-visual-learning', 'true');
+    window.dispatchEvent(new CustomEvent(IMMERSIVE_VISUAL_EVENT, { detail: { open: true } }));
+    try {
+      window.dispatchEvent(new Event('collapseMainSidebar'));
+    } catch {
+      // ignore
+    }
+    return () => {
+      document.body.removeAttribute('data-immersive-visual-learning');
+      window.dispatchEvent(new CustomEvent(IMMERSIVE_VISUAL_EVENT, { detail: { open: false } }));
+    };
+  }, [isOpen]);
 
   // Function to format markdown text to HTML
   const formatMarkdownText = (text) => {
@@ -57,7 +73,74 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
     return formatted;
   };
 
-  // Initialize content when modal opens
+  const generateAllVisuals = useCallback(async () => {
+    setGeneratingAll(true);
+    setError('');
+
+    if (!docxContent || !docxContent.trim()) {
+      setError('No document content available. Please ensure the document is properly loaded.');
+      setGeneratingAll(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/visual-content/generate-multiple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ docxText: docxContent })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to generate visual content');
+      }
+
+      const data = await response.json();
+      setVisuals(data.visuals || {});
+      setConcepts(data.concepts);
+    } catch (err) {
+      console.error('Error generating visual content:', err);
+      setError(`Visual content generation failed: ${err.message}`);
+    } finally {
+      setGeneratingAll(false);
+    }
+  }, [docxContent]);
+
+  const generateSingleVisual = useCallback(async (contentType) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/visual-content/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          docxText: docxContent,
+          contentType
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to generate visual content');
+      }
+
+      const data = await response.json();
+      const piece = data.visualContent ?? data.visual;
+      if (!piece) throw new Error('Empty response');
+      setVisuals((prev) => ({
+        ...prev,
+        [contentType]: piece
+      }));
+      if (data.concepts) setConcepts(data.concepts);
+    } catch (err) {
+      console.error(`Error generating ${contentType}:`, err);
+      setError(`Failed to generate ${contentType}: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [docxContent]);
+
   useEffect(() => {
     if (isOpen && !concepts) {
       if (docxContent && docxContent.trim()) {
@@ -66,9 +149,8 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
         setError('No document content available. Please ensure the document is properly loaded.');
       }
     }
-  }, [isOpen, docxContent]);
+  }, [isOpen, docxContent, generateAllVisuals]);
 
-  // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
       setVisuals({});
@@ -77,79 +159,6 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
       setActiveTab('diagram');
     }
   }, [isOpen]);
-
-  const generateAllVisuals = async () => {
-    setGeneratingAll(true);
-    setError('');
-    
-    // Validate content before making API call
-    if (!docxContent || !docxContent.trim()) {
-      setError('No document content available. Please ensure the document is properly loaded.');
-      setGeneratingAll(false);
-      return;
-    }
-    
-    try {
-      console.log('🎨 Generating all visual content...');
-      console.log('📝 Content length:', docxContent.length);
-      console.log('📄 Content preview:', docxContent.substring(0, 100) + '...');
-      
-      const response = await fetch('/api/visual-content/generate-multiple', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ docxText: docxContent })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate visual content');
-      }
-
-      const data = await response.json();
-      setVisuals(data.visuals || {});
-      setConcepts(data.concepts);
-      console.log('✅ All visual content generated successfully');
-    } catch (err) {
-      console.error('Error generating visual content:', err);
-      setError(`Visual content generation failed: ${err.message}`);
-    } finally {
-      setGeneratingAll(false);
-    }
-  };
-
-  const generateSingleVisual = async (contentType) => {
-    setLoading(true);
-    setError('');
-    
-    try {
-      console.log(`🎨 Generating ${contentType}...`);
-      const response = await fetch('/api/visual-content/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          docxText: docxContent,
-          contentType 
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate visual content');
-      }
-
-      const data = await response.json();
-      setVisuals(prev => ({
-        ...prev,
-        [contentType]: data.visualContent
-      }));
-      console.log(`✅ ${contentType} generated successfully`);
-    } catch (err) {
-      console.error(`Error generating ${contentType}:`, err);
-      setError(`Failed to generate ${contentType}: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const downloadImage = (imageData, filename) => {
     try {
@@ -161,16 +170,6 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error downloading image:', error);
-    }
-  };
-
-  const getVisualIcon = (type) => {
-    switch (type) {
-      case 'diagram': return DocumentTextIcon;
-      case 'infographic': return ChartBarIcon;
-      case 'mindmap': return MapIcon;
-      case 'flowchart': return ArrowPathIcon;
-      default: return PhotoIcon;
     }
   };
 
@@ -396,30 +395,28 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
 
-        <div className="inline-block w-full max-w-7xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-2xl">
-          {/* Enhanced Header */}
-          <div className="flex items-center justify-between p-8 border-b border-gray-200 bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 relative overflow-hidden">
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl shadow-2xl">
-                <PhotoIcon className="w-8 h-8 text-white" />
+        <div className="inline-block w-full max-w-7xl my-6 overflow-hidden text-left align-middle transition-all transform rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl sm:my-8">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/80 px-4 py-3 sm:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600/90 text-white">
+                <PhotoIcon className="h-5 w-5" />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Visual Learning Content</h2>
-                <p className="text-purple-100 text-base font-medium">{fileName}</p>
-                <p className="text-purple-200 text-sm mt-1">AI-powered visual representations</p>
+              <div className="min-w-0">
+                <h2 className="truncate text-base font-semibold text-white sm:text-lg">Visual</h2>
+                <p className="truncate text-xs text-slate-500 sm:text-sm">{fileName}</p>
               </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-3 text-white hover:bg-white/20 rounded-2xl transition-all duration-200 backdrop-blur-sm relative z-10"
+              className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+              aria-label="Close"
             >
-              <XMarkIcon className="w-7 h-7" />
+              <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
 
-          {/* Compact Tabs */}
-          <div className="flex border-b border-gray-200 bg-gray-50">
+          <div className="flex flex-wrap border-b border-slate-800 bg-slate-900/50">
             {[
               { id: 'diagram', label: 'Diagram', icon: DocumentTextIcon, config: getVisualConfig('diagram') },
               { id: 'infographic', label: 'Infographic', icon: ChartBarIcon, config: getVisualConfig('infographic') },
@@ -430,82 +427,91 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
               return (
                 <button
                   key={tab.id}
+                  type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 font-medium transition-all duration-200 border-b-2 ${
+                  className={`flex min-w-0 flex-1 items-center justify-center gap-2 border-b-2 px-3 py-2.5 text-xs font-medium transition sm:text-sm ${
                     isActive
-                      ? `${tab.config.activeColor} text-white border-current`
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/50 border-transparent'
+                      ? 'border-emerald-500 bg-emerald-950/30 text-emerald-100'
+                      : 'border-transparent text-slate-500 hover:bg-slate-800/60 hover:text-slate-200'
                   }`}
                   title={`${tab.label}: ${getVisualDescription(tab.id)}`}
                 >
-                  <tab.icon className="w-4 h-4" />
-                  <span className="text-sm">{tab.label}</span>
+                  <tab.icon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{tab.label}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Enhanced Content */}
-          <div className="p-8 max-h-[75vh] overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
+          <div className="max-h-[min(78vh,900px)] overflow-y-auto bg-slate-950 p-4 sm:p-6">
             {generatingAll && (
               <div className="flex items-center justify-center py-16">
-                <div className="flex items-center gap-4 bg-white p-6 rounded-2xl shadow-xl border border-gray-200">
-                  <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-lg font-medium text-gray-700">Generating visual content...</span>
+                <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-6 py-4">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-emerald-400" />
+                  <span className="text-sm font-medium text-slate-300">Building visuals from your document…</span>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border-2 border-red-200 p-6 rounded-2xl mb-8 shadow-lg">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <XMarkIcon className="w-5 h-5 text-red-600" />
-                  </div>
-                  <p className="text-red-800 font-semibold">Generation Failed</p>
-                </div>
-                <p className="text-red-700 mb-4">{error}</p>
+              <div className="mb-4 rounded-2xl border border-red-900/40 bg-red-950/25 p-5">
+                <p className="text-sm font-medium text-red-200">Could not generate</p>
+                <p className="mt-2 text-sm text-red-200/80">{error}</p>
                 <button
+                  type="button"
                   onClick={generateAllVisuals}
-                  className="px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-500"
                 >
-                  Try Again
+                  Try again
                 </button>
               </div>
             )}
 
             {!generatingAll && !error && (
-              <div className="max-w-7xl mx-auto">
-                <div className="w-full">
+              <div className="mx-auto flex max-w-7xl flex-col gap-6 lg:flex-row lg:items-start">
+                {concepts ? (
+                  <aside className="w-full shrink-0 space-y-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-xs text-slate-300 lg:w-56">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">From your document</p>
+                    <p className="text-sm font-medium text-emerald-100/95">{concepts.mainTopic}</p>
+                    {concepts.keyConcepts?.length ? (
+                      <ul className="space-y-1 border-t border-slate-800 pt-3">
+                        {concepts.keyConcepts.slice(0, 8).map((c, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="font-mono text-slate-600">{i + 1}.</span>
+                            <span>{c}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </aside>
+                ) : null}
+                <div className="min-w-0 flex-1 rounded-xl border border-slate-800 bg-white p-4 text-gray-900 sm:p-5">
                   {getTabContent()}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
-            <div className="text-sm text-gray-600">
-              {concepts && (
-                <p>Main Topic: <span className="font-medium">{concepts.mainTopic}</span></p>
-              )}
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 bg-slate-900/60 px-4 py-3 sm:px-6">
+            <p className="text-xs text-slate-500">{concepts ? `Topic: ${concepts.mainTopic}` : ' '}</p>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={generateAllVisuals}
                 disabled={generatingAll}
-                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 flex items-center gap-2"
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-slate-950 hover:bg-emerald-500 disabled:opacity-50 sm:text-sm"
               >
                 {generatingAll ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-900/30 border-t-slate-900" />
                 ) : (
-                  <PhotoIcon className="w-4 h-4" />
+                  <PhotoIcon className="h-4 w-4" />
                 )}
-                Generate All
+                Refresh all
               </button>
               <button
+                type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-700 sm:text-sm"
               >
                 Close
               </button>
