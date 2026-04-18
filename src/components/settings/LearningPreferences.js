@@ -72,6 +72,7 @@ const barClass = (color) => {
 
 const LearningPreferences = () => {
   const [profile, setProfile] = useState(null);
+  const [provisional, setProvisional] = useState(null);
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
   const [mlRuntime, setMlRuntime] = useState({ checked: false, available: false });
@@ -101,6 +102,46 @@ const LearningPreferences = () => {
             dataCompleteness: toNumber(b.dataQuality?.completeness),
             sufficientForML: !!b.hasSufficientData
           };
+
+          const modeUsage = b.modeUsageSummary || {};
+          const pairScore = (a, bKey) =>
+            toNumber(modeUsage?.[a]?.totalTime) - toNumber(modeUsage?.[bKey]?.totalTime);
+
+          const modeRows = Object.entries(modeUsage)
+            .map(([key, value]) => ({
+              key,
+              label: databaseModeToButtonLabel(
+                key === 'sensingLearning'
+                  ? 'Hands-On Lab'
+                  : key === 'intuitiveLearning'
+                    ? 'Concept Constellation'
+                    : key === 'activeLearning'
+                      ? 'Active Learning Hub'
+                      : key === 'reflectiveLearning'
+                        ? 'Reflective Learning'
+                        : key === 'aiNarrator'
+                          ? 'AI Narrator'
+                          : key === 'visualLearning'
+                            ? 'Visual Learning'
+                            : key === 'sequentialLearning'
+                              ? 'Sequential Learning'
+                              : key === 'globalLearning'
+                                ? 'Global Learning'
+                                : key
+              ),
+              score: toNumber(value?.totalTime) + toNumber(value?.count) * 1000
+            }))
+            .filter((row) => row.score > 0)
+            .sort((x, y) => y.score - x.score)
+            .slice(0, 3);
+
+          setProvisional({
+            activeReflective: pairScore('activeLearning', 'reflectiveLearning'),
+            sensingIntuitive: pairScore('sensingLearning', 'intuitiveLearning'),
+            visualVerbal: pairScore('visualLearning', 'aiNarrator'),
+            sequentialGlobal: pairScore('sequentialLearning', 'globalLearning'),
+            topModes: modeRows
+          });
         }
       } catch {
         // ignore behavior sync errors
@@ -157,15 +198,21 @@ const LearningPreferences = () => {
   const totalInteractions = toNumber(profile?.dataQuality?.totalInteractions || profile?.dataQuality?.interactionCount);
   const completeness = toNumber(profile?.dataQuality?.dataCompleteness || profile?.dataQuality?.completeness);
   const hasClassification = !!(
+    profile?.hasBeenClassified === true &&
     dimensions &&
-    (toNumber(profile?.predictionCount) > 0 ||
-      Object.values(dimensions).some((v) => toNumber(v) !== 0))
+    Object.values(dimensions).some((v) => toNumber(v) !== 0)
   );
 
   const orderedRecommendations = useMemo(
     () => (Array.isArray(profile?.recommendedModes) ? profile.recommendedModes : []),
     [profile]
   );
+
+  const provisionalReady =
+    !hasClassification &&
+    provisional &&
+    Array.isArray(provisional.topModes) &&
+    provisional.topModes.length > 0;
 
   if (loading) {
     return (
@@ -209,7 +256,7 @@ const LearningPreferences = () => {
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="text-xs uppercase text-slate-500">Classification</p>
           <p className="mt-2 text-lg font-semibold text-slate-900">
-            {hasClassification ? 'Available' : 'Not ready'}
+            {hasClassification ? 'Final' : (profile?.classificationStage === 'provisional' ? 'Provisional' : 'Not ready')}
           </p>
           <p className="mt-1 text-xs text-slate-600">
             Engine:{' '}
@@ -223,10 +270,41 @@ const LearningPreferences = () => {
       </div>
 
       {!hasClassification || !dimensions ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-          <ChartBarIcon className="mx-auto h-10 w-10 text-slate-400" />
-          <p className="mt-3 text-base font-medium text-slate-800">No learning style yet.</p>
-          <p className="mt-1 text-sm text-slate-600">Keep using learning modes to build your profile.</p>
+        <div className="space-y-4">
+          {provisionalReady ? (
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Early estimate (not final)</p>
+              <p className="mt-1 text-sm text-indigo-900">
+                This is a provisional learning preference from your current logs. It will stabilize after full classification.
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                {DIMENSIONS.map((item) => (
+                  <div key={`prov-${item.key}`} className="rounded-lg border border-indigo-200 bg-white p-3">
+                    <p className="text-xs text-slate-500">{item.title}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                      {getPreference(item.key, provisional[item.key])}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4">
+                <p className="text-xs text-slate-500">Current strongest modes</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {provisional.topModes.map((m) => (
+                    <span key={m.key} className="rounded-full border border-indigo-200 bg-white px-2.5 py-1 text-xs font-medium text-indigo-800">
+                      {m.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+              <ChartBarIcon className="mx-auto h-10 w-10 text-slate-400" />
+              <p className="mt-3 text-base font-medium text-slate-800">No learning style yet.</p>
+              <p className="mt-1 text-sm text-slate-600">Keep using learning modes to build your profile.</p>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
