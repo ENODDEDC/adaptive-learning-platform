@@ -17,6 +17,7 @@ export default function AdminCourseManagementPage() {
     teacherName: '',
     coverColor: '',
     uniqueKey: '',
+    isPrivate: false,
   });
   const [showViewModal, setShowViewModal] = useState(false);
   const [isCreateCourseModalOpen, setIsCreateCourseModalOpen] = useState(false);
@@ -90,6 +91,7 @@ export default function AdminCourseManagementPage() {
       teacherName: course.teacherName,
       coverColor: course.coverColor,
       uniqueKey: course.uniqueKey,
+      isPrivate: course.isPrivate || false,
     });
   };
 
@@ -101,6 +103,8 @@ export default function AdminCourseManagementPage() {
     setActionLoading(prev => ({ ...prev, [`edit-${courseId}`]: true }));
     setError('');
     try {
+      console.log('💾 Saving course with data:', { id: courseId, ...editFormData });
+      
       const res = await fetch('/api/admin/courses', {
         method: 'PUT',
         headers: {
@@ -116,7 +120,8 @@ export default function AdminCourseManagementPage() {
         throw new Error(`Error: ${res.status} ${res.statusText}`);
       }
 
-      await res.json();
+      const result = await res.json();
+      console.log('💾 Course updated:', result);
       setEditingCourse(null);
       fetchCourses(); // Refresh the course list
       showNotification('Course updated successfully!', 'success');
@@ -909,6 +914,46 @@ export default function AdminCourseManagementPage() {
                       className="block w-full text-sm transition-all duration-200 border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       placeholder="Instructor name"
                     />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Course Visibility
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditFormData({ ...editFormData, isPrivate: false })}
+                        className={`flex-1 px-3 py-2 rounded-lg border-2 transition-all text-sm ${
+                          !editFormData.isPrivate
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center gap-1.5">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="font-medium">Public</span>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditFormData({ ...editFormData, isPrivate: true })}
+                        className={`flex-1 px-3 py-2 rounded-lg border-2 transition-all text-sm ${
+                          editFormData.isPrivate
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center gap-1.5">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                          <span className="font-medium">Private</span>
+                        </div>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between mb-4">

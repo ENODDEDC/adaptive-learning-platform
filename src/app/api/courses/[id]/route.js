@@ -77,3 +77,44 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function PATCH(request, { params }) {
+  try {
+    const payload = await verifyToken();
+    if (!payload) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = payload.userId;
+    const { id } = await params;
+
+    await connectMongoDB();
+    
+    const { isPrivate } = await request.json();
+
+    console.log('🔒 PATCH visibility - Course ID:', id, 'isPrivate:', isPrivate);
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return NextResponse.json({ message: 'Course not found' }, { status: 404 });
+    }
+
+    // Check if user is the course creator
+    const creatorId = course.createdBy._id ? course.createdBy._id.toString() : course.createdBy.toString();
+    if (creatorId !== userId) {
+      return NextResponse.json({ message: 'Only course creator can update visibility' }, { status: 403 });
+    }
+
+    course.isPrivate = isPrivate;
+    await course.save();
+
+    console.log('🔒 Visibility updated successfully');
+
+    return NextResponse.json({ message: 'Visibility updated successfully', course }, { status: 200 });
+  } catch (error) {
+    console.error('Error updating course visibility:', error);
+    return NextResponse.json({ 
+      message: 'Internal server error', 
+      error: error.message 
+    }, { status: 500 });
+  }
+}
