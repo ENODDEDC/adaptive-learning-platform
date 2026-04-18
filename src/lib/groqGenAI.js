@@ -21,6 +21,28 @@ const OPENAI_COMPAT_CHAT_URL = process.env.OPENAI_COMPAT_CHAT_URL || 'https://ap
 const DEFAULT_CONTENT_MODEL = 'llama3.1-8b';
 const GROQ_MAX_ATTEMPTS = 3;
 
+/**
+ * Bearer token for OPENAI_COMPAT_CHAT_URL.
+ * Default host is Cerebras — use CEREBRAS_API_KEY first so a stray/wrong GROQ_API_KEY does not break Cerebras calls.
+ * If the URL is Groq, prefer GROQ_API_KEY first.
+ */
+export function resolveOpenAICompatApiKey(explicit) {
+  const trimmed =
+    explicit !== undefined && explicit !== null && String(explicit).trim()
+      ? String(explicit).trim()
+      : '';
+  if (trimmed) return trimmed;
+
+  const url = (process.env.OPENAI_COMPAT_CHAT_URL || '').toLowerCase();
+  const cerebras = (process.env.CEREBRAS_API_KEY && String(process.env.CEREBRAS_API_KEY).trim()) || '';
+  const groq = (process.env.GROQ_API_KEY && String(process.env.GROQ_API_KEY).trim()) || '';
+
+  if (url.includes('groq.com')) {
+    return groq || cerebras;
+  }
+  return cerebras || groq;
+}
+
 function isGroqModelId(model) {
   if (typeof model !== 'string') return false;
   const value = model.trim().toLowerCase();
@@ -77,9 +99,9 @@ function extractPromptFromGeminiInput(input) {
   return chunks.join('\n').trim();
 }
 
-async function groqGenerate({ apiKey, model, prompt, temperature = 0.2, maxTokens = 4096 }) {
+async function groqGenerate({ apiKey, model, prompt, temperature = 0.2, maxTokens = 8192 }) {
   if (!apiKey) {
-    throw new Error('CEREBRAS_API_KEY is not configured');
+    throw new Error('Set CEREBRAS_API_KEY or GROQ_API_KEY (must match OPENAI_COMPAT_CHAT_URL host)');
   }
 
   let lastDetails = '';
@@ -169,7 +191,7 @@ class GroqGenerativeModel {
 
 export class GroqGenAI {
   constructor(apiKey) {
-    this.apiKey = apiKey || process.env.CEREBRAS_API_KEY;
+    this.apiKey = resolveOpenAICompatApiKey(apiKey);
   }
 
   getGenerativeModel(config = {}) {

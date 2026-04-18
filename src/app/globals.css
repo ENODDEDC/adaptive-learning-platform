@@ -2517,3 +2517,29 @@ Slide-up animation for bottom notifications */
 .sequential-learning-scroll::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, rgb(165 180 252 / 0.55) 0%, rgb(99 102 241 / 0.5) 100%);
 }
+
+/* Active Learning (Practice) — amber / warm stone track */
+.active-learning-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(245 158 11 / 0.5) rgb(28 25 23);
+}
+
+.active-learning-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.active-learning-scroll::-webkit-scrollbar-track {
+  background: rgb(28 25 23);
+  border-radius: 9999px;
+  margin-block: 6px;
+}
+
+.active-learning-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgb(251 191 36 / 0.45) 0%, rgb(217 119 6 / 0.4) 100%);
+  border-radius: 9999px;
+  border: 2px solid rgb(28 25 23);
+}
+
+.active-learning-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgb(252 211 77 / 0.55) 0%, rgb(245 158 11 / 0.5) 100%);
+}

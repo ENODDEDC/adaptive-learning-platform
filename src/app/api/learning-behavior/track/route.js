@@ -1,8 +1,140 @@
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import LearningBehavior from '@/models/LearningBehavior';
 import LearningStyleProfile from '@/models/LearningStyleProfile';
 import { verifyToken } from '@/lib/auth';
+
+const DEFAULT_MODE_KEYS = [
+  'aiNarrator',
+  'visualLearning',
+  'sequentialLearning',
+  'globalLearning',
+  'sensingLearning',
+  'intuitiveLearning',
+  'activeLearning',
+  'reflectiveLearning'
+];
+
+function normalizeModeUsage(raw) {
+  const out = {};
+  for (const key of DEFAULT_MODE_KEYS) {
+    const src = raw?.[key] && typeof raw[key] === 'object' ? raw[key] : {};
+    const count = Number(src.count);
+    const totalTime = Number(src.totalTime);
+    let lastUsed = null;
+    if (src.lastUsed) {
+      const d = new Date(src.lastUsed);
+      if (!Number.isNaN(d.getTime())) lastUsed = d;
+    }
+    out[key] = {
+      count: Number.isFinite(count) ? count : 0,
+      totalTime: Number.isFinite(totalTime) ? totalTime : 0,
+      lastUsed
+    };
+  }
+  return out;
+}
+
+const DEFAULT_ACTIVITY_ENGAGEMENT = {
+  quizzesCompleted: 0,
+  practiceQuestionsAttempted: 0,
+  discussionParticipation: 0,
+  reflectionJournalEntries: 0,
+  visualDiagramsViewed: 0,
+  handsOnLabsCompleted: 0,
+  conceptExplorationsCount: 0,
+  sequentialStepsCompleted: 0
+};
+
+function normalizeActivityEngagement(raw) {
+  const out = { ...DEFAULT_ACTIVITY_ENGAGEMENT };
+  if (!raw || typeof raw !== 'object') return out;
+  for (const key of Object.keys(DEFAULT_ACTIVITY_ENGAGEMENT)) {
+    if (raw[key] === undefined || raw[key] === null) continue;
+    const n = Number(raw[key]);
+    if (Number.isFinite(n)) out[key] = n;
+  }
+  return out;
+}
+
+/** Drop or fix subdocuments that would make Mongoose cast fail (e.g. invalid contentId). */
+function sanitizeContentInteractions(items) {
+  if (!Array.isArray(items)) return [];
+  return items
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => {
+      const out = { ...entry };
+      if (out.contentId != null && out.contentId !== '') {
+        const id = String(out.contentId);
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+          delete out.contentId;
+        }
+      }
+      return out;
+    });
+}
+
+/**
+ * Legacy profiles may have aggregatedStats: {} or partial nested objects (truthy but broken).
+ * Fill missing branches without resetting existing counters.
+ */
+function ensureProfileAggregatedStatsShape(profile) {
+  if (!profile.aggregatedStats || typeof profile.aggregatedStats !== 'object') {
+    profile.aggregatedStats = {};
+  }
+  const agg = profile.aggregatedStats;
+
+  if (!agg.modeUsage || typeof agg.modeUsage !== 'object') {
+    agg.modeUsage = {};
+  }
+  for (const key of DEFAULT_MODE_KEYS) {
+    if (!agg.modeUsage[key] || typeof agg.modeUsage[key] !== 'object') {
+      agg.modeUsage[key] = { count: 0, totalTime: 0 };
+    }
+    agg.modeUsage[key].count = Number(agg.modeUsage[key].count) || 0;
+    agg.modeUsage[key].totalTime = Number(agg.modeUsage[key].totalTime) || 0;
+  }
+
+  if (!agg.aiAssistantUsage || typeof agg.aiAssistantUsage !== 'object') {
+    agg.aiAssistantUsage = {
+      askMode: { count: 0, totalTime: 0 },
+      researchMode: { count: 0, totalTime: 0 },
+      textToDocsMode: { count: 0, totalTime: 0 },
+      totalInteractions: 0,
+      totalPromptLength: 0
+    };
+  } else {
+    ['askMode', 'researchMode', 'textToDocsMode'].forEach((k) => {
+      if (!agg.aiAssistantUsage[k] || typeof agg.aiAssistantUsage[k] !== 'object') {
+        agg.aiAssistantUsage[k] = { count: 0, totalTime: 0 };
+      }
+      agg.aiAssistantUsage[k].count = Number(agg.aiAssistantUsage[k].count) || 0;
+      agg.aiAssistantUsage[k].totalTime = Number(agg.aiAssistantUsage[k].totalTime) || 0;
+    });
+    agg.aiAssistantUsage.totalInteractions = Number(agg.aiAssistantUsage.totalInteractions) || 0;
+    agg.aiAssistantUsage.totalPromptLength = Number(agg.aiAssistantUsage.totalPromptLength) || 0;
+  }
+
+  if (!agg.activityEngagement || typeof agg.activityEngagement !== 'object') {
+    agg.activityEngagement = { ...DEFAULT_ACTIVITY_ENGAGEMENT };
+  } else {
+    for (const key of Object.keys(DEFAULT_ACTIVITY_ENGAGEMENT)) {
+      if (agg.activityEngagement[key] === undefined || agg.activityEngagement[key] === null) {
+        agg.activityEngagement[key] = 0;
+      } else {
+        agg.activityEngagement[key] = Number(agg.activityEngagement[key]) || 0;
+      }
+    }
+  }
+
+  if (typeof agg.totalInteractionsProcessed !== 'number' || Number.isNaN(agg.totalInteractionsProcessed)) {
+    agg.totalInteractionsProcessed = 0;
+  }
+  if (!agg.lastAggregatedDate) {
+    agg.lastAggregatedDate = new Date();
+  }
+}
 
 /**
  * POST /api/learning-behavior/track
@@ -20,10 +152,19 @@ export async function POST(request) {
     }
 
     const decoded = await verifyToken(token);
-    const userId = decoded.userId;
+    const userId = decoded.userId || decoded.sub || decoded.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Invalid session payload' }, { status: 401 });
+    }
 
     // Parse request body
-    const { sessionId, events, behaviorData } = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+    const { sessionId, events, behaviorData } = body;
 
     if (!sessionId || !behaviorData) {
       return NextResponse.json(
@@ -32,42 +173,72 @@ export async function POST(request) {
       );
     }
 
+    const modeUsage = normalizeModeUsage(behaviorData.modeUsage);
+    const activityEngagement = normalizeActivityEngagement(behaviorData.activityEngagement);
+    const defaultAiUsage = {
+      askMode: { count: 0, totalTime: 0, lastUsed: null },
+      researchMode: { count: 0, totalTime: 0, lastUsed: null },
+      textToDocsMode: { count: 0, totalTime: 0, lastUsed: null },
+      totalInteractions: 0,
+      averagePromptLength: 0,
+      totalPromptLength: 0
+    };
+    const incomingAi =
+      behaviorData.aiAssistantUsage && typeof behaviorData.aiAssistantUsage === 'object'
+        ? behaviorData.aiAssistantUsage
+        : {};
+    const aiAssistantUsage = {
+      askMode: { ...defaultAiUsage.askMode, ...(incomingAi.askMode || {}) },
+      researchMode: { ...defaultAiUsage.researchMode, ...(incomingAi.researchMode || {}) },
+      textToDocsMode: { ...defaultAiUsage.textToDocsMode, ...(incomingAi.textToDocsMode || {}) },
+      totalInteractions: Number(incomingAi.totalInteractions) || 0,
+      averagePromptLength: Number(incomingAi.averagePromptLength) || 0,
+      totalPromptLength: Number(incomingAi.totalPromptLength) || 0
+    };
+    ['askMode', 'researchMode', 'textToDocsMode'].forEach((k) => {
+      const block = aiAssistantUsage[k];
+      if (block && typeof block === 'object') {
+        block.count = Number(block.count) || 0;
+        block.totalTime = Number(block.totalTime) || 0;
+        if (block.lastUsed) {
+          const d = new Date(block.lastUsed);
+          block.lastUsed = Number.isNaN(d.getTime()) ? null : d;
+        } else {
+          block.lastUsed = null;
+        }
+      }
+    });
+
+    const contentInteractions = Array.isArray(behaviorData.contentInteractions)
+      ? behaviorData.contentInteractions
+      : [];
+
     // Connect to database
     await dbConnect();
 
     // Find or create behavior document for this session
     let behavior = await LearningBehavior.findOne({ userId, sessionId });
 
-    console.log('📥 Received AI Assistant data:', behaviorData.aiAssistantUsage);
+    console.log('📥 Received AI Assistant data:', aiAssistantUsage);
 
     if (!behavior) {
       // Create new behavior document
       behavior = new LearningBehavior({
         userId,
         sessionId,
-        modeUsage: behaviorData.modeUsage,
-        aiAssistantUsage: behaviorData.aiAssistantUsage || {
-          askMode: { count: 0, totalTime: 0 },
-          researchMode: { count: 0, totalTime: 0 },
-          textToDocsMode: { count: 0, totalTime: 0 },
-          totalInteractions: 0,
-          averagePromptLength: 0,
-          totalPromptLength: 0
-        },
-        contentInteractions: behaviorData.contentInteractions || [],
-        activityEngagement: behaviorData.activityEngagement,
-        deviceInfo: behaviorData.deviceInfo,
+        modeUsage,
+        aiAssistantUsage,
+        contentInteractions,
+        activityEngagement,
+        deviceInfo: behaviorData.deviceInfo || {},
         timestamp: new Date()
       });
     } else {
       // Update existing behavior document
-      behavior.modeUsage = behaviorData.modeUsage;
-      behavior.aiAssistantUsage = behaviorData.aiAssistantUsage || behavior.aiAssistantUsage;
-      behavior.contentInteractions = [
-        ...behavior.contentInteractions,
-        ...(behaviorData.contentInteractions || [])
-      ];
-      behavior.activityEngagement = behaviorData.activityEngagement;
+      behavior.modeUsage = modeUsage;
+      behavior.aiAssistantUsage = aiAssistantUsage;
+      behavior.contentInteractions = [...behavior.contentInteractions, ...contentInteractions];
+      behavior.activityEngagement = activityEngagement;
       behavior.timestamp = new Date();
     }
     
@@ -78,26 +249,26 @@ export async function POST(request) {
     
     if (totalTime > 0) {
       // Active vs Reflective
-      const activeTime = behavior.modeUsage.activeLearning.totalTime;
-      const reflectiveTime = behavior.modeUsage.reflectiveLearning.totalTime;
+      const activeTime = behavior.modeUsage.activeLearning?.totalTime || 0;
+      const reflectiveTime = behavior.modeUsage.reflectiveLearning?.totalTime || 0;
       behavior.features.activeScore = activeTime / totalTime;
       behavior.features.reflectiveScore = reflectiveTime / totalTime;
       
       // Sensing vs Intuitive
-      const sensingTime = behavior.modeUsage.sensingLearning.totalTime;
-      const intuitiveTime = behavior.modeUsage.intuitiveLearning.totalTime;
+      const sensingTime = behavior.modeUsage.sensingLearning?.totalTime || 0;
+      const intuitiveTime = behavior.modeUsage.intuitiveLearning?.totalTime || 0;
       behavior.features.sensingScore = sensingTime / totalTime;
       behavior.features.intuitiveScore = intuitiveTime / totalTime;
       
       // Visual vs Verbal
-      const visualTime = behavior.modeUsage.visualLearning.totalTime;
-      const verbalTime = behavior.modeUsage.aiNarrator.totalTime;
+      const visualTime = behavior.modeUsage.visualLearning?.totalTime || 0;
+      const verbalTime = behavior.modeUsage.aiNarrator?.totalTime || 0;
       behavior.features.visualScore = visualTime / totalTime;
       behavior.features.verbalScore = verbalTime / totalTime;
       
       // Sequential vs Global
-      const sequentialTime = behavior.modeUsage.sequentialLearning.totalTime;
-      const globalTime = behavior.modeUsage.globalLearning.totalTime;
+      const sequentialTime = behavior.modeUsage.sequentialLearning?.totalTime || 0;
+      const globalTime = behavior.modeUsage.globalLearning?.totalTime || 0;
       behavior.features.sequentialScore = sequentialTime / totalTime;
       behavior.features.globalScore = globalTime / totalTime;
     }
@@ -107,48 +278,23 @@ export async function POST(request) {
 
     // 📊 INCREMENTAL AGGREGATION: Update profile with new behavior data
     const profile = await LearningStyleProfile.getOrCreate(userId);
-    
-    // Initialize aggregatedStats if not exists
-    if (!profile.aggregatedStats) {
-      profile.aggregatedStats = {
-        modeUsage: {
-          aiNarrator: { count: 0, totalTime: 0 },
-          visualLearning: { count: 0, totalTime: 0 },
-          sequentialLearning: { count: 0, totalTime: 0 },
-          globalLearning: { count: 0, totalTime: 0 },
-          sensingLearning: { count: 0, totalTime: 0 },
-          intuitiveLearning: { count: 0, totalTime: 0 },
-          activeLearning: { count: 0, totalTime: 0 },
-          reflectiveLearning: { count: 0, totalTime: 0 }
-        },
-        aiAssistantUsage: {
-          askMode: { count: 0, totalTime: 0 },
-          researchMode: { count: 0, totalTime: 0 },
-          textToDocsMode: { count: 0, totalTime: 0 },
-          totalInteractions: 0,
-          totalPromptLength: 0
-        },
-        activityEngagement: {
-          quizzesCompleted: 0,
-          practiceQuestionsAttempted: 0,
-          discussionParticipation: 0,
-          reflectionJournalEntries: 0,
-          visualDiagramsViewed: 0,
-          handsOnLabsCompleted: 0,
-          conceptExplorationsCount: 0,
-          sequentialStepsCompleted: 0
-        },
-        lastAggregatedDate: new Date(),
-        lastProcessedBehaviorId: null,
-        totalInteractionsProcessed: 0
+
+    if (!profile.dataQuality || typeof profile.dataQuality !== 'object') {
+      profile.dataQuality = {
+        totalInteractions: 0,
+        dataCompleteness: 0,
+        sufficientForML: false,
+        lastDataUpdate: new Date()
       };
     }
+
+    ensureProfileAggregatedStatsShape(profile);
     
     // Add new behavior data to running totals (INCREMENTAL UPDATE)
-    Object.keys(behavior.modeUsage).forEach(mode => {
+    Object.keys(behavior.modeUsage || {}).forEach(mode => {
       if (profile.aggregatedStats.modeUsage[mode]) {
-        profile.aggregatedStats.modeUsage[mode].count += behavior.modeUsage[mode].count;
-        profile.aggregatedStats.modeUsage[mode].totalTime += behavior.modeUsage[mode].totalTime;
+        profile.aggregatedStats.modeUsage[mode].count += behavior.modeUsage[mode]?.count || 0;
+        profile.aggregatedStats.modeUsage[mode].totalTime += behavior.modeUsage[mode]?.totalTime || 0;
       }
     });
     
@@ -162,9 +308,10 @@ export async function POST(request) {
     }
     
     // Add activity engagement
-    Object.keys(behavior.activityEngagement).forEach(activity => {
+    const act = behavior.activityEngagement || {};
+    Object.keys(act).forEach(activity => {
       if (profile.aggregatedStats.activityEngagement[activity] !== undefined) {
-        profile.aggregatedStats.activityEngagement[activity] += behavior.activityEngagement[activity] || 0;
+        profile.aggregatedStats.activityEngagement[activity] += act[activity] || 0;
       }
     });
     

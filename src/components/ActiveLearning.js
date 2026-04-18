@@ -1,23 +1,25 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
-    XMarkIcon,
     ArrowPathIcon,
+    ChevronLeftIcon,
     HandRaisedIcon,
     DocumentTextIcon,
-    AcademicCapIcon,
     BeakerIcon,
     PresentationChartLineIcon,
     ChatBubbleOvalLeftEllipsisIcon,
-    Cog6ToothIcon,
-    LightBulbIcon,
     ClockIcon,
     CheckCircleIcon,
     ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { trackBehavior } from '@/utils/learningBehaviorTracker';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
+
+const IMMERSIVE_ACTIVE_LEARNING_EVENT = 'assist-ed-immersive-active-learning';
+
+/** Single-scroll workspace; phased tab state removed. */
 
 /**
  * Active Learning Component - Evidence-Based Implementation
@@ -36,20 +38,16 @@ const ActiveLearning = ({
     fileName
 }) => {
     // Core state management
-    const [activePhase, setActivePhase] = useState('engagement');
     const [processingData, setProcessingData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Phase-specific states
-    const [annotations, setAnnotations] = useState([]);
+    // Activity states
     const [extractedConcepts, setExtractedConcepts] = useState([]);
     const [discussionHistory, setDiscussionHistory] = useState([]);
     const [applicationScenarios, setApplicationScenarios] = useState([]);
     const [userInput, setUserInput] = useState('');
-    const [currentScenario, setCurrentScenario] = useState(null);
     const [processingMetrics, setProcessingMetrics] = useState({
-        engagementTime: 0,
         conceptsProcessed: 0,
         applicationsCompleted: 0,
         discussionDepth: 0
@@ -58,39 +56,21 @@ const ActiveLearning = ({
     // Button feedback states
     const [buttonFeedback, setButtonFeedback] = useState('');
 
-    // Learning phases based on Felder-Silverman Active Learning research
-    const learningPhases = [
-        {
-            key: 'engagement',
-            name: 'Direct Material Engagement',
-            icon: DocumentTextIcon,
-            description: 'Interactive content processing and concept extraction',
-            researchBasis: 'Active learners engage directly with material (Felder & Silverman, 1988)'
-        },
-        {
-            key: 'collaboration',
-            name: 'Simulated Group Discussion',
-            icon: ChatBubbleOvalLeftEllipsisIcon,
-            description: 'AI-facilitated academic discourse and peer interaction simulation',
-            researchBasis: 'Active learners prefer group communication and collaborative learning'
-        },
-        {
-            key: 'application',
-            name: 'Immediate Application Lab',
-            icon: BeakerIcon,
-            description: 'Real-world scenario practice and hands-on problem solving',
-            researchBasis: 'Active learners process information through experimentation'
-        },
-        {
-            key: 'integration',
-            name: 'Knowledge Integration',
-            icon: PresentationChartLineIcon,
-            description: 'Teaching preparation and professional documentation',
-            researchBasis: 'Active learners retain information better through active processing'
+    useLayoutEffect(() => {
+        if (typeof document === 'undefined' || !isActive) return undefined;
+        document.body.setAttribute('data-immersive-active-learning', 'true');
+        window.dispatchEvent(new CustomEvent(IMMERSIVE_ACTIVE_LEARNING_EVENT, { detail: { open: true } }));
+        try {
+            window.dispatchEvent(new Event('collapseMainSidebar'));
+        } catch {
+            // ignore
         }
-    ];
+        return () => {
+            document.body.removeAttribute('data-immersive-active-learning');
+            window.dispatchEvent(new CustomEvent(IMMERSIVE_ACTIVE_LEARNING_EVENT, { detail: { open: false } }));
+        };
+    }, [isActive]);
 
-    // Track learning mode usage
     // Generate active learning content when component loads
     useEffect(() => {
         if (isActive && docxContent && !processingData && !loading) {
@@ -107,20 +87,6 @@ const ActiveLearning = ({
             trackBehavior('mode_activated', { mode: 'active', fileName });
         }
     }, [isActive, docxContent, fileName]);
-
-    // Track engagement metrics
-    useEffect(() => {
-        if (isActive) {
-            const interval = setInterval(() => {
-                setProcessingMetrics(prev => ({
-                    ...prev,
-                    engagementTime: prev.engagementTime + 1
-                }));
-            }, 1000);
-
-            return () => clearInterval(interval);
-        }
-    }, [isActive]);
 
     const generateActiveProcessingContent = async () => {
         setLoading(true);
@@ -139,19 +105,28 @@ const ActiveLearning = ({
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                let detail = `HTTP ${response.status}`;
+                try {
+                    const errJson = await response.json();
+                    if (errJson?.error) detail = errJson.error;
+                } catch {
+                    // ignore
+                }
+                throw new Error(detail);
             }
 
             const data = await response.json();
 
             if (data.success) {
                 setProcessingData(data);
+                setScenarioResults({});
                 // Initialize with engagement phase content
                 if (data.engagementTools) {
                     setExtractedConcepts(data.engagementTools.concepts || []);
                 }
                 if (data.applicationScenarios) {
                     setApplicationScenarios(data.applicationScenarios || []);
+                    setActiveScenarioIndex(0);
                 }
             } else {
                 throw new Error(data.error || 'Failed to generate active learning content');
@@ -164,6 +139,16 @@ const ActiveLearning = ({
         }
     };
 
+    const requestRegenerate = () => {
+        if (!window.confirm('Regenerate? Uses more API quota.')) return;
+        setProcessingData(null);
+        setScenarioResults({});
+        setDiscussionHistory([]);
+        setActiveScenarioIndex(0);
+        setActiveTab('work');
+        generateActiveProcessingContent();
+    };
+
     const handleConceptExtraction = (concept) => {
         setExtractedConcepts(prev => [...prev, concept]);
         setProcessingMetrics(prev => ({
@@ -173,19 +158,19 @@ const ActiveLearning = ({
     };
 
     const handleDiscussionSubmit = async () => {
-        if (!userInput.trim()) return;
+        const message = userInput.trim();
+        if (!message) return;
 
-        // Track discussion participation
-        // Track discussion participation
-        trackBehavior('discussion_participated', { mode: 'active', phase: activePhase });
+        trackBehavior('discussion_participated', { mode: 'active', phase: 'verbal_sparring' });
 
         const newEntry = {
             type: 'user',
-            content: userInput,
+            content: message,
             timestamp: new Date().toISOString(),
-            phase: activePhase
+            phase: 'verbal_sparring'
         };
 
+        const historyBefore = discussionHistory;
         setDiscussionHistory(prev => [...prev, newEntry]);
         setUserInput('');
 
@@ -195,10 +180,10 @@ const ActiveLearning = ({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userInput: userInput,
-                    history: discussionHistory,
+                    userInput: message,
+                    history: historyBefore,
                     content: docxContent,
-                    phase: activePhase,
+                    phase: 'collaboration',
                     concepts: extractedConcepts
                 }),
             });
@@ -209,7 +194,7 @@ const ActiveLearning = ({
                     type: 'ai',
                     content: data.response,
                     timestamp: new Date().toISOString(),
-                    phase: activePhase
+                    phase: 'verbal_sparring'
                 };
                 setDiscussionHistory(prev => [...prev, aiEntry]);
                 setProcessingMetrics(prev => ({
@@ -348,7 +333,8 @@ const ActiveLearning = ({
                         phase: 'engagement'
                     }));
                     setDiscussionHistory(prev => [...prev, ...questionEntries]);
-                    setButtonFeedback(`✅ Successfully generated ${data.questions.length} discussion questions! Check the "Simulated Group Discussion" tab to see them.`);
+                    setActiveTab('talk');
+                    setButtonFeedback(`✅ Added ${data.questions.length} prompts — switched to Talk tab.`);
                     setTimeout(() => setButtonFeedback(''), 4000);
                 } else {
                     setButtonFeedback('⚠️ No questions could be generated from the content.');
@@ -472,7 +458,68 @@ const ActiveLearning = ({
 
     // Application Lab handlers
     const [scenarioResults, setScenarioResults] = useState({});
-    const [currentScenarioIndex, setCurrentScenarioIndex] = useState(0);
+    const [activeScenarioIndex, setActiveScenarioIndex] = useState(0);
+    const [activeTab, setActiveTab] = useState('work');
+    const discussionEndRef = useRef(null);
+
+    const playbook = useMemo(
+        () => [
+            {
+                tabKey: 'work',
+                step: '1',
+                title: 'Your page',
+                tabLabel: 'Page',
+                hint: 'Use the file itself—pull out ideas and links.',
+                Icon: DocumentTextIcon
+            },
+            {
+                tabKey: 'talk',
+                step: '2',
+                title: 'Talk it through',
+                tabLabel: 'Talk',
+                hint: 'Say what you think out loud; test if it holds up.',
+                Icon: ChatBubbleOvalLeftEllipsisIcon
+            },
+            {
+                tabKey: 'try',
+                step: '3',
+                title: 'Try a choice',
+                tabLabel: 'Try',
+                hint: 'Pick what you would do in a tight moment.',
+                Icon: BeakerIcon
+            },
+            {
+                tabKey: 'teach',
+                step: '4',
+                title: 'Explain it',
+                tabLabel: 'Explain',
+                hint: 'If you can teach it, you probably get it.',
+                Icon: PresentationChartLineIcon
+            }
+        ],
+        []
+    );
+
+    const discussionStarters = useMemo(
+        () => [
+            'What is the single strongest claim in this reading—and where does the text support it?',
+            'Where might a thoughtful reader disagree, and what would you say back using the document?',
+            'If I had to explain this to a friend in two minutes, what is the one idea I would stress?'
+        ],
+        []
+    );
+
+    useEffect(() => {
+        if (!applicationScenarios?.length) {
+            setActiveScenarioIndex(0);
+            return;
+        }
+        setActiveScenarioIndex((i) => Math.min(Math.max(0, i), applicationScenarios.length - 1));
+    }, [applicationScenarios]);
+
+    useEffect(() => {
+        discussionEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, [discussionHistory]);
 
     const handleScenarioResponse = async (scenarioIndex, response) => {
         setLoading(true);
@@ -513,643 +560,472 @@ const ActiveLearning = ({
 
     if (!isActive) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 bg-white overflow-hidden flex flex-col" style={{ paddingTop: document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0' }}>
-            {/* Professional Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 shadow-lg">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+    const hasFullContent = Boolean(processingData?.engagementTools);
+    const teachDone = Boolean(executiveSummary || teachingOutline || practiceQuestions.length || implementationPlan);
+    const tryDone =
+        processingMetrics.applicationsCompleted > 0 || Object.keys(scenarioResults).length > 0;
+    const talkDone = discussionHistory.length > 0;
+    const workDone = extractedConcepts.length > 0;
+    const stepDoneFlags = [workDone, talkDone, tryDone, teachDone];
+    const scenarioCount = applicationScenarios?.length ?? 0;
+    const scenarioSafeIndex = scenarioCount > 0 ? Math.min(activeScenarioIndex, scenarioCount - 1) : 0;
+    const activeScenario = scenarioCount > 0 ? applicationScenarios[scenarioSafeIndex] : null;
+
+    const shell = (
+        <div
+            className="fixed inset-0 left-0 top-0 z-[100020] flex flex-col overflow-hidden bg-stone-950 text-stone-100 antialiased"
+            style={{
+                paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0',
+                backgroundImage:
+                    'radial-gradient(ellipse 90% 55% at 50% -20%, rgba(251,191,36,0.07), transparent 55%), radial-gradient(ellipse 55% 45% at 100% 100%, rgba(217,119,6,0.06), transparent 50%)'
+            }}
+            data-active-learning-root
+        >
+            <header className="border-b border-amber-950/40 bg-stone-950/95 px-3 py-2 backdrop-blur-md sm:px-4">
+                <div className="mx-auto flex max-w-[min(1200px,calc(100%-0.25rem))] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
                         <button
+                            type="button"
                             onClick={onClose}
-                            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                            className="shrink-0 rounded-lg p-2 text-stone-400 transition hover:bg-stone-800 hover:text-amber-100"
+                            title="Back"
                         >
-                            <XMarkIcon className="w-6 h-6" />
+                            <ChevronLeftIcon className="h-5 w-5" />
                         </button>
-                        <div>
-                            <h1 className="text-2xl font-bold flex items-center gap-2">
-                                <HandRaisedIcon className="w-8 h-8" />
-                                Active Learning Processor
-                            </h1>
-                            <p className="text-blue-100 text-sm">
-                                Evidence-based learning system for active learners (Felder-Silverman Model)
-                            </p>
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-900/40 bg-amber-950/40 text-amber-400">
+                            <HandRaisedIcon className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <h2 className="truncate text-sm font-semibold text-stone-50 sm:text-base">Learn by doing</h2>
+                            <p className="truncate text-xs text-stone-500">{fileName}</p>
                         </div>
                     </div>
 
-                    {/* Learning Metrics Dashboard */}
-                    <div className="flex items-center gap-4">
-                        <div className="bg-white bg-opacity-20 rounded-lg px-4 py-2">
-                            <div className="text-center">
-                                <div className="text-lg font-bold">{processingMetrics.conceptsProcessed}</div>
-                                <div className="text-xs text-blue-100">Concepts Processed</div>
-                            </div>
-                        </div>
-                        <div className="bg-white bg-opacity-20 rounded-lg px-4 py-2">
-                            <div className="text-center">
-                                <div className="text-lg font-bold">{processingMetrics.applicationsCompleted}</div>
-                                <div className="text-xs text-blue-100">Applications Completed</div>
-                            </div>
-                        </div>
-                        <div className="bg-white bg-opacity-20 rounded-lg px-4 py-2">
-                            <div className="text-center">
-                                <div className="text-lg font-bold">{Math.floor(processingMetrics.engagementTime / 60)}m</div>
-                                <div className="text-xs text-blue-100">Active Engagement</div>
-                            </div>
-                        </div>
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 sm:ml-auto">
+                            {!hasFullContent && !loading && (
+                                <button
+                                    type="button"
+                                    onClick={generateActiveProcessingContent}
+                                    className="rounded-lg border border-amber-600 bg-amber-600 px-3 py-1.5 text-xs font-medium text-stone-950 hover:bg-amber-500 sm:text-sm"
+                                >
+                                    <span className="flex items-center gap-1.5">
+                                        <ArrowPathIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                        Generate
+                                    </span>
+                                </button>
+                            )}
+                            {hasFullContent && !loading && (
+                                <button
+                                    type="button"
+                                    onClick={requestRegenerate}
+                                    className="rounded-lg border border-stone-600 bg-stone-900 px-2.5 py-1.5 text-xs text-stone-300 hover:bg-stone-800 sm:px-3 sm:text-sm"
+                                    title="Uses more API quota"
+                                >
+                                    <span className="flex items-center gap-1.5">
+                                        <ArrowPathIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                        <span className="hidden sm:inline">Regenerate</span>
+                                    </span>
+                                </button>
+                            )}
+                            {loading && (
+                                <div className="flex items-center gap-1.5 rounded-lg border border-stone-700 bg-stone-900 px-2.5 py-1.5 text-xs text-stone-400">
+                                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-stone-600 border-t-amber-400 sm:h-4 sm:w-4" />
+                                    <span className="hidden sm:inline">…</span>
+                                </div>
+                            )}
                     </div>
                 </div>
+            </header>
 
-                {/* Phase Navigation */}
-                <div className="flex gap-1 mt-6">
-                    {learningPhases.map((phase) => (
-                        <button
-                            key={phase.key}
-                            onClick={() => {
-                                setActivePhase(phase.key);
-                                trackBehavior('tab_switched', { mode: 'active', tab: phase.key });
-                            }}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activePhase === phase.key
-                                ? 'bg-white text-blue-700 shadow-md'
-                                : 'text-blue-100 hover:bg-white hover:bg-opacity-20'
-                                }`}
-                            title={phase.researchBasis}
-                        >
-                            <phase.icon className="w-4 h-4" />
-                            <span className="font-medium text-sm">{phase.name}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Content Area */}
-            <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 {loading ? (
-                    <div className="flex items-center justify-center h-full">
-                        <div className="text-center max-w-md">
-                            <ArrowPathIcon className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                                Initializing Active Learning Environment
-                            </h3>
-                            <p className="text-gray-600">
-                                Generating evidence-based learning activities tailored for active learners...
+                    <div className="active-learning-scroll flex flex-1 items-center justify-center">
+                        <div className="max-w-md px-4 text-center">
+                            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-2 border-stone-600 border-t-amber-400" />
+                            <h3 className="mb-2 text-lg font-semibold text-stone-100">Preparing your practice set</h3>
+                            <p className="text-sm text-stone-400">
+                                Generating activities grounded in this document…
                             </p>
                         </div>
                     </div>
                 ) : error ? (
-                    <div className="flex items-center justify-center h-full">
-                        <div className="text-center max-w-md">
-                            <ExclamationTriangleIcon className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                                Processing Error
-                            </h3>
-                            <p className="text-gray-600 mb-4">{error}</p>
+                    <div className="active-learning-scroll flex flex-1 items-center justify-center px-4">
+                        <div className="max-w-md rounded-2xl border border-red-900/40 bg-red-950/30 p-6 text-center">
+                            <ExclamationTriangleIcon className="mx-auto mb-4 h-12 w-12 text-red-400" />
+                            <h3 className="mb-2 text-lg font-semibold text-stone-100">Could not generate</h3>
+                            <p className="mb-4 text-sm text-stone-400">{error}</p>
                             <button
+                                type="button"
                                 onClick={generateActiveProcessingContent}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                className="rounded-lg bg-amber-600 px-5 py-2 text-sm font-medium text-stone-950 transition hover:bg-amber-500"
                             >
-                                Retry Processing
+                                Try again
                             </button>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex-1 flex overflow-hidden min-h-0">
-                        {/* Main Processing Area */}
-                        <div className="flex-1 overflow-y-auto p-6 min-h-0">
-                            {/* Phase 1: Direct Material Engagement */}
-                            {activePhase === 'engagement' && (
-                                <div className="space-y-6">
-                                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                                        <h2 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-                                            <DocumentTextIcon className="w-6 h-6 text-blue-600" />
-                                            Direct Material Engagement
-                                        </h2>
-                                        <p className="text-sm text-gray-600 mb-4">
-                                            <strong>Research Basis:</strong> Active learners engage directly with material and process information through hands-on interaction (Felder & Silverman, 1988)
-                                        </p>
-                                    </div>
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        <nav
+                            className="shrink-0 border-b border-stone-800/90 bg-stone-950/98 px-2 py-2 backdrop-blur-md sm:px-4"
+                            role="tablist"
+                            aria-label="Practice sections"
+                        >
+                            <div className="mx-auto flex max-w-[min(1120px,calc(100%-0.25rem))] gap-1 sm:gap-2">
+                                {playbook.map((row, i) => {
+                                    const Icon = row.Icon;
+                                    const selected = activeTab === row.tabKey;
+                                    return (
+                                        <button
+                                            key={row.tabKey}
+                                            id={`al-tab-${row.tabKey}`}
+                                            type="button"
+                                            role="tab"
+                                            aria-selected={selected}
+                                            onClick={() => {
+                                                setActiveTab(row.tabKey);
+                                                trackBehavior('tab_switched', { mode: 'active', tab: row.tabKey });
+                                            }}
+                                            className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-left text-[11px] font-semibold transition sm:gap-2 sm:px-3 sm:text-sm ${selected
+                                                ? 'border-amber-600/55 bg-amber-950/50 text-amber-50 shadow-inner ring-1 ring-amber-500/35'
+                                                : 'border-stone-800/90 bg-stone-900/60 text-stone-400 hover:border-stone-600 hover:bg-stone-800/80 hover:text-stone-200'
+                                                }`}
+                                        >
+                                            <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                                            <span className="truncate sm:hidden">{row.tabLabel}</span>
+                                            <span className="hidden min-w-0 truncate sm:inline">{row.title}</span>
+                                            {stepDoneFlags[i] ? (
+                                                <CheckCircleIcon className="h-3.5 w-3.5 shrink-0 text-emerald-400" aria-label="Started" />
+                                            ) : null}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </nav>
 
-                                    {/* Interactive Content Annotation */}
-                                    <div className="bg-white border border-gray-200 rounded-xl p-6">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                            Interactive Content Processing
-                                        </h3>
-                                        <div className="bg-gray-50 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto">
-                                            <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                                                {docxContent || 'No content available'}
+                        <div className="active-learning-scroll min-h-0 flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+                            <div className="mx-auto w-full max-w-[min(1120px,calc(100%-0.5rem))] px-3 pb-8 pt-4 sm:px-5 sm:pt-5">
+                                        {activeTab === 'work' ? (
+                                        <section role="tabpanel" aria-labelledby="al-tab-work" className="min-h-0">
+                                            <div className="overflow-hidden rounded-2xl border border-stone-800/85 bg-stone-900/45 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.85)]">
+                                                <header className="flex flex-wrap items-start gap-3 border-b border-stone-800/80 bg-stone-950/40 px-4 py-4 sm:px-5">
+                                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-800/50 bg-amber-950/35 text-amber-300">
+                                                        <DocumentTextIcon className="h-6 w-6" aria-hidden />
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h3 className="text-lg font-semibold tracking-tight text-stone-50 sm:text-xl">Work with your page</h3>
+                                                        <p className="mt-1 text-sm text-stone-500">Skim the passage, then let the tools pull ideas out for you. You stay in control—each button adds to your notes below.</p>
+                                                    </div>
+                                                </header>
+                                                <div className="active-learning-scroll max-h-[min(52vh,34rem)] min-h-[11rem] overflow-y-auto border-b border-stone-800/70 bg-stone-950/55 p-4 sm:p-5">
+                                                    <div className="text-sm leading-relaxed text-stone-300 whitespace-pre-wrap">{docxContent || 'No content available'}</div>
+                                                </div>
+                                                <div className="space-y-3 p-4 sm:p-5">
+                                                    <p className="text-xs font-medium text-stone-500">What do you want to do first?</p>
+                                                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleExtractConcepts}
+                                                            disabled={loading}
+                                                            className="rounded-xl border border-amber-600/50 bg-amber-600/90 px-4 py-2.5 text-left text-sm font-semibold text-stone-950 shadow-sm transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        >
+                                                            {loading ? 'Working…' : 'Find main ideas'}
+                                                            <span className="mt-0.5 block text-xs font-normal text-stone-800/90">Pulls key points from the text</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleIdentifyRelationships}
+                                                            disabled={loading || extractedConcepts.length === 0}
+                                                            className="rounded-xl border border-emerald-800/45 bg-emerald-950/30 px-4 py-2.5 text-left text-sm font-medium text-emerald-50 transition hover:bg-emerald-950/50 disabled:cursor-not-allowed disabled:opacity-45"
+                                                        >
+                                                            {loading ? 'Working…' : 'Connect the ideas'}
+                                                            <span className="mt-0.5 block text-xs font-normal text-emerald-200/70">Needs at least one idea above</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleGenerateQuestions}
+                                                            disabled={loading}
+                                                            className="rounded-xl border border-violet-800/45 bg-violet-950/30 px-4 py-2.5 text-left text-sm font-medium text-violet-50 transition hover:bg-violet-950/50 disabled:cursor-not-allowed disabled:opacity-45"
+                                                        >
+                                                            {loading ? 'Working…' : 'Drop questions into chat'}
+                                                            <span className="mt-0.5 block text-xs font-normal text-violet-200/70">Opens talking points for step 2</span>
+                                                        </button>
+                                                    </div>
+                                                    {buttonFeedback ? (
+                                                        <div className="rounded-xl border border-emerald-900/35 bg-emerald-950/20 p-3 text-sm text-emerald-100/90">{buttonFeedback}</div>
+                                                    ) : null}
+                                                </div>
+                                                {extractedConcepts.length > 0 ? (
+                                                    <div className="border-t border-stone-800/80 bg-stone-950/35 p-4 sm:p-5">
+                                                        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Your notes from the text</p>
+                                                        <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto active-learning-scroll sm:grid-cols-2">
+                                                            {extractedConcepts.map((concept, index) => (
+                                                                <div key={index} className="rounded-xl border border-stone-700/80 bg-stone-900/90 p-3">
+                                                                    <div className="font-medium text-amber-200/95 text-sm">{concept.title}</div>
+                                                                    <div className="mt-1 text-xs leading-relaxed text-stone-500">{concept.description}</div>
+                                                                    {concept.relationships && concept.relationships.length > 0 ? (
+                                                                        <div className="mt-2 border-t border-stone-800 pt-2 text-[11px] text-stone-500">
+                                                                            <span className="font-medium text-stone-400">How they connect: </span>
+                                                                            <ul className="mt-1 list-inside list-disc">
+                                                                                {concept.relationships.map((rel, relIndex) => (
+                                                                                    <li key={relIndex}>
+                                                                                        {typeof rel === 'string' ? rel : `${rel.type}: ${rel.target} (${rel.strength})`}
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        </div>
+                                                                    ) : null}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ) : null}
                                             </div>
-                                        </div>
-                                        <div className="flex gap-2 flex-wrap mb-4">
-                                            <button
-                                                onClick={handleExtractConcepts}
-                                                disabled={loading}
-                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
-                                            >
-                                                {loading ? 'Processing...' : 'Extract Key Concepts'}
-                                            </button>
-                                            <button
-                                                onClick={handleIdentifyRelationships}
-                                                disabled={loading || extractedConcepts.length === 0}
-                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors text-sm"
-                                            >
-                                                {loading ? 'Processing...' : 'Identify Relationships'}
-                                            </button>
-                                            <button
-                                                onClick={handleGenerateQuestions}
-                                                disabled={loading}
-                                                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm"
-                                            >
-                                                {loading ? 'Processing...' : 'Generate Questions'}
-                                            </button>
-                                        </div>
-
-                                        {/* Button Feedback */}
-                                        {buttonFeedback && (
-                                            <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-4">
-                                                <div className="text-sm text-green-700">{buttonFeedback}</div>
+                                        </section>
+                                        ) : null}
+                                        {activeTab === 'talk' ? (
+                                        <section id="al-talk" role="tabpanel" aria-labelledby="al-tab-talk" className="scroll-mt-28">
+                                            <div className="flex min-h-[22rem] flex-col overflow-hidden rounded-2xl border border-stone-800/85 bg-stone-900/45 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.85)]">
+                                                <header className="flex flex-wrap items-start gap-3 border-b border-stone-800/80 bg-stone-950/40 px-4 py-4 sm:px-5">
+                                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-800/45 bg-sky-950/35 text-sky-200">
+                                                        <ChatBubbleOvalLeftEllipsisIcon className="h-6 w-6" aria-hidden />
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h3 className="text-lg font-semibold tracking-tight text-stone-50 sm:text-xl">Talk it through</h3>
+                                                        <p className="mt-1 text-sm text-stone-500">Say what you believe about the reading. A partner here will push back so you notice gaps—like study group, not a lecture.</p>
+                                                    </div>
+                                                </header>
+                                                <div className="active-learning-scroll max-h-[min(48vh,26rem)] min-h-[12rem] flex-1 overflow-y-auto bg-stone-950/45 p-4 sm:p-5">
+                                                    {discussionHistory.length === 0 ? (
+                                                        <p className="py-8 text-center text-sm text-stone-500">Start with a sentence you could defend in class, or tap a starter below.</p>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            {discussionHistory.map((entry, index) => (
+                                                                <div key={index} className={`flex ${entry.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                                    <div
+                                                                        className={`max-w-[min(100%,30rem)] rounded-2xl px-4 py-2.5 ${entry.type === 'user'
+                                                                            ? 'border border-amber-700/40 bg-amber-950/45 text-stone-50'
+                                                                            : 'border border-stone-700 bg-stone-900 text-stone-200'
+                                                                            }`}
+                                                                    >
+                                                                        <p className="text-sm leading-relaxed">{entry.content}</p>
+                                                                        <p className={`mt-1 text-[10px] ${entry.type === 'user' ? 'text-amber-200/65' : 'text-stone-500'}`}>
+                                                                            {new Date(entry.timestamp).toLocaleTimeString()}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                            <div ref={discussionEndRef} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="border-t border-stone-800/80 bg-stone-950/30 p-4 sm:p-5">
+                                                    <p className="mb-2 text-xs font-medium text-stone-500">Try a starter (tap to edit, then Send)</p>
+                                                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                                                        {discussionStarters.map((s, si) => (
+                                                            <button
+                                                                key={si}
+                                                                type="button"
+                                                                onClick={() => setUserInput(s)}
+                                                                className="rounded-lg border border-stone-700 bg-stone-900/80 px-3 py-2 text-left text-xs leading-snug text-stone-300 transition hover:border-amber-700/45 hover:text-stone-100"
+                                                            >
+                                                                {s}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <textarea
+                                                        value={userInput}
+                                                        onChange={(e) => setUserInput(e.target.value)}
+                                                        placeholder="Type in your own words what you think—and what might be wrong with that view."
+                                                        className="w-full resize-none rounded-xl border border-stone-700 bg-stone-950/90 p-3 text-sm text-stone-200 placeholder:text-stone-600 focus:border-amber-600/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                                        rows={3}
+                                                    />
+                                                    <div className="mt-3 flex justify-end">
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleDiscussionSubmit}
+                                                            disabled={!userInput.trim()}
+                                                            className="rounded-xl border border-emerald-600/55 bg-emerald-700/90 px-6 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                                        >
+                                                            Send message
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-
-                                    {/* Concept Extraction Results */}
-                                    {extractedConcepts.length > 0 && (
-                                        <div className="bg-white border border-gray-200 rounded-xl p-6">
-                                            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                                Extracted Concepts ({extractedConcepts.length})
-                                            </h3>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {extractedConcepts.map((concept, index) => (
-                                                    <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                                        <div className="font-medium text-blue-800">{concept.title}</div>
-                                                        <div className="text-sm text-blue-600 mb-2">{concept.description}</div>
-                                                        {concept.relationships && (
-                                                            <div className="text-xs text-blue-500 border-t border-blue-300 pt-2">
-                                                                <strong>Relationships:</strong>
-                                                                <ul className="list-disc list-inside mt-1">
-                                                                    {concept.relationships.map((rel, relIndex) => (
-                                                                        <li key={relIndex}>{rel.type}: {rel.target} ({rel.strength})</li>
-                                                                    ))}
-                                                                </ul>
+                                        </section>
+                                        ) : null}
+                                        {activeTab === 'try' ? (
+                                        <section id="al-try" role="tabpanel" aria-labelledby="al-tab-try" className="scroll-mt-28">
+                                            <div className="overflow-hidden rounded-2xl border border-stone-800/85 bg-stone-900/45 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.85)]">
+                                                <header className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-800/80 bg-stone-950/40 px-4 py-4 sm:px-5">
+                                                    <div className="flex items-start gap-3">
+                                                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-800/45 bg-amber-950/35 text-amber-200">
+                                                            <BeakerIcon className="h-6 w-6" aria-hidden />
+                                                        </span>
+                                                        <div>
+                                                            <h3 className="text-lg font-semibold tracking-tight text-stone-50 sm:text-xl">Try a quick choice</h3>
+                                                            <p className="mt-1 text-sm text-stone-500">One short situation at a time. Pick what you would do, then read the feedback—fast practice beats rereading.</p>
+                                                        </div>
+                                                    </div>
+                                                    {scenarioCount > 1 ? (
+                                                        <div className="flex items-center gap-2 rounded-lg border border-stone-800 bg-stone-950/60 px-2 py-1">
+                                                            <button
+                                                                type="button"
+                                                                aria-label="Previous situation"
+                                                                disabled={scenarioSafeIndex <= 0}
+                                                                onClick={() => setActiveScenarioIndex((i) => Math.max(0, i - 1))}
+                                                                className="rounded-md px-2 py-1 text-sm text-stone-300 transition hover:bg-stone-800 disabled:opacity-30"
+                                                            >
+                                                                ←
+                                                            </button>
+                                                            <span className="tabular-nums text-xs text-stone-400">
+                                                                {scenarioSafeIndex + 1} / {scenarioCount}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                aria-label="Next situation"
+                                                                disabled={scenarioSafeIndex >= scenarioCount - 1}
+                                                                onClick={() => setActiveScenarioIndex((i) => Math.min(scenarioCount - 1, i + 1))}
+                                                                className="rounded-md px-2 py-1 text-sm text-stone-300 transition hover:bg-stone-800 disabled:opacity-30"
+                                                            >
+                                                                →
+                                                            </button>
+                                                        </div>
+                                                    ) : null}
+                                                </header>
+                                                {activeScenario ? (
+                                                    <div className="p-4 sm:p-6">
+                                                        <h4 className="text-base font-semibold text-stone-50 sm:text-lg">{activeScenario.title || `Situation ${scenarioSafeIndex + 1}`}</h4>
+                                                        {activeScenario.description ? (
+                                                            <p className="mt-1 text-sm text-stone-500">{activeScenario.description}</p>
+                                                        ) : null}
+                                                        <div className="mt-4 rounded-xl border border-amber-900/30 bg-amber-950/15 p-4">
+                                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-200/90">What is happening</p>
+                                                            <p className="mt-2 text-sm leading-relaxed text-stone-300">{activeScenario.situation}</p>
+                                                        </div>
+                                                        {!scenarioResults[scenarioSafeIndex] ? (
+                                                            <div className="mt-4 space-y-2">
+                                                                <p className="text-sm font-medium text-stone-400">What would you do?</p>
+                                                                {(activeScenario.options || []).map((opt, optIdx) => (
+                                                                    <button
+                                                                        key={optIdx}
+                                                                        type="button"
+                                                                        onClick={() => handleScenarioResponse(scenarioSafeIndex, opt)}
+                                                                        className="block w-full rounded-xl border border-stone-700 bg-stone-900/90 p-3 text-left text-sm text-stone-200 transition hover:border-amber-600/45 hover:bg-stone-800"
+                                                                    >
+                                                                        {opt}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="mt-4 rounded-xl border border-emerald-900/35 bg-emerald-950/20 p-4">
+                                                                <p className="text-sm font-semibold text-emerald-200">Feedback · {scenarioResults[scenarioSafeIndex].score}/100</p>
+                                                                <p className="mt-2 text-sm leading-relaxed text-emerald-100/90">{scenarioResults[scenarioSafeIndex].feedback}</p>
+                                                                <p className="mt-3 text-xs text-stone-500">
+                                                                    <span className="text-stone-400">Your choice: </span>
+                                                                    {scenarioResults[scenarioSafeIndex].userResponse}
+                                                                </p>
                                                             </div>
                                                         )}
                                                     </div>
-                                                ))}
+                                                ) : (
+                                                    <div className="px-4 py-12 text-center text-sm text-stone-500 sm:px-6">
+                                                        No practice situations yet. Use Regenerate if this stays empty.
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Phase 2: Simulated Group Discussion */}
-                            {activePhase === 'collaboration' && (
-                                <div className="space-y-6">
-                                    <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-                                        <h2 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-                                            <ChatBubbleOvalLeftEllipsisIcon className="w-6 h-6 text-green-600" />
-                                            Simulated Academic Discussion
-                                        </h2>
-                                        <p className="text-sm text-gray-600 mb-4">
-                                            <strong>Research Basis:</strong> Active learners prefer group communication and learn through collaborative discourse (Social Learning Theory, Vygotsky 1978)
-                                        </p>
-                                    </div>
-
-                                    {/* Discussion Interface */}
-                                    <div className="bg-white border border-gray-200 rounded-xl p-6">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                            AI Academic Discussion Partner
-                                        </h3>
-
-                                        {/* Discussion History */}
-                                        <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto mb-4">
-                                            {discussionHistory.length === 0 ? (
-                                                <p className="text-gray-500 text-center py-8">
-                                                    Start an academic discussion about the document content. The AI will engage with your ideas and challenge your thinking.
-                                                </p>
-                                            ) : (
-                                                <div className="space-y-4">
-                                                    {discussionHistory.map((entry, index) => (
-                                                        <div
-                                                            key={index}
-                                                            className={`flex ${entry.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                                                        >
-                                                            <div
-                                                                className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${entry.type === 'user'
-                                                                    ? 'bg-blue-600 text-white'
-                                                                    : 'bg-white border border-gray-300 text-gray-800'
-                                                                    }`}
-                                                            >
-                                                                <p className="text-sm">{entry.content}</p>
-                                                                <p className={`text-xs mt-1 ${entry.type === 'user' ? 'text-blue-100' : 'text-gray-500'
-                                                                    }`}>
-                                                                    {new Date(entry.timestamp).toLocaleTimeString()}
-                                                                </p>
+                                        </section>
+                                        ) : null}
+                                        {activeTab === 'teach' ? (
+                                        <section id="al-teach" role="tabpanel" aria-labelledby="al-tab-teach" className="scroll-mt-28">
+                                            <div className="overflow-hidden rounded-2xl border border-stone-800/85 bg-stone-900/45 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.85)]">
+                                                <header className="flex flex-wrap items-start gap-3 border-b border-stone-800/80 bg-stone-950/40 px-4 py-4 sm:px-5">
+                                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-800/45 bg-amber-950/35 text-amber-200">
+                                                        <PresentationChartLineIcon className="h-6 w-6" aria-hidden />
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h3 className="text-lg font-semibold tracking-tight text-stone-50 sm:text-xl">Explain it simply</h3>
+                                                        <p className="mt-1 text-sm text-stone-500">Teaching forces clarity. Build a short summary, a how-I-would-explain outline, questions you would ask yourself, and a tiny action plan.</p>
+                                                    </div>
+                                                </header>
+                                                <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4 lg:p-5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleCreateSummary}
+                                                        className="rounded-xl border border-amber-800/40 bg-amber-950/25 px-4 py-4 text-left transition hover:bg-amber-950/40"
+                                                    >
+                                                        <span className="block text-sm font-semibold text-amber-100">Short summary</span>
+                                                        <span className="mt-1 block text-xs text-amber-200/70">Plain-language version</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleCreateOutline}
+                                                        className="rounded-xl border border-sky-800/40 bg-sky-950/25 px-4 py-4 text-left transition hover:bg-sky-950/40"
+                                                    >
+                                                        <span className="block text-sm font-semibold text-sky-100">Talk track</span>
+                                                        <span className="mt-1 block text-xs text-sky-200/70">Bullets you would say aloud</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleGeneratePracticeQuestions}
+                                                        className="rounded-xl border border-emerald-800/40 bg-emerald-950/25 px-4 py-4 text-left transition hover:bg-emerald-950/40"
+                                                    >
+                                                        <span className="block text-sm font-semibold text-emerald-100">Check yourself</span>
+                                                        <span className="mt-1 block text-xs text-emerald-200/70">Questions to test recall</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handlePlanImplementation}
+                                                        className="rounded-xl border border-violet-800/40 bg-violet-950/25 px-4 py-4 text-left transition hover:bg-violet-950/40"
+                                                    >
+                                                        <span className="block text-sm font-semibold text-violet-100">Do one thing</span>
+                                                        <span className="mt-1 block text-xs text-violet-200/70">Small next step with the ideas</span>
+                                                    </button>
+                                                </div>
+                                                <div className="space-y-4 border-t border-stone-800/70 bg-stone-950/25 p-4 sm:p-5">
+                                                    {executiveSummary ? (
+                                                        <div className="rounded-xl border border-stone-800 bg-stone-900/80 p-4">
+                                                            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Summary</h4>
+                                                            <div className="whitespace-pre-wrap text-sm leading-relaxed text-stone-300">{executiveSummary}</div>
+                                                        </div>
+                                                    ) : null}
+                                                    {teachingOutline ? (
+                                                        <div className="rounded-xl border border-stone-800 bg-stone-900/80 p-4">
+                                                            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Talk track</h4>
+                                                            <div className="whitespace-pre-wrap text-sm leading-relaxed text-stone-300">{teachingOutline}</div>
+                                                        </div>
+                                                    ) : null}
+                                                    {practiceQuestions.length > 0 ? (
+                                                        <div className="rounded-xl border border-stone-800 bg-stone-900/80 p-4">
+                                                            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Check yourself</h4>
+                                                            <div className="space-y-2">
+                                                                {practiceQuestions.map((question, index) => (
+                                                                    <div key={index} className="rounded-lg border border-emerald-900/25 bg-emerald-950/10 p-2.5 text-sm text-stone-300">
+                                                                        <span className="font-medium text-emerald-300/90">Q{index + 1}. </span>
+                                                                        {question}
+                                                                    </div>
+                                                                ))}
                                                             </div>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Discussion Input */}
-                                        <div className="space-y-3">
-                                            <textarea
-                                                value={userInput}
-                                                onChange={(e) => setUserInput(e.target.value)}
-                                                placeholder="Share your thoughts, ask questions, or present your analysis of the document content..."
-                                                className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                rows={3}
-                                            />
-                                            <div className="flex justify-between items-center">
-                                                <div className="text-xs text-gray-500">
-                                                    Engage in academic discourse • Ask probing questions • Challenge assumptions
-                                                </div>
-                                                <button
-                                                    onClick={handleDiscussionSubmit}
-                                                    disabled={!userInput.trim()}
-                                                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                >
-                                                    Engage Discussion
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Phase 3: Immediate Application Lab */}
-                            {activePhase === 'application' && (
-                                <div className="space-y-6">
-                                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-6">
-                                        <h2 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-                                            <BeakerIcon className="w-6 h-6 text-purple-600" />
-                                            Immediate Application Laboratory
-                                        </h2>
-                                        <p className="text-sm text-gray-600 mb-4">
-                                            <strong>Research Basis:</strong> Active learners process information through experimentation and immediate application (Experiential Learning Theory, Kolb 1984)
-                                        </p>
-                                    </div>
-
-                                    {/* Interactive Scenario Generator */}
-                                    <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                            Interactive Scenario Lab
-                                        </h3>
-                                        <div className="bg-purple-50 rounded-lg p-4 mb-4">
-                                            <h4 className="font-medium text-purple-800 mb-2">Current Scenario:</h4>
-                                            <p className="text-sm text-purple-700 mb-3">
-                                                You are a financial advisor consulting with a client who wants to invest 20% of their portfolio in cryptocurrency. They are concerned about volatility but excited about potential returns. How do you advise them?
-                                            </p>
-                                        </div>
-
-                                        <div className="space-y-3 mb-4">
-                                            <h4 className="font-medium text-gray-700">Choose your approach:</h4>
-                                            <button
-                                                onClick={() => handleScenarioResponse(0, "Recommend starting with a smaller allocation (5-10%) and gradually increasing as they become more comfortable with the technology and market dynamics.")}
-                                                className="block w-full text-left p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors"
-                                            >
-                                                <span className="text-sm">Recommend conservative approach with gradual increase</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleScenarioResponse(0, "Advise them to proceed with the 20% allocation but diversify across multiple cryptocurrencies to reduce risk.")}
-                                                className="block w-full text-left p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors"
-                                            >
-                                                <span className="text-sm">Support their plan with diversification strategy</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleScenarioResponse(0, "Recommend waiting until they have a better understanding of the technology and market before making any investment.")}
-                                                className="block w-full text-left p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors"
-                                            >
-                                                <span className="text-sm">Suggest education before investment</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleScenarioResponse(0, "Provide comprehensive risk analysis and let them make an informed decision based on their risk tolerance.")}
-                                                className="block w-full text-left p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors"
-                                            >
-                                                <span className="text-sm">Provide analysis and let client decide</span>
-                                            </button>
-                                        </div>
-
-                                        {/* Scenario Results */}
-                                        {scenarioResults[0] && (
-                                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                                <h4 className="font-medium text-green-800 mb-2">Feedback & Analysis</h4>
-                                                <div className="text-sm text-green-700 mb-2">
-                                                    <strong>Score:</strong> {scenarioResults[0].score}/100
-                                                </div>
-                                                <p className="text-sm text-green-700 mb-3">{scenarioResults[0].feedback}</p>
-                                                <div className="text-xs text-green-600">
-                                                    <strong>Your Response:</strong> {scenarioResults[0].userResponse}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Additional Practice Scenarios */}
-                                    <div className="bg-white border border-gray-200 rounded-xl p-6">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                            Additional Practice Scenarios
-                                        </h3>
-                                        <div className="grid gap-3">
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                                <h4 className="font-medium text-blue-800 mb-2">Technical Implementation</h4>
-                                                <p className="text-sm text-blue-700 mb-3">
-                                                    Your company wants to implement blockchain for supply chain tracking. What are the key considerations?
-                                                </p>
-                                                {!scenarioResults[1] ? (
-                                                    <div className="space-y-2">
-                                                        <button
-                                                            onClick={() => handleScenarioResponse(1, "Focus on scalability, integration with existing systems, and staff training requirements")}
-                                                            className="block w-full text-left px-3 py-2 bg-blue-100 border border-blue-300 rounded text-xs hover:bg-blue-200 transition-colors"
-                                                        >
-                                                            Focus on technical infrastructure and scalability
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleScenarioResponse(1, "Prioritize regulatory compliance, data privacy, and legal framework alignment")}
-                                                            className="block w-full text-left px-3 py-2 bg-blue-100 border border-blue-300 rounded text-xs hover:bg-blue-200 transition-colors"
-                                                        >
-                                                            Prioritize compliance and legal considerations
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleScenarioResponse(1, "Conduct pilot program with key stakeholders and measure ROI before full implementation")}
-                                                            className="block w-full text-left px-3 py-2 bg-blue-100 border border-blue-300 rounded text-xs hover:bg-blue-200 transition-colors"
-                                                        >
-                                                            Start with pilot program and stakeholder buy-in
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="bg-blue-100 border border-blue-300 rounded p-3">
-                                                        <div className="text-xs text-blue-800 mb-1"><strong>Score:</strong> {scenarioResults[1].score}/100</div>
-                                                        <div className="text-xs text-blue-700">{scenarioResults[1].feedback}</div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                                <h4 className="font-medium text-green-800 mb-2">Regulatory Compliance</h4>
-                                                <p className="text-sm text-green-700 mb-3">
-                                                    A client asks about tax implications of cryptocurrency trading. How do you respond?
-                                                </p>
-                                                {!scenarioResults[2] ? (
-                                                    <div className="space-y-2">
-                                                        <button
-                                                            onClick={() => handleScenarioResponse(2, "Recommend consulting a tax professional and keeping detailed transaction records")}
-                                                            className="block w-full text-left px-3 py-2 bg-green-100 border border-green-300 rounded text-xs hover:bg-green-200 transition-colors"
-                                                        >
-                                                            Recommend professional tax consultation
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleScenarioResponse(2, "Explain general tax principles but emphasize the need for jurisdiction-specific advice")}
-                                                            className="block w-full text-left px-3 py-2 bg-green-100 border border-green-300 rounded text-xs hover:bg-green-200 transition-colors"
-                                                        >
-                                                            Provide general guidance with disclaimers
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleScenarioResponse(2, "Direct them to official tax authority resources and documentation")}
-                                                            className="block w-full text-left px-3 py-2 bg-green-100 border border-green-300 rounded text-xs hover:bg-green-200 transition-colors"
-                                                        >
-                                                            Direct to official tax resources
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="bg-green-100 border border-green-300 rounded p-3">
-                                                        <div className="text-xs text-green-800 mb-1"><strong>Score:</strong> {scenarioResults[2].score}/100</div>
-                                                        <div className="text-xs text-green-700">{scenarioResults[2].feedback}</div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                                                <h4 className="font-medium text-orange-800 mb-2">Security Assessment</h4>
-                                                <p className="text-sm text-orange-700 mb-3">
-                                                    An organization experiences a potential security breach in their crypto wallet. What immediate steps should be taken?
-                                                </p>
-                                                {!scenarioResults[3] ? (
-                                                    <div className="space-y-2">
-                                                        <button
-                                                            onClick={() => handleScenarioResponse(3, "Immediately isolate affected systems, transfer remaining funds to secure wallets, and conduct forensic analysis")}
-                                                            className="block w-full text-left px-3 py-2 bg-orange-100 border border-orange-300 rounded text-xs hover:bg-orange-200 transition-colors"
-                                                        >
-                                                            Immediate isolation and fund protection
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleScenarioResponse(3, "Notify relevant authorities, document the incident, and implement emergency response protocols")}
-                                                            className="block w-full text-left px-3 py-2 bg-orange-100 border border-orange-300 rounded text-xs hover:bg-orange-200 transition-colors"
-                                                        >
-                                                            Follow incident response procedures
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleScenarioResponse(3, "Assess the scope of compromise, change all credentials, and communicate with stakeholders")}
-                                                            className="block w-full text-left px-3 py-2 bg-orange-100 border border-orange-300 rounded text-xs hover:bg-orange-200 transition-colors"
-                                                        >
-                                                            Comprehensive security assessment
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="bg-orange-100 border border-orange-300 rounded p-3">
-                                                        <div className="text-xs text-orange-800 mb-1"><strong>Score:</strong> {scenarioResults[3].score}/100</div>
-                                                        <div className="text-xs text-orange-700">{scenarioResults[3].feedback}</div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Phase 4: Knowledge Integration */}
-                            {activePhase === 'integration' && (
-                                <div className="space-y-6">
-                                    <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
-                                        <h2 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-                                            <PresentationChartLineIcon className="w-6 h-6 text-orange-600" />
-                                            Knowledge Integration & Teaching Preparation
-                                        </h2>
-                                        <p className="text-sm text-gray-600 mb-4">
-                                            <strong>Research Basis:</strong> Active learners retain information better when they prepare to teach or explain concepts to others (Bloom's Taxonomy, 1956)
-                                        </p>
-                                    </div>
-
-                                    {/* Teaching Preparation Interface */}
-                                    <div className="bg-white border border-gray-200 rounded-xl p-6">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                            Teaching Preparation Workshop
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                                                <h4 className="font-medium text-orange-800 mb-2">Create Executive Summary</h4>
-                                                <p className="text-sm text-orange-700 mb-3">
-                                                    Distill key concepts into a professional summary
-                                                </p>
-                                                <button
-                                                    onClick={handleCreateSummary}
-                                                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
-                                                >
-                                                    Start Summary
-                                                </button>
-                                            </div>
-                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                                <h4 className="font-medium text-blue-800 mb-2">Prepare Teaching Outline</h4>
-                                                <p className="text-sm text-blue-700 mb-3">
-                                                    Structure content for explaining to others
-                                                </p>
-                                                <button
-                                                    onClick={handleCreateOutline}
-                                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                                                >
-                                                    Create Outline
-                                                </button>
-                                            </div>
-                                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                                <h4 className="font-medium text-green-800 mb-2">Generate Practice Questions</h4>
-                                                <p className="text-sm text-green-700 mb-3">
-                                                    Create questions to test understanding
-                                                </p>
-                                                <button
-                                                    onClick={handleGeneratePracticeQuestions}
-                                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                                                >
-                                                    Generate Questions
-                                                </button>
-                                            </div>
-                                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                                                <h4 className="font-medium text-purple-800 mb-2">Implementation Plan</h4>
-                                                <p className="text-sm text-purple-700 mb-3">
-                                                    Create actionable steps for applying concepts
-                                                </p>
-                                                <button
-                                                    onClick={handlePlanImplementation}
-                                                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
-                                                >
-                                                    Plan Implementation
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Generated Content Display */}
-                                    {
-                                        executiveSummary && (
-                                            <div className="bg-white border border-gray-200 rounded-xl p-6">
-                                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Executive Summary</h3>
-                                                <div className="bg-orange-50 rounded-lg p-4">
-                                                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{executiveSummary}</div>
-                                                </div>
-                                            </div>
-                                        )
-                                    }
-
-                                    {
-                                        teachingOutline && (
-                                            <div className="bg-white border border-gray-200 rounded-xl p-6">
-                                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Teaching Outline</h3>
-                                                <div className="bg-blue-50 rounded-lg p-4">
-                                                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{teachingOutline}</div>
-                                                </div>
-                                            </div>
-                                        )
-                                    }
-
-                                    {
-                                        practiceQuestions.length > 0 && (
-                                            <div className="bg-white border border-gray-200 rounded-xl p-6">
-                                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Practice Questions</h3>
-                                                <div className="space-y-3">
-                                                    {practiceQuestions.map((question, index) => (
-                                                        <div key={index} className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                                            <div className="font-medium text-green-800">Q{index + 1}:</div>
-                                                            <div className="text-sm text-green-700">{question}</div>
+                                                    ) : null}
+                                                    {implementationPlan ? (
+                                                        <div className="rounded-xl border border-stone-800 bg-stone-900/80 p-4">
+                                                            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Next step</h4>
+                                                            <div className="whitespace-pre-wrap text-sm leading-relaxed text-stone-300">{implementationPlan}</div>
                                                         </div>
-                                                    ))}
+                                                    ) : null}
                                                 </div>
                                             </div>
-                                        )
-                                    }
-
-                                    {
-                                        implementationPlan && (
-                                            <div className="bg-white border border-gray-200 rounded-xl p-6">
-                                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Implementation Plan</h3>
-                                                <div className="bg-purple-50 rounded-lg p-4">
-                                                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{implementationPlan}</div>
-                                                </div>
-                                            </div>
-                                        )
-                                    }
-
-                                    {/* Competency Validation */}
-                                    <div className="bg-white border border-gray-200 rounded-xl p-6">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                            Learning Competency Validation
-                                        </h3>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                                <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                                                <span className="text-sm text-green-800">Direct material engagement completed</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                                <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                                                <span className="text-sm text-green-800">Collaborative discussion participation verified</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                                <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                                                <span className="text-sm text-green-800">Practical application exercises completed</span>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                                <ClockIcon className="w-5 h-5 text-blue-600" />
-                                                <span className="text-sm text-blue-800">Knowledge integration in progress</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div >
-                            )}
-                        </div >
-
-                        {/* Research Information Sidebar */}
-                        < div className="w-80 bg-gray-50 border-l border-gray-200 p-6 overflow-y-auto" >
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                Research Foundation
-                            </h3>
-
-                            <div className="space-y-4">
-                                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                    <h4 className="font-medium text-gray-800 mb-2">Felder-Silverman Model</h4>
-                                    <p className="text-xs text-gray-600">
-                                        Active learners engage directly with material and prefer group communication over individual study.
-                                    </p>
-                                </div>
-
-                                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                    <h4 className="font-medium text-gray-800 mb-2">Learning Effectiveness</h4>
-                                    <p className="text-xs text-gray-600">
-                                        Research shows 23% higher engagement and 42% better retention when active processing is provided.
-                                    </p>
-                                </div>
-
-                                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                    <h4 className="font-medium text-gray-800 mb-2">Current Session</h4>
-                                    <div className="space-y-2 text-xs">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Engagement Time:</span>
-                                            <span className="font-medium">{Math.floor(processingMetrics.engagementTime / 60)}m {processingMetrics.engagementTime % 60}s</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Concepts Processed:</span>
-                                            <span className="font-medium">{processingMetrics.conceptsProcessed}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Applications:</span>
-                                            <span className="font-medium">{processingMetrics.applicationsCompleted}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Discussion Depth:</span>
-                                            <span className="font-medium">{processingMetrics.discussionDepth}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                        </section>
+                                        ) : null}
                             </div>
-                        </div >
-                    </div >
+                        </div>
+                    </div>
                 )}
-            </div >
-        </div >
+            </div>
+        </div>
     );
+
+    return typeof document !== 'undefined' ? createPortal(shell, document.body) : null;
 };
 
 export default ActiveLearning;

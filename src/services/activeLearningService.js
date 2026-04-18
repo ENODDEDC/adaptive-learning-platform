@@ -1,4 +1,4 @@
-import { GroqGenAI as GoogleGenerativeAI } from '@/lib/groqGenAI';
+import { GroqGenAI as GoogleGenerativeAI, resolveOpenAICompatApiKey } from '@/lib/groqGenAI';
 
 /**
  * Active Learning Service
@@ -12,10 +12,139 @@ class ActiveLearningService {
     this.model = null;
   }
 
+  /** Strip fences and extract first top-level JSON object. */
+  extractJsonObject(rawText) {
+    if (!rawText || typeof rawText !== 'string') return null;
+    const cleaned = rawText.replace(/```json\n?|\n?```/g, '').trim();
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    return match ? match[0] : null;
+  }
+
+  parseInteractivePayload(rawText) {
+    const jsonStr = this.extractJsonObject(rawText);
+    if (!jsonStr) throw new Error('No JSON object found in model output');
+    return JSON.parse(jsonStr);
+  }
+
+  validateActiveLearningShape(obj) {
+    if (!obj || typeof obj !== 'object') throw new Error('Invalid active learning payload');
+    const et = obj.engagementTools;
+    if (!et || typeof et !== 'object') throw new Error('Missing engagementTools');
+    if (!Array.isArray(et.concepts) || et.concepts.length < 1) {
+      throw new Error('engagementTools.concepts must be a non-empty array');
+    }
+    if (!Array.isArray(obj.collaborationTopics) || obj.collaborationTopics.length < 1) {
+      throw new Error('collaborationTopics must be a non-empty array');
+    }
+    if (!Array.isArray(obj.applicationScenarios) || obj.applicationScenarios.length < 1) {
+      throw new Error('applicationScenarios must be a non-empty array');
+    }
+    if (!Array.isArray(obj.integrationActivities) || obj.integrationActivities.length < 1) {
+      throw new Error('integrationActivities must be a non-empty array');
+    }
+  }
+
+  /**
+   * Fill missing sections using the first model-produced concept (still from the same model run / document).
+   * Avoids hard failure when the model returns valid JSON but omits a section or truncates arrays.
+   */
+  normalizeActiveLearningPayload(obj, truncatedContent) {
+    if (!obj || typeof obj !== 'object') return;
+    if (!obj.engagementTools || typeof obj.engagementTools !== 'object') {
+      obj.engagementTools = { concepts: [], annotations: [], questions: [] };
+    }
+    const et = obj.engagementTools;
+    if (!Array.isArray(et.concepts)) et.concepts = [];
+    if (!Array.isArray(et.annotations)) et.annotations = [];
+    if (!Array.isArray(et.questions)) et.questions = [];
+    if (!Array.isArray(obj.collaborationTopics)) obj.collaborationTopics = [];
+    if (!Array.isArray(obj.applicationScenarios)) obj.applicationScenarios = [];
+    if (!Array.isArray(obj.integrationActivities)) obj.integrationActivities = [];
+
+    const excerpt = String(truncatedContent || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 420);
+    const c0 = et.concepts[0];
+    if (!c0) return;
+
+    if (obj.collaborationTopics.length === 0) {
+      obj.collaborationTopics.push({
+        title: `Discuss: ${c0.title || 'Core ideas'}`,
+        description: c0.description || (excerpt ? `Ground in this excerpt: ${excerpt}` : 'Discussion grounded in the document.'),
+        perspectives: ['View A', 'View B', 'View C'],
+        socraticQuestions: [
+          'Where does the document state this most clearly?',
+          'What would change your conclusion?'
+        ],
+        learningObjectives: ['Interpret key claims', 'Compare viewpoints']
+      });
+    }
+    if (obj.applicationScenarios.length === 0) {
+      obj.applicationScenarios.push({
+        title: `Apply: ${c0.title || 'Key material'}`,
+        description: 'Choose a path consistent with the document’s emphasis and constraints.',
+        situation: excerpt
+          ? `Context from the document: ${excerpt}`
+          : String(c0.description || c0.title || '').slice(0, 600),
+        options: [
+          'Favor the most cautious path the text supports',
+          'Favor the fastest path the text supports',
+          'Pause until preconditions in the text are satisfied'
+        ],
+        learningGoals: ['Transfer ideas to a concrete decision'],
+        competencies: ['Judgment under uncertainty']
+      });
+    }
+    if (obj.integrationActivities.length === 0) {
+      obj.integrationActivities.push({
+        title: `Synthesize: ${c0.title || 'Main themes'}`,
+        description: 'Consolidate what you would teach a colleague in two minutes.',
+        type: 'summary',
+        instructions: [
+          'List three claims the excerpt supports',
+          'Note one risk or caveat the text implies',
+          'State one follow-up task you would assign'
+        ],
+        outcomes: ['Clear verbal summary', 'Short actionable checklist']
+      });
+    }
+  }
+
+  async repairActiveLearningJson(brokenText, truncatedContent, fileName) {
+    this.initializeModels();
+    if (!this.model) throw new Error('Google AI service not available');
+
+    const repairPrompt = `You fix malformed JSON. The text below was meant to be a single JSON object for an active-learning lesson grounded in a document.
+
+Document file name: "${fileName}"
+Document excerpt (ground all content in this):
+${truncatedContent}
+
+Required top-level keys and types:
+- engagementTools: { concepts: array of {title, description, category, relationships}, annotations: array, questions: array }
+- collaborationTopics: array of {title, description, perspectives, socraticQuestions, learningObjectives}
+- applicationScenarios: array of {title, description, situation, options (array of strings), learningGoals, competencies}
+- integrationActivities: array of {title, description, type, instructions, outcomes}
+
+Return ONLY valid minified JSON. No markdown, no commentary.
+
+Broken model output:
+${String(brokenText).slice(0, 14000)}`;
+
+    const result = await this.model.generateContent(repairPrompt);
+    const response = await result.response;
+    const text = response.text().trim();
+    const parsed = this.parseInteractivePayload(text);
+    this.normalizeActiveLearningPayload(parsed, truncatedContent);
+    this.validateActiveLearningShape(parsed);
+    return parsed;
+  }
+
   initializeModels() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
+        this.genAI = new GoogleGenerativeAI();
         this.model = this.genAI.getGenerativeModel({
           model: "gemini-flash-lite-latest"
         });
@@ -35,15 +164,21 @@ class ActiveLearningService {
   async generateInteractiveContent(content, fileName) {
     try {
       console.log('🎯 Active Learning Service: Starting content generation...');
-      
+
+      if (!resolveOpenAICompatApiKey()) {
+        throw new Error(
+          'Server misconfiguration: set CEREBRAS_API_KEY (for api.cerebras.ai) or GROQ_API_KEY (for api.groq.com) to match OPENAI_COMPAT_CHAT_URL'
+        );
+      }
+
       this.initializeModels();
       
       if (!this.genAI) {
         throw new Error('Google AI service not available');
       }
 
-      // Truncate content if too long
-      const maxLength = 4000;
+      // Truncate content if too long (keep enough context to stay document-grounded)
+      const maxLength = 10000;
       const truncatedContent = content.length > maxLength 
         ? content.substring(0, maxLength) + "..."
         : content;
@@ -58,6 +193,8 @@ RESEARCH FOUNDATION:
 
 Document: "${fileName}"
 Content: "${truncatedContent}"
+
+CRITICAL: Every concept, discussion topic, application scenario, and integration activity MUST be clearly tied to specific ideas, terms, or situations from the Document Content above. Do not invent unrelated generic case studies.
 
 Generate professional, research-based active learning content with these components:
 
@@ -145,164 +282,49 @@ Return ONLY a valid JSON object with this structure:
       "outcomes": ["Expected outcome 1", "Expected outcome 2"]
     }
   ]
-}`;
+}
+
+Return ONLY that JSON object. No markdown fences, no text before or after.`;
+
+      const runGeneration = async (userPrompt) => {
+        const result = await this.model.generateContent(userPrompt);
+        const response = await result.response;
+        return response.text().trim();
+      };
 
       console.log('🎯 Sending prompt to Gemini...');
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const aiResponse = response.text().trim();
-      
+      let aiResponse = await runGeneration(prompt);
+
       console.log('🎯 Received response from Gemini');
       console.log('📝 Raw AI response length:', aiResponse.length);
 
-      // Parse the JSON response
       let parsedContent;
       try {
-        // Remove any markdown code blocks if present
-        const cleanedContent = aiResponse.replace(/```json\n?|\n?```/g, '').trim();
-        const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
-        
-        if (jsonMatch) {
-          parsedContent = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('No valid JSON found in response');
+        parsedContent = this.parseInteractivePayload(aiResponse);
+        this.normalizeActiveLearningPayload(parsedContent, truncatedContent);
+        this.validateActiveLearningShape(parsedContent);
+      } catch (firstErr) {
+        console.warn('Active learning: initial parse/validate failed', firstErr);
+        try {
+          parsedContent = await this.repairActiveLearningJson(aiResponse, truncatedContent, fileName);
+          this.normalizeActiveLearningPayload(parsedContent, truncatedContent);
+          this.validateActiveLearningShape(parsedContent);
+        } catch (repairErr) {
+          console.warn('Active learning: repair failed, retrying full generation', repairErr);
+          const strictSuffix =
+            '\n\nYour previous output was invalid JSON or failed validation. Respond again with ONLY one minified JSON object matching the schema exactly. No markdown.';
+          aiResponse = await runGeneration(prompt + strictSuffix);
+          try {
+            parsedContent = this.parseInteractivePayload(aiResponse);
+            this.normalizeActiveLearningPayload(parsedContent, truncatedContent);
+            this.validateActiveLearningShape(parsedContent);
+          } catch (finalErr) {
+            console.error('Active learning: final parse failed', finalErr);
+            throw new Error(
+              'Could not produce valid active-learning JSON from the model. Try again or use a shorter document section.'
+            );
+          }
         }
-      } catch (parseError) {
-        console.error('Failed to parse AI response:', parseError);
-        console.error('Raw content:', aiResponse);
-        
-        // Return a fallback response with evidence-based structure
-        parsedContent = {
-          engagementTools: {
-            concepts: [
-              {
-                title: "Primary Learning Concept",
-                description: "Main educational principle from the document",
-                category: "Primary",
-                relationships: ["Supporting concept", "Application area"]
-              },
-              {
-                title: "Supporting Framework",
-                description: "Secondary concept that supports main learning",
-                category: "Secondary", 
-                relationships: ["Primary concept", "Practical application"]
-              },
-              {
-                title: "Implementation Strategy",
-                description: "Practical approach for applying concepts",
-                category: "Supporting",
-                relationships: ["Primary concept", "Real-world context"]
-              }
-            ],
-            annotations: [
-              {
-                type: "highlight",
-                prompt: "Identify and highlight key educational principles",
-                guidance: "Look for foundational concepts that can be applied"
-              },
-              {
-                type: "extract",
-                prompt: "Extract actionable insights from the content",
-                guidance: "Focus on practical applications and implementations"
-              }
-            ],
-            questions: [
-              {
-                prompt: "What are the core principles presented in this document?",
-                type: "analytical"
-              },
-              {
-                prompt: "How could these concepts be applied in a professional setting?",
-                type: "application"
-              }
-            ]
-          },
-          collaborationTopics: [
-            {
-              title: "Effectiveness and Implementation",
-              description: "Analyze the practical application of document concepts",
-              perspectives: ["Academic researcher", "Industry practitioner", "End user"],
-              socraticQuestions: [
-                "What evidence supports the effectiveness of these approaches?",
-                "What challenges might arise in real-world implementation?"
-              ],
-              learningObjectives: ["Critical analysis", "Practical evaluation"]
-            },
-            {
-              title: "Future Implications and Innovation",
-              description: "Explore how these concepts might evolve and impact the field",
-              perspectives: ["Innovation advocate", "Cautious implementer", "Skeptical analyst"],
-              socraticQuestions: [
-                "How might these concepts change in the next 5-10 years?",
-                "What are the potential unintended consequences?"
-              ],
-              learningObjectives: ["Strategic thinking", "Innovation analysis"]
-            }
-          ],
-          applicationScenarios: [
-            {
-              title: "Professional Implementation Challenge",
-              description: "Apply document concepts to solve a workplace problem",
-              situation: "You are tasked with implementing the concepts from this document in your organization. Consider the practical challenges and opportunities.",
-              options: [
-                "Develop a comprehensive implementation plan with stakeholder buy-in",
-                "Start with a pilot program to test effectiveness",
-                "Conduct training sessions to build organizational capacity",
-                "Create measurement systems to track success"
-              ],
-              learningGoals: ["Strategic planning", "Change management"],
-              competencies: ["Implementation planning", "Stakeholder engagement"]
-            },
-            {
-              title: "Problem-Solving Application",
-              description: "Use document principles to address a complex challenge",
-              situation: "A situation has arisen that requires applying the principles from this document. How would you approach the problem systematically?",
-              options: [
-                "Analyze the problem using the document's framework",
-                "Collaborate with experts to develop solutions",
-                "Test multiple approaches based on the concepts",
-                "Evaluate outcomes and iterate on the solution"
-              ],
-              learningGoals: ["Problem-solving", "Systems thinking"],
-              competencies: ["Analytical thinking", "Solution development"]
-            }
-          ],
-          integrationActivities: [
-            {
-              title: "Executive Summary Creation",
-              description: "Synthesize key concepts into a professional summary",
-              type: "summary",
-              instructions: [
-                "Identify the 3-5 most important concepts",
-                "Explain their significance and relationships",
-                "Provide recommendations for application"
-              ],
-              outcomes: ["Clear communication of complex ideas", "Professional documentation skills"]
-            },
-            {
-              title: "Teaching Preparation Outline",
-              description: "Prepare to explain concepts to others",
-              type: "outline",
-              instructions: [
-                "Structure content in logical learning sequence",
-                "Identify key examples and analogies",
-                "Develop assessment questions"
-              ],
-              outcomes: ["Deep understanding through teaching preparation", "Knowledge organization skills"]
-            },
-            {
-              title: "Implementation Planning Workshop",
-              description: "Create actionable plans for applying concepts",
-              type: "implementation",
-              instructions: [
-                "Define specific implementation goals",
-                "Identify required resources and timeline",
-                "Develop success metrics and evaluation methods"
-              ],
-              outcomes: ["Practical application skills", "Project planning competency"]
-            }
-          ]
-        };
       }
 
       console.log('✅ Active learning content generated successfully');

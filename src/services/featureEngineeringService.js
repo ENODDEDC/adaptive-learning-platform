@@ -447,16 +447,31 @@ class FeatureEngineeringService {
       return this.getDefaultFeatures();
     }
 
+    const ai = aggregatedStats.aiAssistantUsage && typeof aggregatedStats.aiAssistantUsage === 'object'
+      ? aggregatedStats.aiAssistantUsage
+      : { totalInteractions: 0, totalPromptLength: 0 };
+    const activityEngagement =
+      aggregatedStats.activityEngagement && typeof aggregatedStats.activityEngagement === 'object'
+        ? aggregatedStats.activityEngagement
+        : {
+            quizzesCompleted: 0,
+            practiceQuestionsAttempted: 0,
+            discussionParticipation: 0,
+            reflectionJournalEntries: 0,
+            visualDiagramsViewed: 0,
+            handsOnLabsCompleted: 0,
+            conceptExplorationsCount: 0,
+            sequentialStepsCompleted: 0
+          };
+
     // Use aggregated stats directly (already computed)
     const aggregated = {
       modeUsage: aggregatedStats.modeUsage,
       aiAssistantUsage: {
-        ...aggregatedStats.aiAssistantUsage,
-        averagePromptLength: aggregatedStats.aiAssistantUsage.totalInteractions > 0
-          ? aggregatedStats.aiAssistantUsage.totalPromptLength / aggregatedStats.aiAssistantUsage.totalInteractions
-          : 0
+        ...ai,
+        averagePromptLength: ai.totalInteractions > 0 ? ai.totalPromptLength / ai.totalInteractions : 0
       },
-      activityEngagement: aggregatedStats.activityEngagement,
+      activityEngagement,
       totalInteractions: aggregatedStats.totalInteractionsProcessed || 0,
       totalLearningTime: 0,
       sessionCount: 1 // Approximation for aggregated data

@@ -9,7 +9,7 @@ class LearningModeRecommendationService {
   async initialize() {
     if (!this.genAI) {
       try {
-        this.genAI = new GoogleGenerativeAI(process.env.GROQ_API_KEY);
+        this.genAI = new GoogleGenerativeAI();
         this.model = this.genAI.getGenerativeModel({
           model: "gemini-flash-lite-latest"
         });
