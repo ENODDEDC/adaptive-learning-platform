@@ -30,7 +30,7 @@ const Layout = ({ children }) => {
     return false;
   });
   const [upcomingTasksExpanded, setUpcomingTasksExpanded] = useState(true);
-  const [immersiveConstellation, setImmersiveConstellation] = useState(false);
+  const [immersiveLearningShell, setImmersiveLearningShell] = useState(false);
   const {
     isCreateCourseModalOpen,
     closeCreateCourseModal,
@@ -119,26 +119,43 @@ const Layout = ({ children }) => {
     };
   }, []);
 
-  // Concept Constellation: hide main sidebar (body flag + direct window event — MutationObserver can miss timing)
+  // Full-screen learning overlays (constellation, global): hide main sidebar — sync body flags + events
   useEffect(() => {
     if (typeof document === 'undefined' || typeof window === 'undefined') return undefined;
-    const syncFromBody = () => setImmersiveConstellation(document.body.hasAttribute('data-immersive-constellation'));
+    const syncFromBody = () =>
+      setImmersiveLearningShell(
+        document.body.hasAttribute('data-immersive-constellation') ||
+          document.body.hasAttribute('data-immersive-global')
+      );
 
-    const onImmersiveEvent = (e) => {
-      if (e?.detail && typeof e.detail.open === 'boolean') {
-        setImmersiveConstellation(e.detail.open);
+    const onConstellation = (e) => {
+      if (e?.detail && typeof e.detail.open === 'boolean' && e.detail.open) {
+        setImmersiveLearningShell(true);
+      } else {
+        syncFromBody();
+      }
+    };
+
+    const onGlobal = (e) => {
+      if (e?.detail && typeof e.detail.open === 'boolean' && e.detail.open) {
+        setImmersiveLearningShell(true);
       } else {
         syncFromBody();
       }
     };
 
     syncFromBody();
-    window.addEventListener('assist-ed-immersive-constellation', onImmersiveEvent);
+    window.addEventListener('assist-ed-immersive-constellation', onConstellation);
+    window.addEventListener('assist-ed-immersive-global', onGlobal);
     const observer = new MutationObserver(() => syncFromBody());
-    observer.observe(document.body, { attributes: true, attributeFilter: ['data-immersive-constellation'] });
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['data-immersive-constellation', 'data-immersive-global']
+    });
 
     return () => {
-      window.removeEventListener('assist-ed-immersive-constellation', onImmersiveEvent);
+      window.removeEventListener('assist-ed-immersive-constellation', onConstellation);
+      window.removeEventListener('assist-ed-immersive-global', onGlobal);
       observer.disconnect();
     };
   }, []);
@@ -186,7 +203,7 @@ const Layout = ({ children }) => {
 
   // Prevent hydration mismatch by using consistent initial state
   const sidebarState = isSidebarCollapsed;
-  const mainContentMargin = immersiveConstellation
+  const mainContentMargin = immersiveLearningShell
     ? 'ml-0'
     : isSidebarCollapsed
       ? 'ml-16'
@@ -194,7 +211,7 @@ const Layout = ({ children }) => {
 
   return (
     <div className="bg-base-light overflow-hidden" style={{ height: `${viewportHeight}px` }}>
-      {!immersiveConstellation && (
+      {!immersiveLearningShell && (
         <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
       )}
       <CreateCourseModal
@@ -306,7 +323,7 @@ const Layout = ({ children }) => {
         }}
       />
       <div
-        className={`transition-all duration-500 ease-in-out ${mainContentMargin} h-full overflow-hidden flex flex-col ${immersiveConstellation ? 'pl-0' : 'pl-4'}`}
+        className={`transition-all duration-500 ease-in-out ${mainContentMargin} h-full overflow-hidden flex flex-col ${immersiveLearningShell ? 'pl-0' : 'pl-4'}`}
       >
         <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
         <main className="flex-1 overflow-hidden">

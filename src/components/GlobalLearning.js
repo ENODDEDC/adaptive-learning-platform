@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { Source_Serif_4 } from 'next/font/google';
 import {
-  XMarkIcon,
   ArrowPathIcon,
   ChevronLeftIcon,
   GlobeAltIcon,
@@ -14,41 +15,53 @@ import {
 import { trackBehavior } from '@/utils/learningBehaviorTracker';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 
-const GlobalLearning = ({
-  isActive,
-  onClose,
-  docxContent,
-  fileName,
-  pdfSource = null
-}) => {
+const IMMERSIVE_GLOBAL_EVENT = 'assist-ed-immersive-global';
+
+/** Calm editorial display for headings (global / big-picture mode). */
+const glDisplay = Source_Serif_4({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-gl-display',
+  display: 'swap'
+});
+
+const displayHeading = 'font-[family-name:var(--font-gl-display),ui-serif,Georgia,serif]';
+
+const GlobalLearning = ({ isActive, onClose, docxContent, fileName, pdfSource = null }) => {
   const [activeTab, setActiveTab] = useState('bigpicture');
   const [bigPicture, setBigPicture] = useState(null);
   const [interconnections, setInterconnections] = useState(null);
-
-  // Automatic time tracking for ML classification
-  useLearningModeTracking('globalLearning', isActive);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const tabs = [
-    {
-      key: 'bigpicture',
-      name: 'Big Picture',
-      icon: EyeIcon,
-      description: 'Overall context and significance'
-    },
-    {
-      key: 'interconnections',
-      name: 'Interconnections',
-      icon: ShareIcon,
-      description: 'How everything connects together'
+  useLearningModeTracking('globalLearning', isActive);
+
+  const tabs = useMemo(
+    () => [
+      { key: 'bigpicture', name: 'Overview', icon: EyeIcon },
+      { key: 'interconnections', name: 'Connections', icon: ShareIcon }
+    ],
+    []
+  );
+
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined' || !isActive) return undefined;
+    document.body.setAttribute('data-immersive-global', 'true');
+    window.dispatchEvent(new CustomEvent(IMMERSIVE_GLOBAL_EVENT, { detail: { open: true } }));
+    try {
+      window.dispatchEvent(new Event('collapseMainSidebar'));
+    } catch {
+      // ignore
     }
-  ];
+    return () => {
+      document.body.removeAttribute('data-immersive-global');
+      window.dispatchEvent(new CustomEvent(IMMERSIVE_GLOBAL_EVENT, { detail: { open: false } }));
+    };
+  }, [isActive]);
 
   useEffect(() => {
     if (isActive && (docxContent || pdfSource?.fileKey || pdfSource?.filePath)) {
       generateGlobalContent();
-      // Track mode activation
       trackBehavior('mode_activated', { mode: 'global', fileName });
     }
   }, [isActive, docxContent, pdfSource?.fileKey, pdfSource?.filePath]);
@@ -81,7 +94,7 @@ const GlobalLearning = ({
           const errorResult = await response.json();
           errorMessage = errorResult?.details || errorResult?.error || errorMessage;
         } catch {
-          // ignore JSON parsing failure
+          // ignore
         }
         throw new Error(errorMessage);
       }
@@ -94,9 +107,9 @@ const GlobalLearning = ({
       } else {
         throw new Error(result.error || 'Failed to generate global learning content');
       }
-    } catch (error) {
-      console.error('Error generating global content:', error);
-      setError(error.message);
+    } catch (err) {
+      console.error('Error generating global content:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -105,247 +118,225 @@ const GlobalLearning = ({
   const hasFullContent = Boolean(bigPicture && interconnections);
 
   const requestRegenerate = () => {
-    const ok = window.confirm(
-      'Regenerate global learning? This runs the AI again and uses more API quota.'
-    );
-    if (!ok) return;
+    if (!window.confirm('Regenerate? Uses more API quota.')) return;
     generateGlobalContent();
   };
 
+  const renderHeaderTabs = () => (
+    <nav
+      className="inline-flex w-full max-w-[min(100%,280px)] rounded-md border border-zinc-700/80 bg-zinc-900 p-0.5 sm:w-auto sm:max-w-none"
+      role="tablist"
+      aria-label="Global learning views"
+    >
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const selected = tab.key === activeTab;
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => {
+              setActiveTab(tab.key);
+              trackBehavior('tab_switched', { mode: 'global', tab: tab.key });
+            }}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded px-2 py-1.5 text-xs font-medium transition sm:flex-initial sm:px-3 sm:py-1.5 sm:text-sm ${
+              selected
+                ? 'bg-zinc-100 text-zinc-900 shadow-sm'
+                : 'text-zinc-400 hover:bg-zinc-800/90 hover:text-zinc-100'
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0 opacity-80 sm:h-4 sm:w-4" />
+            <span className="truncate">{tab.name}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+
+  const renderLoading = (tone) => (
+    <div className="flex min-h-[min(70vh,480px)] flex-col items-center justify-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 px-6">
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-300" />
+      <p className="text-sm text-zinc-400">{tone === 'web' ? 'Mapping links…' : 'Building overview…'}</p>
+    </div>
+  );
+
+  const renderErrorBlock = (retryLabel) => (
+    <div className="flex min-h-[min(70vh,420px)] flex-col items-center justify-center gap-4 rounded-2xl border border-red-900/50 bg-red-950/30 px-6 text-center">
+      <p className={`text-lg font-semibold text-red-200/95 ${displayHeading}`}>Something broke</p>
+      <p className="max-w-md text-sm text-zinc-400">{error}</p>
+      <button
+        type="button"
+        onClick={generateGlobalContent}
+        className="rounded-lg border border-zinc-600 bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-900 hover:bg-white"
+      >
+        {retryLabel}
+      </button>
+    </div>
+  );
+
+  const renderEmptyBlock = (label) => (
+    <div className="flex min-h-[min(70vh,420px)] flex-col items-center justify-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/30 px-6 text-center">
+      <p className={`text-base font-semibold text-zinc-100 ${displayHeading}`}>{label}</p>
+      <button
+        type="button"
+        onClick={generateGlobalContent}
+        className="rounded-lg border border-zinc-600 bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-900 hover:bg-white"
+      >
+        Generate
+      </button>
+    </div>
+  );
+
   const renderBigPicture = () => {
-    if (loading) {
-      return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-          <p className="text-gray-600">Analyzing the big picture...</p>
-        </div>
-      );
-    }
+    if (loading) return renderLoading('overview');
+    if (error) return renderErrorBlock('Try again');
+    if (!bigPicture) return renderEmptyBlock('No overview yet');
 
-    if (error) {
-      return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="text-red-500 text-center">
-            <p className="text-lg font-semibold">Analysis Failed</p>
-            <p className="text-sm text-gray-600 mt-2">{error}</p>
-          </div>
-          <button
-            onClick={generateGlobalContent}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      );
-    }
-
-    if (!bigPicture) {
-      return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="text-gray-500 text-center">
-            <p className="text-lg font-semibold">No Big Picture Available</p>
-            <p className="text-sm text-gray-600 mt-2">Click generate to analyze the overall context</p>
-          </div>
-          <button
-            onClick={generateGlobalContent}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            Generate Big Picture
-          </button>
-        </div>
-      );
-    }
+    const op = bigPicture.overallPurpose;
+    const ctx = bigPicture.bigPictureContext;
+    const sys = bigPicture.systemicView;
+    const pr = bigPicture.practicalRelevance;
+    const ls = bigPicture.learningStrategy;
 
     return (
-      <div className="space-y-6">
-        {/* Top bento: overview + learning approach side by side on large screens */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
-          {bigPicture.overallPurpose && (
-            <section className="xl:col-span-7 rounded-2xl border border-violet-200/70 bg-gradient-to-br from-violet-50/90 via-white to-white shadow-sm overflow-hidden">
-              <header className="flex items-center gap-2.5 px-5 py-3.5 border-b border-violet-100/80 bg-white/60 backdrop-blur-sm">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 text-white shadow-sm">
-                  <LightBulbIcon className="h-5 w-5" />
-                </span>
-                <h3 className="text-lg font-semibold tracking-tight text-slate-900">{bigPicture.overallPurpose.title}</h3>
-              </header>
-              <div className="p-5 sm:p-6 space-y-5">
-                <p className="text-[15px] sm:text-base text-slate-700 leading-relaxed max-w-prose">
-                  {bigPicture.overallPurpose.description}
-                </p>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-violet-100 bg-violet-500/[0.06] px-4 py-3.5">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-700 mb-1.5">Significance</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">{bigPicture.overallPurpose.realWorldSignificance}</p>
-                  </div>
-                  <div className="rounded-xl border border-sky-100 bg-sky-500/[0.06] px-4 py-3.5">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-sky-700 mb-1.5">Key question</p>
-                    <p className="text-sm text-slate-700 leading-relaxed font-medium">{bigPicture.overallPurpose.keyQuestion}</p>
-                  </div>
-                </div>
+      <div className="space-y-5 sm:space-y-6">
+        {op && (
+          <section className="rounded-2xl border border-zinc-700/60 bg-zinc-900/40 p-6 sm:p-9">
+            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">Focus</p>
+            <h2 className={`mt-2 text-2xl font-semibold leading-tight tracking-tight text-zinc-50 sm:text-3xl lg:text-[2rem] ${displayHeading}`}>
+              {op.title}
+            </h2>
+            <p className="mt-5 max-w-3xl text-base leading-relaxed text-zinc-300 sm:text-lg">{op.description}</p>
+            <div className="mt-8 grid gap-4 border-t border-zinc-800 pt-8 sm:grid-cols-2">
+              <div className="border-l-2 border-zinc-600 pl-4">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Why it matters</p>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-300">{op.realWorldSignificance}</p>
               </div>
-            </section>
-          )}
-
-          {bigPicture.learningStrategy && (
-            <section className="xl:col-span-5 rounded-2xl border border-fuchsia-200/70 bg-gradient-to-b from-fuchsia-50/50 to-white shadow-sm overflow-hidden flex flex-col">
-              <header className="flex items-center gap-2.5 px-5 py-3.5 border-b border-fuchsia-100/80">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-600 to-purple-600 text-white shadow-sm">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </span>
-                <h3 className="text-lg font-semibold tracking-tight text-slate-900">{bigPicture.learningStrategy.title}</h3>
-              </header>
-              <div className="p-5 flex-1 flex flex-col gap-4">
-                <p className="text-sm text-slate-600 leading-relaxed">{bigPicture.learningStrategy.description}</p>
-                <div className="grid grid-cols-1 gap-3 flex-1">
-                  <div className="rounded-xl border border-fuchsia-100 bg-white/80 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-fuchsia-700 mb-1">Starting point</p>
-                    <p className="text-sm text-slate-700">{bigPicture.learningStrategy.startingPoint}</p>
-                  </div>
-                  <div className="rounded-xl border border-fuchsia-100 bg-white/80 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-fuchsia-700 mb-1">Mental model</p>
-                    <p className="text-sm text-slate-700">{bigPicture.learningStrategy.mentalModel}</p>
-                  </div>
-                </div>
-                {bigPicture.learningStrategy.keyInsights?.length > 0 && (
-                  <div className="pt-1 border-t border-fuchsia-100/80">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-fuchsia-700 mb-2">Insights</p>
-                    <ul className="flex flex-col gap-2">
-                      {bigPicture.learningStrategy.keyInsights.map((insight, index) => (
-                        <li key={index} className="flex gap-2.5 text-sm text-slate-700 leading-snug">
-                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-fuchsia-100 text-[11px] font-bold text-fuchsia-800">
-                            {index + 1}
-                          </span>
-                          <span>{insight}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+              <div className="border-l-2 border-zinc-500 pl-4">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Anchor</p>
+                <p className="mt-2 text-sm font-medium leading-relaxed text-zinc-200">{op.keyQuestion}</p>
               </div>
-            </section>
-          )}
-        </div>
+            </div>
+          </section>
+        )}
 
-        {/* Wider context: timeline-style three beats */}
-        {bigPicture.bigPictureContext && (
-          <section className="rounded-2xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-            <header className="flex flex-wrap items-center gap-2.5 px-5 py-3.5 border-b border-slate-100 bg-slate-50/80">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600 text-white shadow-sm">
-                <GlobeAltIcon className="h-5 w-5" />
-              </span>
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900">{bigPicture.bigPictureContext.title}</h3>
-            </header>
-            <div className="p-5 sm:p-6">
-              <p className="text-sm sm:text-[15px] text-slate-700 leading-relaxed mb-6 max-w-4xl">{bigPicture.bigPictureContext.description}</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
-                <div className="hidden md:block absolute top-8 left-[16.66%] right-[16.66%] h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" aria-hidden />
-                {[
-                  { label: 'Broader field', body: bigPicture.bigPictureContext.broaderField },
-                  { label: 'Historical lens', body: bigPicture.bigPictureContext.historicalContext },
-                  { label: 'Future angle', body: bigPicture.bigPictureContext.futureImplications }
-                ].map((cell, i) => (
-                  <div
-                    key={cell.label}
-                    className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/40 p-4 items-start"
+        {ctx && (
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/25 p-5 sm:p-7">
+            <h3 className={`text-xl font-semibold text-zinc-50 sm:text-2xl ${displayHeading}`}>{ctx.title}</h3>
+            <p className="mt-3 max-w-4xl text-sm leading-relaxed text-zinc-400 sm:text-[15px]">{ctx.description}</p>
+            <div className="relative mt-8 grid gap-4 md:grid-cols-3">
+              <div className="hidden md:block absolute left-[10%] right-[10%] top-4 h-px bg-zinc-700/50" aria-hidden />
+              {[
+                { k: 'Field', body: ctx.broaderField },
+                { k: 'Past', body: ctx.historicalContext },
+                { k: 'Ahead', body: ctx.futureImplications }
+              ].map((cell, i) => (
+                <div key={cell.k} className="relative flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-950/50 p-4 pt-5 md:pt-6">
+                  <span className="mb-1 flex h-7 w-7 items-center justify-center rounded-full border border-zinc-600 bg-zinc-900 text-xs font-semibold text-zinc-300">
+                    {i + 1}
+                  </span>
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">{cell.k}</p>
+                  <p className="text-sm leading-relaxed text-zinc-300">{cell.body}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {sys && (
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/25 p-5 sm:p-7">
+            <h3 className={`text-xl font-semibold text-zinc-50 ${displayHeading}`}>{sys.title}</h3>
+            <p className="mt-3 max-w-4xl text-sm leading-relaxed text-zinc-400">{sys.description}</p>
+            {sys.mainComponents?.length > 0 && (
+              <div className="mt-6 flex flex-wrap gap-2">
+                {sys.mainComponents.map((c, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-950/60 px-2.5 py-1.5 text-sm text-zinc-200"
                   >
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-600 shadow-sm">
+                    <span className="flex h-5 w-5 items-center justify-center rounded border border-zinc-600 text-[10px] font-semibold text-zinc-400">
                       {i + 1}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">
-                        {cell.label}
-                      </p>
-                      <p className="text-sm text-slate-700 leading-relaxed">{cell.body}</p>
-                    </div>
-                  </div>
+                    {c}
+                  </span>
                 ))}
               </div>
-            </div>
-          </section>
-        )}
-
-        {/* System view: chips + two prose panels */}
-        {bigPicture.systemicView && (
-          <section className="rounded-2xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-            <header className="flex items-center gap-2.5 px-5 py-3.5 border-b border-slate-100 bg-slate-50/80">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 text-white shadow-sm">
-                <PuzzlePieceIcon className="h-5 w-5" />
-              </span>
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900">{bigPicture.systemicView.title}</h3>
-            </header>
-            <div className="p-5 sm:p-6 space-y-5">
-              <p className="text-sm sm:text-[15px] text-slate-700 leading-relaxed max-w-4xl">{bigPicture.systemicView.description}</p>
-              {bigPicture.systemicView.mainComponents?.length > 0 && (
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2.5">Main components</p>
-                  <div className="flex flex-wrap gap-2">
-                    {bigPicture.systemicView.mainComponents.map((component, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-2 rounded-full border border-teal-200/80 bg-teal-50/80 px-3 py-1.5 text-sm font-medium text-teal-900"
-                      >
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-teal-600 text-[10px] font-bold text-white">
-                          {index + 1}
-                        </span>
-                        {component}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="grid lg:grid-cols-2 gap-4">
-                <div className="rounded-xl border border-sky-100 bg-sky-50/40 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-sky-800 mb-2">Relationships</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{bigPicture.systemicView.relationships}</p>
-                </div>
-                <div className="rounded-xl border border-violet-100 bg-violet-50/40 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-800 mb-2">Emergent properties</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{bigPicture.systemicView.emergentProperties}</p>
-                </div>
+            )}
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Relationships</p>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-300">{sys.relationships}</p>
+              </div>
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Emergent</p>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-300">{sys.emergentProperties}</p>
               </div>
             </div>
           </section>
         )}
 
-        {/* Practical band */}
-        {bigPicture.practicalRelevance && (
-          <section className="rounded-2xl border border-orange-200/60 bg-gradient-to-br from-orange-50/40 via-white to-rose-50/30 shadow-sm overflow-hidden">
-            <header className="flex items-center gap-2.5 px-5 py-3.5 border-b border-orange-100/80 bg-white/70">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500 text-white shadow-sm">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
-                </svg>
-              </span>
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900">{bigPicture.practicalRelevance.title}</h3>
-            </header>
-            <div className="p-5 sm:p-6 space-y-5">
-              <p className="text-sm sm:text-[15px] text-slate-700 leading-relaxed max-w-4xl">{bigPicture.practicalRelevance.description}</p>
-              <div className="grid lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-1 rounded-xl border border-orange-100 bg-white/80 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-800 mb-2.5">Industries</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {bigPicture.practicalRelevance.industries?.map((industry, index) => (
-                      <span
-                        key={index}
-                        className="rounded-md bg-orange-500/10 px-2 py-1 text-xs font-medium text-orange-950 ring-1 ring-inset ring-orange-200/60"
-                      >
-                        {industry}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="lg:col-span-1 rounded-xl border border-emerald-100 bg-emerald-50/30 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800 mb-2">Daily life</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{bigPicture.practicalRelevance.dailyLife}</p>
-                </div>
-                <div className="lg:col-span-1 rounded-xl border border-sky-100 bg-sky-50/30 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-sky-800 mb-2">Global impact</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{bigPicture.practicalRelevance.globalImpact}</p>
+        {pr && (
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/25 p-5 sm:p-7">
+            <h3 className={`text-xl font-semibold text-zinc-50 ${displayHeading}`}>{pr.title}</h3>
+            <p className="mt-3 max-w-4xl text-sm leading-relaxed text-zinc-400">{pr.description}</p>
+            <div className="mt-6 grid gap-5 lg:grid-cols-3">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Where</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {pr.industries?.map((ind, i) => (
+                    <span key={i} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-300">
+                      {ind}
+                    </span>
+                  ))}
                 </div>
               </div>
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Everyday</p>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-300">{pr.dailyLife}</p>
+              </div>
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Wider world</p>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-300">{pr.globalImpact}</p>
+              </div>
             </div>
+          </section>
+        )}
+
+        {ls && (
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/25 p-5 sm:p-7">
+            <div className="flex flex-wrap items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-600 bg-zinc-950 text-zinc-400">
+                <LightBulbIcon className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className={`text-xl font-semibold text-zinc-50 ${displayHeading}`}>{ls.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-400">{ls.description}</p>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Start</p>
+                <p className="mt-2 text-sm text-zinc-300">{ls.startingPoint}</p>
+              </div>
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Mental model</p>
+                <p className="mt-2 text-sm text-zinc-300">{ls.mentalModel}</p>
+              </div>
+            </div>
+            {ls.keyInsights?.length > 0 && (
+              <ul className="mt-6 space-y-3 border-t border-zinc-800 pt-6">
+                {ls.keyInsights.map((insight, index) => (
+                  <li key={index} className="flex gap-3 text-sm leading-snug text-zinc-300">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded border border-zinc-600 bg-zinc-950 text-xs font-medium text-zinc-500">
+                      {index + 1}
+                    </span>
+                    {insight}
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         )}
       </div>
@@ -353,190 +344,129 @@ const GlobalLearning = ({
   };
 
   const renderInterconnections = () => {
-    if (loading) {
-      return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
-          <p className="text-gray-600">Mapping interconnections...</p>
-        </div>
-      );
-    }
+    if (loading) return renderLoading('web');
+    if (error) return renderErrorBlock('Retry');
+    if (!interconnections) return renderEmptyBlock('No link map yet');
 
-    if (error) {
-      return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="text-red-500 text-center">
-            <p className="text-lg font-semibold">Mapping Failed</p>
-            <p className="text-sm text-gray-600 mt-2">{error}</p>
-          </div>
-          <button
-            onClick={generateGlobalContent}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      );
-    }
-
-    if (!interconnections) {
-      return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <div className="text-gray-500 text-center">
-            <p className="text-lg font-semibold">No Interconnections Available</p>
-            <p className="text-sm text-gray-600 mt-2">Click generate to map how everything connects</p>
-          </div>
-          <button
-            onClick={generateGlobalContent}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Generate Interconnections
-          </button>
-        </div>
-      );
-    }
+    const net = interconnections.conceptNetwork;
+    const dyn = interconnections.systemDynamics;
+    const cross = interconnections.crossDomainConnections;
+    const hol = interconnections.holisticInsights;
 
     return (
-      <div className="space-y-6">
-        {interconnections.conceptNetwork && (
-          <section className="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/40 via-white to-white shadow-sm overflow-hidden">
-            <header className="flex items-center gap-2.5 px-5 py-3.5 border-b border-emerald-100/80 bg-white/70">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
-                <ShareIcon className="h-5 w-5" />
-              </span>
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900">Concept network</h3>
-            </header>
-            <div className="p-5 sm:p-6 space-y-6">
-              <div className="mx-auto max-w-3xl rounded-2xl border border-emerald-100 bg-emerald-500/[0.07] px-5 py-4 text-center">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800 mb-1.5">Central theme</p>
-                <p className="text-base sm:text-lg font-medium text-slate-900 leading-snug">{interconnections.conceptNetwork.centralTheme}</p>
-              </div>
-
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-3">Core nodes</p>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {interconnections.conceptNetwork.coreNodes?.map((node, index) => (
-                    <article
-                      key={index}
-                      className="group relative rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm ring-1 ring-transparent transition hover:ring-emerald-200/80 hover:shadow-md"
-                    >
-                      <div className="absolute left-0 top-4 bottom-4 w-1 rounded-full bg-gradient-to-b from-emerald-500 to-teal-500 opacity-90" aria-hidden />
-                      <div className="pl-3">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <h4 className="text-base font-semibold text-slate-900 pr-6">{node.name}</h4>
-                          <span className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600">
-                            {index + 1}
-                          </span>
-                        </div>
-                        <p className="text-sm text-slate-600 leading-relaxed mb-3">{node.description}</p>
-                        <div className="grid sm:grid-cols-2 gap-3">
-                          <div className="rounded-lg border border-sky-100 bg-sky-50/50 px-3 py-2.5">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-800 mb-1.5">Links</p>
-                            <ul className="space-y-1 text-xs text-slate-700">
-                              {node.connections?.map((connection, i) => (
-                                <li key={i} className="flex gap-1.5 leading-snug">
-                                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-sky-500" />
-                                  <span>{connection}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div className="rounded-lg border border-violet-100 bg-violet-50/40 px-3 py-2.5">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-800 mb-1.5">Why it matters</p>
-                            <p className="text-xs text-slate-700 leading-relaxed">{node.importance}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </div>
-
-              {interconnections.conceptNetwork.emergentPatterns && (
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2.5">Emergent patterns</p>
-                  <div className="flex flex-wrap gap-2">
-                    {interconnections.conceptNetwork.emergentPatterns.map((pattern, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-2 rounded-full border border-purple-200/80 bg-purple-50/80 px-3 py-1.5 text-sm text-purple-950"
-                      >
-                        <span className="text-[10px] font-bold text-purple-600">{index + 1}</span>
-                        {pattern}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+      <div className="space-y-5 sm:space-y-6">
+        {net && (
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/25 p-5 sm:p-8">
+            <div className="mx-auto max-w-3xl border-b border-zinc-800 pb-8 text-center">
+              <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">Center</p>
+              <p className={`mt-3 text-xl font-semibold leading-snug text-zinc-50 sm:text-2xl ${displayHeading}`}>
+                {net.centralTheme}
+              </p>
             </div>
+
+            <div className="mt-8 grid gap-4 lg:grid-cols-2">
+              {net.coreNodes?.map((node, index) => (
+                <article key={index} className="relative rounded-xl border border-zinc-800 bg-zinc-950/50 p-5 pl-4 sm:pl-5">
+                  <div className="absolute bottom-4 left-0 top-4 w-px bg-zinc-600" aria-hidden />
+                  <div className="flex items-start justify-between gap-2 pl-3">
+                    <h4 className={`text-base font-semibold text-zinc-50 ${displayHeading}`}>{node.name}</h4>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-xs font-medium text-zinc-500">
+                      {index + 1}
+                    </span>
+                  </div>
+                  <p className="mt-3 pl-3 text-sm leading-relaxed text-zinc-400">{node.description}</p>
+                  <div className="mt-4 grid gap-3 pl-3 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Links</p>
+                      <ul className="mt-2 space-y-1.5 text-xs text-zinc-400">
+                        {node.connections?.map((c, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-zinc-500" />
+                            {c}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Weight</p>
+                      <p className="mt-2 text-xs leading-relaxed text-zinc-400">{node.importance}</p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            {net.emergentPatterns?.length > 0 && (
+              <div className="mt-8 flex flex-wrap gap-2 border-t border-zinc-800 pt-6">
+                {net.emergentPatterns.map((pattern, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-sm text-zinc-300"
+                  >
+                    <span className="text-[10px] font-semibold text-zinc-500">{index + 1}</span>
+                    {pattern}
+                  </span>
+                ))}
+              </div>
+            )}
           </section>
         )}
 
-        {interconnections.systemDynamics && (
-          <section className="rounded-2xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
-            <header className="flex items-center gap-2.5 px-5 py-3.5 border-b border-slate-100 bg-slate-50/80">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600 text-white shadow-sm">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
+        {dyn && (
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/25 p-5 sm:p-7">
+            <h3 className={`flex items-center gap-2 text-xl font-semibold text-zinc-50 ${displayHeading}`}>
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-600 bg-zinc-950 text-zinc-400">
+                <PuzzlePieceIcon className="h-4 w-4" />
               </span>
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900">System dynamics</h3>
-            </header>
-            <div className="p-5 sm:p-6 grid lg:grid-cols-2 gap-6 lg:gap-8">
-              {interconnections.systemDynamics.feedbackLoops && (
+              Motion & leverage
+            </h3>
+            <div className="mt-6 grid gap-8 lg:grid-cols-2">
+              {dyn.feedbackLoops?.length > 0 && (
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-3">Feedback loops</p>
-                  <ul className="space-y-3">
-                    {interconnections.systemDynamics.feedbackLoops.map((loop, index) => (
-                      <li
-                        key={index}
-                        className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 flex gap-3"
-                      >
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Loops</p>
+                  <ul className="mt-3 space-y-3">
+                    {dyn.feedbackLoops.map((loop, index) => (
+                      <li key={index} className="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
                         <span
-                          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-sm ${
-                            loop.type === 'reinforcing' ? 'bg-emerald-600' : 'bg-amber-500'
+                          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold text-zinc-950 ${
+                            loop.type === 'reinforcing' ? 'bg-zinc-300' : 'bg-zinc-500 text-zinc-100'
                           }`}
                           title={loop.type}
                         >
                           {loop.type === 'reinforcing' ? '+' : '∿'}
                         </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-slate-900">{loop.name}</p>
-                          <p className="mt-1 text-sm text-slate-600 leading-relaxed">{loop.description}</p>
-                          <p className="mt-2 text-xs text-slate-500 border-t border-slate-200/80 pt-2">
-                            <span className="font-semibold text-slate-700">Impact:</span> {loop.impact}
-                          </p>
+                        <div className="min-w-0">
+                          <p className="font-medium text-zinc-100">{loop.name}</p>
+                          <p className="mt-1 text-sm text-zinc-400">{loop.description}</p>
+                          <p className="mt-2 border-t border-zinc-800 pt-2 text-xs text-zinc-500">{loop.impact}</p>
                         </div>
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
-
-              {interconnections.systemDynamics.causeEffectChains && (
+              {dyn.causeEffectChains?.length > 0 && (
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-3">Cause → effect</p>
-                  <ul className="space-y-4">
-                    {interconnections.systemDynamics.causeEffectChains.map((chain, index) => (
-                      <li key={index} className="rounded-xl border border-amber-100 bg-amber-50/40 p-4">
-                        <p className="text-sm font-semibold text-amber-950 mb-3">{chain.trigger}</p>
-                        <div className="flex flex-wrap items-center gap-y-2 gap-x-1 mb-3">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Chains</p>
+                  <ul className="mt-3 space-y-4">
+                    {dyn.causeEffectChains.map((chain, index) => (
+                      <li key={index} className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
+                        <p className="text-sm font-medium text-zinc-200">{chain.trigger}</p>
+                        <div className="mt-3 flex flex-wrap items-center gap-1">
                           {chain.chain?.map((effect, i) => (
                             <React.Fragment key={i}>
-                              <span className="inline-flex max-w-full rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-amber-950 ring-1 ring-amber-200/80">
+                              <span className="inline-flex max-w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-300">
                                 {effect}
                               </span>
                               {i < chain.chain.length - 1 && (
-                                <span className="mx-0.5 text-amber-500 text-xs font-bold" aria-hidden>
+                                <span className="text-xs font-medium text-zinc-600" aria-hidden>
                                   →
                                 </span>
                               )}
                             </React.Fragment>
                           ))}
                         </div>
-                        <p className="text-xs text-slate-600 leading-relaxed border-t border-amber-200/60 pt-2">
-                          <span className="font-semibold text-amber-900">Significance:</span> {chain.significance}
-                        </p>
+                        <p className="mt-3 border-t border-zinc-800 pt-2 text-xs text-zinc-500">{chain.significance}</p>
                       </li>
                     ))}
                   </ul>
@@ -546,118 +476,96 @@ const GlobalLearning = ({
           </section>
         )}
 
-        {interconnections.crossDomainConnections && (
-          <section className="rounded-2xl border border-indigo-200/70 bg-white shadow-sm overflow-hidden">
-            <header className="flex items-center gap-2.5 px-5 py-3.5 border-b border-indigo-100/80 bg-indigo-50/40">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-              </span>
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900">Cross-domain</h3>
-            </header>
-            <div className="p-5 sm:p-6 space-y-5">
-              {interconnections.crossDomainConnections.relatedFields && (
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Related fields</p>
-                  <div className="flex flex-wrap gap-2">
-                    {interconnections.crossDomainConnections.relatedFields.map((field, index) => (
-                      <span
-                        key={index}
-                        className="rounded-lg bg-indigo-600/10 px-2.5 py-1 text-xs font-medium text-indigo-950 ring-1 ring-inset ring-indigo-200/70"
-                      >
-                        {field}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {interconnections.crossDomainConnections.analogies && (
-                <div className="grid md:grid-cols-2 gap-4">
-                  {interconnections.crossDomainConnections.analogies.map((analogy, index) => (
-                    <div key={index} className="rounded-xl border border-violet-100 bg-violet-50/30 p-4 flex flex-col">
-                      <p className="text-sm font-semibold text-violet-950">{analogy.comparison}</p>
-                      <p className="mt-2 text-sm text-slate-600 leading-relaxed flex-1">{analogy.explanation}</p>
-                      <p className="mt-3 text-xs text-slate-500 border-t border-violet-100 pt-2">
-                        <span className="font-semibold text-violet-900">Limits:</span> {analogy.limitations}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {interconnections.crossDomainConnections.applications && (
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Applications</p>
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {interconnections.crossDomainConnections.applications.map((application, index) => (
-                      <div
-                        key={index}
-                        className="rounded-lg border border-emerald-100 bg-emerald-50/40 px-3 py-2.5 text-sm text-emerald-950"
-                      >
-                        {application}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {interconnections.holisticInsights && (
-          <section className="rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50/50 via-white to-orange-50/40 shadow-sm overflow-hidden">
-            <header className="flex items-center gap-2.5 px-5 py-3.5 border-b border-amber-100/80 bg-white/60">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-sm">
-                <LightBulbIcon className="h-5 w-5" />
-              </span>
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900">Holistic insights</h3>
-            </header>
-            <div className="p-5 sm:p-6 grid sm:grid-cols-2 gap-4">
-              {interconnections.holisticInsights.keyRealizations && (
-                <div className="rounded-xl border border-amber-100 bg-white/90 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800 mb-2">Realizations</p>
-                  <ul className="space-y-2">
-                    {interconnections.holisticInsights.keyRealizations.map((realization, index) => (
-                      <li key={index} className="flex gap-2 text-sm text-slate-700 leading-snug">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                        {realization}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {interconnections.holisticInsights.paradoxes && (
-                <div className="rounded-xl border border-orange-100 bg-white/90 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-800 mb-2">Tensions</p>
-                  <ul className="space-y-2">
-                    {interconnections.holisticInsights.paradoxes.map((paradox, index) => (
-                      <li key={index} className="flex gap-2 text-sm text-slate-700 leading-snug">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500" />
-                        {paradox}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {interconnections.holisticInsights.unifyingPrinciples && (
-                <div className="rounded-xl border border-emerald-100 bg-white/90 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-800 mb-2">Principles</p>
-                  <ul className="space-y-2">
-                    {interconnections.holisticInsights.unifyingPrinciples.map((principle, index) => (
-                      <li key={index} className="flex gap-2 text-sm text-slate-700 leading-snug">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                        {principle}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="rounded-xl border border-violet-100 bg-white/90 p-4 sm:col-span-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-800 mb-2">Systemic implications</p>
-                <p className="text-sm text-slate-700 leading-relaxed">{interconnections.holisticInsights.systemicImplications}</p>
+        {cross && (
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/25 p-5 sm:p-7">
+            <h3 className={`text-xl font-semibold text-zinc-50 ${displayHeading}`}>Beyond this page</h3>
+            {cross.relatedFields?.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {cross.relatedFields.map((field, index) => (
+                  <span
+                    key={index}
+                    className="rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1 text-xs font-medium text-zinc-300"
+                  >
+                    {field}
+                  </span>
+                ))}
               </div>
+            )}
+            {cross.analogies?.length > 0 && (
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                {cross.analogies.map((analogy, index) => (
+                  <div key={index} className="flex flex-col rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
+                    <p className={`text-sm font-semibold text-zinc-100 ${displayHeading}`}>{analogy.comparison}</p>
+                    <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-400">{analogy.explanation}</p>
+                    <p className="mt-3 border-t border-zinc-800 pt-2 text-xs text-zinc-500">{analogy.limitations}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {cross.applications?.length > 0 && (
+              <div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {cross.applications.map((application, index) => (
+                  <div key={index} className="rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2.5 text-sm text-zinc-300">
+                    {application}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {hol && (
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/25 p-5 sm:p-7">
+            <h3 className={`flex items-center gap-2 text-xl font-semibold text-zinc-50 ${displayHeading}`}>
+              <LightBulbIcon className="h-5 w-5 text-zinc-500" />
+              Whole-system takeaways
+            </h3>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              {hol.keyRealizations?.length > 0 && (
+                <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Realizations</p>
+                  <ul className="mt-3 space-y-2 text-sm text-zinc-300">
+                    {hol.keyRealizations.map((r, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" />
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {hol.paradoxes?.length > 0 && (
+                <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Tensions</p>
+                  <ul className="mt-3 space-y-2 text-sm text-zinc-300">
+                    {hol.paradoxes.map((p, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {hol.unifyingPrinciples?.length > 0 && (
+                <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Principles</p>
+                  <ul className="mt-3 space-y-2 text-sm text-zinc-300">
+                    {hol.unifyingPrinciples.map((p, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {hol.systemicImplications && (
+                <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4 sm:col-span-2">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Ripples</p>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-300">{hol.systemicImplications}</p>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -665,121 +573,86 @@ const GlobalLearning = ({
     );
   };
 
-  console.log('🌍 GlobalLearning render - isActive:', isActive, 'docxContent length:', docxContent?.length);
-  
-  if (!isActive) {
-    console.log('❌ GlobalLearning NOT rendering (isActive is false)');
-    return null;
-  }
+  if (!isActive) return null;
 
-  console.log('✅ GlobalLearning IS rendering!');
-
-  return (
-    <div className="fixed inset-0 bg-white z-[10001] flex flex-col" style={{ paddingTop: document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={onClose}
-            className="p-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200"
-            title="Back to document"
-          >
-            <ChevronLeftIcon className="w-6 h-6" />
-          </button>
-
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl">
-              <GlobeAltIcon className="w-6 h-6 text-white" />
+  const shell = (
+    <div
+      className={`fixed inset-0 left-0 top-0 z-[100020] flex flex-col bg-zinc-950 text-zinc-100 antialiased ${glDisplay.variable} font-sans`}
+      style={{
+        paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0',
+        backgroundImage:
+          'radial-gradient(ellipse 100% 80% at 50% -30%, rgba(113,113,122,0.14), transparent 55%), radial-gradient(ellipse 70% 50% at 100% 100%, rgba(63,63,70,0.2), transparent)'
+      }}
+    >
+      <header className="border-b border-zinc-800/90 bg-zinc-950/90 px-3 py-2 backdrop-blur-md sm:px-4">
+        <div className="mx-auto flex max-w-[min(1200px,calc(100%-0.25rem))] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100"
+              title="Back"
+            >
+              <ChevronLeftIcon className="h-5 w-5" />
+            </button>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-400">
+              <GlobeAltIcon className="h-5 w-5" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Global Learning</h2>
-              <p className="text-sm text-gray-600 font-medium">{fileName}</p>
+            <div className="min-w-0 flex-1">
+              <h2 className={`truncate text-sm font-semibold text-zinc-100 sm:text-base ${displayHeading}`}>Global Learning</h2>
+              <p className="truncate text-xs text-zinc-500">{fileName}</p>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center space-x-3">
-          {!hasFullContent && !loading && (
-            <button
-              type="button"
-              onClick={generateGlobalContent}
-              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-200"
-              title="Generate global analysis"
-            >
-              <div className="flex items-center space-x-2">
-                <ArrowPathIcon className="w-4 h-4" />
-                <span>Generate</span>
-              </div>
-            </button>
-          )}
-          {hasFullContent && !loading && (
-            <button
-              type="button"
-              onClick={requestRegenerate}
-              className="px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-colors"
-              title="Runs the AI again; uses more quota"
-            >
-              <span className="flex items-center gap-2">
-                <ArrowPathIcon className="w-4 h-4 text-slate-500" />
-                Regenerate
-              </span>
-            </button>
-          )}
-          {loading && (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-purple-200 bg-purple-50 text-purple-800 text-sm">
-              <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-              <span>Generating…</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Tab Selector with Explanations */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          {/* Tabs */}
-          <div className="flex items-center justify-center space-x-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = tab.key === activeTab;
-
-              return (
-                <div key={tab.key} className="relative">
-                  <button
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                      isActive
-                        ? 'bg-purple-600 text-white shadow-md'
-                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{tab.name}</span>
-                  </button>
-
-                  {/* Tooltip-style explanation */}
-                  {isActive && (
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10 whitespace-nowrap">
-                      {tab.key === 'bigpicture' ? 'Shows overall context and significance' : 'Shows how concepts connect and influence each other'}
-                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-                    </div>
-                  )}
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
+            {renderHeaderTabs()}
+            <div className="flex shrink-0 items-center gap-1.5">
+              {!hasFullContent && !loading && (
+                <button
+                  type="button"
+                  onClick={generateGlobalContent}
+                  className="rounded-lg border border-zinc-600 bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-white sm:text-sm"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <ArrowPathIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    Generate
+                  </span>
+                </button>
+              )}
+              {hasFullContent && !loading && (
+                <button
+                  type="button"
+                  onClick={requestRegenerate}
+                  className="rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 sm:px-3 sm:text-sm"
+                  title="Uses more API quota"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <ArrowPathIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Regenerate</span>
+                  </span>
+                </button>
+              )}
+              {loading && (
+                <div className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-400">
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-300 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">…</span>
                 </div>
-              );
-            })}
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto p-6">
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-[min(1200px,calc(100%-1rem))] px-4 py-5 sm:px-6 sm:py-7">
           {activeTab === 'bigpicture' && renderBigPicture()}
           {activeTab === 'interconnections' && renderInterconnections()}
         </div>
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(shell, document.body) : null;
 };
 
 export default GlobalLearning;
