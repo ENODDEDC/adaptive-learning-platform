@@ -17,6 +17,8 @@ export async function GET(req) {
       .populate('createdBy', 'name email role') // Populate creator details
       .lean(); // Use .lean() for plain JavaScript objects
 
+    console.log('📚 GET /api/admin/courses - Sample course isPrivate:', courses[0]?.isPrivate);
+
     // Add enrolledUsersCount to each course
     const coursesWithCounts = courses.map(course => ({
       ...course,
@@ -38,20 +40,25 @@ export async function POST(req) {
   }
   const adminId = adminInfo.userId;
 
-  const { subject, section, teacherName, coverColor, uniqueKey } = await req.json();
+  const { subject, section, teacherName, coverColor, schedules, isPrivate } = await req.json();
 
-  if (!subject || !teacherName || !uniqueKey) {
-    return NextResponse.json({ message: 'Subject, teacher name, and unique key are required' }, { status: 400 });
+  if (!subject || !teacherName) {
+    return NextResponse.json({ message: 'Subject and teacher name are required' }, { status: 400 });
   }
+
+  // Auto-generate uniqueKey if not provided
+  const uniqueKey = Math.random().toString(36).substring(2, 8).toUpperCase();
 
   try {
     const newCourse = await Course.create({
       subject,
       section,
       teacherName,
-      coverColor,
+      coverColor: coverColor || '#60a5fa',
       uniqueKey,
       createdBy: adminId,
+      schedules: schedules || [],
+      isPrivate: isPrivate || false,
     });
 
     // Log the course creation activity
@@ -77,7 +84,9 @@ export async function PUT(req) {
   }
   const adminId = adminInfo.userId;
 
-  const { id, subject, section, teacherName, coverColor, uniqueKey } = await req.json();
+  const { id, subject, section, teacherName, coverColor, uniqueKey, isPrivate } = await req.json();
+
+  console.log('💾 PUT /api/admin/courses - Received data:', { id, subject, section, teacherName, coverColor, uniqueKey, isPrivate });
 
   if (!id || !subject || !teacherName || !uniqueKey) {
     return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
@@ -89,12 +98,15 @@ export async function PUT(req) {
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
     }
 
+    console.log('💾 Current course isPrivate:', course.isPrivate);
+
     const oldData = {
       subject: course.subject,
       section: course.section,
       teacherName: course.teacherName,
       coverColor: course.coverColor,
-      uniqueKey: course.uniqueKey
+      uniqueKey: course.uniqueKey,
+      isPrivate: course.isPrivate
     };
 
     course.subject = subject;
@@ -102,12 +114,18 @@ export async function PUT(req) {
     course.teacherName = teacherName;
     course.coverColor = coverColor;
     course.uniqueKey = uniqueKey;
+    course.isPrivate = isPrivate !== undefined ? isPrivate : course.isPrivate;
+    
+    console.log('💾 New course isPrivate:', course.isPrivate);
+    
     await course.save();
+
+    console.log('💾 Course saved successfully');
 
     // Log the course update activity
     try {
       await ActivityLogger.logCourseUpdated(adminId, id, course.subject, oldData, {
-        subject, section, teacherName, coverColor, uniqueKey
+        subject, section, teacherName, coverColor, uniqueKey, isPrivate
       });
     } catch (activityError) {
       console.error('Error logging course update activity:', activityError);

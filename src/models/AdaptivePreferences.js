@@ -146,6 +146,6 @@ adaptivePreferencesSchema.pre('save', function(next) {
   next();
 });
 
-const AdaptivePreferences = mongoose.model('AdaptivePreferences', adaptivePreferencesSchema);
+const AdaptivePreferences = mongoose.models.AdaptivePreferences || mongoose.model('AdaptivePreferences', adaptivePreferencesSchema);
 
 export default AdaptivePreferences;

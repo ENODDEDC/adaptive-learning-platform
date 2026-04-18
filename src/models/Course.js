@@ -66,6 +66,10 @@ const courseSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  isPrivate: {
+    type: Boolean,
+    default: false,
+  },
 }, { timestamps: true });
 
 const Course = mongoose.models.Course || mongoose.model('Course', courseSchema);

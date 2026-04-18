@@ -64,18 +64,6 @@ const nextConfig = {
       },
     },
 
-    // Experimental features to reduce logging
-    experimental: {
-      logging: {
-        level: 'error',
-        fullUrl: false,
-      },
-      // Disable turbopack specific logging
-      turbopack: {
-        logging: 'off',
-      },
-    },
-
     // Disable on-demand entries logging
     onDemandEntries: {
       maxInactiveAge: 60 * 1000,
