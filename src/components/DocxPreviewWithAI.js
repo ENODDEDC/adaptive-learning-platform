@@ -109,6 +109,9 @@ const DocxPreviewWithAI = ({
   const [showCacheIndicator, setShowCacheIndicator] = useState(false);
   const [isCached, setIsCached] = useState(false);
 
+  // Track AI Narrator usage like PDF viewer
+  useLearningModeTracking('aiNarrator', aiTutorActive);
+
   // Note: Tracking is handled by individual modal components (SequentialLearning, GlobalLearning, etc.)
   // Each modal has its own useLearningModeTracking hook to avoid double-counting
 
