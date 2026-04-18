@@ -866,13 +866,9 @@ DEBUG INFO:
         reasoning: analysisResult.reasoning
       });
 
-      // If educational, proceed with mode selection
+      // If educational, proceed with mode selection.
+      // Keep start action user-driven to avoid stale-state auto-start issues.
       setShowModeSelection(true);
-      setTimeout(() => {
-        if (showModeSelection) {
-          startDirectAITeaching('complete');
-        }
-      }, 3000);
 
     } catch (error) {
       setExtractionError(`Error analyzing document: ${error.message}`);
