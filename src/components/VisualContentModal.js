@@ -296,10 +296,7 @@ const VisualContentModal = ({ isOpen, onClose, docxContent, fileName }) => {
             </div>
           </div>
           
-          <VisualWireframe 
-            wireframeData={visual.wireframeData} 
-            contentType={type}
-          />
+          <VisualWireframe wireframeData={visual.wireframeData} contentType={type} compact />
         </div>
       );
     }

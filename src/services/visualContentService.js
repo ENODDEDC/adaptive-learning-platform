@@ -394,17 +394,16 @@ class VisualContentService {
 
       const excerpt = clipDocExcerpt(docxText, 1500);
       const wireframePrompt = `
-      Create a detailed wireframe structure using HTML/CSS for a ${contentType} about: ${concepts?.mainTopic || 'document content'}
+      You design STRUCTURED VISUALS for VISUAL LEARNERS (spatial memory, patterns, diagrams — not essay bullets in a grid).
+      Content type: ${contentType}. Topic: ${concepts?.mainTopic || 'document content'}
       
       Key Concepts: ${concepts?.keyConcepts?.join(', ') || 'general concepts'}
       Processes: ${concepts?.processes?.join(', ') || 'general processes'}
 
-      Source excerpt (all section titles and bullets must be grounded in this material, not generic placeholders):
+      Source excerpt (titles and bullets MUST mirror this material; no generic "Concept 1" labels):
       """${excerpt}"""
       
-      IMPORTANT: For mind maps, keep section titles SHORT (2-4 words max) and content items concise (1-2 lines max) to prevent overlap issues.
-      
-      Return a JSON object with this structure:
+      Return ONLY a JSON object with this structure:
       {
         "title": "Short, clear main title (max 4-5 words)",
         "description": "Brief description of what this visual represents",
@@ -439,40 +438,28 @@ class VisualContentService {
         }
       }
       
-      For each visual type, create content that's optimized for beautiful display:
+      Rules by type (the UI will render hub-and-spoke for diagram/mindmap, horizontal strip for flowchart, pattern tiles for infographic):
       
-      CONCEPT NETWORK:
-      - Keep main title under 25 characters (short and impactful)
-      - Keep section titles under 15 characters (clear and concise)
-      - Keep content items under 30 characters each (perfect fit in fixed cards)
-      - Use exactly 4-5 sections for optimal spacing
-      - Focus on key concepts that connect logically
-      - Use bullet points that are brief and clear
-      - Avoid long sentences or complex phrases
-      - Title should be: "Concept Network" (never "Mind Map")
-      - Describe as "concept network" or "relationship network"
+      diagram + mindmap (concept network):
+      - layout.type MUST be "radial"
+      - "title" = short hub label (main idea from the document, ≤40 chars)
+      - 4–6 sections = satellite ideas ONLY (each id s1..s6); each title ≤22 chars; 1–2 content lines ≤48 chars each
+      - connections: include one edge per satellite: {"from":"hub","to":"s1","type":"line","label":""} (hub is implicit; use literal string "hub" for from)
+      - description: one line on how ideas link spatially (≤90 chars)
+      - Never use the phrase "mind map" in title; say "Concept network" or "Idea map"
       
-      PROCESS TIMELINE:
-      - Create 3-5 clear sequential steps in chronological order
-      - Use action-oriented titles (e.g., "Analyze Data", "Generate Report")
-      - Keep each step description under 50 characters
-      - Ensure logical chronological flow from start to finish
-      - Title should be: "Process Timeline" (never "Flowchart")
-      - Describe as "sequential process" or "timeline visualization"
+      flowchart (process timeline):
+      - layout.type MUST be "stack"
+      - 4–7 sections = ordered real steps from the document (no fake "Initiate/Complete" banking text)
+      - Each title is a short stage name; one content line explains that stage
+      - connections: optional chain {"from":"s1","to":"s2","type":"arrow","label":"then"} ...
       
-      INFOGRAPHIC:
-      - Create 2-4 visually distinct sections
-      - Use descriptive titles that highlight key information
-      - Include statistics, facts, or key points
-      - Keep content items concise and impactful
+      infographic:
+      - layout.type MUST be "flex"
+      - 3–5 sections; first content line = bold fact or number string; second line = short label (so the board reads visually)
+      - Distinct section colors from the palette
       
-      DIAGRAM:
-      - Create 2-6 interconnected concepts
-      - Use clear, technical titles where appropriate
-      - Focus on relationships between concepts
-      - Keep descriptions precise and educational
-      
-      Make it educational and visually clear for learning purposes.
+      Make every title a real term from the excerpt, not placeholders.
       `;
 
       const model = this.genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
@@ -537,9 +524,16 @@ class VisualContentService {
             from: s.id,
             to: sections[i + 1].id,
             type: 'arrow',
-            label: 'next'
+            label: 'then'
           }))
-        : [];
+        : ['diagram', 'mindmap'].includes(contentType)
+          ? sections.map((s) => ({
+              from: 'hub',
+              to: s.id,
+              type: 'line',
+              label: ''
+            }))
+          : [];
 
     return {
       success: true,
@@ -547,9 +541,15 @@ class VisualContentService {
       contentType,
       wireframeData: {
         title,
-        description: `Auto-generated ${contentType} for ${title}`,
+        description:
+          contentType === 'flowchart'
+            ? `Ordered stages for ${title}`
+            : ['diagram', 'mindmap'].includes(contentType)
+              ? `Hub-and-spoke map of key ideas in ${title}`
+              : `Pattern summary for ${title}`,
         layout: {
-          type: contentType === 'flowchart' ? 'flex' : 'grid',
+          type:
+            contentType === 'flowchart' ? 'stack' : ['diagram', 'mindmap'].includes(contentType) ? 'radial' : 'flex',
           direction: contentType === 'flowchart' ? 'horizontal' : 'both',
           columns: Math.min(3, sections.length),
           rows: Math.ceil(sections.length / 3)

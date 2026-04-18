@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import {
   ArrowPathIcon,
   ChevronLeftIcon,
@@ -56,6 +56,9 @@ const VisualDocxOverlay = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [concepts, setConcepts] = useState(null);
+  const fitStageRef = useRef(null);
+  const fitContentRef = useRef(null);
+  const [fit, setFit] = useState({ sw: 0, sh: 0, s: 1 });
 
   useLearningModeTracking('visualLearning', isActive);
 
@@ -73,6 +76,44 @@ const VisualDocxOverlay = ({
       window.dispatchEvent(new CustomEvent(IMMERSIVE_VISUAL_EVENT, { detail: { open: false } }));
     };
   }, [isActive]);
+
+  useLayoutEffect(() => {
+    if (!isActive) return undefined;
+    const stage = fitStageRef.current;
+    const inner = fitContentRef.current;
+    if (!stage || !inner) return undefined;
+
+    const measure = () => {
+      const cw = stage.clientWidth;
+      const ch = stage.clientHeight;
+      if (cw < 12 || ch < 12) return;
+      const sw = inner.scrollWidth;
+      const sh = inner.scrollHeight;
+      if (sw < 2 || sh < 2) {
+        setFit({ sw: 0, sh: 0, s: 1 });
+        return;
+      }
+      const pad = 0.985;
+      const s = Math.min(1, (cw * pad) / sw, (ch * pad) / sh);
+      setFit({ sw, sh, s: Number.isFinite(s) && s > 0 ? s : 1 });
+    };
+
+    measure();
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(stage);
+    ro.observe(inner);
+    window.addEventListener('resize', measure);
+    const t0 = requestAnimationFrame(() => measure());
+    const t1 = requestAnimationFrame(() => {
+      requestAnimationFrame(measure);
+    });
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+      cancelAnimationFrame(t0);
+      cancelAnimationFrame(t1);
+    };
+  }, [isActive, activeVisualType, loading, error, visuals]);
 
   const generateAllVisuals = useCallback(async () => {
     if (!docxContent || !docxContent.trim()) {
@@ -215,7 +256,7 @@ const VisualDocxOverlay = ({
   const renderMainVisual = () => {
     if (loading && !visual) {
       return (
-        <div className="flex min-h-[320px] flex-1 flex-col items-center justify-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-10">
+        <div className="flex max-h-[min(40vh,280px)] flex-col items-center justify-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
           <div className="h-11 w-11 animate-spin rounded-full border-2 border-slate-600 border-t-emerald-400" />
           <p className="text-center text-sm text-slate-400">Building {currentMeta.name.toLowerCase()} from your document…</p>
         </div>
@@ -224,7 +265,7 @@ const VisualDocxOverlay = ({
 
     if (error && !visual) {
       return (
-        <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-2xl border border-red-900/40 bg-red-950/20 p-8 text-center">
+        <div className="flex max-h-[min(40vh,260px)] flex-col items-center justify-center gap-3 rounded-2xl border border-red-900/40 bg-red-950/20 p-6 text-center">
           <p className="text-sm text-red-200/90">{error}</p>
           <button
             type="button"
@@ -239,7 +280,7 @@ const VisualDocxOverlay = ({
 
     if (!visual) {
       return (
-        <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-8 text-center">
+        <div className="flex max-h-[min(40vh,260px)] flex-col items-center justify-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/40 p-6 text-center">
           <PhotoIcon className="h-10 w-10 text-slate-600" />
           <p className="text-sm text-slate-400">Nothing for this view yet.</p>
           <button
@@ -256,7 +297,7 @@ const VisualDocxOverlay = ({
 
     if (visual.error) {
       return (
-        <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-amber-900/35 bg-amber-950/15 p-8 text-center">
+        <div className="flex max-h-[min(36vh,220px)] flex-col items-center justify-center gap-2 rounded-2xl border border-amber-900/35 bg-amber-950/15 p-5 text-center">
           <p className="text-sm text-amber-100/90">{visual.error}</p>
           <button
             type="button"
@@ -271,8 +312,8 @@ const VisualDocxOverlay = ({
 
     if (visual.isWireframe && visual.wireframeData) {
       return (
-        <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
-          <VisualWireframe wireframeData={visual.wireframeData} contentType={activeVisualType} />
+        <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 p-2 sm:p-3">
+          <VisualWireframe wireframeData={visual.wireframeData} contentType={activeVisualType} compact />
         </div>
       );
     }
@@ -311,11 +352,11 @@ const VisualDocxOverlay = ({
               <ArrowPathIcon className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex max-h-[min(72vh,900px)] min-h-[240px] items-center justify-center overflow-auto p-3 sm:p-5">
+          <div className="flex items-center justify-center overflow-hidden p-2 sm:p-3">
             <img
               src={`data:${visual.mimeType || 'image/png'};base64,${visual.imageData}`}
               alt={`${currentMeta.name} — ${fileName || 'document'}`}
-              className="max-h-full w-auto max-w-full rounded-lg object-contain"
+              className="h-auto w-auto max-w-full rounded-lg object-contain"
             />
           </div>
         </div>
@@ -328,8 +369,8 @@ const VisualDocxOverlay = ({
   if (!isActive) return null;
 
   return (
-    <div className="fixed inset-0 z-[100015] flex flex-col bg-slate-950 text-slate-100 antialiased">
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800/90 px-3 py-2.5 sm:px-4">
+    <div className="fixed inset-0 z-[100015] flex h-dvh max-h-dvh flex-col overflow-hidden bg-slate-950 text-slate-100 antialiased">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-800/90 px-3 py-2 sm:px-4">
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
@@ -367,7 +408,7 @@ const VisualDocxOverlay = ({
       </header>
 
       <details className="group shrink-0 border-b border-slate-800/80 bg-slate-900/35 [&_summary::-webkit-details-marker]:hidden">
-        <summary className="cursor-pointer list-none px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500 transition hover:bg-slate-800/50 hover:text-slate-400">
+        <summary className="cursor-pointer list-none px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 transition hover:bg-slate-800/50 hover:text-slate-400">
           <span className="inline-flex items-center gap-2">
             From your document
             <span className="text-slate-600 group-open:rotate-180 motion-safe:transition-transform">▼</span>
@@ -411,7 +452,7 @@ const VisualDocxOverlay = ({
       </details>
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-slate-800/80 px-2 py-2 sm:px-3" aria-label="Visual type">
+          <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-slate-800/80 px-2 py-1.5 sm:px-3" aria-label="Visual type">
             {VISUAL_TYPES.map((t) => {
               const on = activeVisualType === t.key;
               const Icon = t.Icon;
@@ -421,7 +462,7 @@ const VisualDocxOverlay = ({
                   key={t.key}
                   type="button"
                   onClick={() => handleVisualTypeChange(t.key)}
-                  className={`flex min-w-[7.5rem] shrink-0 flex-col items-start rounded-xl border px-3 py-2 text-left transition sm:min-w-0 sm:flex-1 ${
+                  className={`flex min-w-[7.5rem] shrink-0 flex-col items-start rounded-lg border px-2.5 py-1.5 text-left transition sm:min-w-0 sm:flex-1 ${
                     on
                       ? 'border-emerald-600/50 bg-emerald-950/35 text-emerald-50 ring-1 ring-emerald-500/25'
                       : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-600 hover:text-slate-200'
@@ -438,8 +479,34 @@ const VisualDocxOverlay = ({
             })}
           </nav>
 
-        <div className="active-learning-scroll min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
-          <div className="mx-auto max-w-[min(1200px,100%)]">{renderMainVisual()}</div>
+        <p className="shrink-0 px-3 pb-1 text-center text-[10px] text-slate-500 sm:px-4">
+          Visual mode: maps and timelines use space and order — read shapes first, then the short labels.
+        </p>
+
+        <div ref={fitStageRef} className="min-h-0 flex-1 overflow-hidden px-2 pb-2 pt-0 sm:px-3">
+          <div className="flex h-full min-h-0 w-full items-center justify-center">
+            <div
+              className="overflow-hidden"
+              style={{
+                width: fit.sw && fit.s ? fit.sw * fit.s : '100%',
+                height: fit.sh && fit.s ? fit.sh * fit.s : '100%',
+                maxWidth: '100%',
+                maxHeight: '100%'
+              }}
+            >
+              <div
+                ref={fitContentRef}
+                className="inline-block max-w-[min(1200px,96vw)] align-top"
+                style={{
+                  width: fit.sw ? fit.sw : undefined,
+                  transform: fit.s < 0.999 ? `scale(${fit.s})` : undefined,
+                  transformOrigin: 'top left'
+                }}
+              >
+                {renderMainVisual()}
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>
