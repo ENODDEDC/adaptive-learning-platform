@@ -494,7 +494,8 @@ export async function GET(request) {
       totalInteractions: await LearningBehavior.getTotalInteractions(userId),
       hasSufficientData: await LearningBehavior.hasSufficientData(userId),
       modeUsageSummary: {},
-      activityEngagementSummary: {}
+      activityEngagementSummary: {},
+      recentLogs: []
     };
 
     // Aggregate mode usage
@@ -568,6 +569,37 @@ export async function GET(request) {
       sufficientForML: stats.hasSufficientData
     };
     stats.dataQuality = dataQuality;
+
+    // Build recent per-session logs for UI timeline/debugging
+    stats.recentLogs = behaviors.slice(0, 20).map((behavior) => {
+      const sessionModeUsage = behavior.modeUsage || {};
+      const modeEntries = Object.entries(sessionModeUsage)
+        .map(([modeKey, v]) => ({
+          mode: modeKey,
+          count: Number(v?.count) || 0,
+          totalTime: Number(v?.totalTime) || 0
+        }))
+        .filter((entry) => entry.count > 0 || entry.totalTime > 0)
+        .sort((a, b) => (b.count - a.count) || (b.totalTime - a.totalTime));
+
+      const assistant = behavior.aiAssistantUsage || {};
+      const assistantCounts = {
+        askMode: Number(assistant?.askMode?.count) || 0,
+        researchMode: Number(assistant?.researchMode?.count) || 0,
+        textToDocsMode: Number(assistant?.textToDocsMode?.count) || 0
+      };
+      const assistantTotal = assistantCounts.askMode + assistantCounts.researchMode + assistantCounts.textToDocsMode;
+
+      return {
+        sessionId: behavior.sessionId,
+        timestamp: behavior.timestamp || behavior.updatedAt || behavior.createdAt,
+        modeInteractions: modeEntries.reduce((sum, item) => sum + item.count, 0),
+        assistantInteractions: assistantTotal,
+        totalModeTime: modeEntries.reduce((sum, item) => sum + item.totalTime, 0),
+        modeBreakdown: modeEntries,
+        assistantBreakdown: assistantCounts
+      };
+    });
 
     return NextResponse.json({
       success: true,
