@@ -62,6 +62,20 @@ function patternIcon(sim) {
   return 'slider';
 }
 
+function formatChallengeCategory(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  const map = {
+    calculation: 'Calculation',
+    analysis: 'Analysis',
+    experiment: 'Experiment',
+    problem_solving: 'Problem solving',
+    data_collection: 'Data collection'
+  };
+  if (map[s]) return map[s];
+  return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 const SensingLearning = ({ isActive, onClose, docxContent, fileName }) => {
   const [activeTab, setActiveTab] = useState('simulations');
   const [simulations, setSimulations] = useState([]);
@@ -626,7 +640,7 @@ const SensingLearning = ({ isActive, onClose, docxContent, fileName }) => {
                   <span
                     className={`mt-0.5 truncate text-[11px] ${index === activeChallenge ? 'text-teal-200/80' : 'text-slate-500'}`}
                   >
-                    {challenge.category}
+                    {formatChallengeCategory(challenge.category)}
                   </span>
                 )}
               </button>
@@ -643,6 +657,12 @@ const SensingLearning = ({ isActive, onClose, docxContent, fileName }) => {
               <div className="min-w-0">
                 <h3 className="text-lg font-semibold tracking-tight text-slate-50 sm:text-xl">{currentChallenge.title}</h3>
                 <p className="mt-1 text-sm leading-relaxed text-slate-400">{currentChallenge.description}</p>
+                <p className="mt-3 rounded-lg border border-cyan-900/40 bg-cyan-950/30 px-3 py-2 text-xs leading-relaxed text-cyan-100/90">
+                  <span className="font-semibold text-cyan-200">You work outside this screen</span> — notes, paper, doc,
+                  spreadsheet, or DB tool. Steps tell you what to <em>produce</em>;{' '}
+                  <span className="font-medium text-slate-200">Mark complete</span> is only your own checklist (nothing
+                  uploads here).
+                </p>
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-1.5 self-start rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-medium text-slate-400">
@@ -707,14 +727,17 @@ const SensingLearning = ({ isActive, onClose, docxContent, fileName }) => {
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Step {step.step}</p>
+                        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-600/90">
+                          What to do now
+                        </p>
                         <p className="mt-1 text-sm font-medium text-slate-100">{step.instruction}</p>
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
                           <div className="rounded-md border border-slate-800 bg-slate-900/60 px-3 py-2">
-                            <p className="text-[10px] font-semibold uppercase text-slate-500">Expected</p>
+                            <p className="text-[10px] font-semibold uppercase text-slate-500">Done when (evidence)</p>
                             <p className="mt-1 text-xs text-slate-400">{step.expectedResult}</p>
                           </div>
                           <div className="rounded-md border border-slate-800 bg-slate-900/60 px-3 py-2">
-                            <p className="text-[10px] font-semibold uppercase text-slate-500">Tips</p>
+                            <p className="text-[10px] font-semibold uppercase text-slate-500">Make it easier</p>
                             <p className="mt-1 text-xs text-slate-400">{step.tips}</p>
                           </div>
                         </div>

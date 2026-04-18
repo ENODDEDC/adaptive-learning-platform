@@ -119,14 +119,15 @@ const Layout = ({ children }) => {
     };
   }, []);
 
-  // Full-screen learning overlays (constellation, global, sensing lab): hide main sidebar — body flags + events
+  // Full-screen learning overlays (constellation, global, sensing, sequential): hide main sidebar — body flags + events
   useEffect(() => {
     if (typeof document === 'undefined' || typeof window === 'undefined') return undefined;
     const syncFromBody = () =>
       setImmersiveLearningShell(
         document.body.hasAttribute('data-immersive-constellation') ||
           document.body.hasAttribute('data-immersive-global') ||
-          document.body.hasAttribute('data-immersive-sensing')
+          document.body.hasAttribute('data-immersive-sensing') ||
+          document.body.hasAttribute('data-immersive-sequential')
       );
 
     const onConstellation = (e) => {
@@ -153,20 +154,35 @@ const Layout = ({ children }) => {
       }
     };
 
+    const onSequential = (e) => {
+      if (e?.detail && typeof e.detail.open === 'boolean' && e.detail.open) {
+        setImmersiveLearningShell(true);
+      } else {
+        syncFromBody();
+      }
+    };
+
     syncFromBody();
     window.addEventListener('assist-ed-immersive-constellation', onConstellation);
     window.addEventListener('assist-ed-immersive-global', onGlobal);
     window.addEventListener('assist-ed-immersive-sensing', onSensing);
+    window.addEventListener('assist-ed-immersive-sequential', onSequential);
     const observer = new MutationObserver(() => syncFromBody());
     observer.observe(document.body, {
       attributes: true,
-      attributeFilter: ['data-immersive-constellation', 'data-immersive-global', 'data-immersive-sensing']
+      attributeFilter: [
+        'data-immersive-constellation',
+        'data-immersive-global',
+        'data-immersive-sensing',
+        'data-immersive-sequential'
+      ]
     });
 
     return () => {
       window.removeEventListener('assist-ed-immersive-constellation', onConstellation);
       window.removeEventListener('assist-ed-immersive-global', onGlobal);
       window.removeEventListener('assist-ed-immersive-sensing', onSensing);
+      window.removeEventListener('assist-ed-immersive-sequential', onSequential);
       observer.disconnect();
     };
   }, []);

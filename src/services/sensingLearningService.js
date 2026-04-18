@@ -599,18 +599,26 @@ ${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
     }
 
     const buildPrompt = (maxChars) => `
-    You are creating PRACTICAL CHALLENGES for sensing learners who learn by doing.
+    You are creating PRACTICAL CHALLENGES for sensing learners who learn by DOING with pen, paper, a whiteboard,
+    a notes app, a spreadsheet, or a database tool — nothing is submitted inside this app.
 
     Document Content:
     ${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
 
-    Sensing learners need:
-    1. HANDS-ON tasks they can complete
-    2. CONCRETE problems with clear solutions
-    3. STEP-BY-STEP procedures to follow
-    4. IMMEDIATE feedback on their progress
+    CRITICAL writing rules (otherwise learners will not know what to do):
+    1. Each procedure "instruction" MUST read like a recipe: start with an imperative verb (Write, Draw, List, Label,
+       Build, Split, Sketch, Underline, Copy, Fill in). Say WHERE they act (e.g. "On a blank sheet", "In your notes doc",
+       "In a new spreadsheet tab") and WHAT physical or digital artifact they produce (a table, a list of 5 FDs, a diagram).
+       Avoid vague goals like "Identify X" without saying how (e.g. "Underline every repeating group in the printed table").
+    2. "expectedResult" MUST NOT repeat the instruction. It must describe what they SEE or HAVE when done
+       (e.g. "Your paper shows two separate tables with no repeating groups in either header row").
+    3. "tips" MUST name a concrete tactic or tool (highlighter, ruler, sticky notes, ER diagram template, SQL CREATE snippet).
+    4. Include 3–6 procedure steps per challenge when the topic allows; each step is one sitting-sized action (5–12 min).
+    5. "successMetrics": always at least 2 strings; each must be checkable without the app (e.g. "I can point to my 1NF tables on paper").
+    6. "materials": list what to gather before starting (including "Printed excerpt of the doc" if useful).
+    7. "checkpoints": criteria must be observable ("I can read aloud my list of FDs").
 
-    Create practical challenges based on the document content:
+    JSON shape:
 
     {
       "challenges": [
@@ -624,9 +632,9 @@ ${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
           "procedure": [
             {
               "step": 1,
-              "instruction": "Clear, actionable instruction",
-              "expectedResult": "What should happen",
-              "tips": "Helpful hints for success"
+              "instruction": "Imperative, location, artifact",
+              "expectedResult": "Observable outcome on their medium",
+              "tips": "Concrete tactic or tool"
             }
           ],
           "checkpoints": [
@@ -647,8 +655,7 @@ ${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '...' : ''}
       ]
     }
 
-    Focus on creating ACTIONABLE challenges that sensing learners can complete with clear, measurable outcomes.
-    Base everything on PRACTICAL applications from the document.
+    Base everything on PRACTICAL applications from the document. Output ONLY valid JSON.
     `;
 
     const challengesPayload = await this.generateStrictJsonWith413Retry(
