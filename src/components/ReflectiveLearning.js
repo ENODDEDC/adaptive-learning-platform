@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  ArrowPathIcon,
+    ArrowPathIcon,
   ChevronLeftIcon,
-  BookOpenIcon,
-  MagnifyingGlassIcon,
+    BookOpenIcon,
+    MagnifyingGlassIcon,
   ListBulletIcon,
   BookmarkIcon,
   PlayIcon,
-  PauseIcon,
+    PauseIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { trackBehavior } from '@/utils/learningBehaviorTracker';
@@ -32,12 +32,12 @@ function formatMMSS(sec) {
 }
 
 const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
-  const [activePhase, setActivePhase] = useState('absorption');
+    const [activePhase, setActivePhase] = useState('absorption');
   const [payload, setPayload] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
   const [contemplationSec, setContemplationSec] = useState(0);
-  const [isContemplating, setIsContemplating] = useState(false);
+    const [isContemplating, setIsContemplating] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
   const [journal, setJournal] = useState([]);
   const [genTick, setGenTick] = useState(0);
@@ -59,26 +59,26 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
     };
   }, [isActive]);
 
-  useEffect(() => {
-    if (isActive && docxContent) {
-      trackBehavior('mode_activated', { mode: 'reflective', fileName });
-    }
-  }, [isActive, docxContent, fileName]);
+    useEffect(() => {
+        if (isActive && docxContent) {
+            trackBehavior('mode_activated', { mode: 'reflective', fileName });
+        }
+    }, [isActive, docxContent, fileName]);
 
   const generateContent = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch('/api/reflective-learning/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: docxContent,
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch('/api/reflective-learning/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: docxContent,
           fileName: fileName || 'document'
         })
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
+            if (!response.ok) {
         throw new Error(data.error || `HTTP ${response.status}`);
       }
       if (!data.success) {
@@ -91,9 +91,9 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
     } catch (e) {
       console.error(e);
       setError(e.message || 'Could not generate');
-    } finally {
-      setLoading(false);
-    }
+        } finally {
+            setLoading(false);
+        }
   }, [docxContent, fileName]);
 
   useEffect(() => {
@@ -113,7 +113,7 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
     setJournal([]);
     setNoteDraft('');
     setContemplationSec(0);
-    setIsContemplating(false);
+        setIsContemplating(false);
     setGenTick((n) => n + 1);
   };
 
@@ -121,14 +121,14 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
     const t = noteDraft.trim();
     if (!t) return;
     setJournal((prev) => [
-      ...prev,
+            ...prev,
       { id: Date.now(), phase: activePhase, text: t, at: new Date().toISOString() }
     ]);
     setNoteDraft('');
     trackBehavior('reflection_note_added', { mode: 'reflective', phase: activePhase });
-  };
+    };
 
-  if (!isActive) return null;
+    if (!isActive) return null;
 
   const pc = payload?.phaseCopy || {};
   const anchors = payload?.readAnchors || [];
@@ -145,19 +145,19 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
       <header className="shrink-0 border-b border-slate-800/90 bg-slate-950/95 px-3 py-2 backdrop-blur sm:px-4">
         <div className="mx-auto flex max-w-[min(960px,calc(100%-0.25rem))] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-2">
-            <button
+                        <button
               type="button"
-              onClick={onClose}
+                            onClick={onClose}
               className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-teal-200"
               title="Back"
-            >
+                        >
               <ChevronLeftIcon className="h-5 w-5" />
-            </button>
+                        </button>
             <div className="min-w-0">
               <h1 className="truncate text-sm font-semibold text-slate-50 sm:text-base">Reflect</h1>
               <p className="truncate text-xs text-slate-500">{fileName}</p>
-            </div>
-          </div>
+                        </div>
+                    </div>
           <div className="flex shrink-0 items-center gap-2">
             {payload && !loading ? (
               <button
@@ -175,22 +175,22 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
               <div className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-400">
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-600 border-t-teal-400" />
                 …
-              </div>
+                            </div>
             ) : null}
-          </div>
-        </div>
+                    </div>
+                </div>
 
         <div className="mx-auto mt-2 flex max-w-[min(960px,calc(100%-0.25rem))] gap-1 border-t border-slate-800/80 pt-2 sm:gap-2">
           {TABS.map((t) => {
             const Icon = t.Icon;
             const on = activePhase === t.key;
             return (
-              <button
+                        <button
                 key={t.key}
                 type="button"
                 role="tab"
                 aria-selected={on}
-                onClick={() => {
+                            onClick={() => {
                   setActivePhase(t.key);
                   trackBehavior('tab_switched', { mode: 'reflective', tab: t.key });
                 }}
@@ -201,10 +201,10 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
               >
                 <Icon className="h-4 w-4 shrink-0 opacity-90" />
                 <span className="truncate">{t.label}</span>
-              </button>
+                        </button>
             );
           })}
-        </div>
+                </div>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -213,27 +213,27 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
             <div className="text-center">
               <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-2 border-slate-600 border-t-teal-400" />
               <p className="text-sm text-slate-400">Preparing quiet prompts from your document…</p>
-            </div>
-          </div>
-        ) : error ? (
+                        </div>
+                    </div>
+                ) : error ? (
           <div className="flex flex-1 items-center justify-center px-4">
             <div className="max-w-md rounded-2xl border border-red-900/40 bg-red-950/25 p-6 text-center">
               <ExclamationTriangleIcon className="mx-auto mb-3 h-10 w-10 text-red-400" />
               <p className="text-sm text-red-200/90">{error}</p>
-              <button
+                            <button
                 type="button"
                 onClick={generateContent}
                 className="mt-4 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-teal-500"
-              >
+                            >
                 Try again
-              </button>
-            </div>
-          </div>
-        ) : (
+                            </button>
+                        </div>
+                    </div>
+                ) : (
           <div className="active-learning-scroll mx-auto min-h-0 w-full max-w-[min(960px,calc(100%-0.5rem))] flex-1 overflow-y-auto px-3 py-4 sm:px-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800/80 bg-slate-900/50 px-3 py-2">
               <div className="font-mono text-sm text-teal-200/90 tabular-nums">{formatMMSS(contemplationSec)}</div>
-              <button
+                                                <button
                 type="button"
                 onClick={() => setIsContemplating((c) => !c)}
                 className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium sm:text-sm ${isContemplating
@@ -243,12 +243,12 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
               >
                 {isContemplating ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
                 {isContemplating ? 'Pause' : 'Focus timer'}
-              </button>
-            </div>
+                                            </button>
+                                        </div>
 
             {activePhase === 'absorption' ? (
               <div className="space-y-5">
-                <div className="space-y-3">
+                                            <div className="space-y-3">
                   {anchors.map((a, i) => (
                     <article
                       key={i}
@@ -260,8 +260,8 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
                       </blockquote>
                       <p className="mt-3 text-sm text-slate-400">{a.prompt}</p>
                     </article>
-                  ))}
-                </div>
+                                                    ))}
+                                                </div>
                 <ul className="space-y-2 rounded-2xl border border-slate-800/80 bg-slate-900/35 p-4">
                   {(pc.absorption?.prompts || []).map((p, i) => (
                     <li key={i} className="text-sm leading-relaxed text-slate-300">
@@ -270,7 +270,7 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
                     </li>
                   ))}
                 </ul>
-              </div>
+                                        </div>
             ) : null}
 
             {activePhase === 'analysis' ? (
@@ -288,10 +288,10 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
                   {(pc.analysis?.challenges || []).map((c, i) => (
                     <div key={i} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-300">
                       {c}
-                    </div>
-                  ))}
-                </div>
-              </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
             ) : null}
 
             {activePhase === 'architecture' ? (
@@ -306,7 +306,7 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
                 {pc.architecture?.prompt ? (
                   <p className="rounded-xl border border-teal-900/30 bg-teal-950/15 p-4 text-sm italic text-teal-100/85">{pc.architecture.prompt}</p>
                 ) : null}
-              </div>
+                                                            </div>
             ) : null}
 
             {activePhase === 'mastery' ? (
@@ -322,12 +322,12 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
                 {pc.mastery?.capsulePrompt ? (
                   <p className="rounded-xl border border-indigo-900/35 bg-indigo-950/20 p-4 text-sm text-indigo-100/90">{pc.mastery.capsulePrompt}</p>
                 ) : null}
-              </div>
+                                        </div>
             ) : null}
 
             <div className="mt-8 border-t border-slate-800/80 pt-4">
               <label className="text-xs font-medium uppercase tracking-wide text-slate-500">Private log</label>
-              <textarea
+                                            <textarea
                 value={noteDraft}
                 onChange={(e) => setNoteDraft(e.target.value)}
                 placeholder="Thoughts for your eyes only…"
@@ -335,14 +335,14 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
                 className="mt-2 w-full resize-none rounded-xl border border-slate-700 bg-slate-950/80 p-3 text-sm text-slate-200 placeholder:text-slate-600 focus:border-teal-600/50 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
               />
               <div className="mt-2 flex justify-end">
-                <button
+                                                <button
                   type="button"
                   onClick={appendNote}
                   className="rounded-lg border border-teal-700/50 bg-teal-900/40 px-4 py-2 text-sm font-medium text-teal-50 hover:bg-teal-900/60"
                 >
                   Add to log
-                </button>
-              </div>
+                                                </button>
+                                            </div>
               {journal.length > 0 ? (
                 <ul className="mt-4 space-y-2">
                   {journal
@@ -356,12 +356,12 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
                     ))}
                 </ul>
               ) : null}
+                        </div>
+                    </div>
+                )}
             </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+        </div>
+    );
 
   return typeof document !== 'undefined' ? createPortal(shell, document.body) : null;
 };

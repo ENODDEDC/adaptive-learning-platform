@@ -212,6 +212,12 @@ class VisualContentService {
     - Uses a modern, minimalist design style
     - Has a white background with colored elements
     - Is landscape orientation for better readability
+    - Uses full canvas area with minimal empty margins
+    - Spreads nodes and labels across left, center, and right zones
+    - Avoids tiny centered card/poster composition
+    - Uses full canvas area with minimal empty margins
+    - Spreads nodes and labels across left, center, and right zones
+    - Avoids tiny centered card/poster composition
 
     Make it visually appealing and easy to understand for students.
     `;
@@ -241,8 +247,13 @@ class VisualContentService {
     - Uses a cohesive color scheme (blue, green, or purple tones)
     - Has good typography and spacing
     - Is educational and informative
-    - Uses a vertical layout for better mobile viewing
+    - Uses a wide LANDSCAPE layout for desktop viewing
     - Includes visual hierarchy with different text sizes
+    - Spreads sections from left to right (not a single tall column)
+    - Uses full canvas area with minimal empty margins
+    - Avoids tiny centered card/poster composition
+    - Uses full canvas area with minimal empty margins
+    - Avoids tiny centered card/poster composition
 
     Make it engaging and easy to scan for quick learning.
     `;
@@ -279,6 +290,10 @@ class VisualContentService {
     - Has good contrast and visibility
     - Title should be: "${concepts.mainTopic} - Concept Network"
     - Subtitle should describe it as a "concept relationship network" or "interconnected concept visualization"
+    - Uses full canvas area with minimal empty margins
+    - Avoids tiny centered card/poster composition
+    - Uses full canvas area with minimal empty margins
+    - Avoids tiny centered card/poster composition
 
     Make it easy to follow the thought process and connections.
     `;
@@ -315,6 +330,10 @@ class VisualContentService {
     - Uses a professional color scheme
     - Title should be: "${concepts.mainTopic} - Process Timeline"
     - Subtitle should describe it as a "sequential process visualization" or "step-by-step timeline"
+    - Uses full canvas area with minimal empty margins
+    - Avoids tiny centered card/poster composition
+    - Uses full canvas area with minimal empty margins
+    - Avoids tiny centered card/poster composition
 
     Make it easy to follow the process from initiation to completion.
     `;
@@ -333,8 +352,16 @@ class VisualContentService {
     }
 
     try {
+      const layoutGuardrails = `
+      CANVAS REQUIREMENTS (MANDATORY):
+      - Use a LANDSCAPE layout (approximately 16:9).
+      - Fill horizontal space; avoid narrow portrait/poster/mobile-card composition.
+      - Keep content distributed across left, center, and right regions.
+      - Do not place everything in one thin vertical column.
+      `;
+
       const result = await this.imageModel.generateContent({
-        contents: [{ parts: [{ text: prompt }] }]
+        contents: [{ parts: [{ text: `${layoutGuardrails}\n\n${prompt}` }] }]
       });
       const genResponse =
         result?.response != null && typeof result.response.then === 'function'
@@ -715,8 +742,9 @@ class VisualContentService {
     - Uses a cohesive color scheme (blue, green, or purple tones)
     - Has good typography and spacing
     - Is educational and informative
-    - Uses a vertical layout for better mobile viewing
+    - Uses a wide LANDSCAPE layout for desktop viewing
     - Includes visual hierarchy with different text sizes
+    - Spreads sections from left to right (not a single tall column)
 
     Make it engaging and easy to scan for quick learning.
     `;

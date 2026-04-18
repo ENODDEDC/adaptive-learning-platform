@@ -69,17 +69,17 @@ const VisualWireframe = ({ wireframeData, contentType, compact = false }) => {
   const renderHubSpokeMap = () => {
     const spokes = sections.length ? sections : [{ id: 'x', title: 'Idea', content: ['—'] }];
     const n = Math.max(spokes.length, 1);
-    const rPct = contentType === 'mindmap' ? 41 : 38;
+    const rPct = contentType === 'mindmap' ? 34 : 32;
     return (
-      <div className="mx-auto w-full max-w-xl">
+      <div className="mx-auto w-full">
         {!compact ? (
           <p className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500">
             Spatial map — start at the hub, then follow each spoke outward
           </p>
         ) : null}
         <div
-          className={`relative mx-auto aspect-[5/4] w-full min-h-[160px] max-h-[min(52vh,440px)] ${
-            compact ? 'max-h-[min(40vh,360px)]' : ''
+          className={`relative mx-auto aspect-[16/9] w-full min-h-[160px] max-h-[min(44vh,360px)] ${
+            compact ? 'max-h-[min(38vh,300px)]' : ''
           }`}
         >
           <svg
@@ -116,14 +116,14 @@ const VisualWireframe = ({ wireframeData, contentType, compact = false }) => {
           </div>
           {spokes.map((section, i) => {
             const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
-            const xr = rPct + 7;
+            const xr = rPct + 4;
             const x = 50 + xr * Math.cos(angle);
             const y = 50 + xr * Math.sin(angle);
             const accent = section.color || style.primaryColor;
             return (
               <div
                 key={section.id || i}
-                className="absolute z-10 w-[min(34%,152px)] -translate-x-1/2 -translate-y-1/2"
+                className="absolute z-10 w-[min(28%,136px)] -translate-x-1/2 -translate-y-1/2"
                 style={{ left: `${x}%`, top: `${y}%` }}
               >
                 <div
@@ -245,7 +245,7 @@ const VisualWireframe = ({ wireframeData, contentType, compact = false }) => {
   };
 
   const renderGridLayout = () => (
-    <div className="mx-auto grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="mx-auto grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
       {sections.map((section, index) => (
         <div key={section.id || index} className="rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm">
           <div className="flex items-center gap-2">
@@ -279,7 +279,7 @@ const VisualWireframe = ({ wireframeData, contentType, compact = false }) => {
 
   return (
     <div
-      className={`${styles.containerClass} relative overflow-hidden border-white/20 shadow-2xl ${
+      className={`${styles.containerClass} relative h-full overflow-hidden border-white/20 shadow-2xl ${
         compact ? 'rounded-2xl border p-3 sm:p-4' : 'rounded-3xl border-2 p-8'
       }`}
     >
@@ -331,7 +331,7 @@ const VisualWireframe = ({ wireframeData, contentType, compact = false }) => {
         </div>
       </div>
 
-      <div className="relative z-10">{renderLayout()}</div>
+      <div className="relative z-10 flex-1 min-h-0">{renderLayout()}</div>
 
       <div className="absolute right-4 top-4 h-8 w-8 rounded-tr-2xl border-r-2 border-t-2 border-white/30" />
       <div className="absolute bottom-4 left-4 h-8 w-8 rounded-bl-2xl border-b-2 border-l-2 border-white/30" />

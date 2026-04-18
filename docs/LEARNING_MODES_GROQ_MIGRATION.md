@@ -12,44 +12,48 @@ This document summarizes changes made to move **generative** calls for the learn
 ### 1. Groq client shim (`src/lib/groqGenAI.js`)
 
 - Added a small **drop-in replacement** for the subset of `@google/generative-ai` used by services:
-  - `new GoogleGenerativeAI(apiKey)` → internally uses **`GROQ_API_KEY`**
-  - `getGenerativeModel({ model: ... })` → returns a wrapper that calls Groq **`POST https://api.groq.com/openai/v1/chat/completions`**
+  - `new GoogleGenerativeAI(apiKey)` → internally uses `**GROQ_API_KEY`**
+  - `getGenerativeModel({ model: ... })` → returns a wrapper that calls Groq `**POST https://api.groq.com/openai/v1/chat/completions`**
   - `generateContent(prompt)` → maps to a single user message; response exposes `response.text()` like Gemini
-- **Gemini model name** passed from old code is ignored for routing. **Content generation** defaults to **`llama-3.3-70b-versatile`** (single model, no agentic fan-out); optional env overrides below.
+- **Gemini model name** passed from old code is ignored for routing. **Content generation** defaults to `**llama-3.3-70b-versatile`** (single model, no agentic fan-out); optional env overrides below.
 
 ### 2. Services switched to Groq (via shim)
 
 These files now import `GroqGenAI` aliased as `GoogleGenerativeAI` and initialize with `process.env.GROQ_API_KEY` instead of `GOOGLE_API_KEY` / `NEXT_PUBLIC_GOOGLE_API_KEY`:
 
-| File | Role |
-|------|------|
-| `src/services/sequentialLearningService.js` | Sequential learning generation |
-| `src/services/visualContentService.js` | Visual learning generation |
-| `src/services/globalLearningService.js` | Global learning generation |
-| `src/services/sensingLearningService.js` | Sensing / hands-on generation |
-| `src/services/intuitiveLearningService.js` | Intuitive / concept generation |
-| `src/services/activeLearningService.js` | Active learning hub generation |
+
+| File                                                | Role                             |
+| --------------------------------------------------- | -------------------------------- |
+| `src/services/sequentialLearningService.js`         | Sequential learning generation   |
+| `src/services/visualContentService.js`              | Visual learning generation       |
+| `src/services/globalLearningService.js`             | Global learning generation       |
+| `src/services/sensingLearningService.js`            | Sensing / hands-on generation    |
+| `src/services/intuitiveLearningService.js`          | Intuitive / concept generation   |
+| `src/services/activeLearningService.js`             | Active learning hub generation   |
 | `src/services/learningModeRecommendationService.js` | Recommendation-related LLM calls |
+
 
 **Not changed in this migration:** `src/services/aiTutorService.js` (AI Narrator) — intentionally left on the existing stack unless you decide to move it later.
 
 ### 3. Educational gate (`src/app/api/content/educational-gate/route.js`)
 
 - Classifier / pre-check for “learnable vs not” was moved to **Groq** JSON classification (same API key), so that path does not depend on Gemini quota for gating.
-- Gate model is **fixed** to **`llama-3.1-8b-instant`** (cheap classifier). After approval, learning modes use **`llama-3.3-70b-versatile`** by default via `groqGenAI.js` (override with env if needed). `groq/compound` is **not used** because it's an agentic router (mixes sub-model ids in logs) and has a smaller per-request size limit that triggers `request_too_large`.
+- Gate model is **fixed** to `**llama-3.1-8b-instant`** (cheap classifier). After approval, learning modes use `**llama-3.3-70b-versatile`** by default via `groqGenAI.js` (override with env if needed). `groq/compound` is **not used** because it's an agentic router (mixes sub-model ids in logs) and has a smaller per-request size limit that triggers `request_too_large`.
 
 ### 4. Environment variables
 
-- **`GROQ_API_KEY`** — set in `.env.local` (server-side only; do not commit real keys to public repos).
+- `**GROQ_API_KEY`** — set in `.env.local` (server-side only; do not commit real keys to public repos).
 
-**Built-in two-model flow:** same **`GROQ_API_KEY`** — gate always **`llama-3.1-8b-instant`**, learning-mode generation defaults to **`llama-3.3-70b-versatile`**.
+**Built-in two-model flow:** same `**GROQ_API_KEY`** — gate always `**llama-3.1-8b-instant`**, learning-mode generation defaults to `**llama-3.3-70b-versatile`**.
 
-| Variable | Used by | Role |
-|----------|---------|------|
-| *(none for gate)* | `educational-gate` | Classifier is hardcoded **`llama-3.1-8b-instant`** |
-| **`GROQ_CONTENT_MODEL`** (aliases **`GROQ_GENERATION_MODEL`**, **`GROQ_DEFAULT_MODEL`**) | `src/lib/groqGenAI.js` | Optional override; default **`llama-3.3-70b-versatile`** |
 
-Optional: **`GROQ_GATE_MAX_CHARS`** — max excerpt length for the gate (default `8000`).
+| Variable                                                                                 | Used by                | Role                                                     |
+| ---------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------- |
+| *(none for gate)*                                                                        | `educational-gate`     | Classifier is hardcoded `**llama-3.1-8b-instant`**       |
+| `**GROQ_CONTENT_MODEL`** (aliases `**GROQ_GENERATION_MODEL`**, `**GROQ_DEFAULT_MODEL*`*) | `src/lib/groqGenAI.js` | Optional override; default `**llama-3.3-70b-versatile**` |
+
+
+Optional: `**GROQ_GATE_MAX_CHARS**` — max excerpt length for the gate (default `8000`).
 
 **Operational note:** After changing `.env.local`, **restart** the Next.js dev server so `process.env` picks up new values.
 
@@ -63,12 +67,14 @@ Optional: **`GROQ_GATE_MAX_CHARS`** — max excerpt length for the gate (default
 
 Official limits (Developer / free plan, as documented by Groq for this model):
 
-| Limit | Value |
-|--------|--------|
-| **RPM** (requests per minute) | 30 |
-| **RPD** (requests per day) | 14.4K |
-| **TPM** (tokens per minute) | 6K |
-| **TPD** (tokens per day) | 500K |
+
+| Limit                         | Value |
+| ----------------------------- | ----- |
+| **RPM** (requests per minute) | 30    |
+| **RPD** (requests per day)    | 14.4K |
+| **TPM** (tokens per minute)   | 6K    |
+| **TPD** (tokens per day)      | 500K  |
+
 
 Docs entry point: [Groq documentation overview](https://console.groq.com/docs/overview)
 

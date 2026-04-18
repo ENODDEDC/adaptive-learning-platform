@@ -222,6 +222,9 @@ const VisualDocxOverlay = ({
 
   const currentMeta = VISUAL_TYPES.find((v) => v.key === activeVisualType) || VISUAL_TYPES[0];
   const visual = visuals[activeVisualType];
+  // Width-priority layout for all visual render types (image + wireframe + fallback text)
+  // so the canvas does not collapse into a narrow centered column.
+  const useWidthPriorityLayout = true;
 
   const downloadImage = (imageData, mimeType, suffix) => {
     try {
@@ -312,8 +315,8 @@ const VisualDocxOverlay = ({
 
     if (visual.isWireframe && visual.wireframeData) {
       return (
-        <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 p-2 sm:p-3">
-          <VisualWireframe wireframeData={visual.wireframeData} contentType={activeVisualType} compact />
+        <div className="h-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 p-2 sm:p-3">
+          <VisualWireframe wireframeData={visual.wireframeData} contentType={activeVisualType} compact={false} />
         </div>
       );
     }
@@ -332,7 +335,7 @@ const VisualDocxOverlay = ({
 
     if (visual.imageData) {
       return (
-        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-xl">
+        <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-xl">
           <div className="absolute right-3 top-3 z-10 flex gap-2">
             <button
               type="button"
@@ -352,11 +355,11 @@ const VisualDocxOverlay = ({
               <ArrowPathIcon className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex items-center justify-center overflow-hidden p-2 sm:p-3">
+          <div className="flex h-full w-full items-center justify-center overflow-hidden p-2 sm:p-3">
             <img
               src={`data:${visual.mimeType || 'image/png'};base64,${visual.imageData}`}
               alt={`${currentMeta.name} — ${fileName || 'document'}`}
-              className="h-auto w-auto max-w-full rounded-lg object-contain"
+              className="h-full w-full scale-125 rounded-lg object-cover object-center transform-gpu"
             />
           </div>
         </div>
@@ -483,31 +486,37 @@ const VisualDocxOverlay = ({
           Visual mode: maps and timelines use space and order — read shapes first, then the short labels.
         </p>
 
-        <div ref={fitStageRef} className="min-h-0 flex-1 overflow-hidden px-2 pb-2 pt-0 sm:px-3">
-          <div className="flex h-full min-h-0 w-full items-center justify-center">
-            <div
-              className="overflow-hidden"
-              style={{
-                width: fit.sw && fit.s ? fit.sw * fit.s : '100%',
-                height: fit.sh && fit.s ? fit.sh * fit.s : '100%',
-                maxWidth: '100%',
-                maxHeight: '100%'
-              }}
-            >
+        {useWidthPriorityLayout ? (
+          <div className="min-h-0 flex-1 overflow-hidden px-2 pb-2 pt-0 sm:px-3">
+            <div className="h-full w-full">{renderMainVisual()}</div>
+          </div>
+        ) : (
+          <div ref={fitStageRef} className="min-h-0 flex-1 overflow-hidden px-2 pb-2 pt-0 sm:px-3">
+            <div className="flex h-full min-h-0 w-full items-center justify-center">
               <div
-                ref={fitContentRef}
-                className="inline-block max-w-[min(1200px,96vw)] align-top"
+                className="overflow-hidden"
                 style={{
-                  width: fit.sw ? fit.sw : undefined,
-                  transform: fit.s < 0.999 ? `scale(${fit.s})` : undefined,
-                  transformOrigin: 'top left'
+                  width: fit.sw && fit.s ? fit.sw * fit.s : '100%',
+                  height: fit.sh && fit.s ? fit.sh * fit.s : '100%',
+                  maxWidth: '100%',
+                  maxHeight: '100%'
                 }}
               >
-                {renderMainVisual()}
+                <div
+                  ref={fitContentRef}
+                  className="inline-block max-w-[min(1200px,96vw)] align-top"
+                  style={{
+                    width: fit.sw ? fit.sw : undefined,
+                    transform: fit.s < 0.999 ? `scale(${fit.s})` : undefined,
+                    transformOrigin: 'top left'
+                  }}
+                >
+                  {renderMainVisual()}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

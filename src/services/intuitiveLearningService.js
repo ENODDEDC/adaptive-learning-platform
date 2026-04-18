@@ -205,8 +205,8 @@ ${String(firstText || '').slice(0, 5000)}
         requirements: (Array.isArray(o?.requirements) ? o.requirements : []).map((x) => String(x)).filter(Boolean)
       })
     );
-
-    return {
+        
+        return {
       conceptClusters,
       hiddenPatterns,
       theoreticalFrameworks,
@@ -283,7 +283,7 @@ ${String(firstText || '').slice(0, 5000)}
       implications: (Array.isArray(p?.implications) ? p.implications : []).map((x) => String(x)).filter(Boolean)
     }));
 
-    return {
+      return {
       insightMoments,
       conceptualBridges,
       emergentThemes,
@@ -412,7 +412,7 @@ ${docxText.substring(0, maxChars)}${docxText.length > maxChars ? '\n[...truncate
 
     try {
       const analysis = await this.analyzeContentForEducation(docxText);
-
+      
       if (!analysis.isEducational) {
         throw new Error(`Content is not suitable for conceptual pattern discovery. ${analysis.reasoning}`);
       }
