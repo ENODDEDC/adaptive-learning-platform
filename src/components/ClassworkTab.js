@@ -8,6 +8,7 @@ import SubmitAssignmentModal from '@/components/SubmitAssignmentModal';
 import TeacherAssignmentModal from '@/components/TeacherAssignmentModal';
 import StudentAssignmentModal from '@/components/StudentAssignmentModal';
 import ContentViewer from '@/components/ContentViewer.client';
+import { getThumbnailIframeSrc } from '@/utils/thumbnailUtils';
 import AttachmentPreview from '@/components/AttachmentPreview';
 import EnhancedDocxThumbnail from '@/components/EnhancedDocxThumbnail';
 import thumbnailCache from '@/utils/thumbnailGenerationCache';
@@ -486,7 +487,7 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview, compactMod
         ) : thumbnailUrl ? (
           <>
             <iframe
-              src={thumbnailUrl.startsWith('http') ? `${thumbnailUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH&pagemode=none&zoom=page-width&disableTextLayer=true&disableRange=true&disableAutoFetch=true` : `${window.location.origin}${thumbnailUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH&pagemode=none&zoom=page-width&disableTextLayer=true&disableRange=true&disableAutoFetch=true`}
+              src={getThumbnailIframeSrc(thumbnailUrl)}
               className="w-full h-full pointer-events-none border-0"
               title={`${fileName} thumbnail`}
               style={{
@@ -772,7 +773,7 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview, compactMod
             </div>
           ) : thumbnailUrl ? (
             <iframe
-              src={thumbnailUrl.startsWith('http') ? `${thumbnailUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH&pagemode=none&zoom=page-width&disableTextLayer=true&disableRange=true&disableAutoFetch=true` : `${window.location.origin}${thumbnailUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0&view=FitH&pagemode=none&zoom=page-width&disableTextLayer=true&disableRange=true&disableAutoFetch=true`}
+              src={getThumbnailIframeSrc(thumbnailUrl)}
               className="w-full h-full pointer-events-none border-0"
               title={`${fileName} thumbnail`}
               style={{
