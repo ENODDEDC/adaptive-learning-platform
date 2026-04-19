@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-const FormNewPage = () => {
+const FormNewPageContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const courseId = searchParams.get('courseId');
@@ -1098,5 +1098,13 @@ const FormPreview = ({ title, description, questions }) => {
     </div>
   );
 };
+
+function FormNewPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-gray-500">Loading…</div>}>
+      <FormNewPageContent />
+    </Suspense>
+  );
+}
 
 export default FormNewPage;

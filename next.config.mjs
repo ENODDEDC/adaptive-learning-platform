@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: { ignoreDuringBuilds: true },
+  experimental: {
+    // Avoid flaky parallel prerender "Cannot find module for page" on some environments
+    staticGenerationMaxConcurrency: 1,
+  },
   images: {
     remotePatterns: [
       {

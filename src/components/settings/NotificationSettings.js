@@ -481,7 +481,7 @@ const NotificationSettings = () => {
             <div>
               <h4 className="font-medium text-amber-900">Browser Notifications Blocked</h4>
               <p className="text-sm text-amber-800 mt-1">
-                You've blocked notifications in your browser. To receive desktop notifications, 
+                You&apos;ve blocked notifications in your browser. To receive desktop notifications, 
                 please enable them in your browser settings.
               </p>
             </div>
