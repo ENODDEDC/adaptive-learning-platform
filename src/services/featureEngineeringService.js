@@ -502,7 +502,90 @@ class FeatureEngineeringService {
       dataQuality: this.assessDataQuality(aggregated)
     };
 
-    return features;
+    const activitySum = Object.values(activityEngagement).reduce(
+      (s, v) => s + Math.max(0, Number(v) || 0),
+      0
+    );
+    const ti = Math.max(0, aggregated.totalInteractions || 0);
+    const depthBoost = 1 + Math.min(0.38, activitySum / (ti + 14));
+
+    const bumpActivityRates = (block, keys) => {
+      const out = { ...block };
+      keys.forEach((k) => {
+        if (typeof out[k] === 'number') out[k] = Math.min(1, out[k] * depthBoost);
+      });
+      return out;
+    };
+
+    const ar = bumpActivityRates(
+      {
+        activeLearningUsageRatio: features.activeLearningUsageRatio,
+        reflectiveLearningUsageRatio: features.reflectiveLearningUsageRatio,
+        discussionParticipationRate: features.discussionParticipationRate,
+        reflectionJournalFrequency: features.reflectionJournalFrequency,
+        groupActivityPreference: features.groupActivityPreference,
+        immediateApplicationRate: features.immediateApplicationRate,
+        aiAskModeRatio: features.aiAskModeRatio,
+        aiResearchModeRatio: features.aiResearchModeRatio
+      },
+      [
+        'discussionParticipationRate',
+        'reflectionJournalFrequency',
+        'immediateApplicationRate',
+        'aiAskModeRatio',
+        'aiResearchModeRatio'
+      ]
+    );
+
+    const si = bumpActivityRates(
+      {
+        sensingLearningUsageRatio: features.sensingLearningUsageRatio,
+        intuitiveLearningUsageRatio: features.intuitiveLearningUsageRatio,
+        practicalLabCompletionRate: features.practicalLabCompletionRate,
+        abstractPatternExplorationRate: features.abstractPatternExplorationRate,
+        concreteVsAbstractPreference: features.concreteVsAbstractPreference,
+        experimentationFrequency: features.experimentationFrequency,
+        aiTextToDocsRatio: features.aiTextToDocsRatio
+      },
+      [
+        'practicalLabCompletionRate',
+        'abstractPatternExplorationRate',
+        'experimentationFrequency',
+        'aiTextToDocsRatio'
+      ]
+    );
+
+    const vv = bumpActivityRates(
+      {
+        visualLearningUsageRatio: features.visualLearningUsageRatio,
+        aiNarratorUsageRatio: features.aiNarratorUsageRatio,
+        diagramViewFrequency: features.diagramViewFrequency,
+        audioNarrationUsage: features.audioNarrationUsage,
+        visualVsVerbalPreference: features.visualVsVerbalPreference,
+        visualAidEngagement: features.visualAidEngagement
+      },
+      ['diagramViewFrequency', 'audioNarrationUsage', 'visualAidEngagement']
+    );
+
+    const sg = bumpActivityRates(
+      {
+        sequentialLearningUsageRatio: features.sequentialLearningUsageRatio,
+        globalLearningUsageRatio: features.globalLearningUsageRatio,
+        stepByStepCompletionRate: features.stepByStepCompletionRate,
+        overviewFirstBehavior: features.overviewFirstBehavior,
+        sequentialVsGlobalPreference: features.sequentialVsGlobalPreference,
+        linearProgressionRate: features.linearProgressionRate
+      },
+      ['stepByStepCompletionRate', 'overviewFirstBehavior', 'linearProgressionRate']
+    );
+
+    return {
+      ...features,
+      ...ar,
+      ...si,
+      ...vv,
+      ...sg
+    };
   }
 
   /**

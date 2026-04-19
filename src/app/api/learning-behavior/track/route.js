@@ -4,6 +4,10 @@ import dbConnect from '@/lib/mongodb';
 import LearningBehavior from '@/models/LearningBehavior';
 import LearningStyleProfile from '@/models/LearningStyleProfile';
 import { verifyToken } from '@/lib/auth';
+import {
+  computeClassificationReadiness,
+  mergeRecentActiveDay
+} from '@/lib/learningStyleReadiness';
 
 const DEFAULT_MODE_KEYS = [
   'aiNarrator',
@@ -136,6 +140,46 @@ function ensureProfileAggregatedStatsShape(profile) {
   }
 }
 
+function diffModeUsage(current, previous = {}) {
+  const delta = {};
+  for (const key of DEFAULT_MODE_KEYS) {
+    const now = current?.[key] || {};
+    const prev = previous?.[key] || {};
+    delta[key] = {
+      count: Math.max(0, (Number(now.count) || 0) - (Number(prev.count) || 0)),
+      totalTime: Math.max(0, (Number(now.totalTime) || 0) - (Number(prev.totalTime) || 0))
+    };
+  }
+  return delta;
+}
+
+function diffAiUsage(current = {}, previous = {}) {
+  const keys = ['askMode', 'researchMode', 'textToDocsMode'];
+  const out = {
+    askMode: { count: 0, totalTime: 0 },
+    researchMode: { count: 0, totalTime: 0 },
+    textToDocsMode: { count: 0, totalTime: 0 },
+    totalInteractions: 0,
+    totalPromptLength: 0
+  };
+  keys.forEach((k) => {
+    out[k].count = Math.max(0, (Number(current?.[k]?.count) || 0) - (Number(previous?.[k]?.count) || 0));
+    out[k].totalTime = Math.max(0, (Number(current?.[k]?.totalTime) || 0) - (Number(previous?.[k]?.totalTime) || 0));
+  });
+  out.totalInteractions = Math.max(0, (Number(current?.totalInteractions) || 0) - (Number(previous?.totalInteractions) || 0));
+  out.totalPromptLength = Math.max(0, (Number(current?.totalPromptLength) || 0) - (Number(previous?.totalPromptLength) || 0));
+  return out;
+}
+
+function ensureReadinessSignals(profile) {
+  if (!profile.readinessSignals || typeof profile.readinessSignals !== 'object') {
+    profile.readinessSignals = { recentActiveDays: [] };
+  }
+  if (!Array.isArray(profile.readinessSignals.recentActiveDays)) {
+    profile.readinessSignals.recentActiveDays = [];
+  }
+}
+
 /**
  * POST /api/learning-behavior/track
  * Receives and stores student behavior data for ML classification
@@ -221,6 +265,10 @@ export async function POST(request) {
 
     console.log('📥 Received AI Assistant data:', aiAssistantUsage);
 
+    const previousModeUsage = behavior ? normalizeModeUsage(behavior.modeUsage) : null;
+    const previousAiUsage = behavior ? (behavior.aiAssistantUsage || null) : null;
+    const previousActivity = behavior ? (behavior.activityEngagement || null) : null;
+
     if (!behavior) {
       // Create new behavior document
       behavior = new LearningBehavior({
@@ -290,34 +338,45 @@ export async function POST(request) {
 
     ensureProfileAggregatedStatsShape(profile);
     
-    // Add new behavior data to running totals (INCREMENTAL UPDATE)
-    Object.keys(behavior.modeUsage || {}).forEach(mode => {
+    // Add DELTA behavior data to running totals (prevents double-counting session snapshots)
+    const modeDelta = diffModeUsage(behavior.modeUsage || {}, previousModeUsage || {});
+    Object.keys(modeDelta).forEach(mode => {
       if (profile.aggregatedStats.modeUsage[mode]) {
-        profile.aggregatedStats.modeUsage[mode].count += behavior.modeUsage[mode]?.count || 0;
-        profile.aggregatedStats.modeUsage[mode].totalTime += behavior.modeUsage[mode]?.totalTime || 0;
+        profile.aggregatedStats.modeUsage[mode].count += modeDelta[mode]?.count || 0;
+        profile.aggregatedStats.modeUsage[mode].totalTime += modeDelta[mode]?.totalTime || 0;
       }
     });
     
     // Add AI Assistant usage
     if (behavior.aiAssistantUsage) {
-      profile.aggregatedStats.aiAssistantUsage.askMode.count += behavior.aiAssistantUsage.askMode?.count || 0;
-      profile.aggregatedStats.aiAssistantUsage.researchMode.count += behavior.aiAssistantUsage.researchMode?.count || 0;
-      profile.aggregatedStats.aiAssistantUsage.textToDocsMode.count += behavior.aiAssistantUsage.textToDocsMode?.count || 0;
-      profile.aggregatedStats.aiAssistantUsage.totalInteractions += behavior.aiAssistantUsage.totalInteractions || 0;
-      profile.aggregatedStats.aiAssistantUsage.totalPromptLength += behavior.aiAssistantUsage.totalPromptLength || 0;
+      const aiDelta = diffAiUsage(behavior.aiAssistantUsage, previousAiUsage || {});
+      profile.aggregatedStats.aiAssistantUsage.askMode.count += aiDelta.askMode.count;
+      profile.aggregatedStats.aiAssistantUsage.researchMode.count += aiDelta.researchMode.count;
+      profile.aggregatedStats.aiAssistantUsage.textToDocsMode.count += aiDelta.textToDocsMode.count;
+      profile.aggregatedStats.aiAssistantUsage.totalInteractions += aiDelta.totalInteractions;
+      profile.aggregatedStats.aiAssistantUsage.totalPromptLength += aiDelta.totalPromptLength;
     }
     
     // Add activity engagement
     const act = behavior.activityEngagement || {};
+    const prevAct = previousActivity || {};
     Object.keys(act).forEach(activity => {
       if (profile.aggregatedStats.activityEngagement[activity] !== undefined) {
-        profile.aggregatedStats.activityEngagement[activity] += act[activity] || 0;
+        const delta = Math.max(0, (Number(act[activity]) || 0) - (Number(prevAct[activity]) || 0));
+        profile.aggregatedStats.activityEngagement[activity] += delta;
       }
     });
     
     // Update metadata
     profile.aggregatedStats.lastProcessedBehaviorId = savedBehavior._id;
     profile.aggregatedStats.lastAggregatedDate = new Date();
+
+    ensureReadinessSignals(profile);
+    const daySource = savedBehavior.timestamp ? new Date(savedBehavior.timestamp) : new Date();
+    profile.readinessSignals.recentActiveDays = mergeRecentActiveDay(
+      profile.readinessSignals.recentActiveDays,
+      daySource
+    );
     
     // Calculate total interactions from aggregated data
     let totalInteractionsFromAggregates = 0;
@@ -345,20 +404,28 @@ export async function POST(request) {
     let classificationTriggered = false;
     const totalInteractions = totalInteractionsFromAggregates;
     
-    // Check if we should classify at this threshold
+    // Check if we should classify at this threshold + quality readiness
     const shouldClassify = profile.shouldClassifyNow();
+    const readiness = computeClassificationReadiness(
+      profile.aggregatedStats,
+      totalInteractions,
+      profile.readinessSignals?.recentActiveDays || []
+    );
     const confidenceInfo = profile.getConfidenceLevel();
     const nextThreshold = profile.getNextThreshold();
     
     console.log('🔍 Threshold-based classification check:', {
       totalInteractions,
       shouldClassify,
+      qualityReady: readiness.ready,
+      qualityScore: Number(readiness.qualityScore.toFixed(3)),
+      requiredQuality: Number(readiness.requiredQuality.toFixed(3)),
       nextThreshold,
       confidenceLevel: confidenceInfo.level,
       stage: confidenceInfo.stage
     });
     
-    if (shouldClassify) {
+    if (shouldClassify && readiness.ready) {
       console.log(`🎯 Threshold milestone reached (${totalInteractions})! Auto-triggering classification...`);
       
       try {
@@ -435,7 +502,9 @@ export async function POST(request) {
         console.error('❌ Auto-classification failed:', error);
       }
     } else {
-      console.log(`ℹ️ Classification not triggered. Next threshold: ${nextThreshold} (${nextThreshold - totalInteractions} more interactions needed)`);
+      console.log(
+        `ℹ️ Classification not triggered. Next threshold: ${nextThreshold} (${nextThreshold - totalInteractions} more interactions needed), qualityReady=${readiness.ready}`
+      );
     }
 
     return NextResponse.json({
@@ -448,6 +517,13 @@ export async function POST(request) {
         classificationTriggered,
         nextThreshold,
         interactionsUntilNext: nextThreshold - totalInteractions,
+        qualityReady: readiness.ready,
+        qualityScore: Number(readiness.qualityScore.toFixed(3)),
+        requiredQuality: Number(readiness.requiredQuality.toFixed(3)),
+        diversityScore: Number(readiness.diversity.toFixed(3)),
+        crossSessionDays: new Set(profile.readinessSignals?.recentActiveDays || []).size,
+        idleFactor: Number((readiness.idleFactor ?? 1).toFixed(3)),
+        crossSessionFactor: Number((readiness.crossSessionFactor ?? 1).toFixed(3)),
         confidenceLevel: confidenceInfo.level,
         confidenceStage: confidenceInfo.stage
       }

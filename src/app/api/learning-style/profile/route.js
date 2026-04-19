@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import LearningStyleProfile from '@/models/LearningStyleProfile';
 import { verifyToken } from '@/lib/auth';
+import {
+  computeCrossSessionFactor,
+  computeDiversityScore,
+  computeIdleDepthFactor,
+  sumActivityEngagement,
+  totalModeOpenCount,
+  DEFAULT_MODE_KEYS
+} from '@/lib/learningStyleReadiness';
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);
@@ -22,26 +30,7 @@ function computeMlConfidence(profile) {
 function computeModeDiversityScore(profile) {
   const modeUsage = profile?.aggregatedStats?.modeUsage;
   if (!modeUsage || typeof modeUsage !== 'object') return 0;
-
-  const weights = Object.values(modeUsage).map((row) => {
-    const count = toNumber(row?.count);
-    const totalTime = toNumber(row?.totalTime);
-    return Math.max(0, count + totalTime / 1000);
-  });
-
-  const total = weights.reduce((sum, v) => sum + v, 0);
-  if (total <= 0) return 0;
-
-  const probs = weights
-    .filter((w) => w > 0)
-    .map((w) => w / total);
-
-  if (probs.length <= 1) return 0;
-
-  // Normalized entropy in [0,1], high means behavior is distributed across modes.
-  const entropy = -probs.reduce((sum, p) => sum + p * Math.log(p), 0);
-  const maxEntropy = Math.log(weights.length);
-  return maxEntropy > 0 ? entropy / maxEntropy : 0;
+  return computeDiversityScore(modeUsage, DEFAULT_MODE_KEYS);
 }
 
 function evaluateFinalClassification(profile) {
@@ -51,9 +40,25 @@ function evaluateFinalClassification(profile) {
   const mlConfidence = computeMlConfidence(profile);
   const diversityScore = computeModeDiversityScore(profile);
   const mlAvailable = profile?.classificationMethod === 'ml-prediction';
+  const modeUsage = profile?.aggregatedStats?.modeUsage || {};
+  const totalLearningTime = Object.values(modeUsage).reduce(
+    (s, v) => s + toNumber(v?.totalTime),
+    0
+  );
+  const activitySum = sumActivityEngagement(profile?.aggregatedStats?.activityEngagement);
+  const idleFactor = computeIdleDepthFactor({
+    totalLearningTimeMs: totalLearningTime,
+    activitySum,
+    modeOpenCount: totalModeOpenCount(modeUsage)
+  });
+  const cross = computeCrossSessionFactor(profile?.readinessSignals?.recentActiveDays);
 
-  // Dynamic quality gate driven by model confidence + behavior diversity.
-  const qualityScore = 0.7 * mlConfidence + 0.3 * diversityScore;
+  let qualityScore =
+    0.58 * mlConfidence +
+    0.26 * diversityScore +
+    0.16 * cross;
+  qualityScore *= idleFactor;
+
   const requiredQuality =
     totalInteractions < 50 ? 0.72 :
       totalInteractions < 100 ? 0.64 :
@@ -87,7 +92,10 @@ export async function GET(request) {
     }
 
     const decoded = await verifyToken(token);
-    const userId = decoded.userId;
+    const userId = decoded.userId || decoded.sub || decoded.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Invalid session payload' }, { status: 401 });
+    }
 
     // Connect to database
     await dbConnect();
@@ -125,7 +133,8 @@ export async function GET(request) {
             requiredQuality: finalStatus.requiredQuality,
             mlConfidence: finalStatus.mlConfidence,
             diversityScore: finalStatus.diversityScore
-          }
+          },
+          readinessSignals: profile.readinessSignals || { recentActiveDays: [] }
         },
         dataQuality: profile.dataQuality,
         needsUpdate,

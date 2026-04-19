@@ -117,6 +117,13 @@ const learningStyleProfileSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+
+  readinessSignals: {
+    recentActiveDays: {
+      type: [String],
+      default: []
+    }
+  },
   
   // User feedback on recommendations
   userFeedback: [{

@@ -140,8 +140,7 @@ const PdfPreviewWithAI = ({
             data.profile?.recommendedModes ||
             data.data?.profile?.recommendedModes ||
             data.recommendedModes || [];
-          const hasBeenClassified =
-            profile.hasBeenClassified === true || (Number(profile.predictionCount) || 0) > 0;
+          const hasBeenClassified = profile.hasBeenClassified === true;
 
           console.log('📊 Recommendations received:', modes, 'classified:', hasBeenClassified);
 

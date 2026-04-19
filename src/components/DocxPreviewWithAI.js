@@ -222,13 +222,15 @@ const DocxPreviewWithAI = ({
         const response = await fetch('/api/learning-style/profile');
         if (response.ok) {
           const data = await response.json();
+          const profile = data.data?.profile || data.profile || {};
           const modes = data.profile?.recommendedModes ||
             data.data?.profile?.recommendedModes ||
             data.recommendedModes || [];
+          const hasBeenClassified = profile.hasBeenClassified === true;
 
-          console.log('📊 Recommendations received:', modes);
+          console.log('📊 Recommendations received:', modes, 'classified:', hasBeenClassified);
 
-          if (modes.length > 0) {
+          if (modes.length > 0 && hasBeenClassified) {
             setAllRecommendations(modes);
 
             // Include ALL modes in carousel (including AI Narrator)
@@ -255,6 +257,8 @@ const DocxPreviewWithAI = ({
               setCurrentRecommendationIndex(0);
               console.log('ℹ️ Only AI Narrator available, will show DOCX view');
             }
+          } else if (modes.length > 0 && !hasBeenClassified) {
+            console.log('ℹ️ Recommendations exist but learning style is provisional — skip auto-load / ML chrome');
           } else {
             console.log('ℹ️ No recommendations available (user not classified yet)');
           }

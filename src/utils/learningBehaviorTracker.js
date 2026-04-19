@@ -16,6 +16,7 @@ class LearningBehaviorTracker {
     this.batchInterval = null;
     this.BATCH_SIZE = 5;
     this.BATCH_TIMEOUT = 30000; // 30 seconds
+    this.MIN_MEANINGFUL_MODE_MS = 5000; // Ignore very shallow opens/closes
     
     // Start batch processing
     this.startBatchProcessing();
@@ -122,6 +123,17 @@ class LearningBehaviorTracker {
     if (!this.modeStartTime || this.currentMode !== modeName) return;
     
     const duration = Date.now() - this.modeStartTime;
+
+    // Treat very short opens as noise; remove the optimistic start count.
+    if (duration < this.MIN_MEANINGFUL_MODE_MS) {
+      if (this.behaviorData.modeUsage[modeName]?.count > 0) {
+        this.behaviorData.modeUsage[modeName].count -= 1;
+      }
+      console.log(`📊 Ignored shallow mode usage: ${modeName} (${duration}ms)`);
+      this.currentMode = null;
+      this.modeStartTime = null;
+      return;
+    }
     
     // Update total time
     if (this.behaviorData.modeUsage[modeName]) {
@@ -469,6 +481,21 @@ export function trackBehavior(eventType, data = {}) {
   
   const tracker = getLearningBehaviorTracker();
   if (!tracker) return;
+
+  // Keep aggregate counters in sync with meaningful in-mode actions.
+  if (eventType === 'concept_explored') {
+    tracker.behaviorData.activityEngagement.conceptExplorationsCount += 1;
+  } else if (eventType === 'reflection_note_added') {
+    tracker.behaviorData.activityEngagement.reflectionJournalEntries += 1;
+  } else if (eventType === 'discussion_participated') {
+    tracker.behaviorData.activityEngagement.discussionParticipation += 1;
+  } else if (eventType === 'step_navigation' || eventType === 'step_completed') {
+    tracker.behaviorData.activityEngagement.sequentialStepsCompleted += 1;
+  } else if (eventType === 'checkpoint_completed' || eventType === 'interactive_element_used') {
+    tracker.behaviorData.activityEngagement.handsOnLabsCompleted += 1;
+  } else if (eventType === 'tab_switched' && data?.mode === 'visualLearning') {
+    tracker.behaviorData.activityEngagement.visualDiagramsViewed += 1;
+  }
   
   // Add event to batch queue with type and data
   tracker.addToBatch({
