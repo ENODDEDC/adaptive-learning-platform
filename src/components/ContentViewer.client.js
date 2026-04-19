@@ -944,7 +944,7 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
           
           // Check if this is a Backblaze B2 file (URL contains /api/files/)
           // Priority: cloudStorage.url > url > filePath
-          const fileUrl = content.cloudStorage?.url || content.url || content.filePath;
+          const fileUrl = getAttachmentFileUrl(content);
           const fileKey = content.cloudStorage?.key;
           
           const isBackblazeFile = (fileUrl && fileUrl.includes('/api/files/')) || fileKey;
@@ -1096,7 +1096,7 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
       } else if (fileInfo.type === 'text' || fileInfo.type === 'code') {
         // Handle text and code files
         try {
-          const fileUrl = content.cloudStorage?.url || content.url || content.filePath;
+          const fileUrl = getAttachmentFileUrl(content);
           const response = await fetch(fileUrl);
           if (!response.ok) {
             throw new Error(`Failed to load file: ${response.statusText}`);
@@ -1380,7 +1380,7 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
         return (
           <div className="flex items-center justify-center h-full">
             <img 
-              src={content.filePath} 
+              src={getAttachmentFileUrl(content)} 
               alt={content.title || 'Image'} 
               className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
               onError={(e) => {
@@ -1409,7 +1409,7 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
             <video 
               controls 
               className="w-full max-h-[70vh] rounded-lg bg-black"
-              src={content.filePath}
+              src={getAttachmentFileUrl(content)}
               onError={(e) => {
                 e.target.style.display = 'none';
                 e.target.nextSibling.style.display = 'flex';
@@ -1444,13 +1444,13 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
               <audio 
                 controls 
                 className="w-full mb-4"
-                src={content.filePath}
+                src={getAttachmentFileUrl(content)}
               >
                 Your browser does not support the audio tag.
               </audio>
               <div className="text-center">
                 <a 
-                  href={content.filePath} 
+                  href={getAttachmentFileUrl(content)} 
                   download 
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
@@ -1465,7 +1465,7 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
           return (
             <PdfPreviewWithAI
               content={content}
-              pdfUrl={content.url || content.filePath}
+              pdfUrl={getAttachmentFileUrl(content)}
               notes={notes}
               injectOverrideStyles={injectOverrideStyles}
             />
