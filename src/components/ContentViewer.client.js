@@ -879,9 +879,6 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
   const contentRef = useRef(null);
   const [selection, setSelection] = useState(null);
   const iframeRef = useRef(null);
-  
-  // Debug state
-  const [showDebug, setShowDebug] = useState(false);
 
   const iframeSrcDoc = useMemo(() => (htmlContent ? injectOverrideStyles(htmlContent) : ''), [htmlContent]);
 
@@ -1705,57 +1702,6 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
 
   return (
     <ViewerLayout>
-      {/* Debug Toggle Button */}
-      <button
-        onClick={() => setShowDebug(!showDebug)}
-        className="fixed top-4 right-16 z-[10001] bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg shadow-lg font-bold text-sm"
-        title="Toggle File URL Debug"
-      >
-        🐛 URL Debug
-      </button>
-
-      {/* Debug Panel */}
-      {showDebug && (
-        <div className="fixed top-16 right-4 z-[10001] bg-black/95 text-white p-4 rounded-lg shadow-2xl max-w-md max-h-96 overflow-y-auto">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-yellow-400 text-lg">File URL Debug</h3>
-            <button
-              onClick={() => setShowDebug(false)}
-              className="text-gray-400 hover:text-white"
-            >
-              ✕
-            </button>
-          </div>
-          
-          <div className="space-y-3 text-xs">
-            <div className="bg-gray-800 p-2 rounded">
-              <div className="text-gray-400">Content Title: <span className="text-white font-bold">{content?.title || 'Unknown'}</span></div>
-              <div className="text-gray-400">Content Type: <span className="text-white">{content?.mimeType || 'Unknown'}</span></div>
-              <div className="text-gray-400">Content ID: <span className="text-white font-mono text-xs">{content?._id}</span></div>
-            </div>
-
-            <div className="text-gray-400 font-semibold">File URLs:</div>
-            <div className="bg-gray-800 p-2 rounded space-y-1">
-              <div className="text-gray-400">Raw filePath: <span className="text-blue-400 break-all">{content?.filePath || 'None'}</span></div>
-              <div className="text-gray-400">Raw url: <span className="text-blue-400 break-all">{content?.url || 'None'}</span></div>
-              <div className="text-gray-400">CloudStorage URL: <span className="text-blue-400 break-all">{content?.cloudStorage?.url || 'None'}</span></div>
-              <div className="text-gray-400">Computed URL: <span className="text-green-400 break-all">{getAttachmentFileUrl(content)}</span></div>
-            </div>
-
-            <div className="bg-red-900/50 p-2 rounded mt-3">
-              <div className="font-semibold text-red-400 mb-1">Troubleshooting:</div>
-              <div className="text-xs space-y-1">
-                <div>1. Check if computed URL is correct</div>
-                <div>2. Test URL directly in new tab</div>
-                <div>3. Look for localhost in URLs</div>
-                <div>4. Check browser console for errors</div>
-                <div>5. Verify domain matches current site</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {content?.contentType !== 'multi-attachment' && (
       <div className="flex-shrink-0 flex items-center justify-between p-5 border-b">
         <div className="flex items-center gap-4 min-w-0">
