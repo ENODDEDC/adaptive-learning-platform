@@ -1,0 +1,23 @@
+{
+  "enabled": true,
+  "name": "Smart Auto Deploy",
+  "description": "Automatically determines and runs all necessary commands (build, test, commit, push, etc.) based on what files were changed",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.js",
+      "src/**/*.jsx",
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "middleware.js",
+      "package.json",
+      "next.config.js",
+      "tailwind.config.js"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A file was just edited. Analyze what changed and automatically run ALL necessary commands (build, test, lint, commit, push, etc.) without asking for confirmation. Determine the appropriate commands based on the file changes and run them immediately."
+  }
+}
