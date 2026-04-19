@@ -1,4 +1,14 @@
 services:
+  # FSLSM Flask API — set ML_SERVICE_URL on the Node app from this service's public URL
+  - type: web
+    name: assistive-learning-ml
+    runtime: python
+    plan: free
+    rootDir: ml-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    healthCheckPath: /health
+
   - type: web
     name: assistive-learning-platform
     runtime: node
@@ -59,4 +69,7 @@ services:
       - key: B2_BUCKET_NAME
         sync: false
       - key: ML_SERVICE_URL
-        sync: false
+        fromService:
+          name: assistive-learning-ml
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL

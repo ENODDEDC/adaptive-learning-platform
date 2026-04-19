@@ -72,7 +72,7 @@ def load_models():
     except Exception as e:
         print(f"❌ Error loading models: {e}")
         models_loaded = False
-        raise
+        # Keep process alive (e.g. Render) so /health works; /predict returns 500 until models exist.
 
 def extract_features(feature_dict):
     """Extract features in correct order (27 features including AI Assistant)"""
