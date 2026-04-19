@@ -1,7 +1,7 @@
 services:
   - type: web
     name: assistive-learning-platform
-    env: node
+    runtime: node
     plan: free
     buildCommand: "apt-get update && apt-get install -y pandoc libreoffice && npm install && npm run build"
     startCommand: "npm start"
@@ -9,6 +9,10 @@ services:
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_URL
+        sync: false
+      - key: NEXT_PUBLIC_BASE_URL
         sync: false
       - key: SMTP_HOST
         sync: false
@@ -22,5 +26,23 @@ services:
         sync: false
       - key: FROM_EMAIL
         sync: false
-      - key: NEXT_PUBLIC_URL
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CEREBRAS_API_KEY
+        sync: false
+      - key: OPENAI_COMPAT_CHAT_URL
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_GOOGLE_API_KEY
+        sync: false
+      - key: B2_ENDPOINT
+        sync: false
+      - key: B2_KEY_ID
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+      - key: B2_BUCKET_NAME
+        sync: false
+      - key: ML_SERVICE_URL
         sync: false
