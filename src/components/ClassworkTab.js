@@ -112,44 +112,21 @@ const removeContextMenu = () => {
 const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = false, compactVariant = 'default' }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [debugInfo, setDebugInfo] = useState({
-    iframeUrl: '',
-    loadAttempts: 0,
-    lastError: null,
-    timestamp: null
-  });
-  const [showDebug, setShowDebug] = useState(false);
-  const iframeRef = useRef(null);
 
   useEffect(() => {
     const url = `/forms/${form._id}`;
-    setDebugInfo(prev => ({
-      ...prev,
-      iframeUrl: url,
-      timestamp: new Date().toISOString()
-    }));
     console.log('🔍 FormThumbnail: Attempting to load iframe:', url);
   }, [form._id]);
 
   const handleIframeLoad = () => {
     console.log('✅ FormThumbnail: Iframe loaded successfully for form:', form._id);
     setIsLoading(false);
-    setDebugInfo(prev => ({
-      ...prev,
-      loadAttempts: prev.loadAttempts + 1,
-      lastError: null
-    }));
   };
 
   const handleIframeError = (e) => {
     console.error('❌ FormThumbnail: Iframe failed to load for form:', form._id, e);
     setIsLoading(false);
     setHasError(true);
-    setDebugInfo(prev => ({
-      ...prev,
-      loadAttempts: prev.loadAttempts + 1,
-      lastError: e?.message || 'Unknown error'
-    }));
   };
 
   const handleClick = (e) => {
@@ -170,44 +147,6 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = fa
       onClick={handleClick}
       className={`w-full group ${compactMode && compactVariant === 'student' ? 'h-full flex flex-col' : ''}`}
     >
-      {/* Debug Toggle Button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setShowDebug(!showDebug);
-        }}
-        className="absolute top-2 left-2 z-30 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold hover:bg-yellow-600"
-        title="Toggle Debug Info"
-      >
-        🐛 DEBUG
-      </button>
-
-      {/* Debug Info Panel */}
-      {showDebug && (
-        <div 
-          onClick={(e) => e.stopPropagation()}
-          className="absolute top-12 left-2 z-40 bg-black/90 text-white p-3 rounded-lg text-xs max-w-xs shadow-2xl"
-        >
-          <div className="font-bold mb-2 text-yellow-400">Form Thumbnail Debug</div>
-          <div className="space-y-1">
-            <div><span className="text-gray-400">Form ID:</span> {form._id}</div>
-            <div><span className="text-gray-400">Iframe URL:</span> {debugInfo.iframeUrl}</div>
-            <div><span className="text-gray-400">Status:</span> {isLoading ? '⏳ Loading' : hasError ? '❌ Error' : '✅ Loaded'}</div>
-            <div><span className="text-gray-400">Load Attempts:</span> {debugInfo.loadAttempts}</div>
-            <div><span className="text-gray-400">Timestamp:</span> {debugInfo.timestamp}</div>
-            {debugInfo.lastError && (
-              <div className="text-red-400"><span className="text-gray-400">Error:</span> {debugInfo.lastError}</div>
-            )}
-            <div className="mt-2 pt-2 border-t border-gray-600">
-              <div className="text-gray-400 mb-1">Browser Console Check:</div>
-              <div className="text-xs text-gray-300">Open DevTools → Console for iframe errors</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Form Thumbnail Container */}
-      <div className={`relative w-full ${compactMode ? (compactVariant === 'student' ? 'h-full mb-0' : 'h-40 mb-2') : 'aspect-[4/3] mb-3'} bg-white border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
         {/* Loading State */}
         {isLoading && (
           <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 flex flex-col items-center justify-center z-10">
@@ -237,7 +176,6 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = fa
 
         {/* Live Form Preview */}
         <iframe
-          ref={iframeRef}
           src={`/forms/${form._id}`}
           className="w-full h-full pointer-events-none border-0"
           title={`${form.title || 'Form'} preview`}
@@ -899,9 +837,6 @@ const ClassworkTab = ({
   const [statusFilter, setStatusFilter] = useState('all'); // all, notStarted, inProgress, submitted, completed
   const [groupBy, setGroupBy] = useState('none'); // none, dueDate, type, status
   const compactLaneRef = useRef(null);
-
-  // Global debug state for form thumbnails
-  const [showGlobalDebug, setShowGlobalDebug] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -3520,78 +3455,6 @@ const ClassworkTab = ({
           </div>
         ))}
       </div>
-
-      {/* Global Debug Panel for PDF Thumbnails */}
-      {assignments.length > 0 && (
-        <>
-          {/* Debug Toggle Button - Fixed Position */}
-          <button
-            onClick={() => setShowGlobalDebug(!showGlobalDebug)}
-            className="fixed bottom-4 right-4 z-50 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-lg font-bold text-sm flex items-center gap-2"
-          >
-            🐛 PDF Debug ({assignments.filter(a => a.attachments?.length > 0).length})
-          </button>
-
-          {/* Global Debug Panel */}
-          {showGlobalDebug && (
-            <div className="fixed bottom-20 right-4 z-50 bg-black/95 text-white p-4 rounded-lg shadow-2xl max-w-md max-h-96 overflow-y-auto">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-yellow-400 text-lg">PDF Thumbnails Debug</h3>
-                <button
-                  onClick={() => setShowGlobalDebug(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <div className="space-y-3 text-xs">
-                <div className="bg-gray-800 p-2 rounded">
-                  <div className="text-gray-400">Total Assignments: <span className="text-white font-bold">{assignments.length}</span></div>
-                  <div className="text-gray-400">With Attachments: <span className="text-white font-bold">{assignments.filter(a => a.attachments?.length > 0).length}</span></div>
-                  <div className="text-gray-400">Course ID: <span className="text-white font-mono text-xs">{courseDetails?._id}</span></div>
-                </div>
-
-                <div className="text-gray-400 font-semibold">PDF Files:</div>
-                {assignments.filter(a => a.attachments?.length > 0).map((assignment, index) => (
-                  <div key={assignment._id} className="bg-gray-800 p-2 rounded space-y-1">
-                    <div className="font-semibold text-blue-400">#{index + 1}: {assignment.title || 'Untitled'}</div>
-                    <div className="text-gray-400">Assignment ID: <span className="text-white font-mono text-xs">{assignment._id}</span></div>
-                    <div className="text-gray-400">Files: <span className="text-white">{assignment.attachments?.length || 0}</span></div>
-                    {assignment.attachments?.map((file, fileIndex) => (
-                      <div key={fileIndex} className="ml-2 text-xs">
-                        <div className="text-gray-400">📄 {file.originalName || file.title || `File ${fileIndex + 1}`}</div>
-                        <div className="text-gray-500">Type: {file.mimeType || 'Unknown'}</div>
-                        {file.thumbnailUrl && <div className="text-green-400">✅ Has thumbnail</div>}
-                        {!file.thumbnailUrl && <div className="text-red-400">❌ No thumbnail</div>}
-                        {file.thumbnailUrl && (
-                          <div className="mt-1 p-1 bg-gray-700 rounded text-xs">
-                            <div className="text-blue-400">URL: {file.thumbnailUrl.substring(0, 50)}...</div>
-                            <div className="text-yellow-400">Domain: {new URL(file.thumbnailUrl).hostname}</div>
-                            <div className="text-purple-400">Protocol: {new URL(file.thumbnailUrl).protocol}</div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-
-                <div className="bg-red-900/50 p-2 rounded mt-3">
-                  <div className="font-semibold text-red-400 mb-1">PDF Troubleshooting:</div>
-                  <div className="text-xs space-y-1">
-                    <div>1. Check if thumbnail URLs are from external domains</div>
-                    <div>2. Look for CORS or X-Frame-Options errors in console</div>
-                    <div>3. Verify Backblaze URLs are accessible</div>
-                    <div>4. Check if iframe src is blocked by CSP</div>
-                    <div>5. Test thumbnail URL directly in new tab</div>
-                    <div className="text-yellow-400 mt-2">💡 If external domain: iframe may be blocked</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
 
       {/* Confirmation Modal */}
       <ConfirmationModal
