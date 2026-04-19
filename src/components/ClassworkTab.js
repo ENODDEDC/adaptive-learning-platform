@@ -3528,14 +3528,14 @@ const ClassworkTab = ({
             onClick={() => setShowGlobalDebug(!showGlobalDebug)}
             className="fixed bottom-4 right-4 z-50 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-lg font-bold text-sm flex items-center gap-2"
           >
-            🐛 Form Debug ({forms.length})
+            🐛 PDF Debug ({forms.length})
           </button>
 
           {/* Global Debug Panel */}
           {showGlobalDebug && (
             <div className="fixed bottom-20 right-4 z-50 bg-black/95 text-white p-4 rounded-lg shadow-2xl max-w-md max-h-96 overflow-y-auto">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-yellow-400 text-lg">Form Thumbnails Debug</h3>
+                <h3 className="font-bold text-yellow-400 text-lg">PDF Thumbnails Debug</h3>
                 <button
                   onClick={() => setShowGlobalDebug(false)}
                   className="text-gray-400 hover:text-white"
