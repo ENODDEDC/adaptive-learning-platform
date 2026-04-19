@@ -3520,15 +3520,15 @@ const ClassworkTab = ({
         ))}
       </div>
 
-      {/* Global Debug Panel for Form Thumbnails */}
-      {forms.length > 0 && (
+      {/* Global Debug Panel for PDF Thumbnails */}
+      {assignments.length > 0 && (
         <>
           {/* Debug Toggle Button - Fixed Position */}
           <button
             onClick={() => setShowGlobalDebug(!showGlobalDebug)}
             className="fixed bottom-4 right-4 z-50 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-lg font-bold text-sm flex items-center gap-2"
           >
-            🐛 PDF Debug ({forms.length})
+            🐛 PDF Debug ({assignments.filter(a => a.attachments?.length > 0).length})
           </button>
 
           {/* Global Debug Panel */}
@@ -3546,28 +3546,36 @@ const ClassworkTab = ({
               
               <div className="space-y-3 text-xs">
                 <div className="bg-gray-800 p-2 rounded">
-                  <div className="text-gray-400">Total Forms: <span className="text-white font-bold">{forms.length}</span></div>
+                  <div className="text-gray-400">Total Assignments: <span className="text-white font-bold">{assignments.length}</span></div>
+                  <div className="text-gray-400">With Attachments: <span className="text-white font-bold">{assignments.filter(a => a.attachments?.length > 0).length}</span></div>
                   <div className="text-gray-400">Course ID: <span className="text-white font-mono text-xs">{courseDetails?._id}</span></div>
                 </div>
 
-                <div className="text-gray-400 font-semibold">Forms List:</div>
-                {forms.map((form, index) => (
-                  <div key={form._id} className="bg-gray-800 p-2 rounded space-y-1">
-                    <div className="font-semibold text-purple-400">#{index + 1}: {form.title || 'Untitled'}</div>
-                    <div className="text-gray-400">ID: <span className="text-white font-mono">{form._id}</span></div>
-                    <div className="text-gray-400">URL: <span className="text-blue-400">/forms/{form._id}</span></div>
-                    <div className="text-gray-400">Questions: <span className="text-white">{form.questions?.length || 0}</span></div>
+                <div className="text-gray-400 font-semibold">PDF Files:</div>
+                {assignments.filter(a => a.attachments?.length > 0).map((assignment, index) => (
+                  <div key={assignment._id} className="bg-gray-800 p-2 rounded space-y-1">
+                    <div className="font-semibold text-blue-400">#{index + 1}: {assignment.title || 'Untitled'}</div>
+                    <div className="text-gray-400">Assignment ID: <span className="text-white font-mono text-xs">{assignment._id}</span></div>
+                    <div className="text-gray-400">Files: <span className="text-white">{assignment.attachments?.length || 0}</span></div>
+                    {assignment.attachments?.map((file, fileIndex) => (
+                      <div key={fileIndex} className="ml-2 text-xs">
+                        <div className="text-gray-400">📄 {file.originalName || file.title || `File ${fileIndex + 1}`}</div>
+                        <div className="text-gray-500">Type: {file.mimeType || 'Unknown'}</div>
+                        {file.thumbnailUrl && <div className="text-green-400">✅ Has thumbnail</div>}
+                        {!file.thumbnailUrl && <div className="text-red-400">❌ No thumbnail</div>}
+                      </div>
+                    ))}
                   </div>
                 ))}
 
                 <div className="bg-red-900/50 p-2 rounded mt-3">
-                  <div className="font-semibold text-red-400 mb-1">Troubleshooting:</div>
+                  <div className="font-semibold text-red-400 mb-1">PDF Troubleshooting:</div>
                   <div className="text-xs space-y-1">
-                    <div>1. Open Browser DevTools (F12)</div>
-                    <div>2. Go to Console tab</div>
-                    <div>3. Look for iframe errors</div>
-                    <div>4. Check Network tab for failed requests</div>
-                    <div>5. Look for "X-Frame-Options" errors</div>
+                    <div>1. Check if PDF files have thumbnailUrl</div>
+                    <div>2. Verify file mimeType is correct</div>
+                    <div>3. Look for thumbnail generation errors</div>
+                    <div>4. Check Backblaze file URLs</div>
+                    <div>5. Open DevTools for PDF loading errors</div>
                   </div>
                 </div>
               </div>
