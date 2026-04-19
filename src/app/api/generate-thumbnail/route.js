@@ -2,15 +2,32 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
 import { promises as fsPromises } from 'fs';
-import pdf from 'pdf-poppler';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import libre from 'libreoffice-convert';
 import util from 'util';
 import Content from '@/models/Content';
 import mongoConfig from '@/config/mongoConfig';
 
 const libreConvert = util.promisify(libre.convert);
+const execFileAsync = promisify(execFile);
+
+/** npm `pdf-poppler` only bundles win/mac; on Linux use system Poppler (pdftoppm). */
+async function generatePdfThumbnailLinux(filePath, outputDir, contentId) {
+    const outPrefix = path.join(outputDir, String(contentId));
+    await execFileAsync('pdftoppm', ['-png', '-f', '1', '-l', '1', filePath, outPrefix]);
+    const thumbName = `${contentId}-1.png`;
+    const thumbPath = path.join(outputDir, thumbName);
+    await fsPromises.access(thumbPath);
+    return `/uploads/thumbnails/${thumbName}`;
+}
 
 async function generatePdfThumbnail(filePath, outputDir, contentId) {
+    if (process.platform === 'linux') {
+        return generatePdfThumbnailLinux(filePath, outputDir, contentId);
+    }
+
+    const pdf = (await import('pdf-poppler')).default;
     const opts = {
         format: 'png',
         out_dir: outputDir,
@@ -19,13 +36,11 @@ async function generatePdfThumbnail(filePath, outputDir, contentId) {
     };
 
     const pdfConversionResult = await pdf.convert(filePath, opts);
-    // pdf-poppler returns an array of paths to the generated images
-    // We are interested in the first page's thumbnail
     if (pdfConversionResult && pdfConversionResult.length > 0) {
         const thumbnailFilename = path.basename(pdfConversionResult[0]);
         return `/uploads/thumbnails/${thumbnailFilename}`;
     }
-    return null; // Or throw an error if thumbnail generation failed
+    return null;
 }
 
 export async function POST(request) {
