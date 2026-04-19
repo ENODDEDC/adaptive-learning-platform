@@ -16,6 +16,7 @@ import AITutorModal from './AITutorModal';
 import DocxPreviewWithAI from './DocxPreviewWithAI';
 import PdfPreviewWithAI from './PdfPreviewWithAI';
 import fileContentCache from '@/utils/fileContentCache';
+import { getAttachmentFileUrl } from '@/utils/thumbnailUtils';
 
 // --- Helper Functions ---
 const formatFileSize = (bytes) => {
@@ -532,7 +533,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
           
           // Check both url and filePath for Backblaze B2 files
           // Priority: cloudStorage.url > url > filePath
-          const fileUrl = attachment.cloudStorage?.url || attachment.url || attachment.filePath;
+          const fileUrl = getAttachmentFileUrl(attachment);
           const fileKey = attachment.cloudStorage?.key;
           
           const isBackblazeFile = (fileUrl && fileUrl.includes('/api/files/')) || fileKey;
@@ -750,7 +751,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
       return (
         <div className="flex items-center justify-center h-full">
           <img 
-            src={attachment.cloudStorage?.url || attachment.url || attachment.filePath} 
+            src={getAttachmentFileUrl(attachment)} 
             alt={attachment.title || 'Image'} 
             className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
           />
@@ -763,7 +764,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
           <video 
             controls 
             className="w-full max-h-full rounded-lg bg-black"
-            src={attachment.cloudStorage?.url || attachment.url || attachment.filePath}
+            src={getAttachmentFileUrl(attachment)}
           >
             Your browser does not support the video tag.
           </video>
@@ -782,7 +783,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
             <audio 
               controls 
               className="w-full mb-4"
-              src={attachment.cloudStorage?.url || attachment.url || attachment.filePath}
+              src={getAttachmentFileUrl(attachment)}
             >
               Your browser does not support the audio tag.
             </audio>
@@ -794,7 +795,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
       return (
         <PdfPreviewWithAI
           content={attachment}
-          pdfUrl={attachment.cloudStorage?.url || attachment.url || attachment.filePath}
+          pdfUrl={getAttachmentFileUrl(attachment)}
           notes={notes}
           injectOverrideStyles={injectOverrideStyles}
           disableTools={disableTools}
@@ -830,7 +831,7 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
       });
       return (
         <EnhancedPowerPointViewer
-          filePath={(attachment.cloudStorage?.url || attachment.url || attachment.filePath) ? (attachment.cloudStorage?.url || attachment.url || attachment.filePath).replace(window.location.origin, '') : ''}
+          filePath={getAttachmentFileUrl(attachment) ? getAttachmentFileUrl(attachment).replace(window.location.origin, '') : ''}
           fileName={attachment.title || attachment.originalName}
           onClose={() => {}}
           isModal={false}
@@ -850,9 +851,9 @@ const AttachmentPreviewContent = ({ attachment, disableTools = false }) => {
             </p>
             
             <div className="flex gap-3 justify-center">
-              {(attachment.cloudStorage?.url || attachment.url || attachment.filePath) && (
+              {getAttachmentFileUrl(attachment) && (
                 <a 
-                  href={attachment.cloudStorage?.url || attachment.url || attachment.filePath} 
+                  href={getAttachmentFileUrl(attachment)} 
                   download 
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
