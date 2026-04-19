@@ -111,14 +111,44 @@ const removeContextMenu = () => {
 const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = false, compactVariant = 'default' }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [debugInfo, setDebugInfo] = useState({
+    iframeUrl: '',
+    loadAttempts: 0,
+    lastError: null,
+    timestamp: null
+  });
+  const [showDebug, setShowDebug] = useState(false);
+  const iframeRef = useRef(null);
+
+  useEffect(() => {
+    const url = `/forms/${form._id}`;
+    setDebugInfo(prev => ({
+      ...prev,
+      iframeUrl: url,
+      timestamp: new Date().toISOString()
+    }));
+    console.log('🔍 FormThumbnail: Attempting to load iframe:', url);
+  }, [form._id]);
 
   const handleIframeLoad = () => {
+    console.log('✅ FormThumbnail: Iframe loaded successfully for form:', form._id);
     setIsLoading(false);
+    setDebugInfo(prev => ({
+      ...prev,
+      loadAttempts: prev.loadAttempts + 1,
+      lastError: null
+    }));
   };
 
-  const handleIframeError = () => {
+  const handleIframeError = (e) => {
+    console.error('❌ FormThumbnail: Iframe failed to load for form:', form._id, e);
     setIsLoading(false);
     setHasError(true);
+    setDebugInfo(prev => ({
+      ...prev,
+      loadAttempts: prev.loadAttempts + 1,
+      lastError: e?.message || 'Unknown error'
+    }));
   };
 
   const handleClick = (e) => {
@@ -139,6 +169,42 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = fa
       onClick={handleClick}
       className={`w-full group ${compactMode && compactVariant === 'student' ? 'h-full flex flex-col' : ''}`}
     >
+      {/* Debug Toggle Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowDebug(!showDebug);
+        }}
+        className="absolute top-2 left-2 z-30 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold hover:bg-yellow-600"
+        title="Toggle Debug Info"
+      >
+        🐛 DEBUG
+      </button>
+
+      {/* Debug Info Panel */}
+      {showDebug && (
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-12 left-2 z-40 bg-black/90 text-white p-3 rounded-lg text-xs max-w-xs shadow-2xl"
+        >
+          <div className="font-bold mb-2 text-yellow-400">Form Thumbnail Debug</div>
+          <div className="space-y-1">
+            <div><span className="text-gray-400">Form ID:</span> {form._id}</div>
+            <div><span className="text-gray-400">Iframe URL:</span> {debugInfo.iframeUrl}</div>
+            <div><span className="text-gray-400">Status:</span> {isLoading ? '⏳ Loading' : hasError ? '❌ Error' : '✅ Loaded'}</div>
+            <div><span className="text-gray-400">Load Attempts:</span> {debugInfo.loadAttempts}</div>
+            <div><span className="text-gray-400">Timestamp:</span> {debugInfo.timestamp}</div>
+            {debugInfo.lastError && (
+              <div className="text-red-400"><span className="text-gray-400">Error:</span> {debugInfo.lastError}</div>
+            )}
+            <div className="mt-2 pt-2 border-t border-gray-600">
+              <div className="text-gray-400 mb-1">Browser Console Check:</div>
+              <div className="text-xs text-gray-300">Open DevTools → Console for iframe errors</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Form Thumbnail Container */}
       <div className={`relative w-full ${compactMode ? (compactVariant === 'student' ? 'h-full mb-0' : 'h-40 mb-2') : 'aspect-[4/3] mb-3'} bg-white border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
         {/* Loading State */}
@@ -170,6 +236,7 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = fa
 
         {/* Live Form Preview */}
         <iframe
+          ref={iframeRef}
           src={`/forms/${form._id}`}
           className="w-full h-full pointer-events-none border-0"
           title={`${form.title || 'Form'} preview`}
@@ -831,6 +898,9 @@ const ClassworkTab = ({
   const [statusFilter, setStatusFilter] = useState('all'); // all, notStarted, inProgress, submitted, completed
   const [groupBy, setGroupBy] = useState('none'); // none, dueDate, type, status
   const compactLaneRef = useRef(null);
+
+  // Global debug state for form thumbnails
+  const [showGlobalDebug, setShowGlobalDebug] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -3449,6 +3519,62 @@ const ClassworkTab = ({
           </div>
         ))}
       </div>
+
+      {/* Global Debug Panel for Form Thumbnails */}
+      {forms.length > 0 && (
+        <>
+          {/* Debug Toggle Button - Fixed Position */}
+          <button
+            onClick={() => setShowGlobalDebug(!showGlobalDebug)}
+            className="fixed bottom-4 right-4 z-50 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-lg font-bold text-sm flex items-center gap-2"
+          >
+            🐛 Form Debug ({forms.length})
+          </button>
+
+          {/* Global Debug Panel */}
+          {showGlobalDebug && (
+            <div className="fixed bottom-20 right-4 z-50 bg-black/95 text-white p-4 rounded-lg shadow-2xl max-w-md max-h-96 overflow-y-auto">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-yellow-400 text-lg">Form Thumbnails Debug</h3>
+                <button
+                  onClick={() => setShowGlobalDebug(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="space-y-3 text-xs">
+                <div className="bg-gray-800 p-2 rounded">
+                  <div className="text-gray-400">Total Forms: <span className="text-white font-bold">{forms.length}</span></div>
+                  <div className="text-gray-400">Course ID: <span className="text-white font-mono text-xs">{courseDetails?._id}</span></div>
+                </div>
+
+                <div className="text-gray-400 font-semibold">Forms List:</div>
+                {forms.map((form, index) => (
+                  <div key={form._id} className="bg-gray-800 p-2 rounded space-y-1">
+                    <div className="font-semibold text-purple-400">#{index + 1}: {form.title || 'Untitled'}</div>
+                    <div className="text-gray-400">ID: <span className="text-white font-mono">{form._id}</span></div>
+                    <div className="text-gray-400">URL: <span className="text-blue-400">/forms/{form._id}</span></div>
+                    <div className="text-gray-400">Questions: <span className="text-white">{form.questions?.length || 0}</span></div>
+                  </div>
+                ))}
+
+                <div className="bg-red-900/50 p-2 rounded mt-3">
+                  <div className="font-semibold text-red-400 mb-1">Troubleshooting:</div>
+                  <div className="text-xs space-y-1">
+                    <div>1. Open Browser DevTools (F12)</div>
+                    <div>2. Go to Console tab</div>
+                    <div>3. Look for iframe errors</div>
+                    <div>4. Check Network tab for failed requests</div>
+                    <div>5. Look for "X-Frame-Options" errors</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Confirmation Modal */}
       <ConfirmationModal
