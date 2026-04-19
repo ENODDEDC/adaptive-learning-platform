@@ -147,6 +147,8 @@ const FormThumbnail = ({ form, onPreview, isInstructor, onEdit, compactMode = fa
       onClick={handleClick}
       className={`w-full group ${compactMode && compactVariant === 'student' ? 'h-full flex flex-col' : ''}`}
     >
+      {/* Form Thumbnail Container */}
+      <div className={`relative w-full ${compactMode ? (compactVariant === 'student' ? 'h-full mb-0' : 'h-40 mb-2') : 'aspect-[4/3] mb-3'} bg-white border-2 border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
         {/* Loading State */}
         {isLoading && (
           <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 flex flex-col items-center justify-center z-10">
