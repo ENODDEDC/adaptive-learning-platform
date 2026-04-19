@@ -389,7 +389,33 @@ AI learning features work best with instructional content, lessons, or study mat
         unavailableReason: `PDF extraction failed: ${error.message}`,
         reasoning: error.message
       }));
-      setExtractionError(error.message);
+      
+      // Provide user-friendly error messages based on the error type
+      let userFriendlyError = error.message;
+      if (error.message.includes('No clean extractable text found')) {
+        userFriendlyError = `❌ Cannot extract text from this PDF
+
+This PDF appears to be:
+• A scanned document (image-only)
+• Password-protected or encrypted
+• Contains only images/graphics
+
+💡 Solutions:
+• Try a different PDF with selectable text
+• Use a PDF that was created digitally (not scanned)
+• Check if the PDF is password-protected
+
+The Visual Learning mode needs readable text to generate diagrams and visual content.`;
+      } else if (error.message.includes('Failed to download PDF')) {
+        userFriendlyError = `❌ Cannot access PDF file
+
+There was a problem downloading the PDF file:
+${error.message}
+
+💡 Please try refreshing the page or contact support if the issue persists.`;
+      }
+      
+      setExtractionError(userFriendlyError);
       throw error;
     }
   };
@@ -916,7 +942,23 @@ Visual Learning works best with instructional content, lessons, or study materia
 
     } catch (error) {
       console.error('Error analyzing content for visual learning:', error);
-      setExtractionError(`Error analyzing document: ${error.message}`);
+      
+      // Provide user-friendly error message
+      let userFriendlyError = `Error analyzing document: ${error.message}`;
+      if (error.message.includes('No clean extractable text found')) {
+        userFriendlyError = `❌ Cannot generate diagrams from this PDF
+
+This PDF appears to be a scanned document or image-only file without extractable text.
+
+💡 To use Visual Learning mode:
+• Try a PDF with selectable text (not scanned)
+• Use a digitally-created PDF document
+• Check if the PDF is password-protected
+
+Visual Learning needs readable text to create diagrams and visual content.`;
+      }
+      
+      setExtractionError(userFriendlyError);
     } finally {
       setIsVisualLearningLoading(false);
     }
