@@ -3563,6 +3563,13 @@ const ClassworkTab = ({
                         <div className="text-gray-500">Type: {file.mimeType || 'Unknown'}</div>
                         {file.thumbnailUrl && <div className="text-green-400">✅ Has thumbnail</div>}
                         {!file.thumbnailUrl && <div className="text-red-400">❌ No thumbnail</div>}
+                        {file.thumbnailUrl && (
+                          <div className="mt-1 p-1 bg-gray-700 rounded text-xs">
+                            <div className="text-blue-400">URL: {file.thumbnailUrl.substring(0, 50)}...</div>
+                            <div className="text-yellow-400">Domain: {new URL(file.thumbnailUrl).hostname}</div>
+                            <div className="text-purple-400">Protocol: {new URL(file.thumbnailUrl).protocol}</div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -3571,11 +3578,12 @@ const ClassworkTab = ({
                 <div className="bg-red-900/50 p-2 rounded mt-3">
                   <div className="font-semibold text-red-400 mb-1">PDF Troubleshooting:</div>
                   <div className="text-xs space-y-1">
-                    <div>1. Check if PDF files have thumbnailUrl</div>
-                    <div>2. Verify file mimeType is correct</div>
-                    <div>3. Look for thumbnail generation errors</div>
-                    <div>4. Check Backblaze file URLs</div>
-                    <div>5. Open DevTools for PDF loading errors</div>
+                    <div>1. Check if thumbnail URLs are from external domains</div>
+                    <div>2. Look for CORS or X-Frame-Options errors in console</div>
+                    <div>3. Verify Backblaze URLs are accessible</div>
+                    <div>4. Check if iframe src is blocked by CSP</div>
+                    <div>5. Test thumbnail URL directly in new tab</div>
+                    <div className="text-yellow-400 mt-2">💡 If external domain: iframe may be blocked</div>
                   </div>
                 </div>
               </div>
