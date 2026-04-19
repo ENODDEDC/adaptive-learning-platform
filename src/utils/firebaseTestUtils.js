@@ -1,8 +1,8 @@
 // Simple Firebase connection test
-import { auth } from '../config/firebaseConfig';
+import { getFirebaseAuth } from '../config/firebaseConfig';
 
 export const testFirebaseConnection = () => {
-  console.log('Firebase Auth instance:', auth);
+  console.log('Firebase Auth instance:', getFirebaseAuth());
   console.log('Firebase Config:', {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'Set' : 'Not set',
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,

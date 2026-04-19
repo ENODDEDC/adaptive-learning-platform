@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { auth } from '@/config/firebaseConfig';
+import { getFirebaseAuth } from '@/config/firebaseConfig';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 
 export default function LoginPage() {
@@ -245,7 +245,7 @@ export default function LoginPage() {
 
     try {
       // Attempt Google OAuth popup
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(getFirebaseAuth(), provider);
       const user = result.user;
 
       console.log('✅ Google OAuth successful:', user.email);
