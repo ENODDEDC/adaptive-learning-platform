@@ -2,6 +2,15 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } fro
 
 class BackblazeService {
   constructor() {
+    this.client = null;
+    this.bucketName = null;
+    this._ready = false;
+  }
+
+  /** Binds S3 client on first use so `next build` can run without B2 env vars. */
+  _ensureReady() {
+    if (this._ready) return;
+
     console.log('🔧 Backblaze Service Initializing...');
     console.log('Environment Variables:', {
       B2_ENDPOINT: process.env.B2_ENDPOINT,
@@ -10,12 +19,10 @@ class BackblazeService {
       B2_BUCKET_NAME: process.env.B2_BUCKET_NAME,
     });
 
-    // Validate required environment variables
     if (!process.env.B2_KEY_ID || !process.env.B2_APPLICATION_KEY || !process.env.B2_BUCKET_NAME || !process.env.B2_ENDPOINT) {
       throw new Error('Missing required Backblaze B2 environment variables');
     }
 
-    // Validate credential format
     if (!process.env.B2_KEY_ID.startsWith('005') || process.env.B2_APPLICATION_KEY.length < 20) {
       console.warn('⚠️ Backblaze B2 credentials may be in incorrect format');
     }
@@ -23,17 +30,17 @@ class BackblazeService {
     try {
       this.client = new S3Client({
         endpoint: process.env.B2_ENDPOINT,
-        region: 'us-east-005', // Updated to match your actual Backblaze B2 region
+        region: 'us-east-005',
         credentials: {
           accessKeyId: process.env.B2_KEY_ID,
           secretAccessKey: process.env.B2_APPLICATION_KEY,
         },
-        forcePathStyle: true, // Required for Backblaze B2
-        // Additional configuration for better compatibility
+        forcePathStyle: true,
         maxAttempts: 3,
         retryMode: 'adaptive',
       });
       this.bucketName = process.env.B2_BUCKET_NAME;
+      this._ready = true;
       console.log('✅ Backblaze Service initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize Backblaze Service:', error);
@@ -51,6 +58,7 @@ class BackblazeService {
    */
   async uploadFile(fileBuffer, fileName, contentType, folder = 'uploads') {
     try {
+      this._ensureReady();
       console.log('Starting upload:', { fileName, contentType, folder, bufferSize: fileBuffer.length });
 
       // Generate a unique file key
@@ -114,6 +122,7 @@ class BackblazeService {
    */
   async deleteFile(fileKey) {
     try {
+      this._ensureReady();
       const command = new DeleteObjectCommand({
         Bucket: this.bucketName,
         Key: fileKey,
@@ -134,6 +143,7 @@ class BackblazeService {
    */
   async getFileData(fileKey) {
     try {
+      this._ensureReady();
       console.log('🔍 Getting file data for key:', fileKey);
       console.log('🔍 Bucket name:', this.bucketName);
       console.log('🔍 Client configured:', !!this.client);
@@ -197,6 +207,7 @@ class BackblazeService {
    */
   async getFileStream(fileKey) {
     try {
+      this._ensureReady();
       const command = new GetObjectCommand({
         Bucket: this.bucketName,
         Key: fileKey,
@@ -217,6 +228,7 @@ class BackblazeService {
    */
   async getFileBuffer(fileKey) {
     try {
+      this._ensureReady();
       console.log('🔍 Getting file buffer for key:', fileKey);
       console.log('📊 This will count as 1 Class B (Download) operation');
       
