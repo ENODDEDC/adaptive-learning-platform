@@ -466,7 +466,7 @@ const IntuitiveLearning = ({
   const renderConceptUniverse = () => {
     if (loading) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4 rounded-2xl border border-gray-800 bg-gray-900">
+        <div className="flex min-h-[60vh] h-full flex-col items-center justify-center space-y-4 rounded-2xl border border-gray-800 bg-gray-900">
           <div className="h-12 w-12 animate-spin rounded-full border-2 border-gray-700 border-t-blue-500" />
           <p className="text-sm text-gray-400">Mapping your constellation…</p>
         </div>
@@ -475,7 +475,7 @@ const IntuitiveLearning = ({
 
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4 rounded-2xl border border-red-800 bg-gray-900 px-6">
+        <div className="flex min-h-[60vh] h-full flex-col items-center justify-center space-y-4 rounded-2xl border border-red-800 bg-gray-900 px-6">
           <div className="text-center text-red-400">
             <p className="text-lg font-semibold">Constellation failed</p>
             <p className="mt-2 text-sm text-red-500">{error}</p>
@@ -493,7 +493,7 @@ const IntuitiveLearning = ({
 
     if (!conceptUniverse) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4 rounded-2xl border border-gray-800 bg-gray-900">
+        <div className="flex min-h-[60vh] h-full flex-col items-center justify-center space-y-4 rounded-2xl border border-gray-800 bg-gray-900">
           <p className="text-center text-gray-300">
             <span className="block text-lg font-semibold text-white">No universe yet</span>
             <span className="mt-2 block text-sm text-gray-400">Generate to build a map from your document.</span>
@@ -1198,7 +1198,7 @@ const IntuitiveLearning = ({
   const renderInsightPatterns = () => {
     if (loading) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4 rounded-2xl border border-gray-800 bg-gray-900">
+        <div className="flex min-h-[60vh] h-full flex-col items-center justify-center space-y-4 rounded-2xl border border-gray-800 bg-gray-900">
           <div className="h-12 w-12 animate-spin rounded-full border-2 border-gray-700 border-t-blue-500" />
           <p className="text-sm text-gray-400">Surfacing patterns…</p>
         </div>
@@ -1207,7 +1207,7 @@ const IntuitiveLearning = ({
 
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4 rounded-2xl border border-red-800 bg-gray-900 px-6">
+        <div className="flex min-h-[60vh] h-full flex-col items-center justify-center space-y-4 rounded-2xl border border-red-800 bg-gray-900 px-6">
           <div className="text-center text-red-400">
             <p className="text-lg font-semibold">Patterns failed</p>
             <p className="mt-2 text-sm text-red-500">{error}</p>
@@ -1225,7 +1225,7 @@ const IntuitiveLearning = ({
 
     if (!insightPatterns) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4 rounded-2xl border border-gray-800 bg-gray-900">
+        <div className="flex min-h-[60vh] h-full flex-col items-center justify-center space-y-4 rounded-2xl border border-gray-800 bg-gray-900">
           <p className="text-center text-gray-300">
             <span className="block text-lg font-semibold text-white">No patterns yet</span>
             <span className="mt-2 block text-sm text-gray-400">Generate to mine this document for links and themes.</span>
