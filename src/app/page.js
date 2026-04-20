@@ -99,6 +99,20 @@ export default function LandingPage() {
   useEffect(() => {
     setIsVisible(true);
 
+    // Override body/html overflow for this page with !important
+    const styleId = 'landing-page-scroll-override';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        body, html { 
+          overflow: auto !important; 
+          height: auto !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
     // Check authentication
     const checkAuth = async () => {
       try {
@@ -122,13 +136,16 @@ export default function LandingPage() {
     }, 5000);
 
     return () => {
+      // Remove scroll override when leaving landing page
+      const styleId = document.getElementById('landing-page-scroll-override');
+      if (styleId) styleId.remove();
       window.removeEventListener('scroll', handleScroll);
       clearInterval(interval);
     };
   }, [router]);
 
   return (
-    <div className="bg-gradient-to-br from-gray-900 via-black to-indigo-900 text-white overflow-x-hidden w-full">
+    <div className="bg-gradient-to-br from-gray-900 via-black to-indigo-900 text-white overflow-x-hidden w-full" style={{ overflowY: 'auto' }}>
       {/* Animated Background Grid */}
       <div className="fixed inset-0 opacity-20 pointer-events-none">
         <div className="absolute inset-0" style={{
