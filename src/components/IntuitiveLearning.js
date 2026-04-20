@@ -1689,7 +1689,6 @@ const IntuitiveLearning = ({
                 <SparklesIcon className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-white">Concept Constellation</h1>
                 <p className="text-sm text-gray-400 truncate max-w-[300px]">{fileName}</p>
               </div>
             </div>
