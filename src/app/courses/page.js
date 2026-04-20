@@ -582,14 +582,20 @@ const CourseContent = () => {
   }
 
   // Default fallback - no slug provided, show all courses
+  const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
+
   return (
-    <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
+    <div className="h-full flex flex-col bg-[#f8fafc] relative overflow-hidden">
+      {/* Subtle Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#4f46e5 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}></div>
+      
+      <div className="relative z-10 flex flex-col h-full">
       {/* Simple Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Courses</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage and explore your learning journey</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Courses</h1>
+            <p className="text-sm font-medium text-slate-500 mt-1">Manage and explore your learning journey</p>
           </div>
           
           <div className="relative">
@@ -768,7 +774,13 @@ const CourseContent = () => {
           <AdaptiveLayout componentType="courses" trackInteractions={true} adaptiveMode={true}>
             <div className="flex gap-6 pb-6 pt-2">
           {activeTab === 'courses' ? (
-          filteredCourses.length === 0 ? (
+          loading ? (
+            <div className="flex gap-6 w-full px-10 py-6">
+              {[...Array(3)].map((_, i) => (
+                <CourseCardSkeleton key={i} index={i} />
+              ))}
+            </div>
+          ) : filteredCourses.length === 0 ? (
             <div className="w-full py-20 flex flex-col items-center justify-center">
               <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
                 <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -880,134 +892,85 @@ const CourseContent = () => {
                       onDragEnd={handleDragEnd}
                       onDrop={(e) => handleDrop(e, index)}
                     >
-                  <div className={`relative flex flex-col h-full bg-white border-2 cursor-pointer rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl overflow-hidden ${
-                    dragOverIndex === index ? 'border-blue-500 ring-4 ring-blue-200' : 'border-gray-200 hover:border-gray-300'
+                  <div className={`relative flex flex-col h-full bg-white border border-gray-100 cursor-pointer rounded-[2rem] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden ${
+                    dragOverIndex === index ? 'border-blue-500 ring-4 ring-blue-50' : 'hover:border-gray-200'
                   }`}>
-                    {/* Colored Header */}
-                    <div className={`relative px-5 py-6 overflow-hidden ${colorVariations.base} transition-all duration-300`}>
-                      <div className="absolute inset-0 opacity-[0.06]">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-12 translate-x-12"></div>
-                      </div>
+                    {/* Modern Mesh Gradient Header */}
+                    <div className={`relative px-6 py-8 overflow-hidden transition-all duration-500`}>
+                      {/* Background Gradient Layer */}
+                      <div className={`absolute inset-0 ${colorVariations.base} opacity-90 transition-colors duration-500`}></div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/20"></div>
+                      
+                      {/* Animated Mesh Glow */}
+                      <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/20 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+                      <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-black/10 blur-2xl rounded-full"></div>
 
-                      <div className="relative z-10 space-y-3.5">
-                        {/* Section Badge */}
-                        <div>
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-lg text-xs font-bold text-gray-800 shadow-sm border border-white/50">
-                            <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                            <span className="text-gray-600 text-[10px] font-semibold uppercase tracking-wider">Section</span>
-                            <span className="text-gray-900">{course.code}</span>
-                          </span>
+                      <div className="relative z-10 space-y-4">
+                        {/* Glassmorphism Section Badge */}
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-xl text-[10px] font-bold text-white border border-white/20 shadow-sm uppercase tracking-[0.1em]">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                          Section {course.code}
                         </div>
 
                         {/* Course Title */}
-                        <h3 className="text-xl font-bold text-white leading-snug line-clamp-2 pr-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5)' }}>
+                        <h3 className="text-2xl font-black text-white leading-[1.1] tracking-tight group-hover:scale-[1.02] transition-transform duration-500" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
                           {course.title}
                         </h3>
                       </div>
                     </div>
 
                     {/* Content Section */}
-                    <div className="flex-1 px-5 py-5 flex flex-col">
+                    <div className="flex-1 px-6 py-6 flex flex-col bg-white">
                       {/* Instructor */}
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="relative flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full flex-shrink-0 shadow-sm overflow-hidden">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="relative flex items-center justify-center w-12 h-12 bg-slate-50 rounded-2xl flex-shrink-0 shadow-sm overflow-hidden border border-gray-100 group-hover:border-blue-100 transition-colors">
                           {course.instructorProfilePicture ? (
-                            <>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img 
-                                src={course.instructorProfilePicture} 
-                                alt={course.instructor}
-                                className="absolute inset-0 w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                              <span className="text-sm font-bold text-white">
-                                {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                              </span>
-                            </>
+                            <img 
+                              src={course.instructorProfilePicture} 
+                              alt={course.instructor}
+                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
                           ) : (
-                            <span className="text-sm font-bold text-white">
+                            <span className="text-sm font-bold text-slate-400">
                               {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                             </span>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-gray-500 mb-0.5">Instructor</div>
-                          <div className="text-sm font-semibold text-gray-900 truncate">{course.instructor}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Instructor</div>
+                          <div className="text-sm font-bold text-slate-800 truncate group-hover:text-blue-600 transition-colors">{course.instructor}</div>
                         </div>
                       </div>
 
                       {/* Schedule Display */}
                       {course.schedules && course.schedules.length > 0 && (
-                        <div className="mb-4 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-                          <div className="flex items-center gap-2 mb-2">
-                            <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <span className="text-xs font-bold text-indigo-900 uppercase tracking-wide">Schedule</span>
+                        <div className="mb-6 p-4 bg-slate-50/50 rounded-[1.25rem] border border-slate-100 group-hover:bg-blue-50/30 transition-colors">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em]">Schedule</span>
                           </div>
-                          <div className="space-y-1.5">
+                          <div className="space-y-2">
                             {(expandedSchedules[course.id] ? course.schedules : course.schedules.slice(0, 2)).map((schedule, idx) => (
                               <div key={idx} className="flex items-center justify-between text-xs">
-                                <span className="font-semibold text-indigo-700">{schedule.day.slice(0, 3)}</span>
-                                <span className="text-indigo-600">{schedule.startTime} - {schedule.endTime}</span>
+                                <span className="font-bold text-slate-600">{schedule.day.slice(0, 3)}</span>
+                                <span className="text-slate-500 font-medium">{schedule.startTime} - {schedule.endTime}</span>
                               </div>
                             ))}
-                            {course.schedules.length > 2 && (
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setExpandedSchedules(prev => ({
-                                    ...prev,
-                                    [course.id]: !prev[course.id]
-                                  }));
-                                }}
-                                className="w-full text-xs text-indigo-600 hover:text-indigo-700 font-semibold text-center pt-1 transition-colors flex items-center justify-center gap-1"
-                              >
-                                {expandedSchedules[course.id] ? (
-                                  <>
-                                    <span>Show less</span>
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                    </svg>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span>+{course.schedules.length - 2} more</span>
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                  </>
-                                )}
-                              </button>
-                            )}
                           </div>
                         </div>
                       )}
 
-                      {/* Metrics */}
-                      <div className="flex items-stretch gap-2.5 pt-4 border-t border-gray-200 mt-auto">
-                        <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-purple-50 rounded-xl border border-purple-100 transition-all hover:bg-purple-100">
-                          <svg className="w-5 h-5 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
-                          <div className="text-center">
-                            <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.moduleCount || 0}</div>
-                            <div className="text-xs font-medium text-gray-600">Materials</div>
-                          </div>
+                      {/* Unified Metrics Bar */}
+                      <div className="mt-auto grid grid-cols-2 gap-3 pt-6 border-t border-slate-50">
+                        <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-transparent group-hover:border-purple-100 group-hover:bg-purple-50/30 transition-all duration-500">
+                          <div className="text-lg font-black text-slate-900 mb-0.5">{course.moduleCount || 0}</div>
+                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Materials</div>
                         </div>
-                        <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-blue-50 rounded-xl border border-blue-100 transition-all hover:bg-blue-100">
-                          <svg className="w-5 h-5 text-blue-600 mb-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                          </svg>
-                          <div className="text-center">
-                            <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.studentCount || 0}</div>
-                            <div className="text-xs font-medium text-gray-600">Students</div>
-                          </div>
+                        <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-transparent group-hover:border-blue-100 group-hover:bg-blue-50/30 transition-all duration-500">
+                          <div className="text-lg font-black text-slate-900 mb-0.5">{course.studentCount || 0}</div>
+                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Students</div>
                         </div>
                       </div>
                     </div>
@@ -1136,9 +1099,24 @@ const CourseContent = () => {
           )
         )}
             </div>
+
+            {/* Page Indicator Dots */}
+            {activeTab === 'courses' && totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-6 mb-2">
+                {[...Array(totalPages)].map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCoursePageIndex(i)}
+                    className={`h-1.5 rounded-full transition-all duration-500 ${
+                      coursePageIndex === i ? 'w-10 bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.3)]' : 'w-2 bg-slate-300 hover:bg-slate-400'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </AdaptiveLayout>
         </div>
-
+      </div>
       </div>
       </div>
     </div>
