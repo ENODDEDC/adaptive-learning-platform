@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FiLogIn, FiUserPlus, FiArrowRight, FiPlay, FiZap } from 'react-icons/fi';
 
 const learningModes = [
   {
@@ -627,14 +628,16 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="rounded-lg border border-slate-700 px-4 py-1.5 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:text-white"
+              className="group flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-1.5 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:text-white"
             >
+              <FiLogIn className="text-slate-400 transition-colors group-hover:text-white" />
               Sign In
             </Link>
             <Link
               href="/register"
-              className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+              className="group flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-blue-500"
             >
+              <FiUserPlus className="transition-transform group-hover:scale-110" />
               Get Started
             </Link>
           </div>
@@ -680,14 +683,16 @@ export default function LandingPage() {
                     >
                       <Link
                         href="/register"
-                        className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                        className="group flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
                       >
+                        <FiUserPlus className="transition-transform group-hover:scale-110" />
                         Create Free Account
                       </Link>
                       <button
                         onClick={() => setCurrentSlide(1)}
-                        className="rounded-xl border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-slate-500"
+                        className="group flex items-center gap-2 rounded-xl border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-800"
                       >
+                        <FiPlay className="text-blue-400 group-hover:scale-110 transition-transform" />
                         Explore Learning Modes
                       </button>
                     </motion.div>
@@ -940,11 +945,13 @@ export default function LandingPage() {
                         </div>
                       </div>
                       <div className="flex gap-4">
-                        <Link href="/register" className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-500">
+                        <Link href="/register" className="group flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-500">
+                          <FiZap className="group-hover:scale-110 transition-transform" />
                           Try This Mode
                         </Link>
-                        <button onClick={() => setCurrentSlide(prev => (prev + 1) % totalSlides)} className="rounded-xl border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800">
+                        <button onClick={() => setCurrentSlide(prev => (prev + 1) % totalSlides)} className="group flex items-center gap-2 rounded-xl border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800">
                           Next Mode
+                          <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
                         </button>
                       </div>
                     </div>
@@ -1024,14 +1031,16 @@ export default function LandingPage() {
                     <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
                       <Link
                         href="/register"
-                        className="rounded-xl bg-blue-600 px-8 py-4 text-base font-bold text-white transition hover:bg-blue-500 hover:scale-105 active:scale-95"
+                        className="group flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-4 text-base font-bold text-white transition hover:bg-blue-500 hover:scale-105 active:scale-95"
                       >
+                        <FiUserPlus className="transition-transform group-hover:scale-110" />
                         Start Free
                       </Link>
                       <Link
                         href="/login"
-                        className="rounded-xl border border-slate-700 px-8 py-4 text-base font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
+                        className="group flex items-center gap-2 rounded-xl border border-slate-700 px-8 py-4 text-base font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
                       >
+                        <FiLogIn className="text-slate-400 group-hover:text-white transition-colors" />
                         I Already Have An Account
                       </Link>
                     </div>
