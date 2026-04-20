@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const learningModes = [
@@ -621,11 +620,7 @@ export default function LandingPage() {
       </div>
 
       <nav className="relative z-50 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur shrink-0">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Image src="/favicon.svg" alt="Intelevo" width={30} height={30} />
-            <span className="text-xl font-semibold tracking-tight text-white">Intelevo</span>
-          </div>
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-end px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <Link
               href="/login"
@@ -661,7 +656,7 @@ export default function LandingPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="max-w-2xl text-4xl font-bold leading-tight text-white md:text-5xl"
+                      className="max-w-2xl text-3xl font-bold leading-tight tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-400 md:text-4xl"
                     >
                       A modern learning platform built to adapt to how each student learns best.
                     </motion.h1>
@@ -669,7 +664,7 @@ export default function LandingPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
-                      className="mt-6 max-w-xl text-base leading-relaxed text-slate-300 md:text-lg"
+                      className="mt-6 max-w-xl text-base leading-relaxed text-slate-400 font-medium md:text-lg"
                     >
                       Intelevo combines machine learning and AI generation to deliver personalized study experiences across 8
                       learning modes without friction.
