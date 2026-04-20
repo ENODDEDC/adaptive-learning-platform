@@ -266,20 +266,23 @@ export default function LandingPage() {
           overflow: hidden !important;
           height: 100% !important;
         }
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(30, 41, 59, 0.6) transparent;
+        }
         .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+          width: 5px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(30, 41, 59, 0.3);
-          border-radius: 10px;
+          background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(59, 130, 246, 0.4);
-          border-radius: 10px;
+          background: #1e293b;
+          border-radius: 20px;
           border: 1px solid rgba(255, 255, 255, 0.05);
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(59, 130, 246, 0.6);
+          background: #334155;
         }
       `;
       document.head.appendChild(style);
@@ -917,7 +920,7 @@ export default function LandingPage() {
                     </p>
                   </div>
 
-                  <div className="grid gap-10 lg:grid-cols-[1fr,1.2fr] items-center">
+                  <div className="grid gap-10 lg:grid-cols-[1fr,1.2fr] items-center overflow-y-auto pr-4 custom-scrollbar">
                     <div className="space-y-6">
                       <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
                         <h3 className="text-lg font-semibold text-white mb-2">{learningModes[currentSlide - 2].short}</h3>
