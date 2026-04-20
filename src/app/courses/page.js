@@ -763,24 +763,10 @@ const CourseContent = () => {
       })()}
 
       {/* Enhanced Course/Cluster Grid with Pagination */}
-      <div className="relative mb-8 ml-4 mr-4 flex items-center gap-4">
-        {activeTab === 'courses' && filteredCourses.length > coursesPerPage && (
-          <button 
-            onClick={handlePrevPage}
-            disabled={coursePageIndex === 0}
-            className={`flex-shrink-0 p-3 rounded-full border transition-all ${
-              coursePageIndex === 0 
-                ? 'border-gray-200 text-gray-300 cursor-not-allowed' 
-                : 'border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 shadow-sm'
-            }`}
-          >
-            <ChevronLeftIcon className="w-6 h-6" />
-          </button>
-        )}
-
-        <div className="flex-1 transition-all duration-500 ease-in-out overflow-hidden">
+      <div className="relative mb-8 mx-4 group">
+        <div className="transition-all duration-500 ease-in-out overflow-hidden px-4">
           <AdaptiveLayout componentType="courses" trackInteractions={true} adaptiveMode={true}>
-            <div className="flex gap-6 pb-4">
+            <div className="flex gap-6 pb-6 pt-2">
           {activeTab === 'courses' ? (
           filteredCourses.length === 0 ? (
             <div className="w-full py-20 flex flex-col items-center justify-center">
@@ -813,16 +799,17 @@ const CourseContent = () => {
               </div>
             </div>
           ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={coursePageIndex}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="flex gap-6 w-full"
-              >
-                {filteredCourses.slice(coursePageIndex * coursesPerPage, (coursePageIndex + 1) * coursesPerPage).map((course, index) => {
+            <div className="relative w-full px-10">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={coursePageIndex}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex gap-6 w-full"
+                >
+                  {filteredCourses.slice(coursePageIndex * coursesPerPage, (coursePageIndex + 1) * coursesPerPage).map((course, index) => {
                   // Utility function to normalize and ensure proper color format
                   const normalizeColor = (colorValue) => {
                     if (colorValue && colorValue.startsWith('bg-')) {
@@ -1026,10 +1013,37 @@ const CourseContent = () => {
                     </div>
                   </div>
                 </Link>
-              );
-            })}
-          </motion.div>
-        </AnimatePresence>
+                  );
+                })}
+                </motion.div>
+              </AnimatePresence>
+              {filteredCourses.length > coursesPerPage && (
+                <>
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={coursePageIndex === 0}
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full border transition-all ${
+                      coursePageIndex === 0
+                        ? 'border-gray-100 text-gray-200 cursor-not-allowed opacity-0'
+                        : 'border-blue-200 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-300 shadow-md hover:scale-110 active:scale-95'
+                    }`}
+                  >
+                    <ChevronLeftIcon className="w-6 h-6" />
+                  </button>
+                  <button
+                    onClick={handleNextPage}
+                    disabled={(coursePageIndex + 1) * coursesPerPage >= filteredCourses.length}
+                    className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full border transition-all ${
+                      (coursePageIndex + 1) * coursesPerPage >= filteredCourses.length
+                        ? 'border-gray-100 text-gray-200 cursor-not-allowed opacity-0'
+                        : 'border-blue-200 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-300 shadow-md hover:scale-110 active:scale-95'
+                    }`}
+                  >
+                    <ChevronRightIcon className="w-6 h-6" />
+                  </button>
+                </>
+              )}
+            </div>
       )
     ) : (
       /* Clusters Tab Content */
@@ -1125,19 +1139,6 @@ const CourseContent = () => {
           </AdaptiveLayout>
         </div>
 
-        {activeTab === 'courses' && filteredCourses.length > coursesPerPage && (
-          <button 
-            onClick={handleNextPage}
-            disabled={(coursePageIndex + 1) * coursesPerPage >= filteredCourses.length}
-            className={`flex-shrink-0 p-3 rounded-full border transition-all ${
-              (coursePageIndex + 1) * coursesPerPage >= filteredCourses.length
-                ? 'border-gray-200 text-gray-300 cursor-not-allowed' 
-                : 'border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 shadow-sm'
-            }`}
-          >
-            <ChevronRightIcon className="w-6 h-6" />
-          </button>
-        )}
       </div>
       </div>
     </div>
