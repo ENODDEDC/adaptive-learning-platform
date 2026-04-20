@@ -585,7 +585,7 @@ const CourseContent = () => {
   const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
 
   return (
-    <div className="h-full flex flex-col bg-[#f8fafc] relative overflow-hidden">
+    <div className="flex flex-col h-full bg-[#f8fafc] relative overflow-hidden">
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#4f46e5 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}></div>
       
@@ -594,7 +594,7 @@ const CourseContent = () => {
       <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Courses</h1>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Courses</h1>
             <p className="text-sm font-medium text-slate-500 mt-1">Manage and explore your learning journey</p>
           </div>
           
@@ -892,45 +892,42 @@ const CourseContent = () => {
                       onDragEnd={handleDragEnd}
                       onDrop={(e) => handleDrop(e, index)}
                     >
-                  <div className={`relative flex flex-col h-full bg-white border border-gray-100 cursor-pointer rounded-[2rem] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden ${
+                  <div className={`relative flex flex-col h-full bg-white border border-gray-100 cursor-pointer rounded-2xl transition-all duration-500 hover:-translate-y-1 hover:shadow-lg overflow-hidden ${
                     dragOverIndex === index ? 'border-blue-500 ring-4 ring-blue-50' : 'hover:border-gray-200'
                   }`}>
-                    {/* Modern Mesh Gradient Header */}
-                    <div className={`relative px-6 py-8 overflow-hidden transition-all duration-500`}>
-                      {/* Background Gradient Layer */}
-                      <div className={`absolute inset-0 ${colorVariations.base} opacity-90 transition-colors duration-500`}></div>
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/20"></div>
-                      
-                      {/* Animated Mesh Glow */}
-                      <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/20 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-700"></div>
-                      <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-black/10 blur-2xl rounded-full"></div>
+                    {/* Clean Solid Header */}
+                    <div className={`relative px-5 py-6 overflow-hidden ${colorVariations.base} transition-all duration-300`}>
+                      <div className="absolute inset-0 opacity-[0.06]">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-12 translate-x-12"></div>
+                      </div>
 
-                      <div className="relative z-10 space-y-4">
-                        {/* Glassmorphism Section Badge */}
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-xl text-[10px] font-bold text-white border border-white/20 shadow-sm uppercase tracking-[0.1em]">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="relative z-10 space-y-3.5">
+                        {/* Simple White Badge */}
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg text-xs font-bold text-gray-800 shadow-sm border border-gray-100">
+                          <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
                           </svg>
-                          Section {course.code}
+                          <span className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider">Section</span>
+                          <span className="text-gray-900">{course.code}</span>
                         </div>
 
                         {/* Course Title */}
-                        <h3 className="text-2xl font-black text-white leading-[1.1] tracking-tight group-hover:scale-[1.02] transition-transform duration-500" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                        <h3 className="text-xl font-bold text-white leading-snug line-clamp-2">
                           {course.title}
                         </h3>
                       </div>
                     </div>
 
                     {/* Content Section */}
-                    <div className="flex-1 px-6 py-6 flex flex-col bg-white">
+                    <div className="flex-1 px-5 py-5 flex flex-col bg-white">
                       {/* Instructor */}
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="relative flex items-center justify-center w-12 h-12 bg-slate-50 rounded-2xl flex-shrink-0 shadow-sm overflow-hidden border border-gray-100 group-hover:border-blue-100 transition-colors">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="relative flex items-center justify-center w-10 h-10 bg-slate-50 rounded-full flex-shrink-0 shadow-sm overflow-hidden border border-gray-100 transition-colors">
                           {course.instructorProfilePicture ? (
                             <img 
                               src={course.instructorProfilePicture} 
                               alt={course.instructor}
-                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              className="absolute inset-0 w-full h-full object-cover"
                             />
                           ) : (
                             <span className="text-sm font-bold text-slate-400">
@@ -940,18 +937,20 @@ const CourseContent = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Instructor</div>
-                          <div className="text-sm font-bold text-slate-800 truncate group-hover:text-blue-600 transition-colors">{course.instructor}</div>
+                          <div className="text-sm font-bold text-slate-800 truncate transition-colors">{course.instructor}</div>
                         </div>
                       </div>
 
                       {/* Schedule Display */}
                       {course.schedules && course.schedules.length > 0 && (
-                        <div className="mb-6 p-4 bg-slate-50/50 rounded-[1.25rem] border border-slate-100 group-hover:bg-blue-50/30 transition-colors">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                        <div className="mb-4 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                          <div className="flex items-center gap-2 mb-2">
+                            <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em]">Schedule</span>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-1.5">
                             {(expandedSchedules[course.id] ? course.schedules : course.schedules.slice(0, 2)).map((schedule, idx) => (
                               <div key={idx} className="flex items-center justify-between text-xs">
                                 <span className="font-bold text-slate-600">{schedule.day.slice(0, 3)}</span>
@@ -963,12 +962,12 @@ const CourseContent = () => {
                       )}
 
                       {/* Unified Metrics Bar */}
-                      <div className="mt-auto grid grid-cols-2 gap-3 pt-6 border-t border-slate-50">
-                        <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-transparent group-hover:border-purple-100 group-hover:bg-purple-50/30 transition-all duration-500">
+                      <div className="mt-auto grid grid-cols-2 gap-3 pt-4 border-t border-slate-50">
+                        <div className="flex flex-col items-center justify-center p-3 bg-slate-50 rounded-xl border border-transparent transition-all duration-500">
                           <div className="text-lg font-black text-slate-900 mb-0.5">{course.moduleCount || 0}</div>
                           <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Materials</div>
                         </div>
-                        <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-transparent group-hover:border-blue-100 group-hover:bg-blue-50/30 transition-all duration-500">
+                        <div className="flex flex-col items-center justify-center p-3 bg-slate-50 rounded-xl border border-transparent transition-all duration-500">
                           <div className="text-lg font-black text-slate-900 mb-0.5">{course.studentCount || 0}</div>
                           <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Students</div>
                         </div>
