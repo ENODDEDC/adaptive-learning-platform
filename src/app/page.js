@@ -1,786 +1,1096 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiLogIn, FiUserPlus, FiArrowRight, FiPlay, FiZap } from 'react-icons/fi';
+
+const learningModes = [
+  {
+    id: 'ai-narrator',
+    label: 'AI Narrator',
+    short: 'Audio-first study sessions',
+    description: 'Get natural voice explanations, focused summaries, and quick checkpoints after each section.',
+    capabilities: ['Narration', 'Summaries', 'Quick Checks', 'Study Tips'],
+    tech: 'Google TTS + Gemini',
+  },
+  {
+    id: 'visual-learning',
+    label: 'Visual Learning',
+    short: 'Diagram-driven understanding',
+    description: 'Convert topics into clean diagrams, concept maps, and visual memory aids.',
+    capabilities: ['Concept Maps', 'Diagrams', 'Infographics', 'Flowcharts'],
+    tech: 'Gemini Vision',
+  },
+  {
+    id: 'active-learning',
+    label: 'Active Learning Hub',
+    short: 'Practice while learning',
+    description: 'Build understanding through scenarios, challenge sets, and immediate feedback loops.',
+    capabilities: ['Scenarios', 'Practice Sets', 'Feedback', 'Review Cycles'],
+    tech: 'Adaptive Task Engine',
+  },
+  {
+    id: 'intuitive-learning',
+    label: 'Concept Constellation',
+    short: 'Connect ideas deeply',
+    description: 'Spot hidden relationships across concepts and build stronger mental models.',
+    capabilities: ['Pattern Detection', 'Theme Linking', 'Insight Prompts', 'Idea Expansion'],
+    tech: 'Semantic Graph AI',
+  },
+  {
+    id: 'sensing-learning',
+    label: 'Hands-On Lab',
+    short: 'Step-by-step application',
+    description: 'Use practical walkthroughs and guided tasks to translate theory into action.',
+    capabilities: ['Lab Tasks', 'Guided Steps', 'Practical Checks', 'Applied Exercises'],
+    tech: 'Simulation Layer',
+  },
+  {
+    id: 'global-learning',
+    label: 'Global Learning',
+    short: 'Big-picture mastery',
+    description: 'Understand systems end-to-end, then drill into the most important details.',
+    capabilities: ['System Maps', 'Context Layers', 'Connections', 'Executive View'],
+    tech: 'Context Mapping AI',
+  },
+  {
+    id: 'sequential-learning',
+    label: 'Sequential Learning',
+    short: 'Structured progression',
+    description: 'Follow a clear sequence with dependencies, milestones, and progress tracking.',
+    capabilities: ['Roadmaps', 'Milestones', 'Dependencies', 'Progress'],
+    tech: 'Flow Planner',
+  },
+  {
+    id: 'reflective-learning',
+    label: 'Reflective Learning',
+    short: 'Deliberate depth',
+    description: 'Review your thinking, identify gaps, and create stronger long-term recall.',
+    capabilities: ['Reflection Prompts', 'Self-Assessment', 'Gap Analysis', 'Retention Notes'],
+    tech: 'Reflection Assistant',
+  },
+];
+
+const processSteps = [
+  {
+    title: 'Capture Learning Signals',
+    detail: 'The platform observes interactions such as reading depth, question generation, and content preferences.',
+  },
+  {
+    title: 'Classify Learning Style',
+    detail: 'A trained ML model maps behavior into meaningful style dimensions.',
+  },
+  {
+    title: 'Deliver Adaptive Modes',
+    detail: 'AI automatically prioritizes the most effective content mode for each study session.',
+  },
+  {
+    title: 'Continuously Improve',
+    detail: 'Recommendations evolve as your behavior and performance change over time.',
+  },
+];
+
+const replayFrames = [
+  {
+    stage: 'Signal Capture',
+    signal: 'High interaction with diagrams and concept maps',
+    confidence: 72,
+    mode: 'Visual Learning',
+    output: 'Generated concept diagram + infographic summary',
+  },
+  {
+    stage: 'Model Rebalance',
+    signal: 'Frequent question attempts and scenario clicks',
+    confidence: 81,
+    mode: 'Active Learning Hub',
+    output: 'Scenario-based practice with instant feedback',
+  },
+  {
+    stage: 'Depth Detection',
+    signal: 'Long reflection sessions and note-heavy behavior',
+    confidence: 86,
+    mode: 'Reflective Learning',
+    output: 'Prompt-driven reflection and retention cues',
+  },
+  {
+    stage: 'Flow Optimization',
+    signal: 'Sequential completion with low skip rate',
+    confidence: 89,
+    mode: 'Sequential Learning',
+    output: 'Step-locked learning path with dependency guidance',
+  },
+];
+
+const studioTopic = {
+  title: 'Neural Networks',
+  source: 'One topic transformed into eight adaptive outputs',
+  outputs: {
+    'ai-narrator': 'Audio briefing with checkpoint prompts and concise summaries',
+    'visual-learning': 'Concept diagram, infographic, network map, and process flow',
+    'active-learning': 'Challenge scenarios with feedback and discussion prompts',
+    'intuitive-learning': 'Constellation map with hidden conceptual links',
+    'sensing-learning': 'Interactive lab controls and measurable readouts',
+    'global-learning': 'System-level map with interconnections and implications',
+    'sequential-learning': 'Ordered learning path with prerequisites',
+    'reflective-learning': 'Guided reflection prompts with timer-based focus',
+  },
+};
+
+const constellationNodes = [
+  {
+    id: 'representation',
+    label: 'Representation Learning',
+    outputs: ['Visual map', 'Active scenario', 'Reflective prompt'],
+  },
+  {
+    id: 'generalization',
+    label: 'Generalization',
+    outputs: ['Sequential path', 'Global systems view', 'Lab challenge'],
+  },
+  {
+    id: 'optimization',
+    label: 'Optimization',
+    outputs: ['Hands-on tuning lab', 'Infographic summary', 'Audio explainer'],
+  },
+  {
+    id: 'bias-variance',
+    label: 'Bias-Variance Tradeoff',
+    outputs: ['Concept constellation', 'Case-based practice', 'Reflection checklist'],
+  },
+];
+
+const controlSignals = [
+  {
+    id: 'diagram-burst',
+    label: 'Diagram Burst',
+    effect: { visual: 18, intuitive: 8, global: 6, active: -4 },
+    event: 'User opened 4 visual assets in one session.',
+  },
+  {
+    id: 'scenario-loop',
+    label: 'Scenario Loop',
+    effect: { active: 16, sensing: 10, reflective: -6, sequential: 4 },
+    event: 'User completed scenario and requested immediate feedback.',
+  },
+  {
+    id: 'deep-journal',
+    label: 'Deep Journal',
+    effect: { reflective: 20, sequential: 6, active: -5, audio: 3 },
+    event: 'Long reflection notes and prompt interactions detected.',
+  },
+  {
+    id: 'step-discipline',
+    label: 'Step Discipline',
+    effect: { sequential: 18, sensing: 6, active: 4, intuitive: -3 },
+    event: 'High completion rate on step-ordered learning flow.',
+  },
+  {
+    id: 'audio-focus',
+    label: 'Audio Focus',
+    effect: { audio: 16, reflective: 6, visual: -5, global: 4 },
+    event: 'Narrated content watch/listen time increased significantly.',
+  },
+];
+
+const modeScoreMap = {
+  'ai-narrator': 'audio',
+  'visual-learning': 'visual',
+  'active-learning': 'active',
+  'intuitive-learning': 'intuitive',
+  'sensing-learning': 'sensing',
+  'global-learning': 'global',
+  'sequential-learning': 'sequential',
+  'reflective-learning': 'reflective',
+};
+
+const clampScore = (value) => Math.max(0, Math.min(100, value));
+
+const getModeFromScores = (scores) => {
+  const ranking = Object.entries(modeScoreMap).map(([modeId, scoreKey]) => ({
+    modeId,
+    score: scores[scoreKey] || 0,
+  }));
+  ranking.sort((a, b) => b.score - a.score);
+  const best = ranking[0];
+  const second = ranking[1];
+  const confidence = clampScore(58 + (best.score - (second?.score || 0)) + Math.round(best.score * 0.25));
+  return { modeId: best.modeId, confidence, ranking };
+};
 
 export default function LandingPage() {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
   const [activeMode, setActiveMode] = useState(0);
-  const [scrollY, setScrollY] = useState(0);
-  const heroRef = useRef(null);
+  const [replayIndex, setReplayIndex] = useState(0);
+  const [studioMode, setStudioMode] = useState('visual-learning');
+  const [activeReflective, setActiveReflective] = useState(62);
+  const [visualVerbal, setVisualVerbal] = useState(74);
+  const [selectedNode, setSelectedNode] = useState(constellationNodes[0].id);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const totalSlides = 12; // 1:Hero, 1:Control, 8:Modes, 1:Process, 1:CTA
+  
+  // Slide durations in milliseconds
+  const getSlideDuration = (index) => {
+    if (index === 1) return 15000; // Slide 2 (Control Room) is 15 seconds
+    if (index >= 2 && index <= 9) return 8000; // Individual Mode slides are 8 seconds
+    return 5000; // Others are 5 seconds
+  };
 
-  // 8 AI Learning Modes with complete information
-  const learningModes = [
-    {
-      id: 'ai-narrator',
-      name: 'AI Narrator',
-      tagline: 'Listen & Learn in Taglish',
-      icon: '🎧',
-      color: 'from-blue-500 to-cyan-400',
-      description: 'AI-powered audio narration with interactive quizzes, study tips, and summaries in Taglish (English + Tagalog)',
-      features: ['Audio Narration', 'Interactive Quizzes', 'Study Tips', 'Document Summaries'],
-      tech: 'Google TTS + Gemini AI'
-    },
-    {
-      id: 'visual-learning',
-      name: 'Visual Learning',
-      tagline: 'See Concepts Come Alive',
-      icon: '📊',
-      color: 'from-emerald-500 to-teal-400',
-      description: 'Transform complex ideas into stunning diagrams, infographics, mind maps, and flowcharts',
-      features: ['AI Diagrams', 'Infographics', 'Mind Maps', 'Flowcharts'],
-      tech: 'Gemini Image Generation'
-    },
-    {
-      id: 'active-learning',
-      name: 'Active Learning Hub',
-      tagline: 'Learn by Doing',
-      icon: '🎯',
-      color: 'from-purple-500 to-violet-400',
-      description: 'Hands-on activities, simulated discussions, and real-world scenarios for active learners',
-      features: ['Interactive Activities', 'Group Simulations', 'Real Scenarios', 'Immediate Practice'],
-      tech: 'Felder-Silverman Model'
-    },
-    {
-      id: 'intuitive-learning',
-      name: 'Concept Constellation',
-      tagline: 'Discover Hidden Patterns',
-      icon: '🔮',
-      color: 'from-pink-500 to-rose-400',
-      description: 'Explore concept universes, discover patterns, and unlock creative insights',
-      features: ['Pattern Discovery', 'Concept Universe', 'Creative Insights', 'Innovation Ideas'],
-      tech: 'Abstract Pattern AI'
-    },
-    {
-      id: 'sensing-learning',
-      name: 'Hands-On Lab',
-      tagline: 'Experiment & Explore',
-      icon: '🔬',
-      color: 'from-orange-500 to-amber-400',
-      description: 'Interactive simulations, practical challenges, and step-by-step laboratory experiences',
-      features: ['Virtual Labs', 'Simulations', 'Practical Challenges', 'Real Experiments'],
-      tech: 'Interactive Simulation Engine'
-    },
-    {
-      id: 'global-learning',
-      name: 'Global Learning',
-      tagline: 'See the Big Picture',
-      icon: '🌍',
-      color: 'from-indigo-500 to-blue-400',
-      description: 'Holistic overviews, system interconnections, and comprehensive understanding',
-      features: ['Big Picture View', 'Interconnections', 'System Dynamics', 'Context Mapping'],
-      tech: 'Holistic AI Analysis'
-    },
-    {
-      id: 'sequential-learning',
-      name: 'Sequential Learning',
-      tagline: 'Step-by-Step Mastery',
-      icon: '📋',
-      color: 'from-green-500 to-emerald-400',
-      description: 'Logical progression, concept dependencies, and structured learning flows',
-      features: ['Step Breakdown', 'Concept Flow', 'Dependencies', 'Progress Tracking'],
-      tech: 'Sequential AI Processing'
-    },
-    {
-      id: 'reflective-learning',
-      name: 'Reflective Learning',
-      tagline: 'Think Deep, Learn Deeper',
-      icon: '🤔',
-      color: 'from-violet-500 to-purple-400',
-      description: 'Deep contemplation, self-assessment, and metacognitive awareness tracking',
-      features: ['Deep Analysis', 'Self-Assessment', 'Thought Evolution', 'Metacognition'],
-      tech: 'Reflective AI Mentor'
-    }
-  ];
+  const [controlScores, setControlScores] = useState({
+    visual: 64,
+    active: 56,
+    reflective: 58,
+    sequential: 52,
+    intuitive: 49,
+    sensing: 47,
+    global: 45,
+    audio: 39,
+  });
+  const [controlSelectedSignal, setControlSelectedSignal] = useState(controlSignals[0].id);
+  const [controlAutoPlay, setControlAutoPlay] = useState(true);
+  const [controlEvents, setControlEvents] = useState([
+    'Engine initialized: baseline learner state loaded.',
+    'Awaiting incoming behavior signals.',
+  ]);
 
   useEffect(() => {
     setIsVisible(true);
 
-    // Check authentication
+    const styleTagId = 'landing-page-scroll-override';
+    if (!document.getElementById(styleTagId)) {
+      const style = document.createElement('style');
+      style.id = styleTagId;
+      style.textContent = `
+        body, html {
+          overflow: hidden !important;
+          height: 100% !important;
+        }
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(30, 41, 59, 0.6) transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #1e293b;
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #334155;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/auth/profile');
-        if (res.ok) {
+        const response = await fetch('/api/auth/profile');
+        if (response.ok) {
           router.replace('/home');
         }
       } catch (error) {
-        // Not authenticated
+        // Guests remain on the landing page.
       }
     };
+
     checkAuth();
 
-    // Scroll tracking
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
+    // Variable duration timer logic
+    let slideTimer;
+    const startTimer = (duration) => {
+      slideTimer = setTimeout(() => {
+        setCurrentSlide((prev) => (prev + 1) % totalSlides);
+      }, duration);
+    };
 
-    // Auto-rotate learning modes
-    const interval = setInterval(() => {
-      setActiveMode(prev => (prev + 1) % learningModes.length);
-    }, 5000);
+    startTimer(getSlideDuration(currentSlide));
+
+    const modeRotation = setInterval(() => {
+      setActiveMode((current) => (current + 1) % learningModes.length);
+    }, 4500);
+
+    const replayRotation = setInterval(() => {
+      setReplayIndex((current) => (current + 1) % replayFrames.length);
+    }, 3200);
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      clearInterval(interval);
+      const styleTag = document.getElementById(styleTagId);
+      if (styleTag) styleTag.remove();
+      clearTimeout(slideTimer);
+      clearInterval(modeRotation);
+      clearInterval(replayRotation);
     };
-  }, [router]);
+  }, [router, totalSlides, currentSlide]);
+
+
+  const mixedModeRecommendation = (() => {
+    if (visualVerbal >= 65 && activeReflective >= 55) return 'visual-learning';
+    if (visualVerbal >= 65 && activeReflective < 55) return 'active-learning';
+    if (visualVerbal < 65 && activeReflective >= 55) return 'reflective-learning';
+    return 'sequential-learning';
+  })();
+
+  const selectedConstellation = constellationNodes.find((node) => node.id === selectedNode) || constellationNodes[0];
+  const controlRecommendation = getModeFromScores(controlScores);
+  const controlRecommendedMode = controlRecommendation.modeId;
+
+  const applyControlSignal = useCallback(
+    (signalId, source = 'manual') => {
+      const signal = controlSignals.find((item) => item.id === signalId);
+      if (!signal) return;
+
+      setControlSelectedSignal(signalId);
+      setControlScores((prev) => {
+        const next = { ...prev };
+        Object.entries(signal.effect).forEach(([key, delta]) => {
+          next[key] = clampScore((next[key] || 0) + delta);
+        });
+
+        const recommendation = getModeFromScores(next);
+        const modeIndex = learningModes.findIndex((mode) => mode.id === recommendation.modeId);
+        if (modeIndex >= 0) setActiveMode(modeIndex);
+        setStudioMode(recommendation.modeId);
+        setVisualVerbal(clampScore(50 + (next.visual - (next.audio + next.reflective) / 2)));
+        setActiveReflective(clampScore(50 + (next.reflective - next.active / 2)));
+
+        return next;
+      });
+
+      setControlEvents((prev) => {
+        const line = `${source === 'stream' ? 'Stream' : 'Manual'} signal "${signal.label}": ${signal.event}`;
+        return [line, ...prev].slice(0, 6);
+      });
+    },
+    [setActiveMode, setStudioMode]
+  );
+
+  useEffect(() => {
+    if (!controlAutoPlay) return undefined;
+    const interval = setInterval(() => {
+      const random = controlSignals[Math.floor(Math.random() * controlSignals.length)];
+      applyControlSignal(random.id, 'stream');
+    }, 5200);
+    return () => clearInterval(interval);
+  }, [controlAutoPlay, applyControlSignal]);
+
+  const renderModePreview = (modeId) => {
+    if (modeId === 'ai-narrator') {
+      return (
+        <div className="rounded-xl border border-slate-800 bg-slate-950/90 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs uppercase tracking-wide text-slate-400">AI Narrator Session</p>
+            <span className="rounded-md border border-blue-500/40 bg-blue-500/10 px-2 py-1 text-[11px] text-blue-200">
+              Live Audio
+            </span>
+          </div>
+          <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+            <p className="text-xs text-slate-400">Current segment</p>
+            <p className="mt-1 text-sm font-medium text-white">Neural Networks: Foundations</p>
+            <div className="mt-3 h-2 rounded bg-slate-800">
+              <div className="h-2 w-2/3 rounded bg-blue-500" />
+            </div>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs text-slate-300">Quick quiz ready</div>
+            <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs text-slate-300">Summary generated</div>
+          </div>
+        </div>
+      );
+    }
+
+    if (modeId === 'visual-learning') {
+      return (
+        <div className="rounded-xl border border-slate-800 bg-slate-950/90 p-3">
+          <div className="mb-2 flex gap-2 overflow-x-auto">
+            {['Overview', 'Summary', 'Network', 'Steps'].map((tab, i) => (
+              <span
+                key={tab}
+                className={`rounded-md border px-2.5 py-1 text-xs ${
+                  i === 0 ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-100' : 'border-slate-700 bg-slate-900 text-slate-400'
+                }`}
+              >
+                {tab}
+              </span>
+            ))}
+          </div>
+          <div className="rounded-lg border border-slate-800 bg-white p-3">
+            <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
+              <span>Generated Concept Diagram</span>
+              <span>PNG</span>
+            </div>
+            <div className="grid h-52 grid-cols-2 gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+              <div className="rounded border border-slate-300 bg-white p-2 text-[11px] text-slate-600">Input Layer</div>
+              <div className="rounded border border-slate-300 bg-white p-2 text-[11px] text-slate-600">Hidden Layers</div>
+              <div className="rounded border border-slate-300 bg-white p-2 text-[11px] text-slate-600">Activation</div>
+              <div className="rounded border border-slate-300 bg-white p-2 text-[11px] text-slate-600">Output</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (modeId === 'active-learning') {
+      return (
+        <div className="rounded-xl border border-slate-800 bg-stone-950/90 p-3">
+          <div className="mb-2 flex gap-2 overflow-x-auto">
+            {['Your Page', 'Talk It Through', 'Try A Choice', 'Explain It'].map((tab, i) => (
+              <span
+                key={tab}
+                className={`rounded-md border px-2.5 py-1 text-xs ${
+                  i === 2 ? 'border-amber-500/50 bg-amber-500/15 text-amber-100' : 'border-stone-700 bg-stone-900 text-stone-400'
+                }`}
+              >
+                {tab}
+              </span>
+            ))}
+          </div>
+          <div className="rounded-lg border border-stone-700 bg-stone-900 p-3">
+            <p className="text-xs text-stone-400">Scenario</p>
+            <p className="mt-1 text-sm font-medium text-stone-100">
+              A model overfits after epoch 20. What is your best immediate action?
+            </p>
+            <div className="mt-3 space-y-2">
+              <div className="rounded border border-stone-700 bg-stone-950 px-3 py-2 text-xs text-stone-300">Increase hidden units</div>
+              <div className="rounded border border-amber-500/60 bg-amber-500/15 px-3 py-2 text-xs text-amber-100">Apply early stopping</div>
+              <div className="rounded border border-stone-700 bg-stone-950 px-3 py-2 text-xs text-stone-300">Remove validation split</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (modeId === 'intuitive-learning') {
+      return (
+        <div className="rounded-xl border border-gray-800 bg-black p-2">
+          <div className="grid gap-2 lg:grid-cols-[200px,1fr,220px]">
+            <div className="rounded-lg border border-gray-800 bg-gray-900 p-3">
+              <p className="text-[11px] uppercase tracking-wide text-gray-500">View Lens</p>
+              <div className="mt-2 space-y-1.5">
+                <div className="rounded bg-blue-600 px-2 py-1.5 text-xs text-white">Constellation View</div>
+                <div className="rounded bg-gray-800 px-2 py-1.5 text-xs text-gray-300">Concept Clusters</div>
+                <div className="rounded bg-gray-800 px-2 py-1.5 text-xs text-gray-300">Frameworks</div>
+                <div className="rounded bg-gray-800 px-2 py-1.5 text-xs text-gray-300">Innovations</div>
+              </div>
+            </div>
+            <div className="relative min-h-[230px] rounded-lg border border-gray-800 bg-black">
+              <div className="absolute left-[14%] top-[22%] rounded border border-gray-700 bg-gray-900 px-2 py-1 text-[10px] text-white">Representation</div>
+              <div className="absolute left-[40%] top-[15%] rounded border border-gray-700 bg-gray-900 px-2 py-1 text-[10px] text-white">Learning Signal</div>
+              <div className="absolute left-[28%] top-[52%] rounded border border-gray-700 bg-gray-900 px-2 py-1 text-[10px] text-white">Concept Drift</div>
+              <div className="absolute left-[62%] top-[46%] rounded border border-gray-700 bg-gray-900 px-2 py-1 text-[10px] text-white">Generalization</div>
+              <div className="absolute left-[35%] top-[33%] h-px w-[26%] bg-blue-500/50" />
+              <div className="absolute left-[35%] top-[56%] h-px w-[30%] bg-cyan-500/50" />
+            </div>
+            <div className="rounded-lg border border-gray-800 bg-gray-900 p-3">
+              <p className="text-[11px] uppercase tracking-wide text-gray-500">Focus</p>
+              <p className="mt-1 text-sm font-medium text-white">Generalization</p>
+              <p className="mt-2 text-xs text-gray-300">Tap any node to inspect links, implications, and related ideas.</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <span className="rounded-full border border-gray-700 bg-gray-800 px-2 py-0.5 text-[11px] text-gray-300">Bias</span>
+                <span className="rounded-full border border-gray-700 bg-gray-800 px-2 py-0.5 text-[11px] text-gray-300">Variance</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (modeId === 'sensing-learning') {
+      return (
+        <div className="rounded-xl border border-slate-800 bg-slate-950/90 p-3">
+          <div className="mb-2 flex gap-2">
+            <span className="rounded-md border border-cyan-500/50 bg-cyan-500/15 px-2.5 py-1 text-xs text-cyan-100">Lab</span>
+            <span className="rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-400">Challenges</span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+              <p className="text-xs text-slate-400">Controls</p>
+              <p className="mt-2 text-xs text-slate-300">Learning Rate</p>
+              <div className="mt-2 h-2 rounded bg-slate-800">
+                <div className="h-2 w-1/2 rounded bg-cyan-400" />
+              </div>
+              <div className="mt-3 rounded border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300">Epochs: 50</div>
+            </div>
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+              <p className="text-xs text-slate-400">Readout</p>
+              <p className="mt-1 font-mono text-2xl font-semibold text-cyan-300">92.4%</p>
+              <p className="mt-1 text-xs text-slate-500">Validation accuracy</p>
+              <div className="mt-3 rounded border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300">Step 2 complete</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (modeId === 'global-learning') {
+      return (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+          <div className="mb-3 flex gap-2">
+            <span className="rounded-md border border-zinc-400/40 bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-900">Overview</span>
+            <span className="rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-400">Connections</span>
+          </div>
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+            <p className="text-[11px] uppercase tracking-wide text-zinc-500">Center</p>
+            <p className="mt-1 text-base font-semibold text-zinc-100">System-level behavior in neural learning</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="rounded border border-zinc-800 bg-zinc-950 p-2 text-xs text-zinc-300">Feedback loops</div>
+              <div className="rounded border border-zinc-800 bg-zinc-950 p-2 text-xs text-zinc-300">Cross-domain analogies</div>
+              <div className="rounded border border-zinc-800 bg-zinc-950 p-2 text-xs text-zinc-300">Emergent patterns</div>
+              <div className="rounded border border-zinc-800 bg-zinc-950 p-2 text-xs text-zinc-300">Systemic implications</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (modeId === 'sequential-learning') {
+      return (
+        <div className="rounded-xl border border-slate-800 bg-slate-950/90 p-3">
+          <div className="mb-3 rounded-lg border border-slate-800 bg-slate-900 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs text-slate-400">Step Progress</p>
+              <span className="text-xs text-indigo-200">2 / 5</span>
+            </div>
+            <div className="h-2 rounded bg-slate-800">
+              <div className="h-2 w-2/5 rounded bg-indigo-500" />
+            </div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-[1fr,220px]">
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+              <p className="text-xs uppercase tracking-wide text-indigo-300">Step 2</p>
+              <p className="mt-1 text-sm font-semibold text-white">Forward pass mechanics</p>
+              <p className="mt-2 text-xs text-slate-300">
+                Understand matrix multiplication order, activation sequence, and expected output shape.
+              </p>
+            </div>
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+              <p className="text-xs text-slate-400">Track</p>
+              <div className="mt-2 space-y-1.5 text-xs">
+                <div className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-300">1. Inputs</div>
+                <div className="rounded border border-amber-500/60 bg-amber-500/15 px-2 py-1 text-amber-100">2. Forward pass</div>
+                <div className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-300">3. Loss</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (modeId === 'reflective-learning') {
+      return (
+        <div className="rounded-xl border border-slate-800 bg-slate-950/90 p-3">
+          <div className="mb-2 flex gap-2">
+            {['Read', 'Question', 'Structure', 'Keep'].map((tab, i) => (
+              <span
+                key={tab}
+                className={`rounded-md border px-2.5 py-1 text-xs ${
+                  i === 1 ? 'border-teal-500/50 bg-teal-500/15 text-teal-100' : 'border-slate-700 bg-slate-900 text-slate-400'
+                }`}
+              >
+                {tab}
+              </span>
+            ))}
+          </div>
+          <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-sm text-teal-200">03:28</p>
+              <span className="rounded-md border border-amber-700/50 bg-amber-950/40 px-2 py-1 text-[11px] text-amber-100">Pause</span>
+            </div>
+            <div className="mt-3 space-y-2 text-xs text-slate-300">
+              <div className="rounded border border-slate-700 bg-slate-950 px-3 py-2">What claim is strongest, and why?</div>
+              <div className="rounded border border-slate-700 bg-slate-950 px-3 py-2">Where does the argument rely on assumptions?</div>
+              <div className="rounded border border-slate-700 bg-slate-950 px-3 py-2">What should be retained as your core takeaway?</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
-    <div className="bg-gradient-to-br from-gray-900 via-black to-indigo-900 text-white overflow-x-hidden w-full">
-      {/* Animated Background Grid */}
-      <div className="fixed inset-0 opacity-20 pointer-events-none">
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)',
-          backgroundSize: '50px 50px',
-          transform: `translateY(${scrollY * 0.5}px)`
-        }}></div>
+    <div className="h-screen w-full overflow-hidden bg-slate-950 text-slate-100 flex flex-col">
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute inset-0 bg-slate-950 opacity-95" />
+        <div className="absolute left-0 top-24 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute bottom-24 right-0 h-52 w-52 rounded-full bg-cyan-500/10 blur-3xl" />
       </div>
 
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/30 backdrop-blur-2xl border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 flex items-center justify-center">
-                <Image src="/favicon.svg" alt="Intelevo" width={48} height={48} className="object-contain" />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Intelevo</span>
-            </div>
-            <div className="flex items-center gap-6">
-              <Link href="/login" className="text-white/80 hover:text-white transition-colors font-medium">
-                Sign In
-              </Link>
-              <Link href="/register" className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 rounded-xl font-semibold hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105">
-                Get Started Free
-              </Link>
-            </div>
+      <nav className="relative z-50 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur shrink-0">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-end px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="group flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-1.5 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:text-white"
+            >
+              <FiLogIn className="text-slate-400 transition-colors group-hover:text-white" />
+              Sign In
+            </Link>
+            <Link
+              href="/register"
+              className="group flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+            >
+              <FiUserPlus className="transition-transform group-hover:scale-110" />
+              Get Started
+            </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center pt-20 px-6">
-        <div className="max-w-7xl mx-auto w-full">
-          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-
-            {/* Left: Main Content */}
-            <div className="text-center lg:text-left">
-              <div className="inline-block mb-6 px-6 py-2 bg-blue-500/10 border border-blue-500/30 rounded-full">
-                <span className="text-blue-400 font-semibold">🧠 Powered by ML + AI Technology | 88% Accuracy</span>
-              </div>
-
-              <h1 className="text-5xl lg:text-7xl font-black mb-8 leading-tight">
-                <span className="block text-white">Transform Learning with</span>
-                <span className="block bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                  8 AI Learning Modes
-                </span>
-              </h1>
-
-              <p className="text-lg lg:text-xl text-white/70 mb-10 leading-relaxed">
-                Machine Learning automatically detects your learning style, then AI generates personalized content.
-                From audio narration to visual diagrams, hands-on labs to deep reflection.
-              </p>
-
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
-                <Link href="/register" className="group relative px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl font-bold text-lg overflow-hidden hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105">
-                  <span className="relative z-10">Start Learning Now</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </Link>
-                <Link href="#learning-modes" className="px-8 py-4 border-2 border-white/30 rounded-2xl font-bold text-lg hover:bg-white/10 transition-all duration-300">
-                  Explore AI Modes
-                </Link>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center lg:text-left">
-                  <div className="text-4xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-1">88%</div>
-                  <div className="text-white/60 text-sm">ML Accuracy</div>
-                </div>
-                <div className="text-center lg:text-left">
-                  <div className="text-4xl font-black bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent mb-1">8</div>
-                  <div className="text-white/60 text-sm">AI Modes</div>
-                </div>
-                <div className="text-center lg:text-left">
-                  <div className="text-4xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-1">24/7</div>
-                  <div className="text-white/60 text-sm">AI Assistant</div>
-                </div>
-                <div className="text-center lg:text-left">
-                  <div className="text-4xl font-black bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent mb-1">∞</div>
-                  <div className="text-white/60 text-sm">Personalized</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: System Interface Preview */}
-            <div className="relative">
-              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-1 border border-white/20 shadow-2xl">
-                {/* Browser Frame */}
-                <div className="bg-gray-800 rounded-t-xl px-4 py-3 border-b border-gray-700">
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-2">
-                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    </div>
-                    <div className="flex-1 bg-gray-700 rounded px-3 py-1 ml-4">
-                      <span className="text-xs text-gray-400">intelevo.com/courses/ai-fundamentals</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* System Interface Mockup */}
-                <div className="bg-white rounded-b-xl overflow-hidden">
-                  {/* Header */}
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <div className="text-white font-bold text-sm">📚 AI Fundamentals</div>
-                      <div className="flex items-center gap-2">
-                        <div className="bg-white/20 rounded-full px-2 py-1 text-xs text-white">🧠 Active Learner</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Main Content Area */}
-                  <div className="flex h-64">
-                    {/* Left: Document */}
-                    <div className="flex-1 bg-gray-50 p-3">
-                      <div className="bg-white rounded shadow-sm p-3 h-full">
-                        <div className="text-xs font-semibold text-gray-800 mb-2">📄 Machine Learning Basics</div>
-                        <div className="space-y-1">
-                          <div className="h-2 bg-gray-200 rounded w-full"></div>
-                          <div className="h-2 bg-gray-200 rounded w-5/6"></div>
-                          <div className="h-2 bg-gray-200 rounded w-3/4"></div>
-                          <div className="h-2 bg-blue-200 rounded w-2/3 animate-pulse"></div>
-                        </div>
-
-                        {/* Highlighted Section */}
-                        <div className="mt-3 bg-blue-50 border-l-4 border-blue-400 p-2 rounded-r">
-                          <div className="text-xs text-blue-800">"Neural networks are.."</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right: AI Panel */}
-                    <div className="w-48 bg-gray-100 border-l border-gray-200">
-                      {/* Learning Style Widget */}
-                      <div className="p-3 border-b border-gray-200">
-                        <div className="text-xs font-semibold text-gray-700 mb-2">🎯 Your Learning Style</div>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-600">Active</span>
-                            <div className="w-12 h-1 bg-gray-200 rounded">
-                              <div className="w-9 h-1 bg-blue-500 rounded animate-pulse"></div>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-600">Visual</span>
-                            <div className="w-12 h-1 bg-gray-200 rounded">
-                              <div className="w-7 h-1 bg-purple-500 rounded"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* AI Modes */}
-                      <div className="p-3">
-                        <div className="text-xs font-semibold text-gray-700 mb-2">🤖 Recommended Modes</div>
-                        <div className="space-y-2">
-                          <div className="bg-blue-100 border border-blue-300 rounded p-2 animate-pulse">
-                            <div className="text-xs font-medium text-blue-800">🎯 Active Learning</div>
-                            <div className="text-xs text-blue-600">Generate questions</div>
-                          </div>
-                          <div className="bg-purple-100 border border-purple-300 rounded p-2">
-                            <div className="text-xs font-medium text-purple-800">📊 Visual Learning</div>
-                            <div className="text-xs text-purple-600">Create diagrams</div>
-                          </div>
-                          <div className="bg-gray-100 border border-gray-300 rounded p-2 opacity-50">
-                            <div className="text-xs font-medium text-gray-600">🔊 Audio Mode</div>
-                            <div className="text-xs text-gray-500">Less suitable</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom Toolbar */}
-                  <div className="bg-gray-50 border-t border-gray-200 px-4 py-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-2">
-                        <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs animate-pulse">✨ Generate Questions</div>
-                        <div className="bg-purple-500 text-white px-2 py-1 rounded text-xs">📊 Create Diagram</div>
-                      </div>
-                      <div className="text-xs text-gray-500">🧠 ML: 88% confidence</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating Badge */}
-              <div className="absolute -top-3 -right-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg animate-bounce">
-                Live Preview
-              </div>
-
-              {/* Floating particles */}
-              <div className="absolute -top-6 -left-6 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl animate-pulse"></div>
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center pt-2">
-            <div className="w-1 h-3 bg-white/50 rounded-full"></div>
-          </div>
-        </div>
-      </section>
-
-      {/* 8 AI Learning Modes Showcase */}
-      <section id="learning-modes" className="relative py-32 px-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Section Header */}
-          <div className="text-center mb-20">
-            <h2 className="text-5xl lg:text-6xl font-black mb-6">
-              <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                8 Ways to Master Any Subject
-              </span>
-            </h2>
-            <p className="text-xl text-white/70 max-w-3xl mx-auto mb-4">
-              Each mode powered by advanced AI, designed for different learning styles based on Felder-Silverman research
-            </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
-              <span className="text-emerald-400 font-semibold">🧠 ML automatically recommends the best modes for you</span>
-            </div>
-          </div>
-
-          {/* Learning Modes Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
-            {learningModes.map((mode, index) => (
-              <div
-                key={mode.id}
-                className={`group relative p-8 rounded-3xl border-2 cursor-pointer transition-all duration-500 ${activeMode === index
-                  ? 'border-white/40 bg-white/10 scale-105 shadow-2xl'
-                  : 'border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10'
-                  }`}
-                onClick={() => setActiveMode(index)}
-                onMouseEnter={() => setActiveMode(index)}
+      <main className="relative z-10 flex-grow flex flex-col">
+        <div className="flex-grow relative overflow-hidden">
+          <AnimatePresence mode="wait">
+            {currentSlide === 0 && (
+              <motion.section
+                key="hero"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="absolute inset-0 flex items-center justify-center px-6 lg:px-8 py-12"
               >
-                {/* Icon */}
-                <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform duration-300">
-                  {mode.icon}
-                </div>
+                <div className="max-w-7xl w-full grid items-center gap-10 lg:grid-cols-2">
+                  <div>
+                    <motion.h1 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="max-w-2xl text-3xl font-bold leading-tight tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-400 md:text-4xl"
+                    >
+                      A modern learning platform built to adapt to how each student learns best.
+                    </motion.h1>
+                    <motion.p 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="mt-6 max-w-xl text-base leading-relaxed text-slate-400 font-medium md:text-lg"
+                    >
+                      Intelevo combines machine learning and AI generation to deliver personalized study experiences across 8
+                      learning modes without friction.
+                    </motion.p>
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="mt-8 flex flex-wrap gap-3"
+                    >
+                      <Link
+                        href="/register"
+                        className="group flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                      >
+                        <FiUserPlus className="transition-transform group-hover:scale-110" />
+                        Create Free Account
+                      </Link>
+                      <button
+                        onClick={() => setCurrentSlide(1)}
+                        className="group flex items-center gap-2 rounded-xl border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-800"
+                      >
+                        <FiPlay className="text-blue-400 group-hover:scale-110 transition-transform" />
+                        Explore Learning Modes
+                      </button>
+                    </motion.div>
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                      className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-4"
+                    >
+                      {[
+                        { value: '88.3%', label: 'Model accuracy' },
+                        { value: '8', label: 'Learning modes' },
+                        { value: '24/7', label: 'AI support' },
+                        { value: '5,348', label: 'Training samples' },
+                      ].map((metric) => (
+                        <div key={metric.label} className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                          <p className="text-2xl font-semibold text-white">{metric.value}</p>
+                          <p className="mt-1 text-xs text-slate-400">{metric.label}</p>
+                        </div>
+                      ))}
+                    </motion.div>
+                  </div>
 
-                {/* Name */}
-                <h3 className="text-2xl font-bold mb-2 text-white">{mode.name}</h3>
-
-                {/* Tagline */}
-                <p className="text-sm text-white/60 mb-4">{mode.tagline}</p>
-
-                {/* Gradient Bar */}
-                <div className={`h-1 w-full bg-gradient-to-r ${mode.color} rounded-full mb-4`}></div>
-
-                {/* Features */}
-                <div className="space-y-2">
-                  {mode.features.slice(0, 2).map((feature, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-white/70">
-                      <div className="w-1.5 h-1.5 bg-white/50 rounded-full"></div>
-                      <span>{feature}</span>
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 shadow-2xl hidden lg:block"
+                  >
+                    <div className="mb-4 flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+                      <div className="text-sm font-medium text-slate-200">Adaptive Session Dashboard</div>
+                      <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300">
+                        Live
+                      </div>
                     </div>
-                  ))}
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-4">
+                        <p className="text-xs uppercase tracking-wide text-slate-400">Current topic</p>
+                        <p className="mt-2 text-sm font-semibold text-slate-100">Machine Learning Fundamentals</p>
+                        <div className="mt-4 space-y-2">
+                          <div className="h-2 rounded bg-slate-800" />
+                          <div className="h-2 w-5/6 rounded bg-slate-800" />
+                          <div className="h-2 w-2/3 rounded bg-blue-500/40" />
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-4">
+                        <p className="text-xs uppercase tracking-wide text-slate-400">Recommended modes</p>
+                        <div className="mt-3 space-y-2">
+                          <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-xs text-blue-200">
+                            Active Learning Hub
+                          </div>
+                          <div className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-200">
+                            Visual Learning
+                          </div>
+                          <div className="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs text-slate-300">
+                            AI Narrator
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/80 p-4">
+                      <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+                        <span>Adaptive confidence</span>
+                        <span>88%</span>
+                      </div>
+                      <div className="h-2 rounded bg-slate-800">
+                        <div className="h-2 w-[88%] rounded bg-blue-500" />
+                      </div>
+                    </div>
+                  </motion.div>
                 </div>
+              </motion.section>
+            )}
 
-                {/* Active Indicator */}
-                {activeMode === index && (
-                  <div className="absolute top-4 right-4 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            {currentSlide === 1 && (
+              <motion.section
+                key="modes"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="absolute inset-0 flex items-center justify-center px-6 lg:px-8 py-12"
+              >
+                <div className="max-w-7xl w-full max-h-full flex flex-col">
+                  <div className="mb-8 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between shrink-0">
+                    <div>
+                      <p className="text-sm font-medium text-blue-300">Learning Modes</p>
+                      <h2 className="mt-1 text-2xl font-semibold text-white md:text-3xl">Adaptive Preview Control Room</h2>
+                    </div>
+                    <p className="max-w-xl text-xs text-slate-400">
+                      Live adaptive floor where every panel reacts to learning outputs.
+                    </p>
+                  </div>
+
+                  <div className="flex-grow overflow-y-auto pr-4 custom-scrollbar">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 mb-8">
+                      {learningModes.map((mode, index) => {
+                        const isActive = activeMode === index;
+                        return (
+                          <button
+                            key={mode.id}
+                            type="button"
+                            onMouseEnter={() => setActiveMode(index)}
+                            onClick={() => setActiveMode(index)}
+                            className={`rounded-xl border p-4 text-left transition ${
+                              isActive
+                                ? 'border-blue-500/60 bg-blue-500/10 shadow-lg shadow-blue-500/10'
+                                : 'border-slate-800 bg-slate-900/70 hover:border-slate-600'
+                            }`}
+                          >
+                            <p className="text-sm font-semibold text-white">{mode.label}</p>
+                            <p className="mt-1 text-xs text-slate-400 line-clamp-1">{mode.short}</p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {mode.capabilities.slice(0, 1).map((capability) => (
+                                <span
+                                  key={capability}
+                                  className="rounded-md border border-slate-700 bg-slate-950/70 px-2 py-0.5 text-[10px] text-slate-300"
+                                >
+                                  {capability}
+                                </span>
+                              ))}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 mb-6">
+                      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-slate-400">Adaptive Control Room</p>
+                          <p className="mt-1 text-xs text-slate-300">
+                            Behavior signals actively reconfigure recommendations.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setControlAutoPlay((prev) => !prev)}
+                          className={`rounded-md border px-3 py-1 text-[10px] font-medium ${
+                            controlAutoPlay
+                              ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-200'
+                              : 'border-slate-700 bg-slate-900 text-slate-300'
+                          }`}
+                        >
+                          {controlAutoPlay ? 'Live Stream: ON' : 'Live Stream: OFF'}
+                        </button>
+                      </div>
+
+                      <div className="grid gap-6 xl:grid-cols-[1fr,1.2fr,0.8fr]">
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                          <p className="mb-3 text-[10px] uppercase tracking-wide text-slate-500">Incoming Signals</p>
+                          <div className="grid gap-2">
+                            {controlSignals.slice(0, 4).map((signal) => (
+                              <button
+                                key={signal.id}
+                                type="button"
+                                onClick={() => applyControlSignal(signal.id)}
+                                className={`rounded-lg border px-3 py-2 text-left text-[10px] transition ${
+                                  controlSelectedSignal === signal.id
+                                    ? 'border-blue-500/60 bg-blue-500/15 text-blue-100'
+                                    : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-500'
+                                }`}
+                              >
+                                <p className="font-semibold">{signal.label}</p>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                          <p className="mb-3 text-[10px] uppercase tracking-wide text-slate-500">Live Profile Scores</p>
+                          <div className="space-y-3">
+                            {controlRecommendation.ranking.slice(0, 4).map((item) => {
+                              const mode = learningModes.find((entry) => entry.id === item.modeId);
+                              return (
+                                <div key={item.modeId}>
+                                  <div className="mb-1.5 flex items-center justify-between text-[10px]">
+                                    <span className="text-slate-300">{mode?.label}</span>
+                                    <span className="text-slate-400">{item.score}%</span>
+                                  </div>
+                                  <div className="h-1.5 rounded bg-slate-800">
+                                    <div className="h-1.5 rounded bg-blue-500 transition-all duration-500" style={{ width: `${item.score}%` }} />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                          <p className="mb-3 text-[10px] uppercase tracking-wide text-slate-500">Output</p>
+                          <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 p-3.5">
+                            <p className="text-[10px] text-blue-200">Current mode</p>
+                            <p className="mt-1 text-sm font-semibold text-white">
+                              {learningModes.find((m) => m.id === controlRecommendedMode)?.label}
+                            </p>
+                            <p className="mt-1 text-[10px] text-slate-300">Confidence: {controlRecommendation.confidence}%</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950/80 p-4">
+                        {renderModePreview(controlRecommendedMode)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.section>
+            )}
+
+            {currentSlide >= 2 && currentSlide <= 9 && (
+              <motion.section
+                key={`mode-${currentSlide}`}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="absolute inset-0 flex items-center justify-center px-6 lg:px-8 py-12"
+              >
+                <div className="max-w-7xl w-full max-h-full flex flex-col">
+                  <div className="mb-8 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between shrink-0">
+                    <div>
+                      <p className="text-sm font-medium text-blue-300">Mode {currentSlide - 1} of 8</p>
+                      <h2 className="mt-1 text-2xl font-semibold text-white md:text-3xl">
+                        {learningModes[currentSlide - 2].label}
+                      </h2>
+                    </div>
+                    <p className="max-w-xl text-xs text-slate-400">
+                      Explore how this specific learning mode adapts to your profile.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-10 lg:grid-cols-[1fr,1.2fr] items-center overflow-y-auto pr-4 custom-scrollbar">
+                    <div className="space-y-6">
+                      <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+                        <h3 className="text-lg font-semibold text-white mb-2">{learningModes[currentSlide - 2].short}</h3>
+                        <p className="text-sm text-slate-300 leading-relaxed mb-4">
+                          {learningModes[currentSlide - 2].description}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mb-6">
+                          {learningModes[currentSlide - 2].capabilities.map((cap) => (
+                            <span key={cap} className="rounded-md border border-slate-700 bg-slate-950/70 px-3 py-1 text-xs text-slate-300">
+                              {cap}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+                          <span className="text-xs text-slate-500 uppercase tracking-wider">Technology Stack</span>
+                          <span className="text-xs font-semibold text-blue-400">{learningModes[currentSlide - 2].tech}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <Link href="/register" className="group flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-500">
+                          <FiZap className="group-hover:scale-110 transition-transform" />
+                          Try This Mode
+                        </Link>
+                        <button onClick={() => setCurrentSlide(prev => (prev + 1) % totalSlides)} className="group flex items-center gap-2 rounded-xl border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800">
+                          Next Mode
+                          <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-2xl">
+                      <p className="mb-4 text-xs uppercase tracking-wide text-slate-400">Generated Adaptive Preview</p>
+                      <div className="min-h-[300px] flex items-center justify-center">
+                        <div className="w-full">
+                          {renderModePreview(learningModes[currentSlide - 2].id)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.section>
+            )}
+
+            {currentSlide === 10 && (
+              <motion.section
+                key="process"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="absolute inset-0 flex items-center justify-center px-6 lg:px-8 py-12"
+              >
+                <div className="max-w-7xl w-full">
+                  <div className="mb-10 text-center">
+                    <p className="text-sm font-medium text-blue-300">How It Works</p>
+                    <h2 className="mt-2 text-3xl font-semibold text-white md:text-4xl">From behavior signals to adaptive content</h2>
+                  </div>
+                  <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+                    {processSteps.map((step, index) => (
+                      <motion.article 
+                        key={step.title}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="rounded-2xl border border-slate-800 bg-slate-900/70 p-8 flex flex-col items-center text-center"
+                      >
+                        <div className="h-12 w-12 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold mb-6">
+                          {index + 1}
+                        </div>
+                        <h3 className="text-xl font-semibold text-white">{step.title}</h3>
+                        <p className="mt-4 text-sm leading-relaxed text-slate-300">{step.detail}</p>
+                      </motion.article>
+                    ))}
+                  </div>
+                </div>
+              </motion.section>
+            )}
+
+            {currentSlide === 11 && (
+              <motion.section
+                key="cta"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="absolute inset-0 flex items-center justify-center px-6 lg:px-8 py-12"
+              >
+                <div className="max-w-4xl w-full text-center">
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="rounded-3xl border border-slate-800 bg-slate-900/70 p-12 md:p-20 relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
+                    
+                    <p className="text-sm font-medium text-blue-300 uppercase tracking-widest">Ready To Start</p>
+                    <h2 className="mt-6 text-4xl font-bold text-white md:text-5xl leading-tight">
+                      Launch your personalized learning journey today
+                    </h2>
+                    <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-300 leading-relaxed">
+                      Create your account and let Intelevo build an experience aligned to your pace, preferences, and goals.
+                    </p>
+                    <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+                      <Link
+                        href="/register"
+                        className="group flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-4 text-base font-bold text-white transition hover:bg-blue-500 hover:scale-105 active:scale-95"
+                      >
+                        <FiUserPlus className="transition-transform group-hover:scale-110" />
+                        Start Free
+                      </Link>
+                      <Link
+                        href="/login"
+                        className="group flex items-center gap-2 rounded-xl border border-slate-700 px-8 py-4 text-base font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
+                      >
+                        <FiLogIn className="text-slate-400 group-hover:text-white transition-colors" />
+                        I Already Have An Account
+                      </Link>
+                    </div>
+                  </motion.div>
+                </div>
+              </motion.section>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Navigation Indicators */}
+        <div className="shrink-0 pb-10 flex flex-col items-center gap-4">
+          <div className="flex gap-2">
+            {[...Array(totalSlides)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentSlide(i)}
+                className={`group relative h-1.5 transition-all duration-300 rounded-full overflow-hidden ${
+                  currentSlide === i ? 'w-8 bg-blue-500/20' : 'w-2.5 bg-slate-800 hover:bg-slate-700'
+                }`}
+              >
+                {currentSlide === i && (
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: '100%' }}
+                    transition={{ 
+                      duration: getSlideDuration(i) / 1000, 
+                      ease: "linear"
+                    }}
+                    className="absolute inset-0 bg-blue-500"
+                  />
                 )}
-              </div>
+              </button>
             ))}
           </div>
-
-          {/* Active Mode Details */}
-          <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-12 border border-white/20">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              {/* Left: Details */}
-              <div>
-                <div className="text-6xl mb-6">{learningModes[activeMode].icon}</div>
-                <h3 className="text-4xl font-black mb-4 text-white">{learningModes[activeMode].name}</h3>
-                <p className="text-xl text-white/80 mb-8 leading-relaxed">{learningModes[activeMode].description}</p>
-
-                <div className="space-y-3 mb-8">
-                  {learningModes[activeMode].features.map((feature, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${learningModes[activeMode].color} flex items-center justify-center`}>
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <span className="text-white/90 font-medium">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="inline-block px-4 py-2 bg-white/10 rounded-lg border border-white/20">
-                  <span className="text-sm text-white/60">Powered by: </span>
-                  <span className="text-sm text-white font-semibold">{learningModes[activeMode].tech}</span>
-                </div>
-              </div>
-
-              {/* Right: Animated UI Preview */}
-              <div className="relative">
-                <div className={`rounded-3xl bg-gradient-to-br ${learningModes[activeMode].color} p-1 shadow-2xl`}>
-                  <div className="w-full bg-gray-900 rounded-3xl p-6 overflow-hidden">
-                    {/* Dynamic UI Preview based on active mode */}
-                    {activeMode === 0 && ( // AI Narrator
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
-                            <span className="text-xl">🎧</span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="h-2 bg-blue-500/30 rounded-full overflow-hidden">
-                              <div className="h-full bg-blue-500 rounded-full animate-[pulse_2s_ease-in-out_infinite]" style={{ width: '60%' }}></div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="bg-white/5 rounded-xl p-4 space-y-2">
-                          <div className="h-3 bg-white/20 rounded w-full"></div>
-                          <div className="h-3 bg-white/20 rounded w-5/6"></div>
-                          <div className="h-3 bg-white/20 rounded w-4/6"></div>
-                        </div>
-                        <div className="flex gap-2">
-                          <div className="flex-1 bg-blue-500/20 rounded-lg p-3 text-center text-xs">Quiz</div>
-                          <div className="flex-1 bg-blue-500/20 rounded-lg p-3 text-center text-xs">Tips</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeMode === 1 && ( // Visual Learning
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-emerald-500/20 rounded-lg p-4 aspect-square flex items-center justify-center">
-                            <div className="text-3xl animate-bounce">📊</div>
-                          </div>
-                          <div className="bg-emerald-500/20 rounded-lg p-4 aspect-square flex items-center justify-center">
-                            <div className="text-3xl animate-bounce" style={{ animationDelay: '0.2s' }}>🗺️</div>
-                          </div>
-                        </div>
-                        <div className="bg-white/5 rounded-xl p-3 space-y-2">
-                          <div className="flex gap-2">
-                            <div className="w-8 h-8 bg-emerald-500/30 rounded"></div>
-                            <div className="flex-1 space-y-1">
-                              <div className="h-2 bg-white/20 rounded w-full"></div>
-                              <div className="h-2 bg-white/20 rounded w-3/4"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeMode === 2 && ( // Active Learning
-                      <div className="space-y-3">
-                        <div className="bg-purple-500/20 rounded-xl p-4">
-                          <div className="text-center mb-3">
-                            <div className="text-2xl mb-2">🎯</div>
-                            <div className="text-xs text-white/60">Interactive Scenario</div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="bg-white/10 rounded-lg p-2 text-xs">Option A</div>
-                            <div className="bg-purple-500/40 rounded-lg p-2 text-xs border border-purple-400">Option B ✓</div>
-                            <div className="bg-white/10 rounded-lg p-2 text-xs">Option C</div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 text-xs">
-                          <div className="flex-1 bg-green-500/20 rounded p-2 text-center">Correct!</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeMode === 3 && ( // Intuitive Learning
-                      <div className="relative h-64 flex items-center justify-center">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-16 h-16 bg-pink-500/30 rounded-full animate-ping"></div>
-                        </div>
-                        <div className="relative grid grid-cols-3 gap-4">
-                          {[0, 1, 2, 3, 4, 5].map((i) => (
-                            <div key={i} className="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center text-xs animate-pulse" style={{ animationDelay: `${i * 0.2}s` }}>
-                              💡
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {activeMode === 4 && ( // Sensing Learning (Hands-On Lab)
-                      <div className="space-y-3">
-                        <div className="bg-orange-500/20 rounded-xl p-4 text-center">
-                          <div className="text-4xl mb-2 animate-bounce">🔬</div>
-                          <div className="text-xs text-white/60 mb-3">Virtual Lab Simulation</div>
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="bg-white/10 rounded p-2 text-xs">Step 1 ✓</div>
-                            <div className="bg-orange-500/40 rounded p-2 text-xs border border-orange-400">Step 2</div>
-                            <div className="bg-white/10 rounded p-2 text-xs opacity-50">Step 3</div>
-                          </div>
-                        </div>
-                        <div className="bg-white/5 rounded-lg p-3 text-xs">
-                          <div className="h-2 bg-orange-500/30 rounded-full overflow-hidden">
-                            <div className="h-full bg-orange-500 rounded-full" style={{ width: '65%' }}></div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeMode === 5 && ( // Global Learning
-                      <div className="space-y-3">
-                        <div className="relative h-48 bg-indigo-500/10 rounded-xl p-4">
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-5xl animate-spin" style={{ animationDuration: '10s' }}>🌍</div>
-                          </div>
-                          <div className="absolute top-4 left-4 bg-indigo-500/30 rounded-lg p-2 text-xs">Context</div>
-                          <div className="absolute top-4 right-4 bg-indigo-500/30 rounded-lg p-2 text-xs">Systems</div>
-                          <div className="absolute bottom-4 left-4 bg-indigo-500/30 rounded-lg p-2 text-xs">Relations</div>
-                          <div className="absolute bottom-4 right-4 bg-indigo-500/30 rounded-lg p-2 text-xs">Overview</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeMode === 6 && ( // Sequential Learning
-                      <div className="space-y-3">
-                        <div className="space-y-2">
-                          {[1, 2, 3, 4].map((step) => (
-                            <div key={step} className={`flex items-center gap-3 p-3 rounded-lg ${step <= 2 ? 'bg-green-500/20 border border-green-500/40' : 'bg-white/5'}`}>
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${step <= 2 ? 'bg-green-500' : 'bg-white/20'}`}>
-                                {step <= 2 ? '✓' : step}
-                              </div>
-                              <div className="flex-1">
-                                <div className="h-2 bg-white/20 rounded w-full"></div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {activeMode === 7 && ( // Reflective Learning
-                      <div className="space-y-3">
-                        <div className="bg-violet-500/20 rounded-xl p-4">
-                          <div className="text-center mb-3">
-                            <div className="text-3xl mb-2">🤔</div>
-                            <div className="text-xs text-white/60">Deep Reflection</div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="bg-white/5 rounded-lg p-3">
-                              <div className="h-2 bg-white/20 rounded w-full mb-2"></div>
-                              <div className="h-2 bg-white/20 rounded w-5/6 mb-2"></div>
-                              <div className="h-2 bg-white/20 rounded w-4/6"></div>
-                            </div>
-                            <div className="flex gap-2 text-xs">
-                              <div className="flex-1 bg-violet-500/30 rounded p-2 text-center">Self-Assess</div>
-                              <div className="flex-1 bg-violet-500/30 rounded p-2 text-center">Analyze</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {/* Floating Elements */}
-                <div className="absolute -top-6 -right-6 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl animate-pulse"></div>
-                <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-              </div>
-            </div>
-          </div>
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">
+            {currentSlide === 0 && 'Introduction'}
+            {currentSlide === 1 && 'Adaptive Control Room'}
+            {currentSlide >= 2 && currentSlide <= 9 && `Learning Mode: ${learningModes[currentSlide - 2].label}`}
+            {currentSlide === 10 && 'How It Works'}
+            {currentSlide === 11 && 'Get Started'}
+            <span className="ml-2 opacity-50">({currentSlide + 1} / {totalSlides})</span>
+          </p>
         </div>
-      </section>
+      </main>
 
-      {/* ML Learning Style Detection */}
-      <section className="relative py-32 px-6 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-block mb-4 px-4 py-2 bg-blue-500/10 border border-blue-500/30 rounded-full">
-              <span className="text-blue-400 font-semibold">🧠 Machine Learning Technology</span>
-            </div>
-            <h2 className="text-5xl font-black mb-6 text-white">Automatic Learning Style Detection</h2>
-            <p className="text-xl text-white/70 max-w-3xl mx-auto">
-              Our XGBoost ML model analyzes your behavior and classifies your learning preferences with 88% accuracy
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
-            {/* Left: How ML Works */}
-            <div className="space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">👁️</span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Tracks Your Behavior</h3>
-                  <p className="text-white/70">Monitors how you interact with content, generate questions, view diagrams, and more</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">🧮</span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">ML Classification</h3>
-                  <p className="text-white/70">XGBoost model trained on 5,348 samples classifies your learning style across 4 dimensions</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">🎯</span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Personalized Recommendations</h3>
-                  <p className="text-white/70">Automatically suggests the best AI learning modes based on your detected style</p>
-                </div>
-              </div>
-
-              {/* ML Stats - Compact */}
-              <div className="grid grid-cols-2 gap-4 pt-6">
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <div className="text-3xl font-black bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent mb-1">88.3%</div>
-                  <div className="text-sm text-white/60">Accuracy</div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <div className="text-3xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-1">5,348</div>
-                  <div className="text-sm text-white/60">Samples</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Animated System Preview */}
-            <div className="relative">
-              <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
-                <h3 className="text-xl font-bold text-white mb-6 text-center">System in Action</h3>
-
-                {/* Animated Flow */}
-                <div className="space-y-6">
-                  {/* Step 1: User Activity */}
-                  <div className="bg-white/5 rounded-xl p-4 border border-blue-500/30 animate-pulse">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-bold">1</div>
-                      <span className="text-white font-semibold">Student Activity</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-blue-500/20 rounded p-2 text-xs text-center">📄 Reading</div>
-                      <div className="bg-blue-500/20 rounded p-2 text-xs text-center">❓ Questions</div>
-                      <div className="bg-blue-500/20 rounded p-2 text-xs text-center">📊 Diagrams</div>
-                    </div>
-                  </div>
-
-                  {/* Arrow */}
-                  <div className="flex justify-center">
-                    <div className="text-3xl animate-bounce">↓</div>
-                  </div>
-
-                  {/* Step 2: ML Processing */}
-                  <div className="bg-white/5 rounded-xl p-4 border border-purple-500/30">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold">2</div>
-                      <span className="text-white font-semibold">ML Analysis</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse" style={{ width: '75%' }}></div>
-                        </div>
-                        <span className="text-xs text-white/60">Active</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse" style={{ width: '60%', animationDelay: '0.2s' }}></div>
-                        </div>
-                        <span className="text-xs text-white/60">Visual</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Arrow */}
-                  <div className="flex justify-center">
-                    <div className="text-3xl animate-bounce" style={{ animationDelay: '0.5s' }}>↓</div>
-                  </div>
-
-                  {/* Step 3: Personalized Content */}
-                  <div className="bg-white/5 rounded-xl p-4 border border-emerald-500/30">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-sm font-bold">3</div>
-                      <span className="text-white font-semibold">AI Generates Content</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-emerald-500/20 rounded p-2 text-xs text-center">🎯 Active Mode</div>
-                      <div className="bg-emerald-500/20 rounded p-2 text-xs text-center">📊 Visual Mode</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Badge */}
-                <div className="mt-6 text-center">
-                  <div className="inline-block px-4 py-2 bg-white/10 rounded-lg border border-white/20">
-                    <span className="text-xs text-white/60">Powered by </span>
-                    <span className="text-xs text-white font-semibold">XGBoost ML</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating particles */}
-              <div className="absolute -top-4 -right-4 w-20 h-20 bg-blue-500/20 rounded-full blur-2xl animate-pulse"></div>
-              <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-purple-500/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="relative py-32 px-6 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-5xl font-black mb-6 text-white">How Intelevo Works</h2>
-            <p className="text-xl text-white/70">ML detects your style, AI generates your content</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[
-              { step: '01', title: 'Upload Content', desc: 'Upload any document (PDF, DOCX, PPTX)', icon: '📄' },
-              { step: '02', title: 'ML Analyzes You', desc: 'Machine learning detects your learning style automatically', icon: '🧠' },
-              { step: '03', title: 'AI Generates', desc: 'AI creates personalized content in recommended modes', icon: '✨' },
-              { step: '04', title: 'Learn & Master', desc: 'Study with content perfectly matched to your style', icon: '🚀' }
-            ].map((item, i) => (
-              <div key={i} className="relative p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105">
-                <div className="text-5xl mb-4">{item.icon}</div>
-                <div className="text-4xl font-black text-white/20 mb-3">{item.step}</div>
-                <h3 className="text-xl font-bold mb-2 text-white">{item.title}</h3>
-                <p className="text-sm text-white/70">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="relative py-32 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-xl rounded-3xl p-16 border border-white/20">
-            <h2 className="text-5xl font-black mb-6 text-white">Ready to Transform Your Learning?</h2>
-            <p className="text-xl text-white/70 mb-10">Join thousands of students already using AI-powered education</p>
-            <Link href="/register" className="inline-block px-12 py-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl font-bold text-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105">
-              Start Free Today
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-white/10 py-12 px-6 bg-gradient-to-br from-gray-900 via-black to-indigo-900">
-        <div className="max-w-7xl mx-auto text-center text-white/50">
-          <p>&copy; 2025 Intelevo. Powered by Advanced AI Technology.</p>
+      <footer className="relative z-10 border-t border-slate-800 bg-slate-950 px-6 py-4 shrink-0">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 text-sm text-slate-500 sm:flex-row">
+          <p>© 2026 Intelevo</p>
+          <p>Adaptive AI for modern education</p>
         </div>
       </footer>
     </div>

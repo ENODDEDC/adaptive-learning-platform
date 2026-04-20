@@ -16,6 +16,8 @@ import cacheService from '@/services/cacheService';
 import predictiveLoadingService from '@/services/predictiveLoadingService';
 import { useLayout } from '../../context/LayoutContext';
 import { useAdaptiveLayout } from '../../context/AdaptiveLayoutContext';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const CourseContent = () => {
   const { openCreateCourseModal, openJoinCourseModal, openCreateClusterModal, openJoinClusterModal } = useLayout();
@@ -68,6 +70,25 @@ const CourseContent = () => {
     difficulty: []
   });
   const [expandedSchedules, setExpandedSchedules] = useState({});
+  const [coursePageIndex, setCoursePageIndex] = useState(0);
+  const coursesPerPage = 3;
+
+  const handleNextPage = () => {
+    if ((coursePageIndex + 1) * coursesPerPage < filteredCourses.length) {
+      setCoursePageIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (coursePageIndex > 0) {
+      setCoursePageIndex(prev => prev - 1);
+    }
+  };
+
+  // Reset page index when filtered courses change
+  useEffect(() => {
+    setCoursePageIndex(0);
+  }, [filteredCourses.length]);
 
   // Notification system
   useEffect(() => {
@@ -561,14 +582,20 @@ const CourseContent = () => {
   }
 
   // Default fallback - no slug provided, show all courses
+  const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
+
   return (
-    <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
+    <div className="flex flex-col h-full bg-[#f8fafc] relative overflow-hidden">
+      {/* Subtle Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#4f46e5 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}></div>
+      
+      <div className="relative z-10 flex flex-col h-full">
       {/* Simple Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Courses</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage and explore your learning journey</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Courses</h1>
+            <p className="text-sm font-medium text-slate-500 mt-1">Manage and explore your learning journey</p>
           </div>
           
           <div className="relative">
@@ -741,342 +768,354 @@ const CourseContent = () => {
         return null;
       })()}
 
-      {/* Enhanced Course/Cluster Grid with Masonry Layout */}
-      <div className="relative mb-8 ml-4 mr-4">
-        <div className="w-full transition-all duration-500 ease-in-out">
+      {/* Enhanced Course/Cluster Grid with Pagination */}
+      <div className="relative mb-8 mx-4 group">
+        <div className="transition-all duration-500 ease-in-out overflow-hidden px-4">
           <AdaptiveLayout componentType="courses" trackInteractions={true} adaptiveMode={true}>
-            <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory custom-scrollbar">
+            <div className="flex gap-6 pb-6 pt-2">
           {activeTab === 'courses' ? (
-          filteredCourses.length === 0 ? (
-            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1 }}>
-              <div className="flex flex-col items-center justify-center">
-                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                  <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          loading ? (
+            <div className="flex gap-6 w-full px-10 py-6">
+              {[...Array(3)].map((_, i) => (
+                <CourseCardSkeleton key={i} index={i} />
+              ))}
+            </div>
+          ) : filteredCourses.length === 0 ? (
+            <div className="w-full py-20 flex flex-col items-center justify-center">
+              <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Courses Yet</h3>
+              <p className="text-gray-500 mb-8 text-center max-w-md">Start your learning journey by creating your first course or joining an existing one.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => openCreateCourseModal()}
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Courses Yet</h3>
-                <p className="text-gray-500 mb-8 text-center max-w-md">Start your learning journey by creating your first course or joining an existing one.</p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => openCreateCourseModal()}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Create Course
-                  </button>
-                  <button
-                    onClick={() => openJoinCourseModal()}
-                    className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 border border-gray-300 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
-                    Join Course
-                  </button>
-                </div>
+                  Create Course
+                </button>
+                <button
+                  onClick={() => openJoinCourseModal()}
+                  className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 border border-gray-300 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Join Course
+                </button>
               </div>
             </div>
           ) : (
-            filteredCourses.map((course, index) => {
-              // Utility function to normalize and ensure proper color format
-              const normalizeColor = (colorValue) => {
-                if (colorValue && colorValue.startsWith('bg-')) {
-                  return colorValue;
-                }
-                
-                const hexToTailwindMap = {
-                  '#60a5fa': 'bg-blue-400',
-                  '#a78bfa': 'bg-purple-400',
-                  '#f472b6': 'bg-pink-400',
-                  '#34d399': 'bg-emerald-400',
-                  '#fb923c': 'bg-orange-400',
-                  '#f87171': 'bg-red-400',
-                  '#2dd4bf': 'bg-teal-400',
-                  '#818cf8': 'bg-indigo-400',
-                };
-                
-                if (colorValue && colorValue.startsWith('#')) {
-                  const lowerHex = colorValue.toLowerCase();
-                  if (hexToTailwindMap[lowerHex]) {
-                    return hexToTailwindMap[lowerHex];
-                  }
-                }
-                
-                return 'bg-blue-500';
-              };
-
-              const getColorVariations = (colorClass) => {
-                const normalizedColor = normalizeColor(colorClass);
-                
-                const colorMap = {
-                  'bg-blue-500': { lighter: 'bg-blue-50', darker: 'bg-blue-600', text: 'text-blue-700' },
-                  'bg-blue-400': { lighter: 'bg-blue-50', darker: 'bg-blue-600', text: 'text-blue-700' },
-                  'bg-indigo-500': { lighter: 'bg-indigo-50', darker: 'bg-indigo-600', text: 'text-indigo-700' },
-                  'bg-indigo-400': { lighter: 'bg-indigo-50', darker: 'bg-indigo-600', text: 'text-indigo-700' },
-                  'bg-purple-500': { lighter: 'bg-purple-50', darker: 'bg-purple-600', text: 'text-purple-700' },
-                  'bg-purple-400': { lighter: 'bg-purple-50', darker: 'bg-purple-600', text: 'text-purple-700' },
-                  'bg-pink-500': { lighter: 'bg-pink-50', darker: 'bg-pink-600', text: 'text-pink-700' },
-                  'bg-pink-400': { lighter: 'bg-pink-50', darker: 'bg-pink-600', text: 'text-pink-700' },
-                  'bg-red-500': { lighter: 'bg-red-50', darker: 'bg-red-600', text: 'text-red-700' },
-                  'bg-red-400': { lighter: 'bg-red-50', darker: 'bg-red-600', text: 'text-red-700' },
-                  'bg-orange-500': { lighter: 'bg-orange-50', darker: 'bg-orange-600', text: 'text-orange-700' },
-                  'bg-orange-400': { lighter: 'bg-orange-50', darker: 'bg-orange-600', text: 'text-orange-700' },
-                  'bg-emerald-500': { lighter: 'bg-emerald-50', darker: 'bg-emerald-600', text: 'text-emerald-700' },
-                  'bg-emerald-400': { lighter: 'bg-emerald-50', darker: 'bg-emerald-600', text: 'text-emerald-700' },
-                  'bg-teal-500': { lighter: 'bg-teal-50', darker: 'bg-teal-600', text: 'text-teal-700' },
-                  'bg-teal-400': { lighter: 'bg-teal-50', darker: 'bg-teal-600', text: 'text-teal-700' },
-                };
-                
-                return {
-                  base: normalizedColor,
-                  ...colorMap[normalizedColor]
-                };
-              };
-
-              const colorVariations = getColorVariations(course.color);
-              
-              return (
-                <Link 
-                  key={course.id} 
-                  href={`/courses/${course.id}`} 
-                  className="flex-shrink-0 w-80 snap-start group"
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, course, index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragEnter={(e) => handleDragEnter(e, index)}
-                  onDragLeave={handleDragLeave}
-                  onDragEnd={handleDragEnd}
-                  onDrop={(e) => handleDrop(e, index)}
+            <div className="relative w-full px-10">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={coursePageIndex}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex gap-6 w-full"
                 >
-                  <div className={`relative flex flex-col h-full bg-white border-2 cursor-pointer rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl overflow-hidden ${
-                    dragOverIndex === index ? 'border-blue-500 ring-4 ring-blue-200' : 'border-gray-200 hover:border-gray-300'
+                  {filteredCourses.slice(coursePageIndex * coursesPerPage, (coursePageIndex + 1) * coursesPerPage).map((course, index) => {
+                  // Utility function to normalize and ensure proper color format
+                  const normalizeColor = (colorValue) => {
+                    if (colorValue && colorValue.startsWith('bg-')) {
+                      return colorValue;
+                    }
+                    
+                    const hexToTailwindMap = {
+                      '#60a5fa': 'bg-blue-400',
+                      '#a78bfa': 'bg-purple-400',
+                      '#f472b6': 'bg-pink-400',
+                      '#34d399': 'bg-emerald-400',
+                      '#fb923c': 'bg-orange-400',
+                      '#f87171': 'bg-red-400',
+                      '#2dd4bf': 'bg-teal-400',
+                      '#818cf8': 'bg-indigo-400',
+                    };
+                    
+                    if (colorValue && colorValue.startsWith('#')) {
+                      const lowerHex = colorValue.toLowerCase();
+                      if (hexToTailwindMap[lowerHex]) {
+                        return hexToTailwindMap[lowerHex];
+                      }
+                    }
+                    
+                    return 'bg-blue-500';
+                  };
+
+                  const getColorVariations = (colorClass) => {
+                    const normalizedColor = normalizeColor(colorClass);
+                    
+                    const colorMap = {
+                      'bg-blue-500': { lighter: 'bg-blue-50', darker: 'bg-blue-600', text: 'text-blue-700' },
+                      'bg-blue-400': { lighter: 'bg-blue-50', darker: 'bg-blue-600', text: 'text-blue-700' },
+                      'bg-indigo-500': { lighter: 'bg-indigo-50', darker: 'bg-indigo-600', text: 'text-indigo-700' },
+                      'bg-indigo-400': { lighter: 'bg-indigo-50', darker: 'bg-indigo-600', text: 'text-indigo-700' },
+                      'bg-purple-500': { lighter: 'bg-purple-50', darker: 'bg-purple-600', text: 'text-purple-700' },
+                      'bg-purple-400': { lighter: 'bg-purple-50', darker: 'bg-purple-600', text: 'text-purple-700' },
+                      'bg-pink-500': { lighter: 'bg-pink-50', darker: 'bg-pink-600', text: 'text-pink-700' },
+                      'bg-pink-400': { lighter: 'bg-pink-50', darker: 'bg-pink-600', text: 'text-pink-700' },
+                      'bg-red-500': { lighter: 'bg-red-50', darker: 'bg-red-600', text: 'text-red-700' },
+                      'bg-red-400': { lighter: 'bg-red-50', darker: 'bg-red-600', text: 'text-red-700' },
+                      'bg-orange-500': { lighter: 'bg-orange-50', darker: 'bg-orange-600', text: 'text-orange-700' },
+                      'bg-orange-400': { lighter: 'bg-orange-50', darker: 'bg-orange-600', text: 'text-orange-700' },
+                      'bg-emerald-500': { lighter: 'bg-emerald-50', darker: 'bg-emerald-600', text: 'text-emerald-700' },
+                      'bg-emerald-400': { lighter: 'bg-emerald-50', darker: 'bg-emerald-600', text: 'text-emerald-700' },
+                      'bg-teal-500': { lighter: 'bg-teal-50', darker: 'bg-teal-600', text: 'text-teal-700' },
+                      'bg-teal-400': { lighter: 'bg-teal-50', darker: 'bg-teal-600', text: 'text-teal-700' },
+                    };
+                    
+                    return {
+                      base: normalizedColor,
+                      ...colorMap[normalizedColor]
+                    };
+                  };
+
+                  const colorVariations = getColorVariations(course.color);
+                  
+                  return (
+                    <Link 
+                      key={course.id} 
+                      href={`/courses/${course.id}`} 
+                      className="flex-shrink-0 w-[calc(33.333%-1rem)] group"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, course, index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragEnter={(e) => handleDragEnter(e, index)}
+                      onDragLeave={handleDragLeave}
+                      onDragEnd={handleDragEnd}
+                      onDrop={(e) => handleDrop(e, index)}
+                    >
+                  <div className={`relative flex flex-col h-full bg-white border border-gray-100 cursor-pointer rounded-2xl transition-all duration-500 hover:-translate-y-1 hover:shadow-lg overflow-hidden ${
+                    dragOverIndex === index ? 'border-blue-500 ring-4 ring-blue-50' : 'hover:border-gray-200'
                   }`}>
-                    {/* Colored Header */}
+                    {/* Clean Solid Header */}
                     <div className={`relative px-5 py-6 overflow-hidden ${colorVariations.base} transition-all duration-300`}>
                       <div className="absolute inset-0 opacity-[0.06]">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-12 translate-x-12"></div>
                       </div>
 
                       <div className="relative z-10 space-y-3.5">
-                        {/* Section Badge */}
-                        <div>
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-lg text-xs font-bold text-gray-800 shadow-sm border border-white/50">
-                            <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                            <span className="text-gray-600 text-[10px] font-semibold uppercase tracking-wider">Section</span>
-                            <span className="text-gray-900">{course.code}</span>
-                          </span>
+                        {/* Simple White Badge */}
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg text-xs font-bold text-gray-800 shadow-sm border border-gray-100">
+                          <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                          <span className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider">Section</span>
+                          <span className="text-gray-900">{course.code}</span>
                         </div>
 
                         {/* Course Title */}
-                        <h3 className="text-xl font-bold text-white leading-snug line-clamp-2 pr-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5)' }}>
+                        <h3 className="text-xl font-bold text-white leading-snug line-clamp-2">
                           {course.title}
                         </h3>
                       </div>
                     </div>
 
                     {/* Content Section */}
-                    <div className="flex-1 px-5 py-5 flex flex-col">
+                    <div className="flex-1 px-5 py-5 flex flex-col bg-white">
                       {/* Instructor */}
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="relative flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full flex-shrink-0 shadow-sm overflow-hidden">
+                        <div className="relative flex items-center justify-center w-10 h-10 bg-slate-50 rounded-full flex-shrink-0 shadow-sm overflow-hidden border border-gray-100 transition-colors">
                           {course.instructorProfilePicture ? (
-                            <>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img 
-                                src={course.instructorProfilePicture} 
-                                alt={course.instructor}
-                                className="absolute inset-0 w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                              <span className="text-sm font-bold text-white">
-                                {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                              </span>
-                            </>
+                            <img 
+                              src={course.instructorProfilePicture} 
+                              alt={course.instructor}
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
                           ) : (
-                            <span className="text-sm font-bold text-white">
+                            <span className="text-sm font-bold text-slate-400">
                               {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                             </span>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-gray-500 mb-0.5">Instructor</div>
-                          <div className="text-sm font-semibold text-gray-900 truncate">{course.instructor}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Instructor</div>
+                          <div className="text-sm font-bold text-slate-800 truncate transition-colors">{course.instructor}</div>
                         </div>
                       </div>
 
                       {/* Schedule Display */}
                       {course.schedules && course.schedules.length > 0 && (
-                        <div className="mb-4 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                        <div className="mb-4 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
                           <div className="flex items-center gap-2 mb-2">
                             <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <span className="text-xs font-bold text-indigo-900 uppercase tracking-wide">Schedule</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em]">Schedule</span>
                           </div>
                           <div className="space-y-1.5">
                             {(expandedSchedules[course.id] ? course.schedules : course.schedules.slice(0, 2)).map((schedule, idx) => (
                               <div key={idx} className="flex items-center justify-between text-xs">
-                                <span className="font-semibold text-indigo-700">{schedule.day.slice(0, 3)}</span>
-                                <span className="text-indigo-600">{schedule.startTime} - {schedule.endTime}</span>
+                                <span className="font-bold text-slate-600">{schedule.day.slice(0, 3)}</span>
+                                <span className="text-slate-500 font-medium">{schedule.startTime} - {schedule.endTime}</span>
                               </div>
                             ))}
-                            {course.schedules.length > 2 && (
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setExpandedSchedules(prev => ({
-                                    ...prev,
-                                    [course.id]: !prev[course.id]
-                                  }));
-                                }}
-                                className="w-full text-xs text-indigo-600 hover:text-indigo-700 font-semibold text-center pt-1 transition-colors flex items-center justify-center gap-1"
-                              >
-                                {expandedSchedules[course.id] ? (
-                                  <>
-                                    <span>Show less</span>
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                    </svg>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span>+{course.schedules.length - 2} more</span>
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                  </>
-                                )}
-                              </button>
-                            )}
                           </div>
                         </div>
                       )}
 
-                      {/* Metrics */}
-                      <div className="flex items-stretch gap-2.5 pt-4 border-t border-gray-200 mt-auto">
-                        <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-purple-50 rounded-xl border border-purple-100 transition-all hover:bg-purple-100">
-                          <svg className="w-5 h-5 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
-                          <div className="text-center">
-                            <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.moduleCount || 0}</div>
-                            <div className="text-xs font-medium text-gray-600">Materials</div>
-                          </div>
+                      {/* Unified Metrics Bar */}
+                      <div className="mt-auto grid grid-cols-2 gap-3 pt-4 border-t border-slate-50">
+                        <div className="flex flex-col items-center justify-center p-3 bg-slate-50 rounded-xl border border-transparent transition-all duration-500">
+                          <div className="text-lg font-black text-slate-900 mb-0.5">{course.moduleCount || 0}</div>
+                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Materials</div>
                         </div>
-                        <div className="flex flex-col items-center justify-center flex-1 px-3 py-3 bg-blue-50 rounded-xl border border-blue-100 transition-all hover:bg-blue-100">
-                          <svg className="w-5 h-5 text-blue-600 mb-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                          </svg>
-                          <div className="text-center">
-                            <div className="text-xl font-bold text-gray-900 leading-none mb-1">{course.studentCount || 0}</div>
-                            <div className="text-xs font-medium text-gray-600">Students</div>
-                          </div>
+                        <div className="flex flex-col items-center justify-center p-3 bg-slate-50 rounded-xl border border-transparent transition-all duration-500">
+                          <div className="text-lg font-black text-slate-900 mb-0.5">{course.studentCount || 0}</div>
+                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Students</div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </Link>
-              );
-            })
-          )
-        ) : (
+                  );
+                })}
+                </motion.div>
+              </AnimatePresence>
+              {filteredCourses.length > coursesPerPage && (
+                <>
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={coursePageIndex === 0}
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full border transition-all ${
+                      coursePageIndex === 0
+                        ? 'border-gray-100 text-gray-200 cursor-not-allowed opacity-0'
+                        : 'border-blue-200 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-300 shadow-md hover:scale-110 active:scale-95'
+                    }`}
+                  >
+                    <ChevronLeftIcon className="w-6 h-6" />
+                  </button>
+                  <button
+                    onClick={handleNextPage}
+                    disabled={(coursePageIndex + 1) * coursesPerPage >= filteredCourses.length}
+                    className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full border transition-all ${
+                      (coursePageIndex + 1) * coursesPerPage >= filteredCourses.length
+                        ? 'border-gray-100 text-gray-200 cursor-not-allowed opacity-0'
+                        : 'border-blue-200 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-300 shadow-md hover:scale-110 active:scale-95'
+                    }`}
+                  >
+                    <ChevronRightIcon className="w-6 h-6" />
+                  </button>
+                </>
+              )}
+            </div>
+      )
+    ) : (
+      /* Clusters Tab Content */
           clusters.length === 0 ? (
-            <div className="col-span-full">
-              <div className="p-8 text-center bg-white border border-gray-200 shadow-sm rounded-2xl">
-                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full">
-                  <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-                <h3 className="mb-2 text-lg font-semibold text-gray-900">No clusters yet</h3>
-                <p className="mb-4 text-gray-500">Create your first cluster to group related courses together.</p>
-                <button
-                  onClick={() => openCreateClusterModal()}
-                  className="px-4 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700"
-                >
-                  Create Cluster
-                </button>
+            <div className="col-span-full w-full py-20 flex flex-col items-center justify-center">
+              <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center mb-6">
+                <svg className="w-12 h-12 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
               </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Clusters Yet</h3>
+              <p className="text-gray-500 mb-8 text-center max-w-md">Organize your courses into thematic clusters for better management.</p>
+              <button
+                onClick={() => openCreateClusterModal()}
+                className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create Cluster
+              </button>
             </div>
           ) : (
-            clusters.map((cluster, index) => (
-              <div key={cluster._id} className={`group overflow-hidden transition-all duration-500 transform bg-white border border-gray-200 shadow-sm rounded-2xl hover:rounded-3xl hover:shadow-2xl hover:shadow-purple-500/10 hover:border-purple-300 hover:-translate-y-2 animate-fade-in-up`} style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className={`h-32 relative p-5 flex flex-col justify-between ${cluster.coverColor} transition-all duration-300`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center justify-center w-8 h-8 bg-white rounded-lg bg-opacity-20 transition-all duration-300 group-hover:bg-opacity-30 group-hover:scale-110">
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+              {clusters.map((cluster, index) => (
+                <div key={cluster._id} className={`group overflow-hidden transition-all duration-500 transform bg-white border border-gray-200 shadow-sm rounded-2xl hover:rounded-3xl hover:shadow-2xl hover:shadow-purple-500/10 hover:border-purple-300 hover:-translate-y-2 animate-fade-in-up`} style={{ animationDelay: `${index * 0.1}s` }}>
+                  <div className={`h-32 relative p-5 flex flex-col justify-between ${cluster.coverColor} transition-all duration-300`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-center w-8 h-8 bg-white rounded-lg bg-opacity-20 transition-all duration-300 group-hover:bg-opacity-30 group-hover:scale-110">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="px-3 py-1.5 text-xs font-semibold text-white bg-black/30 backdrop-blur-sm rounded-xl border border-white/20 transition-all duration-300 group-hover:bg-black/40">
+                        {cluster.classCode}
                       </div>
                     </div>
-                    <div className="px-3 py-1.5 text-xs font-semibold text-white bg-black/30 backdrop-blur-sm rounded-xl border border-white/20 transition-all duration-300 group-hover:bg-black/40">
-                      {cluster.classCode}
-                    </div>
-                  </div>
-                  <div className="text-white">
-                    <h3 className="text-lg font-bold transition-transform duration-300 group-hover:scale-105">{cluster.name}</h3>
-                    {cluster.section && <p className="text-sm opacity-90 transition-opacity duration-300 group-hover:opacity-100">{cluster.section}</p>}
-                  </div>
-                </div>
-
-                <div className="p-5">
-                  <div className="mb-4">
-                    <h4 className="mb-3 font-semibold text-gray-900 flex items-center gap-2">
-                      <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                      Courses ({cluster.courses?.length || 0})
-                    </h4>
-                    <div className="space-y-2">
-                      {cluster.courses?.slice(0, 3).map((course, courseIndex) => (
-                        <div key={course._id} className={`flex items-center gap-3 p-3 rounded-xl bg-gray-50/80 backdrop-blur-sm border border-gray-100/50 transition-all duration-300 hover:bg-white hover:shadow-sm hover:scale-102 animate-fade-in-up`} style={{ animationDelay: `${(index * 0.1) + (courseIndex * 0.05)}s` }}>
-                          <div className={`w-3 h-3 rounded-full ${course.coverColor || '#60a5fa'} transition-transform duration-300 hover:scale-125`}></div>
-                          <span className="text-sm font-medium text-gray-700">{course.subject}</span>
-                          {course.section && <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">{course.section}</span>}
-                        </div>
-                      ))}
-                      {cluster.courses?.length > 3 && (
-                        <div className="text-center py-2">
-                          <span className="inline-flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full transition-all duration-300 hover:bg-gray-200 hover:scale-105">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M5 12h.01M5 12h.01M12 12h.01M12 12h.01M12 12h.01M19 12h.01M19 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                            </svg>
-                            +{cluster.courses.length - 3} more courses
-                          </span>
-                        </div>
-                      )}
+                    <div className="text-white">
+                      <h3 className="text-lg font-bold transition-transform duration-300 group-hover:scale-105">{cluster.name}</h3>
+                      {cluster.section && <p className="text-sm opacity-90 transition-opacity duration-300 group-hover:opacity-100">{cluster.section}</p>}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      {/* <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> */}
-                      <span className="font-medium">{cluster.enrolledUsers?.length || 0} members</span>
+                  <div className="p-5">
+                    <div className="mb-4">
+                      <h4 className="mb-3 font-semibold text-gray-900 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        Courses ({cluster.courses?.length || 0})
+                      </h4>
+                      <div className="space-y-2">
+                        {cluster.courses?.slice(0, 3).map((course, courseIndex) => (
+                          <div key={course._id} className={`flex items-center gap-3 p-3 rounded-xl bg-gray-50/80 backdrop-blur-sm border border-gray-100/50 transition-all duration-300 hover:bg-white hover:shadow-sm hover:scale-102 animate-fade-in-up`} style={{ animationDelay: `${(index * 0.1) + (courseIndex * 0.05)}s` }}>
+                            <div className={`w-3 h-3 rounded-full ${course.coverColor || '#60a5fa'} transition-transform duration-300 hover:scale-125`}></div>
+                            <span className="text-sm font-medium text-gray-700">{course.subject}</span>
+                            {course.section && <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">{course.section}</span>}
+                          </div>
+                        ))}
+                        {cluster.courses?.length > 3 && (
+                          <div className="text-center py-2">
+                            <span className="inline-flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full transition-all duration-300 hover:bg-gray-200 hover:scale-105">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M5 12h.01M5 12h.01M12 12h.01M12 12h.01M12 12h.01M19 12h.01M19 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                              </svg>
+                              +{cluster.courses.length - 3} more courses
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <Link href={`/clusters/${cluster._id}`} className="group/btn inline-flex items-center gap-2 text-sm font-semibold text-purple-600 hover:text-purple-700 transition-all duration-300 hover:scale-105">
-                      <span>View Details</span>
-                      <svg className="w-4 h-4 transition-transform duration-300 group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Link>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span className="font-medium">{cluster.enrolledUsers?.length || 0} members</span>
+                      </div>
+                      <Link href={`/clusters/${cluster._id}`} className="group/btn inline-flex items-center gap-2 text-sm font-semibold text-purple-600 hover:text-purple-700 transition-all duration-300 hover:scale-105">
+                        <span>View Details</span>
+                        <svg className="w-4 h-4 transition-transform duration-300 group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )
         )}
             </div>
+
+            {/* Page Indicator Dots */}
+            {activeTab === 'courses' && totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-6 mb-2">
+                {[...Array(totalPages)].map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCoursePageIndex(i)}
+                    className={`h-1.5 rounded-full transition-all duration-500 ${
+                      coursePageIndex === i ? 'w-10 bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.3)]' : 'w-2 bg-slate-300 hover:bg-slate-400'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </AdaptiveLayout>
         </div>
+      </div>
       </div>
       </div>
     </div>

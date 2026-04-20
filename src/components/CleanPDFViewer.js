@@ -105,15 +105,94 @@ const CleanPDFViewer = ({
 
   const getModeDisplayName = (databaseName) => databaseModeToButtonLabel(databaseName);
 
+  // Get tour attribute for learning mode buttons
+  const getTourAttribute = (dbKey) => {
+    const tourMap = {
+      'AI Narrator': 'ai-narrator',
+      'Visual Learning': 'visual-learning',
+      'Sequential Learning': 'step-by-step',
+      'Global Learning': 'big-picture',
+      'Hands-On Lab': 'hands-on',
+      'Concept Constellation': 'theory',
+      'Active Learning Hub': 'practice',
+      'Reflective Learning': 'reflect'
+    };
+    return tourMap[dbKey] || '';
+  };
+
   const allModes = [
-    { dbKey: 'AI Narrator', name: databaseModeToButtonLabel('AI Narrator'), handler: onAITutorClick, loading: isAITutorLoading, color: 'from-purple-500 to-indigo-600' },
-    { dbKey: 'Visual Learning', name: databaseModeToButtonLabel('Visual Learning'), handler: onVisualLearningClick, loading: isVisualLearningLoading, color: 'from-green-500 to-emerald-600' },
-    { dbKey: 'Sequential Learning', name: databaseModeToButtonLabel('Sequential Learning'), handler: onSequentialLearningClick, loading: isSequentialLearningLoading, color: 'from-blue-500 to-cyan-600' },
-    { dbKey: 'Global Learning', name: databaseModeToButtonLabel('Global Learning'), handler: onGlobalLearningClick, loading: isGlobalLearningLoading, color: 'from-orange-500 to-red-600' },
-    { dbKey: 'Hands-On Lab', name: databaseModeToButtonLabel('Hands-On Lab'), handler: onSensingLearningClick, loading: isSensingLearningLoading, color: 'from-teal-500 to-green-600' },
-    { dbKey: 'Concept Constellation', name: databaseModeToButtonLabel('Concept Constellation'), handler: onIntuitiveLearningClick, loading: isIntuitiveLearningLoading, color: 'from-pink-500 to-rose-600' },
-    { dbKey: 'Active Learning Hub', name: databaseModeToButtonLabel('Active Learning Hub'), handler: onActiveLearningClick, loading: isActiveLearningLoading, color: 'from-yellow-500 to-orange-600' },
-    { dbKey: 'Reflective Learning', name: databaseModeToButtonLabel('Reflective Learning'), handler: onReflectiveLearningClick, loading: isReflectiveLearningLoading, color: 'from-indigo-500 to-purple-600' }
+    { 
+      dbKey: 'AI Narrator', 
+      name: databaseModeToButtonLabel('AI Narrator'), 
+      handler: onAITutorClick, 
+      loading: isAITutorLoading, 
+      color: 'bg-slate-100 border border-slate-200 hover:bg-slate-200',
+      borderColor: 'border-slate-200',
+      textColor: 'text-slate-700'
+    },
+    { 
+      dbKey: 'Visual Learning', 
+      name: databaseModeToButtonLabel('Visual Learning'), 
+      handler: onVisualLearningClick, 
+      loading: isVisualLearningLoading, 
+      color: 'bg-slate-100 border border-slate-200 hover:bg-slate-200',
+      borderColor: 'border-slate-200',
+      textColor: 'text-slate-700'
+    },
+    { 
+      dbKey: 'Sequential Learning', 
+      name: databaseModeToButtonLabel('Sequential Learning'), 
+      handler: onSequentialLearningClick, 
+      loading: isSequentialLearningLoading, 
+      color: 'bg-slate-100 border border-slate-200 hover:bg-slate-200',
+      borderColor: 'border-slate-200',
+      textColor: 'text-slate-700'
+    },
+    { 
+      dbKey: 'Global Learning', 
+      name: databaseModeToButtonLabel('Global Learning'), 
+      handler: onGlobalLearningClick, 
+      loading: isGlobalLearningLoading, 
+      color: 'bg-slate-100 border border-slate-200 hover:bg-slate-200',
+      borderColor: 'border-slate-200',
+      textColor: 'text-slate-700'
+    },
+    { 
+      dbKey: 'Hands-On Lab', 
+      name: databaseModeToButtonLabel('Hands-On Lab'), 
+      handler: onSensingLearningClick, 
+      loading: isSensingLearningLoading, 
+      color: 'bg-slate-100 border border-slate-200 hover:bg-slate-200',
+      borderColor: 'border-slate-200',
+      textColor: 'text-slate-700'
+    },
+    { 
+      dbKey: 'Concept Constellation', 
+      name: databaseModeToButtonLabel('Concept Constellation'), 
+      handler: onIntuitiveLearningClick, 
+      loading: isIntuitiveLearningLoading, 
+      color: 'bg-slate-100 border border-slate-200 hover:bg-slate-200',
+      borderColor: 'border-slate-200',
+      textColor: 'text-slate-700'
+    },
+    { 
+      dbKey: 'Active Learning Hub', 
+      name: databaseModeToButtonLabel('Active Learning Hub'), 
+      handler: onActiveLearningClick, 
+      loading: isActiveLearningLoading, 
+      color: 'bg-slate-100 border border-slate-200 hover:bg-slate-200',
+      borderColor: 'border-slate-200',
+      textColor: 'text-slate-700'
+    },
+    { 
+      dbKey: 'Reflective Learning', 
+      name: databaseModeToButtonLabel('Reflective Learning'), 
+      handler: onReflectiveLearningClick, 
+      loading: isReflectiveLearningLoading, 
+      color: 'bg-slate-100 border border-slate-200 hover:bg-slate-200',
+      borderColor: 'border-slate-200',
+      textColor: 'text-slate-700'
+    }
   ];
 
   const recommendedModeNames = allRecommendations.map(r => getModeDisplayName(r.mode));
@@ -183,22 +262,30 @@ const CleanPDFViewer = ({
             setShowTooltip({ mode: mode.name, content: tooltip });
           }}
           onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-          className={`relative flex items-center gap-2 px-3 py-2 bg-gradient-to-r ${mode.color} text-white rounded-lg hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale text-sm ${isRecommended ? 'ring-2 ring-green-500 ring-offset-2' : ''}`}
+          className={`relative flex flex-col items-center justify-center px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale min-w-[120px] h-20 ${
+            isRecommended 
+              ? `${mode.color} ring-2 ring-blue-400 ring-offset-1 shadow-md` 
+              : `${mode.color} shadow-sm hover:shadow-md`
+          }`}
         >
           {mode.loading ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin mb-2"></div>
           ) : (
-            <LearningModeToolbarIcon databaseMode={tooltipKey} className="w-4 h-4 text-white" />
+            <LearningModeToolbarIcon databaseMode={tooltipKey} className="w-6 h-6 text-slate-600 mb-2" />
           )}
-          <span className="hidden sm:inline font-medium">{mode.name}</span>
+          <span className="text-center leading-tight font-semibold text-slate-700 text-xs">{mode.name}</span>
           {isRecommended && (
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
+              <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
           )}
         </button>
         {showTooltip.mode === mode.name && (
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 z-50 animate-fade-in">
-            <p className="text-gray-300 leading-relaxed">{showTooltip.content}</p>
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-gray-900 text-white text-xs rounded-lg shadow-2xl p-3 z-50 animate-fade-in border border-gray-700">
+            <p className="text-gray-200 leading-relaxed text-center">{showTooltip.content}</p>
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
           </div>
         )}
       </div>
@@ -277,10 +364,15 @@ const CleanPDFViewer = ({
       params.append('zoom', zoomLevel.toString());
     }
 
-    // Add toolbar=0 to try to hide browser toolbar (works in some browsers)
-    params.append('toolbar', '0');
-    params.append('navpanes', '0');
-    params.append('scrollbar', '0');
+    // Comprehensive parameters to hide browser PDF viewer UI elements
+    params.append('toolbar', '0');        // Hide toolbar
+    params.append('navpanes', '0');       // Hide navigation panes
+    params.append('scrollbar', '0');      // Hide scrollbar
+    params.append('statusbar', '0');      // Hide status bar
+    params.append('messages', '0');       // Hide messages
+    params.append('view', 'FitH');        // Fit horizontally
+    params.append('pagemode', 'none');    // No page mode
+    params.append('nameddest', 'none');   // No named destination
 
     return `${baseUrl}#${params.toString()}`;
   };
@@ -474,245 +566,217 @@ const CleanPDFViewer = ({
   return (
     <div
       ref={containerRef}
-      className={`flex flex-col h-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
+      className={`flex h-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
     >
-      {/* Personalization Banner */}
-      {isContentEducational && hasClassification && topRecommendation && showPersonalizationBanner && (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200 px-4 py-3">
-          <div className="flex items-center justify-between">
+      {/* Left Sidebar - Learning Modes */}
+      {isContentEducational && (
+        <div className={`w-16 flex flex-col border-r ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} transition-all duration-300 hover:w-48 group`}>
+          {/* Sidebar Header */}
+          <div className="p-3 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-2">
-              <SparklesIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-              <p className="text-sm text-green-900">
-                <strong>Personalized for you:</strong> We've loaded{' '}
-                <span className="font-semibold">{getModeDisplayName(topRecommendation.mode)}</span>{' '}
-                based on your learning style. Try other modes below!
-              </p>
+              <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Learning Modes</span>
             </div>
-            <button 
-              onClick={() => setShowPersonalizationBanner(false)} 
-              className="text-green-600 hover:text-green-800 transition-colors p-1"
-              title="Dismiss"
+          </div>
+          
+          {/* Learning Mode Buttons */}
+          <div data-tour="learning-modes" className="flex-1 p-2 space-y-2 overflow-y-auto">
+            {allModes.map(mode => (
+              <div key={mode.name} className="relative">
+                <button
+                  data-tour={getTourAttribute(mode.dbKey)}
+                  onClick={mode.handler}
+                  disabled={mode.loading}
+                  onMouseEnter={() => {
+                    const tooltip = recommendedModeNames.includes(mode.name)
+                      ? 'Personalized for you: this mode matches your learning style.'
+                      : tooltipData[mode.dbKey]?.description || mode.name;
+                    setShowTooltip({ mode: mode.name, content: tooltip });
+                  }}
+                  onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
+                  className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    recommendedModeNames.includes(mode.name)
+                      ? 'bg-blue-50 border border-blue-200 text-blue-700 ring-1 ring-blue-300'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
+                  }`}
+                  title=""
+                >
+                  {mode.loading ? (
+                    <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                  ) : (
+                    <LearningModeToolbarIcon databaseMode={mode.dbKey} className="w-5 h-5 flex-shrink-0 text-current" />
+                  )}
+                  <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
+                    {mode.name}
+                  </span>
+                  {recommendedModeNames.includes(mode.name) && (
+                    <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  )}
+                </button>
+                
+                {/* Tooltip for collapsed state */}
+                {showTooltip.mode === mode.name && (
+                  <div className="absolute left-full ml-2 top-0 w-48 bg-gray-900 text-white text-xs rounded-lg shadow-2xl p-3 z-50 animate-fade-in border border-gray-700 group-hover:hidden">
+                    <p className="text-gray-200 leading-relaxed">{showTooltip.content}</p>
+                    <div className="absolute right-full top-3 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"></div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          {/* Tour Button */}
+          <div className="p-2 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setShowTour(true)}
+              className="w-full flex items-center gap-2 p-2 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-all"
+              title="Take a tour of learning modes"
             >
-              <XMarkIcon className="w-4 h-4" />
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Tour</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Custom Toolbar - Clean Design */}
-      <div className={`flex items-center justify-between px-4 py-3 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
-        {/* Left/Center Section - Smart AI Learning Modes */}
-        {isContentEducational && (
-          <div data-tour="learning-modes" className="flex items-center space-x-2">
-            {hasClassification && recommendedButtons.length > 0 ? (
-              <>
-                {/* Recommended Modes - Prominent */}
-                {recommendedButtons.map(mode => renderModeButton(mode, true))}
-                
-                {/* Other Modes - Dropdown */}
-                {otherButtons.length > 0 && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowMoreModes(!showMoreModes)}
-                      disabled={false}
-                      title="More AI modes"
-                      className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
-                    >
-                      <span>More</span>
-                      <ChevronDownIcon className={`w-4 h-4 transition-transform ${showMoreModes ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {showMoreModes && (
-                      <div className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-[200px] z-50">
-                        {otherButtons.map(mode => (
-                          <button
-                            key={mode.name}
-                            onClick={() => {
-                              mode.handler();
-                              setShowMoreModes(false);
-                            }}
-                            disabled={mode.loading}
-                            title=""
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
-                          >
-                            <LearningModeToolbarIcon databaseMode={mode.dbKey} className="w-5 h-5 text-gray-600" />
-                            <span className="font-medium">{mode.name}</span>
-                            {mode.loading && (
-                              <div className="ml-auto w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              /* No classification - Show all 8 modes equally */
-              allModes.map(mode => renderModeButton(mode, false))
-            )}
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Personalization Banner */}
+        {isContentEducational && hasClassification && topRecommendation && showPersonalizationBanner && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SparklesIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                <p className="text-sm text-green-900">
+                  <strong>Personalized for you:</strong> We've loaded{' '}
+                  <span className="font-semibold">{getModeDisplayName(topRecommendation.mode)}</span>{' '}
+                  based on your learning style. Try other modes in the sidebar!
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowPersonalizationBanner(false)} 
+                className="text-green-600 hover:text-green-800 transition-colors p-1"
+                title="Dismiss"
+              >
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Right Section - Zoom and Actions */}
-        <div className="flex items-center space-x-2">
-          {/* Take a Tour Button */}
-          <button
-            onClick={() => setShowTour(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all"
-            title="Take a tour of learning modes"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="hidden sm:inline">Tour</span>
-          </button>
-          
-          {/* Zoom Controls */}
-          <div className="flex items-center space-x-1 border rounded-md">
-            <button
-              onClick={handleZoomOut}
-              disabled={zoomLevel <= 25}
-              className={`p-1.5 transition-colors ${zoomLevel <= 25
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'text-gray-300 hover:bg-gray-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              title="Zoom out"
-            >
+        {/* Top Toolbar - Compact */}
+        <div className={`flex items-center justify-between px-4 py-2 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          {/* Left - File Info */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-            </button>
-
-            <span className={`px-2 py-1 text-xs font-medium min-w-[50px] text-center ${isDarkMode ? 'text-gray-300' : 'text-gray-600'
-              }`}>
-              {fitMode === 'width' ? 'Fit' : fitMode === 'page' ? 'Page' : `${zoomLevel}%`}
-            </span>
-
-            <button
-              onClick={handleZoomIn}
-              disabled={zoomLevel >= 300}
-              className={`p-1.5 transition-colors ${zoomLevel >= 300
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'text-gray-300 hover:bg-gray-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              title="Zoom in"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
+              <span className="font-medium">Page {currentPage} of {totalPages}</span>
+            </div>
           </div>
 
-          {/* Fullscreen */}
-          <button
-            onClick={toggleFullscreen}
-            className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
+          {/* Right - Controls */}
+          <div className="flex items-center space-x-2">
+            {/* Zoom Controls */}
+            <div className="flex items-center space-x-1 border rounded-md bg-gray-50 dark:bg-gray-700">
+              <button
+                onClick={handleZoomOut}
+                disabled={zoomLevel <= 25}
+                className={`p-1.5 transition-colors ${zoomLevel <= 25
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'text-gray-300 hover:bg-gray-600'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  }`}
+                title="Zoom out"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                </svg>
+              </button>
+
+              <span className={`px-2 py-1 text-xs font-medium min-w-[50px] text-center ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                {fitMode === 'width' ? 'Fit' : fitMode === 'page' ? 'Page' : `${zoomLevel}%`}
+              </span>
+
+              <button
+                onClick={handleZoomIn}
+                disabled={zoomLevel >= 300}
+                className={`p-1.5 transition-colors ${zoomLevel >= 300
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'text-gray-300 hover:bg-gray-600'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  }`}
+                title="Zoom in"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Fullscreen */}
+            <button
+              onClick={toggleFullscreen}
+              className={`p-1.5 rounded-md transition-colors border ${isDarkMode 
+                ? 'text-gray-300 hover:bg-gray-700 border-gray-600' 
+                : 'text-gray-600 hover:bg-gray-100 border-gray-300'
               }`}
-            title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-          >
-            {isFullscreen ?
-              <ArrowsPointingInIcon className="w-4 h-4" /> :
-              <ArrowsPointingOutIcon className="w-4 h-4" />
-            }
-          </button>
-
-          {/* Print */}
-          <button
-            onClick={handlePrint}
-            className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            title="Print PDF"
-          >
-            <PrinterIcon className="w-4 h-4" />
-          </button>
-
-          {/* Download */}
-          <button
-            onClick={handleDownload}
-            className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            title="Download PDF"
-          >
-            <ArrowDownTrayIcon className="w-4 h-4" />
-          </button>
-
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'text-yellow-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDarkMode ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-
-      {/* PDF Display with Hidden Browser Toolbar */}
-      <div className={`flex-1 relative overflow-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
-        <style jsx>{`
-          .pdf-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            ${isDarkMode ? 'filter: invert(1) hue-rotate(180deg);' : ''}
-          }
-          
-          /* Try to hide PDF toolbar with CSS (browser dependent) */
-          .pdf-container iframe::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
-
-        <div className="pdf-container w-full h-full p-4">
-          <div className={`w-full h-full shadow-lg rounded-lg overflow-hidden ${isDarkMode ? 'shadow-gray-800' : 'shadow-gray-300'
-            }`}>
-            <iframe
-              ref={iframeRef}
-              src={getPDFUrl()}
-              title={`${content.title || 'PDF Document'} - Page ${currentPage}`}
-              className="w-full h-full"
-              onLoad={() => {
-                // Try to communicate with iframe to hide toolbar (limited by CORS)
-                try {
-                  const iframe = iframeRef.current;
-                  if (iframe && iframe.contentWindow) {
-                    // This will only work for same-origin PDFs
-                    iframe.contentWindow.postMessage({ action: 'hideToolbar' }, '*');
-                  }
-                } catch (e) {
-                  // Ignore CORS errors
-                  console.log('Cannot communicate with PDF iframe (CORS)');
-                }
-              }}
-            />
+              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            >
+              {isFullscreen ?
+                <ArrowsPointingInIcon className="w-4 h-4" /> :
+                <ArrowsPointingOutIcon className="w-4 h-4" />
+              }
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Status Bar */}
-      <div className={`px-4 py-2 border-t text-sm ${isDarkMode
-          ? 'bg-gray-800 border-gray-700 text-gray-300'
-          : 'bg-gray-50 border-gray-200 text-gray-600'
-        }`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <span className="text-xs opacity-75">
-              Use ← → keys to navigate • +/- to zoom • F for fullscreen
+        {/* PDF Display Area */}
+        <div className={`flex-1 relative overflow-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+          <div className="pdf-container w-full h-full p-4">
+            <div className={`w-full h-full shadow-lg rounded-lg overflow-hidden ${isDarkMode ? 'shadow-gray-800' : 'shadow-gray-300'}`}>
+              <embed
+                ref={iframeRef}
+                src={getPDFUrl()}
+                type="application/pdf"
+                title={`PDF Document - Page ${currentPage}`}
+                className={`w-full h-full ${isDarkMode ? 'filter invert hue-rotate-180' : ''}`}
+                style={{
+                  border: 'none',
+                  outline: 'none'
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Status Bar */}
+        <div className={`px-4 py-2 border-t text-sm ${isDarkMode
+            ? 'bg-gray-800 border-gray-700 text-gray-300'
+            : 'bg-gray-50 border-gray-200 text-gray-600'
+          }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <span className="font-medium">
+                {content.title || 'PDF Document'}
+              </span>
+              <span className="text-xs opacity-75">
+                Use ← → keys to navigate • +/- to zoom • F for fullscreen
+              </span>
+            </div>
+            <span className="text-xs">
+              {fitMode === 'width' ? 'Fit Width' : fitMode === 'page' ? 'Fit Page' : `${zoomLevel}%`} • Clean PDF Viewer
             </span>
           </div>
-          <span>
-            {fitMode === 'width' ? 'Fit Width' : fitMode === 'page' ? 'Fit Page' : `${zoomLevel}%`} • Clean PDF Viewer
-          </span>
         </div>
       </div>
 

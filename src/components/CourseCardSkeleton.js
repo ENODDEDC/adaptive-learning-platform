@@ -5,60 +5,79 @@ import React from 'react';
 const CourseCardSkeleton = ({ index = 0 }) => {
   return (
     <div 
-      className="flex-shrink-0 w-80 snap-start animate-pulse"
-      style={{ animationDelay: `${index * 0.1}s` }}
+      className="flex-shrink-0 w-[calc(33.333%-1rem)] relative"
+      style={{ 
+        animation: `pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite`,
+        animationDelay: `${index * 0.15}s` 
+      }}
     >
-      <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border-2 border-gray-200 bg-white shadow-sm">
-        <div className="relative overflow-hidden rounded-t-2xl bg-gradient-to-br from-blue-400 to-indigo-500 px-5 py-6">
-          <div className="absolute inset-0 opacity-[0.08]">
-            <div className="absolute top-0 right-0 h-24 w-24 translate-x-12 -translate-y-12 rounded-full bg-white"></div>
-          </div>
-          <div className="relative z-10 space-y-3.5">
-            <div className="h-8 w-32 rounded-lg bg-white/80"></div>
+      <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-black/[0.02]">
+        {/* Shimmer Effect Wrapper */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
+        </div>
+
+        {/* Top Header Section (Modern White/Light Blue) */}
+        <div className="relative h-32 overflow-hidden bg-slate-50/50 px-5 py-6 border-b border-gray-50">
+          <div className="relative z-10 space-y-4">
+            {/* Section Badge Skeleton */}
+            <div className="h-6 w-24 rounded-lg bg-gray-200/60"></div>
+            {/* Title Skeleton */}
             <div className="space-y-2">
-              <div className="h-6 w-4/5 rounded bg-white/60"></div>
-              <div className="h-6 w-2/3 rounded bg-white/50"></div>
+              <div className="h-7 w-4/5 rounded-lg bg-gray-200/80"></div>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col px-5 py-5">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gray-200"></div>
+        {/* Content Section */}
+        <div className="flex flex-1 flex-col px-5 py-6 bg-white">
+          {/* Instructor Skeleton */}
+          <div className="mb-6 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-gray-100 shadow-inner"></div>
             <div className="min-w-0 flex-1 space-y-2">
-              <div className="h-3 w-16 rounded bg-gray-200"></div>
-              <div className="h-4 w-32 rounded bg-gray-200"></div>
+              <div className="h-3 w-12 rounded bg-gray-100"></div>
+              <div className="h-4 w-28 rounded bg-gray-100"></div>
             </div>
           </div>
 
-          <div className="mb-4 rounded-xl border border-indigo-100 bg-indigo-50 p-3">
-            <div className="mb-2 flex items-center gap-2">
-              <div className="h-4 w-4 rounded bg-indigo-200"></div>
-              <div className="h-3 w-20 rounded bg-indigo-200"></div>
+          {/* Schedule Box Skeleton */}
+          <div className="mb-6 rounded-xl border border-gray-50 bg-gray-50/40 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="h-3.5 w-3.5 rounded bg-gray-200/50"></div>
+              <div className="h-3 w-16 rounded bg-gray-200/50"></div>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <div className="h-3 w-10 rounded bg-indigo-200"></div>
-                <div className="h-3 w-24 rounded bg-indigo-200"></div>
+                <div className="h-2.5 w-8 rounded bg-gray-100"></div>
+                <div className="h-2.5 w-20 rounded bg-gray-100"></div>
               </div>
               <div className="flex items-center justify-between">
-                <div className="h-3 w-10 rounded bg-indigo-200"></div>
-                <div className="h-3 w-24 rounded bg-indigo-200"></div>
+                <div className="h-2.5 w-8 rounded bg-gray-100"></div>
+                <div className="h-2.5 w-20 rounded bg-gray-100"></div>
               </div>
             </div>
           </div>
 
-          <div className="mt-auto flex items-stretch gap-2.5 border-t border-gray-200 pt-4">
-            {[...Array(3)].map((_, statIndex) => (
-              <div key={statIndex} className="flex flex-1 flex-col items-center justify-center rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
-                <div className="mb-2 h-5 w-5 rounded bg-gray-200"></div>
-                <div className="mb-1 h-5 w-8 rounded bg-gray-200"></div>
-                <div className="h-3 w-14 rounded bg-gray-200"></div>
+          {/* Bottom Metrics Skeleton */}
+          <div className="mt-auto flex items-stretch gap-3 pt-5 border-t border-gray-50">
+            {[...Array(2)].map((_, statIndex) => (
+              <div key={statIndex} className="flex flex-1 flex-col items-center justify-center rounded-xl border border-gray-50 bg-white px-3 py-4 shadow-sm">
+                <div className="mb-2 h-4 w-4 rounded bg-gray-100"></div>
+                <div className="mb-1.5 h-4 w-6 rounded bg-gray-100"></div>
+                <div className="h-2.5 w-12 rounded bg-gray-100"></div>
               </div>
             ))}
           </div>
         </div>
       </div>
+      
+      <style jsx>{`
+        @keyframes shimmer {
+          100% {
+            transform: translateX(100%);
+          }
+        }
+      `}</style>
     </div>
   );
 };

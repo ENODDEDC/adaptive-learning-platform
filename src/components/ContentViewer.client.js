@@ -1702,36 +1702,6 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
 
   return (
     <ViewerLayout>
-      {content?.contentType !== 'multi-attachment' && (
-      <div className="flex-shrink-0 flex items-center justify-between p-5 border-b">
-        <div className="flex items-center gap-4 min-w-0">
-          <div className={`w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClasses}`}>
-            <IconComponent className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold text-slate-800 truncate">{content.title}</h2>
-            <div className="text-sm text-slate-500 flex items-center gap-3 flex-wrap">
-              <span>{formatFileSize(content.fileSize)}</span>
-              {readTime > 0 && (
-                <>
-                  <span className="text-slate-300">•</span>
-                  <div className="flex items-center gap-1.5"><ClockIcon className="w-4 h-4" /><span>{readTime} min read</span></div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-        <button 
-          onClick={onClose} 
-          className="p-2 text-slate-500 hover:bg-slate-100 rounded-full flex-shrink-0 ml-4 relative hover:text-slate-700 transition-colors"
-          style={{ zIndex: 10000 }}
-          title="Close viewer"
-        >
-          <XMarkIcon className="w-6 h-6" />
-        </button>
-      </div>
-      )}
-
       <div className="w-full bg-slate-200 h-1 flex-shrink-0">
         <div className="bg-sky-600 h-1" style={{ width: `${scrollProgress}%`, transition: 'width 0.1s linear' }}></div>
       </div>
