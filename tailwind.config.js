@@ -13,8 +13,9 @@ const config = {
         'text-primary': '#4B4B4B',
       },
       fontFamily: {
-        sans: ['var(--font-jakarta)', 'Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        serif: ['Georgia', 'serif'],
+        sans: ['Inter', 'var(--font-jakarta)', 'Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        serif: ['Crimson Text', 'Georgia', 'serif'],
+        display: ['Inter', 'system-ui', 'sans-serif'],
       },
       typography: (theme) => ({
         premium: {
