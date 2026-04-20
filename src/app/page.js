@@ -229,11 +229,12 @@ export default function LandingPage() {
   const [visualVerbal, setVisualVerbal] = useState(74);
   const [selectedNode, setSelectedNode] = useState(constellationNodes[0].id);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = 4;
+  const totalSlides = 12; // 1:Hero, 1:Control, 8:Modes, 1:Process, 1:CTA
   
   // Slide durations in milliseconds
   const getSlideDuration = (index) => {
-    if (index === 1) return 15000; // Slide 2 is 15 seconds
+    if (index === 1) return 15000; // Slide 2 (Control Room) is 15 seconds
+    if (index >= 2 && index <= 9) return 8000; // Individual Mode slides are 8 seconds
     return 5000; // Others are 5 seconds
   };
 
@@ -899,7 +900,71 @@ export default function LandingPage() {
               </motion.section>
             )}
 
-            {currentSlide === 2 && (
+            {currentSlide >= 2 && currentSlide <= 9 && (
+              <motion.section
+                key={`mode-${currentSlide}`}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="absolute inset-0 flex items-center justify-center px-6 lg:px-8 py-12"
+              >
+                <div className="max-w-7xl w-full max-h-full flex flex-col">
+                  <div className="mb-8 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between shrink-0">
+                    <div>
+                      <p className="text-sm font-medium text-blue-300">Mode {currentSlide - 1} of 8</p>
+                      <h2 className="mt-1 text-2xl font-semibold text-white md:text-3xl">
+                        {learningModes[currentSlide - 2].label}
+                      </h2>
+                    </div>
+                    <p className="max-w-xl text-xs text-slate-400">
+                      Explore how this specific learning mode adapts to your profile.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-10 lg:grid-cols-[1fr,1.2fr] items-center">
+                    <div className="space-y-6">
+                      <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+                        <h3 className="text-lg font-semibold text-white mb-2">{learningModes[currentSlide - 2].short}</h3>
+                        <p className="text-sm text-slate-300 leading-relaxed mb-4">
+                          {learningModes[currentSlide - 2].description}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mb-6">
+                          {learningModes[currentSlide - 2].capabilities.map((cap) => (
+                            <span key={cap} className="rounded-md border border-slate-700 bg-slate-950/70 px-3 py-1 text-xs text-slate-300">
+                              {cap}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+                          <span className="text-xs text-slate-500 uppercase tracking-wider">Technology Stack</span>
+                          <span className="text-xs font-semibold text-blue-400">{learningModes[currentSlide - 2].tech}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <Link href="/register" className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-500">
+                          Try This Mode
+                        </Link>
+                        <button onClick={() => setCurrentSlide(prev => (prev + 1) % totalSlides)} className="rounded-xl border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800">
+                          Next Mode
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-2xl">
+                      <p className="mb-4 text-xs uppercase tracking-wide text-slate-400">Generated Adaptive Preview</p>
+                      <div className="min-h-[300px] flex items-center justify-center">
+                        <div className="w-full">
+                          {renderModePreview(learningModes[currentSlide - 2].id)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.section>
+            )}
+
+            {currentSlide === 10 && (
               <motion.section
                 key="process"
                 initial={{ opacity: 0, x: 20 }}
@@ -934,7 +999,7 @@ export default function LandingPage() {
               </motion.section>
             )}
 
-            {currentSlide === 3 && (
+            {currentSlide === 11 && (
               <motion.section
                 key="cta"
                 initial={{ opacity: 0, x: 20 }}
@@ -981,13 +1046,13 @@ export default function LandingPage() {
 
         {/* Navigation Indicators */}
         <div className="shrink-0 pb-10 flex flex-col items-center gap-4">
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             {[...Array(totalSlides)].map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentSlide(i)}
                 className={`group relative h-1.5 transition-all duration-300 rounded-full overflow-hidden ${
-                  currentSlide === i ? 'w-12 bg-blue-500/20' : 'w-4 bg-slate-800 hover:bg-slate-700'
+                  currentSlide === i ? 'w-8 bg-blue-500/20' : 'w-2.5 bg-slate-800 hover:bg-slate-700'
                 }`}
               >
                 {currentSlide === i && (
@@ -1005,7 +1070,12 @@ export default function LandingPage() {
             ))}
           </div>
           <p className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">
-            Slide {currentSlide + 1} of {totalSlides}
+            {currentSlide === 0 && 'Introduction'}
+            {currentSlide === 1 && 'Adaptive Control Room'}
+            {currentSlide >= 2 && currentSlide <= 9 && `Learning Mode: ${learningModes[currentSlide - 2].label}`}
+            {currentSlide === 10 && 'How It Works'}
+            {currentSlide === 11 && 'Get Started'}
+            <span className="ml-2 opacity-50">({currentSlide + 1} / {totalSlides})</span>
           </p>
         </div>
       </main>
