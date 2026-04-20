@@ -112,6 +112,27 @@ function getPopplerBinDir() {
   if (platform === 'win32') {
     return path.join(process.cwd(), 'node_modules', 'pdf-poppler', 'lib', 'win', 'poppler-0.51', 'bin');
   }
+  // For Linux (Render.com), try to find poppler in system paths
+  if (platform === 'linux') {
+    // Check if poppler-utils is installed system-wide
+    const possiblePaths = [
+      '/usr/bin',
+      '/usr/local/bin',
+      path.join(process.cwd(), 'node_modules', 'pdf-poppler', 'lib', 'linux', 'bin')
+    ];
+    
+    for (const binPath of possiblePaths) {
+      const pdfToTextPath = path.join(binPath, 'pdftotext');
+      if (fs.existsSync(pdfToTextPath)) {
+        console.log('✅ Found poppler at:', binPath);
+        return binPath;
+      }
+    }
+    
+    console.warn('⚠️ Poppler not found in system paths, will skip poppler extraction');
+    return null;
+  }
+  
   throw new Error(`Poppler binary path not configured for platform: ${platform}`);
 }
 
@@ -145,7 +166,12 @@ async function extractTextWithPoppler(pdfBuffer) {
 
   try {
     const binDir = getPopplerBinDir();
-    const exe = path.join(binDir, 'pdftotext.exe');
+    if (!binDir) {
+      console.warn('⚠️ Poppler not available, skipping poppler extraction');
+      return '';
+    }
+    
+    const exe = path.join(binDir, process.platform === 'win32' ? 'pdftotext.exe' : 'pdftotext');
     const { stdout } = await runProcess(
       exe,
       ['-layout', '-enc', 'UTF-8', pdfPath, '-'],
