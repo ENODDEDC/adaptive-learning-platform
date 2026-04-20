@@ -13,6 +13,7 @@ import CleanPDFViewer from './CleanPDFViewer';
 import VisualDocxOverlay from './VisualDocxOverlay';
 import SequentialLearning from './SequentialLearning';
 import GlobalLearning from './GlobalLearning';
+import { getAttachmentFileUrl } from '@/utils/thumbnailUtils';
 import SensingLearning from './SensingLearning';
 import IntuitiveLearning from './IntuitiveLearning';
 import ActiveLearning from './ActiveLearning';
@@ -357,8 +358,21 @@ AI learning features work best with instructional content, lessons, or study mat
     setExtractionError('');
 
     try {
+      // Extract file key from the same URL that the viewer uses
+      const fileUrl = getAttachmentFileUrl(content);
+      let extractedKey = content.cloudStorage?.key;
+      
+      // If we don't have a direct key, extract it from the URL
+      if (!extractedKey && fileUrl) {
+        if (fileUrl.includes('/api/files/')) {
+          extractedKey = decodeURIComponent(fileUrl.replace(/.*\/api\/files\//, ''));
+        } else {
+          extractedKey = fileUrl.replace(window.location.origin, '').replace(/^\//, '');
+        }
+      }
+
       const requestBody = {
-        fileKey: content.cloudStorage?.key,
+        fileKey: extractedKey,
         filePath: content.filePath
       };
 
