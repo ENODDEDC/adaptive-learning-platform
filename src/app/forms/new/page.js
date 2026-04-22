@@ -671,15 +671,19 @@ const FormNewPageContent = () => {
                 <div className={`flex-grow ${questions.length === 0 ? 'flex flex-col items-center justify-center' : 'space-y-6'}`}>
                   {questions.length === 0 ? (
                     <div className="flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500">
-                      <div className="flex items-center justify-center w-20 h-20 mb-6 rounded-[2rem] bg-slate-50 border border-slate-100 text-slate-300 shadow-sm">
-                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className={`flex items-center justify-center transition-all duration-300 rounded-[2rem] bg-slate-50 border border-slate-100 text-slate-300 shadow-sm ${isIdentityExpanded ? 'w-16 h-16 mb-4' : 'w-20 h-20 mb-6'}`}>
+                        <svg className={`transition-all duration-300 ${isIdentityExpanded ? 'w-8 h-8' : 'w-10 h-10'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
                       </div>
-                      <h4 className="text-xl font-bold text-slate-900 font-display">No questions yet</h4>
-                      <p className="max-w-xs mt-3 text-sm font-medium leading-relaxed text-slate-500">
-                        Start building your assessment by adding a question manually or using the AI Magic Import.
-                      </p>
+                      <h4 className={`font-bold text-slate-900 font-display transition-all duration-300 ${isIdentityExpanded ? 'text-sm uppercase tracking-widest text-slate-400' : 'text-xl'}`}>
+                        {isIdentityExpanded ? 'Questions Empty' : 'No questions yet'}
+                      </h4>
+                      {!isIdentityExpanded && (
+                        <p className="max-w-xs mt-3 text-sm font-medium leading-relaxed text-slate-500 animate-in fade-in slide-in-from-top-1 duration-500">
+                          Start building your assessment by adding a question manually or using the AI Magic Import.
+                        </p>
+                      )}
                     </div>
                   ) : (
                     questions.map((question, index) => (
