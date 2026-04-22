@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 const FormNewPageContent = () => {
@@ -18,6 +18,9 @@ const FormNewPageContent = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [autoSave, setAutoSave] = useState(false); // Disabled for new forms
   const [showPointsSummary, setShowPointsSummary] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState('');
+  const fileInputRef = useRef(null);
 
   // Form settings
   const [settings, setSettings] = useState({
@@ -38,57 +41,49 @@ const FormNewPageContent = () => {
       value: 'multiple_choice', 
       label: 'Multiple Choice', 
       icon: '○',
-      description: 'Single selection from options',
-      color: 'blue'
+      description: 'Single selection from options'
     },
     { 
       value: 'checkboxes', 
       label: 'Checkboxes', 
       icon: '☑',
-      description: 'Multiple selections allowed',
-      color: 'green'
+      description: 'Multiple selections allowed'
     },
     { 
       value: 'short_answer', 
       label: 'Short Answer', 
       icon: '─',
-      description: 'Single line text input',
-      color: 'purple'
+      description: 'Single line text input'
     },
     { 
       value: 'paragraph', 
       label: 'Paragraph', 
       icon: '¶',
-      description: 'Multi-line text input',
-      color: 'indigo'
+      description: 'Multi-line text input'
     },
     { 
       value: 'dropdown', 
       label: 'Dropdown', 
       icon: '▼',
-      description: 'Select from dropdown menu',
-      color: 'cyan'
+      description: 'Select from dropdown menu'
     },
     { 
       value: 'linear_scale', 
       label: 'Linear Scale', 
       icon: '⋙',
-      description: 'Rating scale (1-5, 1-10, etc.)',
-      color: 'orange'
+      description: 'Rating scale (1-5, 1-10, etc.)'
     },
     { 
       value: 'date', 
       label: 'Date', 
       icon: '📅',
-      description: 'Date picker input',
-      color: 'pink'
+      description: 'Date picker input'
     },
     { 
       value: 'time', 
       label: 'Time', 
       icon: '🕐',
-      description: 'Time picker input',
-      color: 'emerald'
+      description: 'Time picker input'
     }
   ];
 
@@ -265,6 +260,58 @@ const FormNewPageContent = () => {
     }
   };
 
+  const handleFileImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportError('');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/forms/parse-document', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to parse document');
+      }
+
+      const data = await res.json();
+      
+      if (data.questions && data.questions.length > 0) {
+        // Add IDs to imported questions
+        const processedQuestions = data.questions.map(q => ({
+          ...q,
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          required: q.required ?? true
+        }));
+
+        // Ask if user wants to append or replace
+        const shouldReplace = questions.length === 1 && !questions[0].title.trim();
+        
+        if (shouldReplace) {
+          setQuestions(processedQuestions);
+        } else {
+          setQuestions([...questions, ...processedQuestions]);
+        }
+      } else {
+        setImportError('No questions could be extracted from this document.');
+      }
+    } catch (err) {
+      console.error('Import failed:', err);
+      setImportError(err.message || 'Failed to import questions. Please check the file format.');
+    } finally {
+      setIsImporting(false);
+      // Reset file input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const saveForm = async () => {
     setSaving(true);
     setError('');
@@ -348,7 +395,7 @@ const FormNewPageContent = () => {
   // Show loading while checking authorization
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <div className="w-12 h-12 mx-auto mb-4 border-b-2 border-indigo-600 rounded-full animate-spin"></div>
           <p className="text-gray-600">Checking permissions...</p>
@@ -360,7 +407,7 @@ const FormNewPageContent = () => {
   // Show error if not authorized
   if (!isAuthorized) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <p className="mb-4 text-red-600">{error || 'Access denied'}</p>
           <button 
@@ -377,7 +424,7 @@ const FormNewPageContent = () => {
   // Show loading while initializing form
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <div className="w-12 h-12 mx-auto mb-4 border-b-2 border-indigo-600 rounded-full animate-spin"></div>
           <p className="text-gray-600">Setting up form builder...</p>
@@ -387,7 +434,7 @@ const FormNewPageContent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50" style={{ height: '100vh', overflowY: 'auto' }}>
+    <div className="min-h-screen bg-gray-50" style={{ height: '100vh', overflowY: 'auto' }}>
       {/* Enhanced Header */}
       <div className="sticky top-0 z-40 border-b border-gray-200 shadow-sm bg-white/95 backdrop-blur-xl">
         <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -396,15 +443,15 @@ const FormNewPageContent = () => {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.back()}
-                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:text-gray-900 hover:bg-gray-100"
+                className="p-2 text-slate-600 transition-all duration-200 rounded-lg hover:text-slate-900 hover:bg-slate-100"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">Create New Form</h1>
-                <p className="text-sm text-gray-500">Build your form with questions and options</p>
+                <h1 className="text-xl font-bold tracking-tight text-slate-900 font-display">Create New Form</h1>
+                <p className="text-sm font-medium text-slate-500">Build your form with questions and options</p>
               </div>
             </div>
 
@@ -423,7 +470,7 @@ const FormNewPageContent = () => {
               <button
                 onClick={saveForm}
                 disabled={saving}
-                className="px-6 py-2 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl"
+                className="px-6 py-2 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-sm bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? 'Creating...' : 'Create Form'}
               </button>
@@ -433,274 +480,333 @@ const FormNewPageContent = () => {
       </div>
 
       {/* Main Content */}
-      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${showPreview ? 'grid grid-cols-2 gap-8' : ''}`}>
-        {/* Form Editor */}
-        <div className={`${showPreview ? '' : 'max-w-4xl mx-auto'}`}>
-          {error && (
-            <div className="p-4 mb-6 border border-red-200 bg-red-50 rounded-xl">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-          {/* Form Basic Info */}
-          <div className="p-8 mb-8 bg-white border border-gray-100 shadow-lg rounded-2xl">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center justify-center w-12 h-12 shadow-lg bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Form Details</h2>
-                <p className="text-gray-600">Set up your form title and description</p>
-              </div>
-            </div>
 
-            <div className="space-y-6">
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">Form Title</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 transition-all duration-200 border-2 border-gray-200 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Enter an engaging form title..."
-                  required
-                />
-              </div>
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">Description (Optional)</label>
-                <textarea
-                  className="w-full px-4 py-3 transition-all duration-200 border-2 border-gray-200 resize-none bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  rows="3"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Provide context or instructions for your form..."
-                />
-              </div>
-            </div>
+        {error && (
+          <div className="p-4 mb-6 border border-red-200 bg-red-50 rounded-xl">
+            <p className="text-sm text-red-600">{error}</p>
           </div>
+        )}
 
-          {/* Form Settings */}
-          <div className="p-8 mb-8 bg-white border border-gray-100 shadow-lg rounded-2xl">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center justify-center w-12 h-12 shadow-lg bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-                <p className="text-gray-600">Configure form behavior and options</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <label className="flex items-center gap-3 p-4 transition-colors border border-gray-200 cursor-pointer rounded-xl bg-gray-50 hover:bg-gray-100">
-                <input
-                  type="checkbox"
-                  checked={settings.allowMultipleResponses}
-                  onChange={(e) => setSettings(prev => ({ ...prev, allowMultipleResponses: e.target.checked }))}
-                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <div>
-                  <div className="font-medium text-gray-900">Allow multiple responses</div>
-                  <div className="text-sm text-gray-500">Let users submit more than once</div>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-3 p-4 transition-colors border border-gray-200 cursor-pointer rounded-xl bg-gray-50 hover:bg-gray-100">
-                <input
-                  type="checkbox"
-                  checked={settings.showProgress}
-                  onChange={(e) => setSettings(prev => ({ ...prev, showProgress: e.target.checked }))}
-                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <div>
-                  <div className="font-medium text-gray-900">Show progress bar</div>
-                  <div className="text-sm text-gray-500">Display completion progress</div>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-3 p-4 transition-colors border border-gray-200 cursor-pointer rounded-xl bg-gray-50 hover:bg-gray-100">
-                <input
-                  type="checkbox"
-                  checked={settings.shuffleQuestions}
-                  onChange={(e) => setSettings(prev => ({ ...prev, shuffleQuestions: e.target.checked }))}
-                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <div>
-                  <div className="font-medium text-gray-900">Shuffle questions</div>
-                  <div className="text-sm text-gray-500">Randomize question order</div>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-3 p-4 transition-colors border border-gray-200 cursor-pointer rounded-xl bg-gray-50 hover:bg-gray-100">
-                <input
-                  type="checkbox"
-                  checked={settings.confirmBeforeSubmit}
-                  onChange={(e) => setSettings(prev => ({ ...prev, confirmBeforeSubmit: e.target.checked }))}
-                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <div>
-                  <div className="font-medium text-gray-900">Confirm before submit</div>
-                  <div className="text-sm text-gray-500">Show confirmation dialog</div>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-3 p-4 transition-colors border border-gray-200 cursor-pointer rounded-xl bg-gray-50 hover:bg-gray-100 md:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={settings.showResultsAfterSubmission}
-                  onChange={(e) => setSettings(prev => ({ ...prev, showResultsAfterSubmission: e.target.checked }))}
-                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <div>
-                  <div className="font-medium text-gray-900">Show results after submission</div>
-                  <div className="text-sm text-gray-500">Display scores and correct answers to students</div>
-                </div>
-              </label>
-            </div>
+        {importError && (
+          <div className="p-4 mb-6 border border-rose-200 bg-rose-50 rounded-xl flex items-center justify-between">
+            <p className="text-sm font-medium text-rose-600">{importError}</p>
+            <button onClick={() => setImportError('')} className="text-rose-400 hover:text-rose-600">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
+        )}
 
-          {/* Questions Section */}
-          <div className="p-8 bg-white border border-gray-100 shadow-lg rounded-2xl">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center justify-center w-10 h-10 shadow-lg bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl">
+        <div className={`grid gap-6 ${showPreview ? 'xl:grid-cols-[minmax(0,1fr)_390px]' : 'xl:grid-cols-[minmax(0,1fr)_320px]'}`}>
+          <div className="space-y-6">
+            {/* Form Basic Info */}
+            <section className="overflow-hidden bg-white border border-slate-200 shadow-sm rounded-2xl">
+              <div className="flex items-center gap-3 px-8 py-5 border-b border-slate-200 bg-slate-50/50">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Questions ({questions.length})</h3>
-                  <p className="text-gray-600">Build your form with different question types</p>
-                  <div className="mt-2">
-                    <button
-                      onClick={() => setShowPointsSummary(!showPointsSummary)}
-                      className="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
-                    >
-                      {showPointsSummary ? 'Hide' : 'Show'} Points Summary
-                      <svg className={`w-4 h-4 transition-transform ${showPointsSummary ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
+                  <h3 className="text-lg font-bold tracking-tight text-slate-900 font-display">Form Identity</h3>
+                  <p className="text-sm font-medium text-slate-500">Name this form clearly for students and instructors.</p>
+                </div>
+              </div>
+              <div className="p-8 space-y-6">
+                <div>
+                  <label className="block mb-2 text-sm font-semibold tracking-wide uppercase text-slate-600">Form Title</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 font-medium transition-all duration-200 border border-slate-200 bg-slate-50/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 placeholder:text-slate-400"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter a clear and specific form title"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-2 text-sm font-semibold tracking-wide uppercase text-slate-600">Description (Optional)</label>
+                  <textarea
+                    className="w-full px-4 py-3 font-medium transition-all duration-200 border border-slate-200 resize-none bg-slate-50/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 placeholder:text-slate-400"
+                    rows="4"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Add context, expected completion time, or response instructions."
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Form Settings */}
+            <section className="overflow-hidden bg-white border border-slate-200 shadow-sm rounded-2xl">
+              <div className="flex items-center gap-3 px-8 py-5 border-b border-slate-200 bg-slate-50/50">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold tracking-tight text-slate-900 font-display">Response Rules</h3>
+                  <p className="text-sm font-medium text-slate-500">Control submission and feedback behavior.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 p-8 md:grid-cols-2">
+                <label className="flex items-center gap-3 p-4 transition-all border border-slate-100 cursor-pointer rounded-xl bg-slate-50/30 hover:bg-slate-50 hover:border-slate-200 group">
+                  <input
+                    type="checkbox"
+                    checked={settings.allowMultipleResponses}
+                    onChange={(e) => setSettings(prev => ({ ...prev, allowMultipleResponses: e.target.checked }))}
+                    className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500/20"
+                  />
+                  <div>
+                    <div className="font-bold text-slate-900 font-display">Allow multiple responses</div>
+                    <div className="text-sm font-medium text-slate-500">Let users submit more than once</div>
                   </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-4 transition-all border border-slate-100 cursor-pointer rounded-xl bg-slate-50/30 hover:bg-slate-50 hover:border-slate-200 group">
+                  <input
+                    type="checkbox"
+                    checked={settings.showProgress}
+                    onChange={(e) => setSettings(prev => ({ ...prev, showProgress: e.target.checked }))}
+                    className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500/20"
+                  />
+                  <div>
+                    <div className="font-bold text-slate-900 font-display">Show progress bar</div>
+                    <div className="text-sm font-medium text-slate-500">Display completion progress</div>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-4 transition-all border border-slate-100 cursor-pointer rounded-xl bg-slate-50/30 hover:bg-slate-50 hover:border-slate-200 group">
+                  <input
+                    type="checkbox"
+                    checked={settings.shuffleQuestions}
+                    onChange={(e) => setSettings(prev => ({ ...prev, shuffleQuestions: e.target.checked }))}
+                    className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500/20"
+                  />
+                  <div>
+                    <div className="font-bold text-slate-900 font-display">Shuffle questions</div>
+                    <div className="text-sm font-medium text-slate-500">Randomize question order</div>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-4 transition-all border border-slate-100 cursor-pointer rounded-xl bg-slate-50/30 hover:bg-slate-50 hover:border-slate-200 group">
+                  <input
+                    type="checkbox"
+                    checked={settings.confirmBeforeSubmit}
+                    onChange={(e) => setSettings(prev => ({ ...prev, confirmBeforeSubmit: e.target.checked }))}
+                    className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500/20"
+                  />
+                  <div>
+                    <div className="font-bold text-slate-900 font-display">Confirm before submit</div>
+                    <div className="text-sm font-medium text-slate-500">Show confirmation dialog</div>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-4 transition-all border border-slate-100 cursor-pointer rounded-xl bg-slate-50/30 hover:bg-slate-50 hover:border-slate-200 group md:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={settings.showResultsAfterSubmission}
+                    onChange={(e) => setSettings(prev => ({ ...prev, showResultsAfterSubmission: e.target.checked }))}
+                    className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500/20"
+                  />
+                  <div>
+                    <div className="font-bold text-slate-900 font-display">Show results after submission</div>
+                    <div className="text-sm font-medium text-slate-500">Display scores and correct answers to students</div>
+                  </div>
+                </label>
+              </div>
+            </section>
+
+            {/* Questions Section */}
+            <section className="overflow-hidden bg-white border border-slate-200 shadow-sm rounded-2xl">
+              <div className="flex flex-col gap-4 px-8 py-5 border-b border-slate-200 bg-slate-50/50 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold tracking-tight text-slate-900 font-display">Question Bank</h3>
+                    <p className="text-sm font-medium text-slate-500">Compose and arrange each prompt in final delivery order.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileImport}
+                    accept=".pdf,.docx,.txt"
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isImporting}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold transition-all border rounded-lg text-indigo-600 bg-indigo-50 border-indigo-100 hover:bg-indigo-100 disabled:opacity-50 font-display"
+                  >
+                    {isImporting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                        <span>Parsing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span>AI Import</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setShowPointsSummary(!showPointsSummary)}
+                    className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 transition-colors border border-gray-300 rounded-lg bg-white hover:bg-gray-100"
+                  >
+                    {showPointsSummary ? 'Hide' : 'Show'} Points
+                    <svg className={`w-4 h-4 transition-transform ${showPointsSummary ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div className="relative group">
+                    <button className="px-4 py-2 text-sm font-medium transition-colors border rounded-lg text-gray-700 bg-white border-gray-300 hover:bg-gray-100">
+                      Quick Add
+                    </button>
+                    <div className="absolute right-0 z-10 invisible w-64 mt-2 transition-all duration-200 bg-white border border-gray-200 shadow-lg opacity-0 rounded-xl group-hover:opacity-100 group-hover:visible">
+                      <div className="p-2">
+                        {QUESTION_TYPES.slice(0, 4).map(type => (
+                          <button
+                            key={type.value}
+                            onClick={() => addQuestion(type.value)}
+                            className="flex items-center w-full gap-3 px-3 py-2 text-sm text-left transition-colors duration-150 rounded-lg hover:bg-gray-50"
+                          >
+                            <span className="text-lg">{type.icon}</span>
+                            <div>
+                              <div className="font-medium text-gray-900">{type.label}</div>
+                              <div className="text-xs text-gray-500">{type.description}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => addQuestion()}
+                    className="px-4 py-2 text-sm font-medium text-white transition-colors rounded-lg bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Add Question
+                  </button>
                 </div>
               </div>
 
-              {/* Quick Add Buttons */}
-              <div className="flex items-center gap-2">
-                <div className="relative group">
-                  <button className="px-4 py-2 text-sm font-medium transition-all duration-200 border rounded-lg text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100">
-                    Quick Add ▼
-                  </button>
-                  <div className="absolute right-0 z-10 invisible w-64 mt-2 transition-all duration-200 bg-white border border-gray-200 shadow-lg opacity-0 rounded-xl group-hover:opacity-100 group-hover:visible">
-                    <div className="p-2">
-                      {QUESTION_TYPES.slice(0, 4).map(type => (
-                        <button
-                          key={type.value}
-                          onClick={() => addQuestion(type.value)}
-                          className="flex items-center w-full gap-3 px-3 py-2 text-sm text-left transition-colors duration-150 rounded-lg hover:bg-gray-50"
-                        >
-                          <span className="text-lg">{type.icon}</span>
-                          <div>
-                            <div className="font-medium text-gray-900">{type.label}</div>
-                            <div className="text-xs text-gray-500">{type.description}</div>
+              <div className="p-8">
+                {showPointsSummary && (
+                  <div className="p-4 mb-6 border border-gray-200 bg-gray-50 rounded-xl">
+                    <h4 className="mb-3 text-lg font-semibold text-gray-900">Points Summary</h4>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-12 gap-4 pb-2 text-sm font-medium text-gray-700 border-b border-gray-200">
+                        <div className="col-span-8">Question</div>
+                        <div className="col-span-2 text-center">Points</div>
+                        <div className="col-span-2 text-center">Type</div>
+                      </div>
+                      {questions.map((question, index) => (
+                        <div key={question.id} className="grid grid-cols-12 gap-4 py-1 text-sm text-gray-700">
+                          <div className="col-span-8">
+                            Q{index + 1}: {question.title || 'Untitled Question'}
                           </div>
-                        </button>
+                          <div className="col-span-2 font-medium text-center">
+                            {question.points || 0}
+                          </div>
+                          <div className="col-span-2 text-xs text-center text-gray-500">
+                            {QUESTION_TYPES.find(t => t.value === question.type)?.label || question.type}
+                          </div>
+                        </div>
                       ))}
+                      <div className="grid grid-cols-12 gap-4 pt-2 text-sm font-bold text-gray-900 border-t border-gray-300">
+                        <div className="col-span-8">Total Points</div>
+                        <div className="col-span-2 text-center">
+                          {questions.reduce((sum, q) => sum + (q.points || 0), 0)}
+                        </div>
+                        <div className="col-span-2"></div>
+                      </div>
                     </div>
                   </div>
+                )}
+
+                <div className="space-y-6">
+                  {questions.map((question, index) => (
+                    <EnhancedQuestionEditor
+                      key={question.id}
+                      question={question}
+                      index={index}
+                      questionTypes={QUESTION_TYPES}
+                      onUpdate={(updates) => updateQuestion(question.id, updates)}
+                      onRemove={() => removeQuestion(question.id)}
+                      onMoveUp={() => moveQuestion(question.id, 'up')}
+                      onMoveDown={() => moveQuestion(question.id, 'down')}
+                      onDuplicate={() => duplicateQuestion(question.id)}
+                      onAddOption={() => addOption(question.id)}
+                      onUpdateOption={(optionIndex, value) => updateOption(question.id, optionIndex, value)}
+                      onRemoveOption={(optionIndex) => removeOption(question.id, optionIndex)}
+                      canMoveUp={index > 0}
+                      canMoveDown={index < questions.length - 1}
+                      canRemove={questions.length > 1}
+                    />
+                  ))}
                 </div>
-                <button
-                  onClick={() => addQuestion()}
-                  className="px-4 py-2 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:shadow-xl"
-                >
-                  Add Question
-                </button>
+              </div>
+            </section>
+          </div>
+
+          <aside className="space-y-6 xl:sticky xl:top-24 xl:h-fit">
+            <div className="p-5 bg-white border border-slate-200 shadow-sm rounded-2xl">
+              <h3 className="text-xs font-bold tracking-widest text-slate-400 uppercase font-display">Build Checklist</h3>
+              <div className="mt-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-sm font-medium text-slate-600">Title added</span>
+                  <span className={`text-xs font-bold ${title.trim() ? 'text-indigo-600' : 'text-slate-400'}`}>
+                    {title.trim() ? 'DONE' : 'PENDING'}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-sm font-medium text-slate-600">Questions drafted</span>
+                  <span className={`text-xs font-bold ${questions.some((q) => q.title.trim()) ? 'text-indigo-600' : 'text-slate-400'}`}>
+                    {questions.some((q) => q.title.trim()) ? 'DONE' : 'PENDING'}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-sm font-medium text-slate-600">Scoring configured</span>
+                  <span className={`text-xs font-bold ${questions.some((q) => (q.points || 0) > 0) ? 'text-indigo-600' : 'text-slate-400'}`}>
+                    {questions.some((q) => (q.points || 0) > 0) ? 'DONE' : 'PENDING'}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Points Summary */}
-            {showPointsSummary && (
-              <div className="p-4 mb-6 border border-indigo-200 bg-indigo-50 rounded-xl">
-                <h4 className="mb-3 text-lg font-semibold text-indigo-900">Points Summary</h4>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-12 gap-4 pb-2 text-sm font-medium text-indigo-700 border-b border-indigo-200">
-                    <div className="col-span-8">Question</div>
-                    <div className="col-span-2 text-center">Points</div>
-                    <div className="col-span-2 text-center">Type</div>
+            {showPreview && (
+              <div className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-900">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
                   </div>
-                  {questions.map((question, index) => (
-                    <div key={question.id} className="grid grid-cols-12 gap-4 py-1 text-sm text-gray-700">
-                      <div className="col-span-8">
-                        Q{index + 1}: {question.title || 'Untitled Question'}
-                      </div>
-                      <div className="col-span-2 font-medium text-center">
-                        {question.points || 0}
-                      </div>
-                      <div className="col-span-2 text-xs text-center text-gray-500">
-                        {QUESTION_TYPES.find(t => t.value === question.type)?.label || question.type}
-                      </div>
-                    </div>
-                  ))}
-                  <div className="grid grid-cols-12 gap-4 pt-2 text-sm font-bold text-indigo-900 border-t border-indigo-300">
-                    <div className="col-span-8">Total Points</div>
-                    <div className="col-span-2 text-center">
-                      {questions.reduce((sum, q) => sum + (q.points || 0), 0)}
-                    </div>
-                    <div className="col-span-2"></div>
-                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Live Preview</h3>
+                </div>
+                <div className="max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
+                  <FormPreview title={title} description={description} questions={questions} />
                 </div>
               </div>
             )}
-
-            <div className="space-y-6">
-              {questions.map((question, index) => (
-                <EnhancedQuestionEditor
-                  key={question.id}
-                  question={question}
-                  index={index}
-                  questionTypes={QUESTION_TYPES}
-                  onUpdate={(updates) => updateQuestion(question.id, updates)}
-                  onRemove={() => removeQuestion(question.id)}
-                  onMoveUp={() => moveQuestion(question.id, 'up')}
-                  onMoveDown={() => moveQuestion(question.id, 'down')}
-                  onDuplicate={() => duplicateQuestion(question.id)}
-                  onAddOption={() => addOption(question.id)}
-                  onUpdateOption={(optionIndex, value) => updateOption(question.id, optionIndex, value)}
-                  onRemoveOption={(optionIndex) => removeOption(question.id, optionIndex)}
-                  canMoveUp={index > 0}
-                  canMoveDown={index < questions.length - 1}
-                  canRemove={questions.length > 1}
-                />
-              ))}
-            </div>
-          </div>
+          </aside>
         </div>
-
-        {/* Live Preview */}
-        {showPreview && (
-          <div className="sticky top-24 h-fit">
-            <div className="p-6 bg-white border border-gray-100 shadow-lg rounded-2xl">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Live Preview</h3>
-              </div>
-              
-              <div className="max-h-[70vh] overflow-y-auto">
-                <FormPreview title={title} description={description} questions={questions} />
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -727,30 +833,31 @@ const EnhancedQuestionEditor = ({
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <div className="relative p-6 transition-all duration-300 border-2 border-gray-200 group bg-gradient-to-br from-gray-50 to-white rounded-2xl hover:border-indigo-300 hover:shadow-lg">
+    <div className="relative p-6 transition-all duration-300 border border-slate-200 group rounded-2xl bg-white shadow-sm hover:border-indigo-200 hover:shadow-md">
       {/* Question Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col gap-3 mb-5 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
-          <div className={`w-8 h-8 bg-gradient-to-br from-${selectedType.color}-500 to-${selectedType.color}-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-lg`}>
+          <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-slate-900 border border-slate-200 rounded-lg bg-slate-50 font-display">
             {index + 1}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <p className="text-xs font-bold tracking-widest text-slate-400 uppercase font-display">Question Block</p>
             <select
               value={question.type}
               onChange={(e) => onUpdate({ type: e.target.value })}
-              className="px-3 py-2 text-sm bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="px-3 py-2 text-sm font-bold bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700"
             >
               {questionTypes.map(type => (
                 <option key={type.value} value={type.value}>{type.icon} {type.label}</option>
               ))}
             </select>
-            <span className="px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded-full">
+            <span className="px-2.5 py-1 text-xs font-semibold text-slate-500 border border-slate-100 bg-slate-50/50 rounded-full">
               {selectedType.description}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 transition-opacity duration-200 opacity-0 group-hover:opacity-100">
+        <div className="flex items-center gap-1">
           {canMoveUp && (
             <button
               onClick={onMoveUp}
@@ -816,18 +923,18 @@ const EnhancedQuestionEditor = ({
                   value={question.title}
                   onChange={(e) => onUpdate({ title: e.target.value })}
                   placeholder="Enter your question..."
-                  className="w-full px-4 py-3 text-lg font-medium transition-all duration-200 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-4 py-3 text-lg font-bold tracking-tight transition-all duration-200 bg-slate-50/30 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 placeholder:text-slate-400 font-display"
                 />
               </div>
               <div className="flex items-center gap-2 min-w-[120px]">
-                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Points:</label>
+                <label className="text-sm font-bold tracking-wide uppercase text-slate-400 font-display whitespace-nowrap">Points:</label>
                 <input
                   type="number"
                   min="0"
                   max="100"
                   value={question.points}
                   onChange={(e) => onUpdate({ points: parseInt(e.target.value) || 0 })}
-                  className="w-20 px-3 py-2 text-center bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-20 px-3 py-2 text-center font-bold bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700"
                 />
               </div>
             </div>
@@ -877,7 +984,7 @@ const EnhancedQuestionEditor = ({
                     value={option}
                     onChange={(e) => onUpdateOption(optionIndex, e.target.value)}
                     placeholder={`Option ${optionIndex + 1}`}
-                    className="flex-grow px-3 py-2 transition-all duration-200 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="flex-grow px-3 py-2 transition-all duration-200 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                   {question.options.length > 1 && (
                     <button
@@ -916,7 +1023,7 @@ const EnhancedQuestionEditor = ({
                     max="10"
                     value={question.scaleMin}
                     onChange={(e) => onUpdate({ scaleMin: parseInt(e.target.value) })}
-                    className="w-20 px-3 py-2 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-20 px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                   <span className="text-gray-500">to</span>
                   <input
@@ -925,7 +1032,7 @@ const EnhancedQuestionEditor = ({
                     max="10"
                     value={question.scaleMax}
                     onChange={(e) => onUpdate({ scaleMax: parseInt(e.target.value) })}
-                    className="w-20 px-3 py-2 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-20 px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -937,14 +1044,14 @@ const EnhancedQuestionEditor = ({
                     value={question.scaleMinLabel}
                     onChange={(e) => onUpdate({ scaleMinLabel: e.target.value })}
                     placeholder="Low end label"
-                    className="w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                   <input
                     type="text"
                     value={question.scaleMaxLabel}
                     onChange={(e) => onUpdate({ scaleMaxLabel: e.target.value })}
                     placeholder="High end label"
-                    className="w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -960,13 +1067,13 @@ const EnhancedQuestionEditor = ({
                 value={question.correctAnswer || ''}
                 onChange={(e) => onUpdate({ correctAnswer: e.target.value })}
                 placeholder="Enter the correct answer..."
-                className="w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
           )}
 
           {/* Required Toggle */}
-          <div className="flex items-center gap-3">
+          <label htmlFor={`required-${question.id}`} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
             <input
               type="checkbox"
               id={`required-${question.id}`}
@@ -974,10 +1081,8 @@ const EnhancedQuestionEditor = ({
               onChange={(e) => onUpdate({ required: e.target.checked })}
               className="text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
             />
-            <label htmlFor={`required-${question.id}`} className="text-sm font-medium text-gray-700">
-              Required question
-            </label>
-          </div>
+            <span className="text-sm font-medium text-gray-700">Required question</span>
+          </label>
         </>
       )}
     </div>
@@ -987,22 +1092,22 @@ const EnhancedQuestionEditor = ({
 // Form Preview Component
 const FormPreview = ({ title, description, questions }) => {
   return (
-    <div className="space-y-6">
-      <div className="pb-4 border-b border-gray-200">
-        <h2 className="text-xl font-bold text-gray-900">{title || 'Untitled Form'}</h2>
+    <div className="space-y-8">
+      <div className="pb-5 border-b border-slate-100">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 font-display">{title || 'Untitled Form'}</h2>
         {description && (
-          <p className="mt-2 text-gray-600">{description}</p>
+          <p className="mt-3 text-sm font-medium leading-relaxed text-slate-500">{description}</p>
         )}
       </div>
       
       {questions.map((question, index) => (
-        <div key={question.id} className="space-y-3">
-          <div className="flex items-start gap-2">
-            <span className="mt-1 text-sm font-medium text-gray-500">{index + 1}.</span>
+        <div key={question.id} className="space-y-4">
+          <div className="flex items-start gap-3">
+            <span className="mt-1 text-sm font-bold text-slate-400 font-display">{index + 1}.</span>
             <div className="flex-grow">
-              <h3 className="font-medium text-gray-900">
+              <h3 className="text-base font-bold tracking-tight text-slate-800 font-display">
                 {question.title || 'Untitled Question'}
-                {question.required && <span className="ml-1 text-red-500">*</span>}
+                {question.required && <span className="ml-1 text-rose-500">*</span>}
               </h3>
               
               {/* Preview based on question type */}
