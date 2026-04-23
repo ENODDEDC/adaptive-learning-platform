@@ -805,16 +805,6 @@ const ClassworkTab = ({
   const [assignments, setAssignments] = useState([]);
   const [forms, setForms] = useState([]);
   const [submissions, setSubmissions] = useState([]);
-  
-  // Debug state for forms tracking
-  const [debugInfo, setDebugInfo] = useState({
-    formsCount: 0,
-    lastFetchTime: null,
-    lastError: null,
-    apiResponse: null,
-    showDebug: false,
-    filterLogs: []
-  });
   // Removed local state - now using props from parent
   // const [isCreateClassworkModalOpen, setIsCreateClassworkModalOpen] = useState(false);
   // Removed form builder modal state - now using full-page editor
@@ -2445,8 +2435,6 @@ const ClassworkTab = ({
 
     try {
       console.log('🔍 FORMS: Fetching forms for course:', courseDetails._id);
-      setDebugInfo(prev => ({ ...prev, lastFetchTime: new Date().toISOString() }));
-      
       const res = await fetch(`/api/courses/${courseDetails._id}/forms`, {
         credentials: 'include' // Use cookies for authentication
       });
@@ -2456,39 +2444,15 @@ const ClassworkTab = ({
         console.log('🔍 FORMS: Fetched forms count:', data.forms?.length || 0);
         console.log('🔍 FORMS: Forms data:', data.forms);
         setForms(data.forms || []);
-        
-        // Update debug info
-        setDebugInfo(prev => ({
-          ...prev,
-          formsCount: data.forms?.length || 0,
-          lastError: null,
-          apiResponse: data
-        }));
       } else {
         console.error('🔍 FORMS: Failed to fetch forms, status:', res.status);
         const errorData = await res.json().catch(() => ({}));
         console.error('🔍 FORMS: Error data:', errorData);
         setForms([]);
-        
-        // Update debug info with error
-        setDebugInfo(prev => ({
-          ...prev,
-          formsCount: 0,
-          lastError: `HTTP ${res.status}: ${errorData.message || 'Unknown error'}`,
-          apiResponse: errorData
-        }));
       }
     } catch (err) {
       console.warn('🔍 FORMS: Error during fetch:', err);
       setForms([]);
-      
-      // Update debug info with error
-      setDebugInfo(prev => ({
-        ...prev,
-        formsCount: 0,
-        lastError: err.message,
-        apiResponse: null
-      }));
     }
   }, [courseDetails]);
 
@@ -3528,292 +3492,6 @@ const ClassworkTab = ({
           }
         }
       `}</style>
-
-      {/* Forms Debug Dialog */}
-      <div className="fixed top-4 left-4 z-50">
-        <button
-          onClick={() => setDebugInfo(prev => ({ ...prev, showDebug: !prev.showDebug }))}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors"
-        >
-          🐛 Forms Debug ({debugInfo.formsCount})
-        </button>
-        
-        {debugInfo.showDebug && (
-          <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 w-96 max-h-96 overflow-y-auto">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-gray-900">Forms Debug Info</h3>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    const debugData = {
-                      formsCount: debugInfo.formsCount,
-                      lastFetchTime: debugInfo.lastFetchTime,
-                      lastError: debugInfo.lastError,
-                      courseId: courseDetails?._id,
-                      environment: typeof window !== 'undefined' ? window.location.hostname : 'Server',
-                      rawForms: forms.length,
-                      rawAssignments: assignments.length,
-                      combinedItems: [
-                        ...assignments.map(item => ({
-                          ...item,
-                          itemType: item.type === 'assignment' ? 'assignment' : item.type
-                        })),
-                        ...forms.map(item => ({ ...item, itemType: 'form' }))
-                      ].length,
-                      filteredItems: getFilteredAndSortedAssignments().length,
-                      formItemsInFiltered: getFilteredAndSortedAssignments().filter(item => item.itemType === 'form').length,
-                      currentFilters: {
-                        typeFilter: filter,
-                        statusFilter: statusFilter,
-                        dateRange: dateRange,
-                        searchQuery: searchQuery,
-                        sortBy: sortBy
-                      },
-                      apiResponse: debugInfo.apiResponse
-                    };
-                    
-                    navigator.clipboard.writeText(JSON.stringify(debugData, null, 2)).then(() => {
-                      showToast('Debug data copied to clipboard!', 'success');
-                    }).catch(() => {
-                      showToast('Failed to copy debug data', 'error');
-                    });
-                  }}
-                  className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium transition-colors"
-                  title="Copy debug data to clipboard"
-                >
-                  📋 Copy
-                </button>
-                <button
-                  onClick={() => setDebugInfo(prev => ({ ...prev, showDebug: false }))}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-            
-            <div className="space-y-3 text-sm">
-              <div>
-                <span className="font-medium text-gray-700">Forms Count:</span>
-                <span className={`ml-2 px-2 py-1 rounded ${debugInfo.formsCount > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {debugInfo.formsCount}
-                </span>
-              </div>
-              
-              <div>
-                <span className="font-medium text-gray-700">Last Fetch:</span>
-                <span className="ml-2 text-gray-600">
-                  {debugInfo.lastFetchTime ? new Date(debugInfo.lastFetchTime).toLocaleTimeString() : 'Never'}
-                </span>
-              </div>
-              
-              {debugInfo.lastError && (
-                <div>
-                  <span className="font-medium text-red-700">Last Error:</span>
-                  <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded text-red-800 text-xs">
-                    {debugInfo.lastError}
-                  </div>
-                </div>
-              )}
-              
-              <div>
-                <span className="font-medium text-gray-700">Course ID:</span>
-                <span className="ml-2 text-gray-600 font-mono text-xs">
-                  {courseDetails?._id || 'Not loaded'}
-                </span>
-              </div>
-              
-              <div>
-                <span className="font-medium text-gray-700">Environment:</span>
-                <span className="ml-2 text-gray-600">
-                  {typeof window !== 'undefined' ? window.location.hostname : 'Server'}
-                </span>
-              </div>
-              
-              {debugInfo.apiResponse && (
-                <div>
-                  <span className="font-medium text-gray-700">API Response:</span>
-                  <pre className="mt-1 p-2 bg-gray-50 border border-gray-200 rounded text-xs overflow-x-auto">
-                    {JSON.stringify(debugInfo.apiResponse, null, 2)}
-                  </pre>
-                </div>
-              )}
-              
-              <div className="pt-2 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    fetchForms();
-                    showToast('Refreshing forms...', 'info');
-                  }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors mb-2"
-                >
-                  🔄 Refresh Forms
-                </button>
-                
-                <button
-                  onClick={() => {
-                    // Generate debug logs manually
-                    const filterLogs = [];
-                    
-                    // Combine assignments and forms
-                    let allItems = [
-                      ...assignments.map(item => ({
-                        ...item,
-                        itemType: item.type === 'assignment' ? 'assignment' : item.type
-                      })),
-                      ...forms.map(item => ({ ...item, itemType: 'form' }))
-                    ];
-
-                    filterLogs.push(`🔍 Starting with ${allItems.length} items`);
-                    filterLogs.push(`🔍 Forms in allItems: ${allItems.filter(item => item.itemType === 'form').length}`);
-
-                    allItems.forEach(item => {
-                      let passed = true;
-                      let reason = '';
-
-                      // Search filter
-                      if (searchQuery && passed) {
-                        const query = searchQuery.toLowerCase();
-                        const matchesSearch =
-                          item.title?.toLowerCase().includes(query) ||
-                          item.description?.toLowerCase().includes(query) ||
-                          item.type?.toLowerCase().includes(query);
-                        if (!matchesSearch) {
-                          passed = false;
-                          reason = `search (query: "${searchQuery}")`;
-                        }
-                      }
-
-                      // Type filter
-                      if (filter !== 'all' && item.type !== filter && item.itemType !== filter && passed) {
-                        passed = false;
-                        reason = `type (filter: "${filter}", item.type: "${item.type}", item.itemType: "${item.itemType}")`;
-                      }
-
-                      // Date range filter
-                      if (dateRange !== 'all' && item.itemType === 'assignment' && item.dueDate && passed) {
-                        const now = new Date();
-                        const dueDate = new Date(item.dueDate);
-                        const daysDiff = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
-
-                        switch (dateRange) {
-                          case 'thisWeek':
-                            if (daysDiff < 0 || daysDiff > 7) {
-                              passed = false;
-                              reason = `date range (thisWeek)`;
-                            }
-                            break;
-                          case 'thisMonth':
-                            if (daysDiff < 0 || daysDiff > 30) {
-                              passed = false;
-                              reason = `date range (thisMonth)`;
-                            }
-                            break;
-                          case 'overdue':
-                            if (daysDiff >= 0) {
-                              passed = false;
-                              reason = `date range (overdue)`;
-                            }
-                            break;
-                        }
-                      }
-
-                      // Status filter
-                      if (statusFilter !== 'all' && passed) {
-                        if (item.itemType === 'assignment') {
-                          const submission = submissions.find(s => String(s.assignment) === String(item._id));
-                          const isCompleted = submission && submission.status === 'submitted' && submission.grade !== undefined && submission.grade !== null;
-                          const isInProgress = submission && submission.status === 'draft';
-
-                          switch (statusFilter) {
-                            case 'notStarted':
-                              if (submission) {
-                                passed = false;
-                                reason = `status (notStarted, has submission)`;
-                              }
-                              break;
-                            case 'inProgress':
-                              if (!isInProgress) {
-                                passed = false;
-                                reason = `status (inProgress, not in progress)`;
-                              }
-                              break;
-                            case 'completed':
-                              if (!isCompleted) {
-                                passed = false;
-                                reason = `status (completed, not completed)`;
-                              }
-                              break;
-                          }
-                        } else if (item.itemType === 'form') {
-                          if (statusFilter !== 'notStarted') {
-                            passed = false;
-                            reason = `status (statusFilter: "${statusFilter}", forms only show for "notStarted")`;
-                          }
-                        }
-                      }
-
-                      if (passed) {
-                        filterLogs.push(`✅ "${item.title}" (${item.itemType}) - PASSED`);
-                      } else {
-                        filterLogs.push(`❌ "${item.title}" (${item.itemType}) - FILTERED by ${reason}`);
-                      }
-                    });
-
-                    const finalFiltered = getFilteredAndSortedAssignments();
-                    filterLogs.push(`🔍 Final filtered count: ${finalFiltered.length}`);
-                    filterLogs.push(`🔍 Forms in filtered: ${finalFiltered.filter(item => item.itemType === 'form').length}`);
-
-                    setDebugInfo(prev => ({ ...prev, filterLogs }));
-                    showToast('Filter debug logs generated!', 'info');
-                  }}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors mb-2"
-                >
-                  🔍 Generate Filter Debug
-                </button>
-                
-                <div className="text-xs text-gray-600 space-y-1">
-                  <div><strong>Raw Forms:</strong> {forms.length}</div>
-                  <div><strong>Raw Assignments:</strong> {assignments.length}</div>
-                  <div><strong>Combined Items:</strong> {(() => {
-                    const combined = [
-                      ...assignments.map(item => ({
-                        ...item,
-                        itemType: item.type === 'assignment' ? 'assignment' : item.type
-                      })),
-                      ...forms.map(item => ({ ...item, itemType: 'form' }))
-                    ];
-                    return combined.length;
-                  })()}</div>
-                  <div><strong>Filtered Items:</strong> {getFilteredAndSortedAssignments().length}</div>
-                  <div><strong>Form Items in Filtered:</strong> {getFilteredAndSortedAssignments().filter(item => item.itemType === 'form').length}</div>
-                  <div className="mt-2 pt-2 border-t border-gray-100">
-                    <div><strong>Current Filters:</strong></div>
-                    <div>• Type Filter: {filter}</div>
-                    <div>• Status Filter: {statusFilter}</div>
-                    <div>• Date Range: {dateRange}</div>
-                    <div>• Search Query: "{searchQuery}"</div>
-                    <div>• Sort By: {sortBy}</div>
-                  </div>
-                  
-                  {debugInfo.filterLogs && debugInfo.filterLogs.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-100">
-                      <div><strong>Filter Debug Logs:</strong></div>
-                      <div className="mt-1 p-2 bg-gray-50 border border-gray-200 rounded text-xs max-h-40 overflow-y-auto">
-                        {debugInfo.filterLogs.map((log, index) => (
-                          <div key={index} className={`${log.includes('❌') ? 'text-red-600' : log.includes('✅') ? 'text-green-600' : 'text-gray-600'}`}>
-                            {log}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Toast Notification System */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
