@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 const FormPreviewPage = ({ params }) => {
   const resolvedParams = React.use(params);
@@ -15,6 +16,11 @@ const FormPreviewPage = ({ params }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
+  
+  // Confirmation and Error modals state
+  const [showConfirmSubmitModal, setShowConfirmSubmitModal] = useState(false);
+  const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+  const [errorModal, setErrorModal] = useState({ isOpen: false, title: '', message: '', variant: 'danger' });
   
   // Authorization states
   const [user, setUser] = useState(null);
@@ -191,17 +197,52 @@ const FormPreviewPage = ({ params }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
+    // Check if we should show confirmation first
+    if (form?.settings?.confirmBeforeSubmit && !showConfirmSubmitModal) {
+      // Validate required questions before showing confirmation
+      const requiredQuestions = form.questions.filter(q => q.required);
+      const missingQuestions = requiredQuestions.filter(question => {
+        const response = responses[question.id];
+        return !response || (Array.isArray(response) && response.length === 0);
+      });
+
+      if (missingQuestions.length > 0) {
+        const message = missingQuestions.length === 1 
+          ? `Please answer the required question: ${missingQuestions[0].title}`
+          : `You have ${missingQuestions.length} unanswered required questions. Please complete them before submitting.`;
+          
+        setErrorModal({
+          isOpen: true,
+          title: 'Incomplete Submission',
+          message: message,
+          variant: 'warning'
+        });
+        return;
+      }
+      
+      setShowConfirmSubmitModal(true);
+      return;
+    }
+
+    // Close confirmation modal if it was open
+    setShowConfirmSubmitModal(false);
     setIsSubmitting(true);
 
     try {
-      // Validate required questions
+      // Validate required questions (again for safety)
       const requiredQuestions = form.questions.filter(q => q.required);
-      for (const question of requiredQuestions) {
+      const missingQuestions = requiredQuestions.filter(question => {
         const response = responses[question.id];
-        if (!response || (Array.isArray(response) && response.length === 0)) {
-          throw new Error(`Please answer the required question: ${question.title}`);
-        }
+        return !response || (Array.isArray(response) && response.length === 0);
+      });
+
+      if (missingQuestions.length > 0) {
+        const message = missingQuestions.length === 1 
+          ? `Please answer the required question: ${missingQuestions[0].title}`
+          : `You have ${missingQuestions.length} unanswered required questions.`;
+        throw new Error(message);
       }
 
       const res = await fetch(`/api/forms/${id}/submit`, {
@@ -237,7 +278,12 @@ const FormPreviewPage = ({ params }) => {
       const result = await res.json();
       handleSubmissionSuccess(result);
     } catch (err) {
-      alert(err.message);
+      setErrorModal({
+        isOpen: true,
+        title: 'Submission Error',
+        message: err.message,
+        variant: 'danger'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -459,7 +505,7 @@ const FormPreviewPage = ({ params }) => {
             )}
           </button>
           <button
-            onClick={() => confirm('Clear all progress?') && setResponses({})}
+            onClick={() => setShowResetConfirmModal(true)}
             className="w-full mt-4 py-3 text-[10px] font-bold text-slate-400 hover:text-rose-500 uppercase tracking-[0.2em] transition-colors"
           >
             Reset All Progress
@@ -751,6 +797,46 @@ const FormPreviewPage = ({ params }) => {
             </div>
           </div>
       )}
+
+      {/* Finalize Submission Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmSubmitModal}
+        onClose={() => setShowConfirmSubmitModal(false)}
+        onConfirm={() => handleSubmit()}
+        title="Finalize Submission?"
+        message="Are you sure you want to submit your responses? You may not be able to edit them later."
+        confirmText="Yes, Submit"
+        cancelText="Review Responses"
+        variant="info"
+        loading={isSubmitting}
+      />
+
+      {/* Reset Progress Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showResetConfirmModal}
+        onClose={() => setShowResetConfirmModal(false)}
+        onConfirm={() => {
+          setResponses({});
+          setShowResetConfirmModal(false);
+        }}
+        title="Clear All Progress?"
+        message="This will reset all your answers in this form. This action cannot be undone."
+        confirmText="Reset Everything"
+        cancelText="Keep My Answers"
+        variant="danger"
+      />
+
+      {/* Error/Notification Modal */}
+      <ConfirmationModal
+        isOpen={errorModal.isOpen}
+        onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
+        onConfirm={() => setErrorModal({ ...errorModal, isOpen: false })}
+        title={errorModal.title}
+        message={errorModal.message}
+        confirmText="Understood"
+        showCancel={false}
+        variant={errorModal.variant}
+      />
     </div>
   );
 };
