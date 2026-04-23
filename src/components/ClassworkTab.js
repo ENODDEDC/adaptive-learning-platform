@@ -805,6 +805,15 @@ const ClassworkTab = ({
   const [assignments, setAssignments] = useState([]);
   const [forms, setForms] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  
+  // Debug state for forms tracking
+  const [debugInfo, setDebugInfo] = useState({
+    formsCount: 0,
+    lastFetchTime: null,
+    lastError: null,
+    apiResponse: null,
+    showDebug: false
+  });
   // Removed local state - now using props from parent
   // const [isCreateClassworkModalOpen, setIsCreateClassworkModalOpen] = useState(false);
   // Removed form builder modal state - now using full-page editor
@@ -2417,6 +2426,8 @@ const ClassworkTab = ({
 
     try {
       console.log('🔍 FORMS: Fetching forms for course:', courseDetails._id);
+      setDebugInfo(prev => ({ ...prev, lastFetchTime: new Date().toISOString() }));
+      
       const res = await fetch(`/api/courses/${courseDetails._id}/forms`, {
         credentials: 'include' // Use cookies for authentication
       });
@@ -2426,15 +2437,39 @@ const ClassworkTab = ({
         console.log('🔍 FORMS: Fetched forms count:', data.forms?.length || 0);
         console.log('🔍 FORMS: Forms data:', data.forms);
         setForms(data.forms || []);
+        
+        // Update debug info
+        setDebugInfo(prev => ({
+          ...prev,
+          formsCount: data.forms?.length || 0,
+          lastError: null,
+          apiResponse: data
+        }));
       } else {
         console.error('🔍 FORMS: Failed to fetch forms, status:', res.status);
         const errorData = await res.json().catch(() => ({}));
         console.error('🔍 FORMS: Error data:', errorData);
         setForms([]);
+        
+        // Update debug info with error
+        setDebugInfo(prev => ({
+          ...prev,
+          formsCount: 0,
+          lastError: `HTTP ${res.status}: ${errorData.message || 'Unknown error'}`,
+          apiResponse: errorData
+        }));
       }
     } catch (err) {
       console.warn('🔍 FORMS: Error during fetch:', err);
       setForms([]);
+      
+      // Update debug info with error
+      setDebugInfo(prev => ({
+        ...prev,
+        formsCount: 0,
+        lastError: err.message,
+        apiResponse: null
+      }));
     }
   }, [courseDetails]);
 
@@ -3474,6 +3509,90 @@ const ClassworkTab = ({
           }
         }
       `}</style>
+
+      {/* Forms Debug Dialog */}
+      <div className="fixed top-4 left-4 z-50">
+        <button
+          onClick={() => setDebugInfo(prev => ({ ...prev, showDebug: !prev.showDebug }))}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors"
+        >
+          🐛 Forms Debug ({debugInfo.formsCount})
+        </button>
+        
+        {debugInfo.showDebug && (
+          <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 w-96 max-h-96 overflow-y-auto">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900">Forms Debug Info</h3>
+              <button
+                onClick={() => setDebugInfo(prev => ({ ...prev, showDebug: false }))}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-3 text-sm">
+              <div>
+                <span className="font-medium text-gray-700">Forms Count:</span>
+                <span className={`ml-2 px-2 py-1 rounded ${debugInfo.formsCount > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {debugInfo.formsCount}
+                </span>
+              </div>
+              
+              <div>
+                <span className="font-medium text-gray-700">Last Fetch:</span>
+                <span className="ml-2 text-gray-600">
+                  {debugInfo.lastFetchTime ? new Date(debugInfo.lastFetchTime).toLocaleTimeString() : 'Never'}
+                </span>
+              </div>
+              
+              {debugInfo.lastError && (
+                <div>
+                  <span className="font-medium text-red-700">Last Error:</span>
+                  <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded text-red-800 text-xs">
+                    {debugInfo.lastError}
+                  </div>
+                </div>
+              )}
+              
+              <div>
+                <span className="font-medium text-gray-700">Course ID:</span>
+                <span className="ml-2 text-gray-600 font-mono text-xs">
+                  {courseDetails?._id || 'Not loaded'}
+                </span>
+              </div>
+              
+              <div>
+                <span className="font-medium text-gray-700">Environment:</span>
+                <span className="ml-2 text-gray-600">
+                  {typeof window !== 'undefined' ? window.location.hostname : 'Server'}
+                </span>
+              </div>
+              
+              {debugInfo.apiResponse && (
+                <div>
+                  <span className="font-medium text-gray-700">API Response:</span>
+                  <pre className="mt-1 p-2 bg-gray-50 border border-gray-200 rounded text-xs overflow-x-auto">
+                    {JSON.stringify(debugInfo.apiResponse, null, 2)}
+                  </pre>
+                </div>
+              )}
+              
+              <div className="pt-2 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    fetchForms();
+                    showToast('Refreshing forms...', 'info');
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+                >
+                  🔄 Refresh Forms
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Toast Notification System */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
