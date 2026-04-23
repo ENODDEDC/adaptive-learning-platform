@@ -812,7 +812,8 @@ const ClassworkTab = ({
     lastFetchTime: null,
     lastError: null,
     apiResponse: null,
-    showDebug: false
+    showDebug: false,
+    filterLogs: []
   });
   // Removed local state - now using props from parent
   // const [isCreateClassworkModalOpen, setIsCreateClassworkModalOpen] = useState(false);
@@ -1123,6 +1124,9 @@ const ClassworkTab = ({
 
   // Enhanced filtering and sorting logic
   const getFilteredAndSortedAssignments = useCallback(() => {
+    // Clear previous filter logs
+    const filterLogs = [];
+    
     // Combine assignments and forms
     // Note: assignments array contains ALL classwork items with their 'type' field
     let allItems = [
@@ -1133,8 +1137,8 @@ const ClassworkTab = ({
       ...forms.map(item => ({ ...item, itemType: 'form' }))
     ];
 
-    console.log('🔍 FILTER DEBUG: Starting with', allItems.length, 'items');
-    console.log('🔍 FILTER DEBUG: Forms in allItems:', allItems.filter(item => item.itemType === 'form').length);
+    filterLogs.push(`🔍 Starting with ${allItems.length} items`);
+    filterLogs.push(`🔍 Forms in allItems: ${allItems.filter(item => item.itemType === 'form').length}`);
 
     let filtered = allItems.filter(item => {
       // Search filter
@@ -1145,14 +1149,14 @@ const ClassworkTab = ({
           item.description?.toLowerCase().includes(query) ||
           item.type?.toLowerCase().includes(query);
         if (!matchesSearch) {
-          console.log('🔍 FILTER DEBUG: Item filtered by search:', item.title, 'query:', searchQuery);
+          filterLogs.push(`❌ Item filtered by search: "${item.title}" (query: "${searchQuery}")`);
           return false;
         }
       }
 
       // Type filter
       if (filter !== 'all' && item.type !== filter && item.itemType !== filter) {
-        console.log('🔍 FILTER DEBUG: Item filtered by type:', item.title, 'filter:', filter, 'item.type:', item.type, 'item.itemType:', item.itemType);
+        filterLogs.push(`❌ Item filtered by type: "${item.title}" (filter: "${filter}", item.type: "${item.type}", item.itemType: "${item.itemType}")`);
         return false;
       }
 
@@ -1165,19 +1169,19 @@ const ClassworkTab = ({
         switch (dateRange) {
           case 'thisWeek':
             if (daysDiff < 0 || daysDiff > 7) {
-              console.log('🔍 FILTER DEBUG: Item filtered by date range (thisWeek):', item.title);
+              filterLogs.push(`❌ Item filtered by date range (thisWeek): "${item.title}"`);
               return false;
             }
             break;
           case 'thisMonth':
             if (daysDiff < 0 || daysDiff > 30) {
-              console.log('🔍 FILTER DEBUG: Item filtered by date range (thisMonth):', item.title);
+              filterLogs.push(`❌ Item filtered by date range (thisMonth): "${item.title}"`);
               return false;
             }
             break;
           case 'overdue':
             if (daysDiff >= 0) {
-              console.log('🔍 FILTER DEBUG: Item filtered by date range (overdue):', item.title);
+              filterLogs.push(`❌ Item filtered by date range (overdue): "${item.title}"`);
               return false;
             }
             break;
@@ -1186,7 +1190,7 @@ const ClassworkTab = ({
 
       // Status filter
       if (statusFilter !== 'all') {
-        console.log('🔍 FILTER DEBUG: Checking status filter for:', item.title, 'statusFilter:', statusFilter, 'itemType:', item.itemType);
+        filterLogs.push(`🔍 Checking status filter for: "${item.title}" (statusFilter: "${statusFilter}", itemType: "${item.itemType}")`);
         // Forms don't have submissions, so only filter assignments
         if (item.itemType === 'assignment') {
           const submission = submissions.find(s => String(s.assignment) === String(item._id));
@@ -1196,19 +1200,19 @@ const ClassworkTab = ({
           switch (statusFilter) {
             case 'notStarted':
               if (submission) {
-                console.log('🔍 FILTER DEBUG: Assignment filtered by status (notStarted, has submission):', item.title);
+                filterLogs.push(`❌ Assignment filtered by status (notStarted, has submission): "${item.title}"`);
                 return false;
               }
               break;
             case 'inProgress':
               if (!isInProgress) {
-                console.log('🔍 FILTER DEBUG: Assignment filtered by status (inProgress, not in progress):', item.title);
+                filterLogs.push(`❌ Assignment filtered by status (inProgress, not in progress): "${item.title}"`);
                 return false;
               }
               break;
             case 'completed':
               if (!isCompleted) {
-                console.log('🔍 FILTER DEBUG: Assignment filtered by status (completed, not completed):', item.title);
+                filterLogs.push(`❌ Assignment filtered by status (completed, not completed): "${item.title}"`);
                 return false;
               }
               break;
@@ -1216,18 +1220,21 @@ const ClassworkTab = ({
         } else if (item.itemType === 'form') {
           // Forms are always considered "not started" for status filtering
           if (statusFilter !== 'notStarted') {
-            console.log('🔍 FILTER DEBUG: Form filtered by status:', item.title, 'statusFilter:', statusFilter, '(forms only show for notStarted)');
+            filterLogs.push(`❌ Form filtered by status: "${item.title}" (statusFilter: "${statusFilter}", forms only show for "notStarted")`);
             return false;
           }
         }
       }
 
-      console.log('🔍 FILTER DEBUG: Item passed all filters:', item.title, 'itemType:', item.itemType);
+      filterLogs.push(`✅ Item passed all filters: "${item.title}" (itemType: "${item.itemType}")`);
       return true;
     });
 
-    console.log('🔍 FILTER DEBUG: Final filtered count:', filtered.length);
-    console.log('🔍 FILTER DEBUG: Forms in filtered:', filtered.filter(item => item.itemType === 'form').length);
+    filterLogs.push(`🔍 Final filtered count: ${filtered.length}`);
+    filterLogs.push(`🔍 Forms in filtered: ${filtered.filter(item => item.itemType === 'form').length}`);
+
+    // Update debug info with filter logs
+    setDebugInfo(prev => ({ ...prev, filterLogs }));
 
     // Sorting
     filtered.sort((a, b) => {
@@ -3689,6 +3696,19 @@ const ClassworkTab = ({
                     <div>• Search Query: "{searchQuery}"</div>
                     <div>• Sort By: {sortBy}</div>
                   </div>
+                  
+                  {debugInfo.filterLogs && debugInfo.filterLogs.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-100">
+                      <div><strong>Filter Debug Logs:</strong></div>
+                      <div className="mt-1 p-2 bg-gray-50 border border-gray-200 rounded text-xs max-h-40 overflow-y-auto">
+                        {debugInfo.filterLogs.map((log, index) => (
+                          <div key={index} className={`${log.includes('❌') ? 'text-red-600' : log.includes('✅') ? 'text-green-600' : 'text-gray-600'}`}>
+                            {log}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
