@@ -28,10 +28,13 @@ ${text.substring(0, 10000)} // Truncate to avoid token limits
    - "short_answer": If it's a simple open-ended question.
    - "paragraph": If it's a long-form open-ended question.
    - "true_false": Treat as multiple_choice with "True" and "False" options.
-3. Extract the correct answer if provided in the text.
-4. Ignore headers like "Set A", "Test I", "Posttest" etc., or use them to better understand the context, but do not include them as question text.
-5. Assign a default point value (usually 1).
-6. Ensure the output is a valid JSON array of question objects.
+3. Extract the correct answer if provided in the text. 
+   - IMPORTANT: The "correctAnswer" value MUST exactly match one of the strings in the "options" array.
+   - If the text says "Answer: A", and option A is "Paris", set "correctAnswer" to "Paris", NOT "A".
+4. If the correct answer is not explicitly stated but can be clearly inferred from the context, please include it. If it cannot be determined, leave "correctAnswer" as an empty string "" or an empty array [].
+5. Ignore headers like "Set A", "Test I", "Posttest" etc., or use them to better understand the context, but do not include them as question text.
+6. Assign a default point value (usually 1).
+7. Ensure the output is a valid JSON array of question objects.
 
 ### Output Format (JSON Array):
 [
@@ -44,19 +47,21 @@ ${text.substring(0, 10000)} // Truncate to avoid token limits
     "required": true
   },
   {
-    "type": "short_answer",
-    "title": "Explain the process of photosynthesis.",
-    "correctAnswer": "",
-    "points": 5,
+    "type": "checkboxes",
+    "title": "Which of these are primary colors?",
+    "options": ["Red", "Green", "Blue", "Yellow"],
+    "correctAnswer": ["Red", "Blue", "Yellow"],
+    "points": 1,
     "required": true
   }
 ]
 
 ### Constraints:
 - Respond with ONLY the JSON array.
-- Do not include any markdown formatting (like \`\`\`json).
+- Do not include any markdown formatting such as triple backticks or code fences.
 - If no questions are found, return an empty array [].
-- If a question has "A, B, C, D" style options, clean them up (remove the "A) " prefix).
+- If a question has "A, B, C, D" style options, clean them up (remove the "A) " prefix) but use those letters to correctly map the "correctAnswer" to the actual text.
+- Double-check that every "correctAnswer" for multiple_choice exists in the "options" array.
 
 Analyze the text and generate the JSON now.`;
 

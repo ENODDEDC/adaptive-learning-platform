@@ -270,6 +270,12 @@ const FormNewPageContent = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // File size check (5MB limit for sanity)
+    if (file.size > 5 * 1024 * 1024) {
+      setImportError('File is too large. Please upload a document smaller than 5MB.');
+      return;
+    }
+
     setIsImporting(true);
     setImportStatus('Uploading and extracting text...');
     setImportError('');
@@ -284,13 +290,19 @@ const FormNewPageContent = () => {
         body: formData,
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to parse document');
+        throw new Error(data.error || 'Failed to parse document');
+      }
+
+      // Check for content character length limits (TPM check)
+      // 60k tokens ~ 240k characters. Let's suggest 200k max.
+      if (data.rawText && data.rawText.length > 200000) {
+        throw new Error('Document content is too long for AI analysis. Please try a shorter document (max ~80 pages).');
       }
 
       setImportStatus('Structuring your questions...');
-      const data = await res.json();
       
       if (data.questions && data.questions.length > 0) {
         setImportStatus(`Successfully imported ${data.questions.length} questions!`);
@@ -1012,32 +1024,60 @@ const FormNewPageContent = () => {
           <div className="absolute inset-0 transition-opacity bg-slate-900/40 backdrop-blur-md"></div>
           
           {/* Modal Content */}
-          <div className="relative w-full max-w-sm overflow-hidden transition-all transform bg-white shadow-2xl rounded-[2.5rem] animate-in fade-in zoom-in duration-300">
-            <div className="p-10 text-center">
-              <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-8">
+          <div className="relative w-full max-w-md overflow-hidden transition-all transform bg-white shadow-2xl rounded-[2.5rem] animate-in fade-in zoom-in duration-300">
+            <div className="p-8 text-center">
+              <div className="relative flex items-center justify-center w-20 h-20 mx-auto mb-6">
                 {/* Outer pulsing ring */}
                 <div className="absolute inset-0 bg-indigo-100 rounded-full animate-ping opacity-25"></div>
                 {/* Middle rotating ring */}
                 <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
                 <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
                 {/* Center icon */}
-                <div className="relative flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full text-white shadow-xl shadow-indigo-200">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="relative flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-full text-white shadow-xl shadow-indigo-200">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
               </div>
               
               <h3 className="text-xl font-bold text-slate-900 font-display">AI Magic at Work</h3>
-              <p className="mt-3 text-sm font-semibold text-indigo-600 animate-pulse">
+              <p className="mt-2 text-sm font-semibold text-indigo-600 animate-pulse">
                 {importStatus}
               </p>
               
-              <div className="mt-8 space-y-2">
+              <div className="mt-6 space-y-2">
                 <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                   <div className="h-full bg-indigo-600 rounded-full animate-shimmer bg-[length:200%_100%] bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
                 </div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Processing your document</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Analyzing Content Structure</p>
+              </div>
+
+              {/* Tips & Limits Section */}
+              <div className="mt-8 pt-6 border-t border-slate-100 text-left">
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                  <div className="flex-shrink-0 mt-0.5 text-amber-500">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">AI Import Guide</p>
+                    <ul className="space-y-1.5">
+                      <li className="flex items-center gap-2 text-[10px] font-medium text-slate-500">
+                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                        Max capacity: ~200,000 characters (~80 pages)
+                      </li>
+                      <li className="flex items-center gap-2 text-[10px] font-medium text-slate-500">
+                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                        Best results with clear Q&A formats
+                      </li>
+                      <li className="flex items-center gap-2 text-[10px] font-medium text-slate-500">
+                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                        AI may ignore non-questionable text
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
