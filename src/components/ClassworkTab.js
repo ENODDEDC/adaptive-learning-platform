@@ -3523,12 +3523,54 @@ const ClassworkTab = ({
           <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 w-96 max-h-96 overflow-y-auto">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-gray-900">Forms Debug Info</h3>
-              <button
-                onClick={() => setDebugInfo(prev => ({ ...prev, showDebug: false }))}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const debugData = {
+                      formsCount: debugInfo.formsCount,
+                      lastFetchTime: debugInfo.lastFetchTime,
+                      lastError: debugInfo.lastError,
+                      courseId: courseDetails?._id,
+                      environment: typeof window !== 'undefined' ? window.location.hostname : 'Server',
+                      rawForms: forms.length,
+                      rawAssignments: assignments.length,
+                      combinedItems: [
+                        ...assignments.map(item => ({
+                          ...item,
+                          itemType: item.type === 'assignment' ? 'assignment' : item.type
+                        })),
+                        ...forms.map(item => ({ ...item, itemType: 'form' }))
+                      ].length,
+                      filteredItems: getFilteredAndSortedAssignments().length,
+                      formItemsInFiltered: getFilteredAndSortedAssignments().filter(item => item.itemType === 'form').length,
+                      currentFilters: {
+                        typeFilter: filter,
+                        statusFilter: statusFilter,
+                        dateRange: dateRange,
+                        searchQuery: searchQuery,
+                        sortBy: sortBy
+                      },
+                      apiResponse: debugInfo.apiResponse
+                    };
+                    
+                    navigator.clipboard.writeText(JSON.stringify(debugData, null, 2)).then(() => {
+                      showToast('Debug data copied to clipboard!', 'success');
+                    }).catch(() => {
+                      showToast('Failed to copy debug data', 'error');
+                    });
+                  }}
+                  className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium transition-colors"
+                  title="Copy debug data to clipboard"
+                >
+                  📋 Copy
+                </button>
+                <button
+                  onClick={() => setDebugInfo(prev => ({ ...prev, showDebug: false }))}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
             
             <div className="space-y-3 text-sm">
@@ -3584,10 +3626,35 @@ const ClassworkTab = ({
                     fetchForms();
                     showToast('Refreshing forms...', 'info');
                   }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors mb-2"
                 >
                   🔄 Refresh Forms
                 </button>
+                
+                <div className="text-xs text-gray-600 space-y-1">
+                  <div><strong>Raw Forms:</strong> {forms.length}</div>
+                  <div><strong>Raw Assignments:</strong> {assignments.length}</div>
+                  <div><strong>Combined Items:</strong> {(() => {
+                    const combined = [
+                      ...assignments.map(item => ({
+                        ...item,
+                        itemType: item.type === 'assignment' ? 'assignment' : item.type
+                      })),
+                      ...forms.map(item => ({ ...item, itemType: 'form' }))
+                    ];
+                    return combined.length;
+                  })()}</div>
+                  <div><strong>Filtered Items:</strong> {getFilteredAndSortedAssignments().length}</div>
+                  <div><strong>Form Items in Filtered:</strong> {getFilteredAndSortedAssignments().filter(item => item.itemType === 'form').length}</div>
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <div><strong>Current Filters:</strong></div>
+                    <div>• Type Filter: {filter}</div>
+                    <div>• Status Filter: {statusFilter}</div>
+                    <div>• Date Range: {dateRange}</div>
+                    <div>• Search Query: "{searchQuery}"</div>
+                    <div>• Sort By: {sortBy}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
