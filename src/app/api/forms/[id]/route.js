@@ -10,6 +10,7 @@ export async function GET(request, { params }) {
 
     const form = await Form.findById(id)
       .populate('createdBy', 'name email')
+      .populate('responses.studentId', 'name email')
       .lean();
 
     if (!form) {
