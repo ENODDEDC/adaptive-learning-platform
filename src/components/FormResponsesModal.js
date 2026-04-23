@@ -378,6 +378,7 @@ const FormResponsesModal = ({ isOpen, onClose, formId, formTitle }) => {
         variant="danger"
         loading={deletingId !== null}
         noBackdrop={true}
+        zIndex={10001}
       />
 
       {/* Error Modal */}
@@ -390,6 +391,7 @@ const FormResponsesModal = ({ isOpen, onClose, formId, formTitle }) => {
         confirmText="OK"
         showCancel={false}
         variant="danger"
+        zIndex={10001}
       />
     </>
   );

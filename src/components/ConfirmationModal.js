@@ -38,7 +38,8 @@ export default function ConfirmationModal({
   icon,
   loading = false,
   showCancel = true,
-  noBackdrop = false
+  noBackdrop = false,
+  zIndex = 50
 }) {
   // Validate required props
   if (!title || !message || !onConfirm || !onClose) {
@@ -85,7 +86,7 @@ export default function ConfirmationModal({
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-[99999]" onClose={onClose}>
+      <Dialog as="div" style={{ zIndex }} className="relative" onClose={onClose}>
         {/* Backdrop overlay */}
         {!noBackdrop && (
           <Transition.Child
@@ -97,12 +98,12 @@ export default function ConfirmationModal({
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 z-[99998] bg-black/30 backdrop-blur-sm" />
+            <div style={{ zIndex: zIndex - 1 }} className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
           </Transition.Child>
         )}
 
         {/* Modal container */}
-        <div className="fixed inset-0 overflow-y-auto">
+        <div style={{ zIndex }} className="fixed inset-0 overflow-y-auto">
           <div className="flex items-center justify-center min-h-full p-4 text-center">
             <Transition.Child
               as={Fragment}

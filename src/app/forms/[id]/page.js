@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import ConfirmationModal from '@/components/ConfirmationModal';
 
@@ -16,6 +17,7 @@ const FormPreviewPage = ({ params }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
+  const [courseSlug, setCourseSlug] = useState('');
   
   // Confirmation and Error modals state
   const [showConfirmSubmitModal, setShowConfirmSubmitModal] = useState(false);
@@ -110,6 +112,7 @@ const FormPreviewPage = ({ params }) => {
         // User has access to the course, allow form viewing
         setIsAuthorized(true);
         setForm(formData.form);
+        setCourseSlug(courseData.course.slug);
         
         // Initialize responses object
         const initialResponses = {};
@@ -704,14 +707,14 @@ const FormPreviewPage = ({ params }) => {
       </div>
 
       {/* Success Modal Restructured for New Layout */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-            <div className={`w-full duration-500 transform bg-white shadow-2xl rounded-[3rem] animate-in zoom-in-95 slide-in-from-bottom-8 ${submissionResult?.score ? 'max-w-2xl' : 'max-w-md'} overflow-hidden border border-white/20`}>
+      {showSuccessModal && isMounted && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className={`relative w-full max-h-[90vh] overflow-y-auto bg-white shadow-2xl rounded-[2.5rem] animate-in zoom-in-95 duration-300 ${submissionResult?.score ? 'max-w-2xl' : 'max-w-md'} border border-white/20 custom-scrollbar`}>
               <div className="relative">
-                <div className={`h-2 ${submissionResult?.score ? 'bg-indigo-600' : 'bg-emerald-600'}`}></div>
+                <div className={`sticky top-0 z-20 h-2 w-full ${submissionResult?.score ? 'bg-indigo-600' : 'bg-emerald-600'}`}></div>
 
-                <div className="p-10 lg:p-14">
-                  <div className={`flex items-center justify-center w-20 h-20 mx-auto mb-8 ${submissionResult?.score ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'} rounded-3xl shadow-inner border border-white`}>
+                <div className="p-8 lg:p-12">
+                  <div className={`flex items-center justify-center w-20 h-20 mx-auto mb-6 ${submissionResult?.score ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'} rounded-3xl shadow-inner border border-white`}>
                     <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
@@ -721,7 +724,7 @@ const FormPreviewPage = ({ params }) => {
                     {submissionResult?.score ? 'Submission Finalized' : 'Confirmed!'}
                   </h3>
                   
-                  <p className="mb-10 text-xs font-bold text-center text-slate-400 uppercase tracking-widest">
+                  <p className="mb-8 text-xs font-bold text-center text-slate-400 uppercase tracking-widest">
                     {submissionResult?.score 
                       ? 'Your performance has been evaluated.' 
                       : 'Your responses are safely recorded.'}
@@ -786,16 +789,21 @@ const FormPreviewPage = ({ params }) => {
                   <button
                     onClick={() => {
                       setShowSuccessModal(false);
-                      router.push('/home');
+                      if (courseSlug) {
+                        router.push(`/courses/${courseSlug}`);
+                      } else {
+                        router.push('/home');
+                      }
                     }}
                     className="w-full py-5 font-black text-sm text-white bg-slate-900 hover:bg-black rounded-2xl shadow-2xl transition-all duration-300 hover:-translate-y-1 active:translate-y-0 uppercase tracking-widest"
                   >
-                    Exit Workspace
+                    Return to Course
                   </button>
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+        document.body
       )}
 
       {/* Finalize Submission Confirmation Modal */}
@@ -809,6 +817,7 @@ const FormPreviewPage = ({ params }) => {
         cancelText="Review Responses"
         variant="info"
         loading={isSubmitting}
+        zIndex={110}
       />
 
       {/* Reset Progress Confirmation Modal */}
@@ -824,6 +833,7 @@ const FormPreviewPage = ({ params }) => {
         confirmText="Reset Everything"
         cancelText="Keep My Answers"
         variant="danger"
+        zIndex={110}
       />
 
       {/* Error/Notification Modal */}
@@ -836,6 +846,7 @@ const FormPreviewPage = ({ params }) => {
         confirmText="Understood"
         showCancel={false}
         variant={errorModal.variant}
+        zIndex={110}
       />
     </div>
   );

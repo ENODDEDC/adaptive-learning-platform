@@ -173,6 +173,7 @@ export async function GET(request, { params }) {
     // Get all forms for this course
     const forms = await Form.find({ courseId, isActive: true })
       .populate('createdBy', 'name email')
+      .populate('responses.studentId', 'name email')
       .sort({ createdAt: -1 });
 
     console.log(`🔍 API GET FORMS: Found ${forms.length} forms for course ${courseId}`);
