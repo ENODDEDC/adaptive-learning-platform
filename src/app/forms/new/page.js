@@ -20,6 +20,7 @@ const FormNewPageContent = () => {
   const [autoSave, setAutoSave] = useState(false); // Disabled for new forms
   const [showPointsSummary, setShowPointsSummary] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState('');
   const [importError, setImportError] = useState('');
   const [showClearModal, setShowClearModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -270,12 +271,14 @@ const FormNewPageContent = () => {
     if (!file) return;
 
     setIsImporting(true);
+    setImportStatus('Uploading and extracting text...');
     setImportError('');
 
     const formData = new FormData();
     formData.append('file', file);
 
     try {
+      setImportStatus('AI is analyzing your document...');
       const res = await fetch('/api/forms/parse-document', {
         method: 'POST',
         body: formData,
@@ -286,9 +289,12 @@ const FormNewPageContent = () => {
         throw new Error(errorData.error || 'Failed to parse document');
       }
 
+      setImportStatus('Structuring your questions...');
       const data = await res.json();
       
       if (data.questions && data.questions.length > 0) {
+        setImportStatus(`Successfully imported ${data.questions.length} questions!`);
+        
         // Add IDs to imported questions
         const processedQuestions = data.questions.map(q => ({
           ...q,
@@ -992,6 +998,46 @@ const FormNewPageContent = () => {
                 >
                   Save Settings
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* AI Processing Modal */}
+      {isImporting && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 overflow-hidden">
+          {/* Backdrop */}
+          <div className="absolute inset-0 transition-opacity bg-slate-900/40 backdrop-blur-md"></div>
+          
+          {/* Modal Content */}
+          <div className="relative w-full max-w-sm overflow-hidden transition-all transform bg-white shadow-2xl rounded-[2.5rem] animate-in fade-in zoom-in duration-300">
+            <div className="p-10 text-center">
+              <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-8">
+                {/* Outer pulsing ring */}
+                <div className="absolute inset-0 bg-indigo-100 rounded-full animate-ping opacity-25"></div>
+                {/* Middle rotating ring */}
+                <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                {/* Center icon */}
+                <div className="relative flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full text-white shadow-xl shadow-indigo-200">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+              </div>
+              
+              <h3 className="text-xl font-bold text-slate-900 font-display">AI Magic at Work</h3>
+              <p className="mt-3 text-sm font-semibold text-indigo-600 animate-pulse">
+                {importStatus}
+              </p>
+              
+              <div className="mt-8 space-y-2">
+                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-indigo-600 rounded-full animate-shimmer bg-[length:200%_100%] bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Processing your document</p>
               </div>
             </div>
           </div>
