@@ -38,6 +38,12 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
 
   // Function to handle Next Step - auto-upload files on Step 2
   const handleNextStep = async () => {
+    // For forms, skip the attachments step entirely and go straight to review
+    if (type === 'form' && currentStep === 1) {
+      setCurrentStep(3);
+      return;
+    }
+
     // If on Step 2 and there are pending files, upload them first
     if (currentStep === 2) {
       const pendingFiles = files.filter(file => !file.url && !file._id);
@@ -180,6 +186,17 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // For forms, creation is handled by the dedicated form builder route
+    if (type === 'form') {
+      if (courseId) {
+        window.location.href = `/forms/new?courseId=${courseId}`;
+      } else {
+        window.location.href = '/forms/new';
+      }
+      setLoading(false);
+      return;
+    }
 
     if (!title.trim() || !type) {
       setError('Title and type are required.');
@@ -464,18 +481,27 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                     </div>
                   </div>
 
-                  {/* Title - Modern Input */}
-                  <div>
-                    <label htmlFor="title" className="block text-sm font-semibold text-gray-900 mb-2 flex items-center">
-                      <span>Title</span>
-                      <span className="ml-1 text-red-500">*</span>
-                    </label>
+                  {/* Title - Enhanced Input */}
+                  <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label htmlFor="title" className="block text-sm font-semibold text-gray-900 flex items-center">
+                        <span>Title</span>
+                        <span className="ml-1 text-red-500">*</span>
+                      </label>
+                      <span className="text-[11px] font-medium text-gray-400">
+                        {title.length || 0}/80
+                      </span>
+                    </div>
+                    <p className="mb-3 text-xs text-gray-500">
+                      Give this activity a clear, action-focused name students will see in their feed.
+                    </p>
                     <div className="relative">
                       <input
                         type="text"
                         id="title"
-                        placeholder="e.g., Chapter 5 Assignment"
-                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400"
+                        maxLength={80}
+                        placeholder={'Example: "Chapter 5 • Linear Equations Practice"'}
+                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-gray-400 text-sm"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         required
@@ -488,21 +514,29 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                     </div>
                   </div>
 
-                  {/* Description - Modern Textarea */}
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-semibold text-gray-900 mb-2">
-                      Description
-                      <span className="ml-2 text-xs font-normal text-gray-500">(Optional)</span>
-                    </label>
+                  {/* Description - Enhanced Textarea */}
+                  <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label htmlFor="description" className="block text-sm font-semibold text-gray-900">
+                        Description
+                        <span className="ml-2 text-xs font-normal text-gray-500">(Optional)</span>
+                      </label>
+                      <span className="text-[11px] font-medium text-gray-400">
+                        {description.length || 0}/600
+                      </span>
+                    </div>
+                    <p className="mb-3 text-xs text-gray-500">
+                      Use this space to outline steps, expectations, and any links or resources students should open.
+                    </p>
                     <textarea
                       id="description"
-                      placeholder="Add instructions, requirements, or additional details..."
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none placeholder:text-gray-400"
+                      maxLength={600}
+                      placeholder={'Example: "Complete questions 1–10, show your work, and upload a clear photo of your solution. Watch the intro video first if you need a refresher."'}
+                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none placeholder:text-gray-400 text-sm leading-relaxed"
                       rows="4"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                     />
-                    <p className="mt-1 text-xs text-gray-500">{description.length} characters</p>
                   </div>
 
                   {/* Due Date and Time - Modern Design */}
@@ -554,8 +588,8 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                 </div>
               )}
 
-              {/* Step 2: Attachments - Modern Design */}
-              {currentStep === 2 && (
+              {/* Step 2: Attachments - Modern Design (Assignments & Materials only) */}
+              {currentStep === 2 && type !== 'form' && (
                 <div className="space-y-6">
                   {/* Header Section */}
                   <div className="text-center py-8 px-6 bg-white border border-gray-200 rounded-lg">
@@ -615,26 +649,40 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
               {/* Step 3: Review - Modern Preview */}
               {currentStep === 3 && (
                 <div className="space-y-5">
-                  <div className="text-center py-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
-                    <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <CheckCircleIcon className="w-10 h-10 text-white" />
+                  <div className={`text-center py-6 rounded-xl ${type === 'form' ? 'bg-white border border-gray-200' : 'bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200'}`}>
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg ${type === 'form' ? 'bg-gray-200' : 'bg-green-500'}`}>
+                      <CheckCircleIcon className={`w-10 h-10 ${type === 'form' ? 'text-green-600' : 'text-white'}`} />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">Ready to Create!</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Ready to Create</h3>
                     <p className="text-sm text-gray-600">Review your classwork details below</p>
                   </div>
 
                   {/* Modern Preview Card */}
                   <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
                     {/* Card Header */}
-                    <div className={`px-5 py-4 bg-gradient-to-r ${type === 'assignment' ? 'from-blue-500 to-blue-600' : type === 'form' ? 'from-orange-500 to-orange-600' : 'from-emerald-500 to-emerald-600'}`}>
+                    <div
+                      className={
+                        type === 'form'
+                          ? 'px-5 py-4 bg-white border-b border-gray-200'
+                          : type === 'assignment'
+                            ? 'px-5 py-4 bg-gradient-to-r from-blue-500 to-blue-600'
+                            : 'px-5 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600'
+                      }
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                          <div
+                            className={
+                              type === 'form'
+                                ? 'w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center'
+                                : 'w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm'
+                            }
+                          >
                             {getTypeIcon(type)}
                           </div>
                           <div>
-                            <h4 className="text-lg font-bold text-white">{title}</h4>
-                            <span className="text-xs text-white/80 font-medium">
+                            <h4 className={`text-lg font-bold ${type === 'form' ? 'text-gray-900' : 'text-white'}`}>{title}</h4>
+                            <span className={`text-xs font-medium ${type === 'form' ? 'text-gray-500' : 'text-white/80'}`}>
                               {type.charAt(0).toUpperCase() + type.slice(1)}
                             </span>
                           </div>
@@ -708,7 +756,13 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                 {currentStep > 1 && (
                   <button
                     type="button"
-                    onClick={() => setCurrentStep(currentStep - 1)}
+                    onClick={() => {
+                      if (type === 'form' && currentStep === 3) {
+                        setCurrentStep(1);
+                      } else {
+                        setCurrentStep(currentStep - 1);
+                      }
+                    }}
                     className="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm"
                     disabled={loading}
                   >
@@ -758,7 +812,15 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                     ) : (
                       <>
                         <CheckCircleIcon className="w-5 h-5" />
-                        <span>{initialData ? 'Save Changes' : 'Create Classwork'}</span>
+                        <span>
+                          {initialData
+                            ? type === 'form'
+                              ? 'Save Form'
+                              : 'Save Changes'
+                            : type === 'form'
+                              ? 'Create Form'
+                              : 'Create Classwork'}
+                        </span>
                       </>
                     )}
                   </button>

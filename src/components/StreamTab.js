@@ -323,6 +323,20 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                 <div className="mb-4">
                   <h3 className="mb-3 text-lg font-semibold text-gray-900 leading-tight">{item.title}</h3>
                   <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: item.content || item.description }} />
+                  
+                  {item.type === 'form' && (
+                    <div className="mt-4">
+                      <button
+                        onClick={() => window.open(`/forms/${item._id}`, '_blank')}
+                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Open Form
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Attachments Section */}
@@ -541,9 +555,11 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                         <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${
                           item.type === 'announcement'
                             ? 'text-blue-700 bg-blue-50 border-blue-200'
-                            : 'text-purple-700 bg-purple-50 border-purple-200'
+                            : item.type === 'form'
+                              ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                              : 'text-purple-700 bg-purple-50 border-purple-200'
                         }`}>
-                          {item.type === 'announcement' ? '📢 Announcement' : '📋 Assignment'}
+                          {item.type === 'announcement' ? '📢 Announcement' : item.type === 'form' ? '📝 Form' : '📋 Assignment'}
                         </span>
                       </div>
                       {isInstructor && item.type === 'announcement' && (

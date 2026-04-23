@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 const FormPreviewPage = ({ params }) => {
-  const { id } = React.use(params);
+  const resolvedParams = React.use(params);
+  const id = resolvedParams?.id;
   const router = useRouter();
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,17 +17,49 @@ const FormPreviewPage = ({ params }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
+  const [courseSlug, setCourseSlug] = useState('');
+  
+  // Confirmation and Error modals state
+  const [showConfirmSubmitModal, setShowConfirmSubmitModal] = useState(false);
+  const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+  const [errorModal, setErrorModal] = useState({ isOpen: false, title: '', message: '', variant: 'danger' });
   
   // Authorization states
   const [user, setUser] = useState(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
 
+  // Prevent hydration issues
+  const [isMounted, setIsMounted] = useState(false);
+
   useEffect(() => {
-    checkAuthorizationAndFetchForm();
-  }, [id]);
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted && id) {
+      checkAuthorizationAndFetchForm();
+      
+      // Remove double scrollbar: disable body scroll and use internal workspace scroll
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      
+      return () => {
+        // Restore original scroll behavior when leaving this page
+        document.body.style.overflow = originalBodyOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+      };
+    }
+  }, [id, isMounted]);
 
   const checkAuthorizationAndFetchForm = async () => {
+    if (!id) {
+      console.warn('🔍 FORM PREVIEW: No ID provided in params');
+      return;
+    }
     try {
       // Check if user is authenticated
       const authRes = await fetch('/api/auth/profile', {
@@ -32,11 +67,13 @@ const FormPreviewPage = ({ params }) => {
       });
 
       if (!authRes.ok) {
+        console.warn('🔍 FORM PREVIEW: User not authenticated, redirecting to login');
         router.push('/login');
         return;
       }
 
       const userData = await authRes.json();
+      console.log('🔍 FORM PREVIEW: User authenticated:', userData._id);
       setUser(userData);
 
       // Get the form to find which course it belongs to
@@ -45,42 +82,55 @@ const FormPreviewPage = ({ params }) => {
       });
 
       if (!formRes.ok) {
+        console.error('🔍 FORM PREVIEW: Form fetch failed with status:', formRes.status);
         setError('Form not found');
         setIsAuthorized(false);
-        setAuthLoading(false);
-        setLoading(false);
         return;
       }
 
       const formData = await formRes.json();
+      console.log('🔍 FORM PREVIEW: Form data received:', formData.form?.title);
+      
+      if (!formData.form || !formData.form.courseId) {
+        console.error('🔍 FORM PREVIEW: Form data is missing or has no courseId');
+        setError('Invalid form data');
+        setIsAuthorized(false);
+        return;
+      }
+
       const courseId = formData.form.courseId;
+      console.log('🔍 FORM PREVIEW: Checking access for course:', courseId);
 
       // Check if user has access to this course
-      // If they can see the course card, they can view forms
       const courseRes = await fetch(`/api/courses/${courseId}`, {
         credentials: 'include'
       });
 
       if (courseRes.ok) {
+        console.log('🔍 FORM PREVIEW: Access granted to course');
+        const courseData = await courseRes.json();
         // User has access to the course, allow form viewing
         setIsAuthorized(true);
         setForm(formData.form);
+        setCourseSlug(courseData.course.slug);
         
         // Initialize responses object
         const initialResponses = {};
-        formData.form.questions.forEach(question => {
-          initialResponses[question.id] = question.type === 'checkboxes' ? [] : '';
-        });
+        if (formData.form.questions) {
+          formData.form.questions.forEach(question => {
+            initialResponses[question.id] = question.type === 'checkboxes' ? [] : '';
+          });
+        }
         setResponses(initialResponses);
       } else {
-        // User doesn't have access to the course
+        console.warn('🔍 FORM PREVIEW: Access denied to course, status:', courseRes.status);
         setError('Access denied. You do not have access to this course.');
         setIsAuthorized(false);
       }
       
     } catch (err) {
-      console.error('Authorization or form fetch failed:', err);
-      setError('Failed to verify permissions');
+      console.error('🔍 FORM PREVIEW: Error in checkAuthorizationAndFetchForm:', err);
+      setError('Failed to verify permissions: ' + err.message);
     } finally {
       setAuthLoading(false);
       setLoading(false);
@@ -150,17 +200,52 @@ const FormPreviewPage = ({ params }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
+    // Check if we should show confirmation first
+    if (form?.settings?.confirmBeforeSubmit && !showConfirmSubmitModal) {
+      // Validate required questions before showing confirmation
+      const requiredQuestions = form.questions.filter(q => q.required);
+      const missingQuestions = requiredQuestions.filter(question => {
+        const response = responses[question.id];
+        return !response || (Array.isArray(response) && response.length === 0);
+      });
+
+      if (missingQuestions.length > 0) {
+        const message = missingQuestions.length === 1 
+          ? `Please answer the required question: ${missingQuestions[0].title}`
+          : `You have ${missingQuestions.length} unanswered required questions. Please complete them before submitting.`;
+          
+        setErrorModal({
+          isOpen: true,
+          title: 'Incomplete Submission',
+          message: message,
+          variant: 'warning'
+        });
+        return;
+      }
+      
+      setShowConfirmSubmitModal(true);
+      return;
+    }
+
+    // Close confirmation modal if it was open
+    setShowConfirmSubmitModal(false);
     setIsSubmitting(true);
 
     try {
-      // Validate required questions
+      // Validate required questions (again for safety)
       const requiredQuestions = form.questions.filter(q => q.required);
-      for (const question of requiredQuestions) {
+      const missingQuestions = requiredQuestions.filter(question => {
         const response = responses[question.id];
-        if (!response || (Array.isArray(response) && response.length === 0)) {
-          throw new Error(`Please answer the required question: ${question.title}`);
-        }
+        return !response || (Array.isArray(response) && response.length === 0);
+      });
+
+      if (missingQuestions.length > 0) {
+        const message = missingQuestions.length === 1 
+          ? `Please answer the required question: ${missingQuestions[0].title}`
+          : `You have ${missingQuestions.length} unanswered required questions.`;
+        throw new Error(message);
       }
 
       const res = await fetch(`/api/forms/${id}/submit`, {
@@ -196,11 +281,18 @@ const FormPreviewPage = ({ params }) => {
       const result = await res.json();
       handleSubmissionSuccess(result);
     } catch (err) {
-      alert(err.message);
+      setErrorModal({
+        isOpen: true,
+        title: 'Submission Error',
+        message: err.message,
+        variant: 'danger'
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (!isMounted) return null;
 
   if (authLoading || loading) {
     return (
@@ -245,12 +337,18 @@ const FormPreviewPage = ({ params }) => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-        <div className="text-center">
-          <p className="mb-4 text-red-600">{error}</p>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center p-8 bg-red-50 rounded-2xl border border-red-100 max-w-md mx-auto">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Error Loading Form</h3>
+          <p className="text-red-600 mb-6">{error}</p>
           <button 
             onClick={() => router.back()}
-            className="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+            className="px-6 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             Go Back
           </button>
@@ -259,510 +357,497 @@ const FormPreviewPage = ({ params }) => {
     );
   }
 
+  if (!form) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Initializing form content...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate current completion progress
+  const calculateProgress = () => {
+    if (!form || !form.questions) return 0;
+    const answeredCount = form.questions.filter(q => {
+      const resp = responses[q.id];
+      return resp && (Array.isArray(resp) ? resp.length > 0 : String(resp).trim() !== '');
+    }).length;
+    return Math.round((answeredCount / form.questions.length) * 100);
+  };
+
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-      <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-indigo-300 scrollbar-track-gray-100">
-        <div className="max-w-3xl min-h-full px-4 py-8 pb-32 mx-auto">
-          {/* Scroll indicator */}
-          <div className="fixed z-50 p-2 border border-gray-200 rounded-full shadow-lg top-4 right-4 bg-white/80 backdrop-blur-sm">
-            <svg className="w-5 h-5 text-indigo-600 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
+    <div className="fixed inset-0 z-[100] flex flex-col lg:flex-row w-full h-screen bg-white overflow-hidden font-sans text-slate-900 animate-in fade-in duration-500">
+      {/* LEFT SIDEBAR - Persistent Dashboard */}
+      <div className="w-full lg:w-[380px] lg:h-full bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col z-20 shadow-sm">
+        <div className="p-8 lg:p-10 flex-1 overflow-y-auto custom-scrollbar">
+          {/* Form Branding */}
+          <div className="flex items-center gap-3 mb-8">
+            <button 
+              onClick={() => router.back()}
+              className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all duration-200 shadow-sm group"
+              title="Exit Workspace"
+            >
+              <svg className="w-5 h-5 transform group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 truncate" title={form?.title}>
+                {form?.title || 'Untitled Form'}
+              </h1>
+            </div>
           </div>
-        {/* Enhanced Form Header */}
-        <div className="relative overflow-hidden bg-white border border-gray-100 shadow-xl rounded-2xl">
-          {/* Decorative background pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}></div>
+
+          {/* Circular Progress Gauge */}
+          <div className="mb-12 p-8 bg-white border border-slate-200 rounded-[2.5rem] shadow-sm flex flex-col items-center">
+            <div className="relative w-32 h-32 mb-4">
+              {/* Background Circle */}
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="58"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  className="text-slate-100"
+                />
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="58"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  strokeDasharray={364.4}
+                  strokeDashoffset={364.4 - (364.4 * calculateProgress()) / 100}
+                  strokeLinecap="round"
+                  className="text-indigo-600 transition-all duration-1000 ease-out"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl font-black text-slate-900">{calculateProgress()}%</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Done</span>
+              </div>
+            </div>
+            <p className="text-xs font-bold text-slate-500 text-center leading-relaxed">
+              {form?.questions?.filter(q => responses[q.id] && (Array.isArray(responses[q.id]) ? responses[q.id].length > 0 : String(responses[q.id]).trim() !== '')).length} of {form?.questions?.length} tasks completed
+            </p>
           </div>
-          
-          {/* Gradient header bar */}
-          <div className="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500"></div>
-          
-          <div className="relative p-8 lg:p-12">
-            {/* Form icon */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center justify-center w-16 h-16 shadow-lg bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+
+          {/* Question Navigation Map */}
+          <div className="mb-10">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6 px-1">Question Navigator</h3>
+            <div className="grid grid-cols-5 gap-3">
+              {(form?.questions || []).map((q, idx) => {
+                const resp = responses[q.id];
+                const isAnswered = resp && (Array.isArray(resp) ? resp.length > 0 : String(resp).trim() !== '');
+                return (
+                  <button
+                    key={q.id}
+                    onClick={() => {
+                      const el = document.getElementById(`q-${q.id}`);
+                      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className={`h-10 rounded-xl text-xs font-bold transition-all duration-200 border-2 flex items-center justify-center ${
+                      isAnswered 
+                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-100' 
+                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300'
+                    }`}
+                  >
+                    {idx + 1}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Info Cards */}
+          <div className="space-y-3">
+            <div className="p-4 bg-slate-100/50 rounded-2xl flex items-center gap-4">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 border border-slate-200">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="px-3 py-1 text-sm font-medium text-indigo-700 bg-indigo-100 rounded-full">Form</span>
-                  <span className="text-sm text-gray-500">•</span>
-                  <span className="text-sm text-gray-500">{form.questions.length} questions</span>
-                </div>
+                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Weight</span>
+                <span className="text-sm font-bold text-slate-700">{calculateTotalPoints()} Points</span>
               </div>
             </div>
-            
-            <h1 className="mb-4 text-4xl font-bold leading-tight text-transparent bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text">
-              {form.title}
-            </h1>
-            {form.description && (
-              <p className="max-w-2xl text-lg leading-relaxed text-gray-600">{form.description}</p>
-            )}
-
-            {/* Question Summary */}
-            <div className="flex items-center gap-4 text-sm text-gray-600">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>{form.questions.length} Questions</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                <span>Total: {calculateTotalPoints()} Points</span>
-              </div>
-            </div>
-
           </div>
         </div>
 
-        {/* Enhanced Form Questions */}
-        <form onSubmit={handleSubmit} className="mt-8 space-y-8">
-          {form.questions.map((question, index) => (
-            <div key={question.id} className="relative group">
-              {/* Progress indicator */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-sm font-medium text-gray-600">
-                  Question {index + 1} of {form.questions.length}
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-32 h-2 overflow-hidden bg-gray-200 rounded-full">
-                    <div
-                      className="h-full transition-all duration-300 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600"
-                      style={{ width: `${((index + 1) / form.questions.length) * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-xs text-gray-500 min-w-[2.5rem]">
-                    {Math.round(((index + 1) / form.questions.length) * 100)}%
-                  </span>
-                </div>
-              </div>
+        {/* Sidebar Footer - Actions */}
+        <div className="p-8 bg-white border-t border-slate-200">
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full py-4 bg-slate-900 hover:bg-black text-white rounded-2xl font-bold text-sm shadow-xl transition-all duration-200 hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-3"
+          >
+            {isSubmitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>PROCESSING...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>FINALIZE SUBMISSION</span>
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => setShowResetConfirmModal(true)}
+            className="w-full mt-4 py-3 text-[10px] font-bold text-slate-400 hover:text-rose-500 uppercase tracking-[0.2em] transition-colors"
+          >
+            Reset All Progress
+          </button>
+        </div>
+      </div>
 
-              {/* Question number indicator - Always visible */}
-              <div className="absolute flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full shadow-lg -left-4 top-6 bg-gradient-to-br from-indigo-500 to-purple-600">
-                {index + 1}
-              </div>
-              
-              <div className="overflow-hidden transition-all duration-300 bg-white border border-gray-100 shadow-lg rounded-2xl hover:shadow-xl hover:border-indigo-200">
-                {/* Question header with gradient accent */}
-                <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500"></div>
-                
-                <div className="p-8">
-                  {/* Question Title */}
-                  <div className="mb-6">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 mt-1 rounded-lg bg-gradient-to-br from-indigo-100 to-purple-100">
-                        <div className="w-2 h-2 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600"></div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xl font-semibold leading-tight text-gray-900">
-                          {question.title}
-                          {question.required && (
-                            <span className="inline-flex items-center px-2 py-1 ml-2 text-xs font-medium text-red-700 bg-red-100 rounded-full">
-                              Required
-                            </span>
-                          )}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-700 bg-indigo-100 rounded-full">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                            </svg>
-                            <span>{question.points || 1} pts</span>
-                          </div>
-                        </div>
-                      </div>
+      {/* RIGHT CONTENT AREA - Questions */}
+      <div className="flex-1 h-full overflow-y-auto bg-white custom-scrollbar relative">
+        <div className="max-w-3xl px-8 lg:px-20 py-16 lg:py-24 mx-auto">
+          {/* Form Description Header */}
+          {form?.description && (
+            <div className="mb-20 p-8 border-l-4 border-indigo-600 bg-indigo-50/30 rounded-r-3xl">
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-500 mb-3">Submission Instructions</h2>
+              <p className="text-lg font-medium text-slate-600 leading-relaxed italic">
+                "{form.description}"
+              </p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-24 pb-32">
+            {(form?.questions || []).map((question, index) => (
+              <div key={question.id} id={`q-${question.id}`} className="scroll-mt-24">
+                {/* Question Header */}
+                <div className="flex items-start gap-6 mb-8 group">
+                  <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-2xl bg-white border-2 border-slate-100 text-lg font-bold text-slate-300 group-hover:border-indigo-100 group-hover:text-indigo-600 transition-all duration-300">
+                    {index + 1}
+                  </div>
+                  <div className="pt-2">
+                    <h3 className="text-xl font-bold text-slate-900 tracking-tight leading-snug">
+                      {question.title}
+                      {question.required && <span className="ml-2 text-rose-500">*</span>}
+                    </h3>
+                    <div className="mt-1 flex items-center gap-3">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Weight: {question.points || 1} Pts</span>
+                      <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{question.type.replace('_', ' ')}</span>
                     </div>
                   </div>
+                </div>
 
-                  {/* Enhanced Question Input Based on Type */}
-                  <div className="space-y-4">
-                    {question.type === 'short_answer' && (
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={responses[question.id] || ''}
-                          onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                          className="w-full px-4 py-4 text-base placeholder-gray-400 transition-all duration-200 border-2 border-gray-200 bg-gray-50 rounded-xl focus:border-indigo-500 focus:bg-white focus:outline-none"
-                          placeholder="Type your answer here..."
-                          required={question.required}
-                        />
-                        <div className="absolute inset-0 transition-opacity duration-200 opacity-0 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 -z-10 blur group-focus-within:opacity-20"></div>
-                      </div>
-                    )}
+                {/* Question Input */}
+                <div className="pl-0 lg:pl-18 lg:ml-18 space-y-4">
+                  {question.type === 'short_answer' && (
+                    <div className="relative group">
+                      <input
+                        type="text"
+                        value={responses[question.id] || ''}
+                        onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                        className="w-full px-0 py-4 text-xl font-bold text-slate-900 border-b-2 border-slate-100 focus:border-indigo-600 bg-transparent outline-none transition-all duration-300 placeholder-slate-200"
+                        placeholder="Start typing your response..."
+                        required={question.required}
+                      />
+                      <div className="absolute bottom-0 left-0 h-0.5 bg-indigo-600 transition-all duration-500 w-0 group-focus-within:w-full"></div>
+                    </div>
+                  )}
 
-                    {question.type === 'paragraph' && (
-                      <div className="relative">
-                        <textarea
-                          value={responses[question.id] || ''}
-                          onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                          className="w-full px-4 py-4 text-base placeholder-gray-400 transition-all duration-200 border-2 border-gray-200 resize-none bg-gray-50 rounded-xl focus:border-indigo-500 focus:bg-white focus:outline-none"
-                          rows="5"
-                          placeholder="Share your thoughts in detail..."
-                          required={question.required}
-                        />
-                        <div className="absolute inset-0 transition-opacity duration-200 opacity-0 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 -z-10 blur group-focus-within:opacity-20"></div>
-                      </div>
-                    )}
+                  {question.type === 'paragraph' && (
+                    <div className="relative group">
+                      <textarea
+                        value={responses[question.id] || ''}
+                        onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                        className="w-full px-6 py-6 text-lg font-bold text-slate-900 border-2 border-slate-100 focus:border-indigo-600 bg-slate-50/30 rounded-3xl outline-none transition-all duration-300 placeholder-slate-200 min-h-[180px] focus:bg-white"
+                        placeholder="Share your detailed thoughts..."
+                        required={question.required}
+                      />
+                    </div>
+                  )}
 
-                    {question.type === 'multiple_choice' && (
-                      <div className="space-y-3">
-                        {question.options.map((option, optionIndex) => (
-                          <label key={optionIndex} className="relative flex items-center cursor-pointer group">
-                            <div className="relative flex items-center">
-                              <input
-                                type="radio"
-                                name={question.id}
-                                value={option}
-                                checked={responses[question.id] === option}
-                                onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                                className="sr-only"
-                                required={question.required}
-                              />
-                              <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 ${
-                                responses[question.id] === option 
-                                  ? 'border-indigo-500 bg-indigo-500' 
-                                  : 'border-gray-300 group-hover:border-indigo-300'
-                              }`}>
-                                {responses[question.id] === option && (
-                                  <div className="absolute w-2 h-2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full top-1/2 left-1/2"></div>
-                                )}
-                              </div>
-                            </div>
-                            <div className={`ml-4 px-4 py-3 rounded-xl flex-1 transition-all duration-200 ${
-                              responses[question.id] === option 
-                                ? 'bg-indigo-50 border-2 border-indigo-200' 
-                                : 'bg-gray-50 border-2 border-gray-200 group-hover:bg-indigo-50 group-hover:border-indigo-200'
-                            }`}>
-                              <span className="text-base font-medium text-gray-900">{option}</span>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    )}
+                  {question.type === 'multiple_choice' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {question.options.map((option, idx) => (
+                        <label key={idx} className={`group flex items-center p-5 cursor-pointer rounded-2xl border-2 transition-all duration-300 ${
+                          responses[question.id] === option 
+                            ? 'border-indigo-600 bg-indigo-50/50 shadow-md shadow-indigo-100' 
+                            : 'border-slate-50 bg-slate-50/30 hover:border-slate-200 hover:bg-white'
+                        }`}>
+                          <input
+                            type="radio"
+                            name={question.id}
+                            value={option}
+                            checked={responses[question.id] === option}
+                            onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                            className="sr-only"
+                            required={question.required}
+                          />
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mr-4 transition-all duration-300 ${
+                            responses[question.id] === option 
+                              ? 'border-indigo-600 bg-indigo-600' 
+                              : 'border-slate-200 bg-white'
+                          }`}>
+                            {responses[question.id] === option && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                          </div>
+                          <span className={`text-base font-bold transition-colors duration-300 ${
+                            responses[question.id] === option ? 'text-indigo-900' : 'text-slate-600'
+                          }`}>
+                            {option}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
 
-                    {question.type === 'checkboxes' && (
-                      <div className="space-y-3">
-                        {question.options.map((option, optionIndex) => (
-                          <label key={optionIndex} className="relative flex items-center cursor-pointer group">
-                            <div className="relative flex items-center">
-                              <input
-                                type="checkbox"
-                                checked={(responses[question.id] || []).includes(option)}
-                                onChange={(e) => handleCheckboxChange(question.id, option, e.target.checked)}
-                                className="sr-only"
-                              />
-                              <div className={`w-5 h-5 rounded-lg border-2 transition-all duration-200 ${
-                                (responses[question.id] || []).includes(option)
-                                  ? 'border-indigo-500 bg-indigo-500' 
-                                  : 'border-gray-300 group-hover:border-indigo-300'
-                              }`}>
-                                {(responses[question.id] || []).includes(option) && (
-                                  <svg className="absolute w-3 h-3 text-white transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                  </svg>
-                                )}
-                              </div>
-                            </div>
-                            <div className={`ml-4 px-4 py-3 rounded-xl flex-1 transition-all duration-200 ${
-                              (responses[question.id] || []).includes(option)
-                                ? 'bg-indigo-50 border-2 border-indigo-200' 
-                                : 'bg-gray-50 border-2 border-gray-200 group-hover:bg-indigo-50 group-hover:border-indigo-200'
-                            }`}>
-                              <span className="text-base font-medium text-gray-900">{option}</span>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    )}
+                  {question.type === 'checkboxes' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {question.options.map((option, idx) => (
+                        <label key={idx} className={`group flex items-center p-5 cursor-pointer rounded-2xl border-2 transition-all duration-300 ${
+                          (responses[question.id] || []).includes(option)
+                            ? 'border-indigo-600 bg-indigo-50/50 shadow-md shadow-indigo-100' 
+                            : 'border-slate-50 bg-slate-50/30 hover:border-slate-200 hover:bg-white'
+                        }`}>
+                          <input
+                            type="checkbox"
+                            checked={(responses[question.id] || []).includes(option)}
+                            onChange={(e) => handleCheckboxChange(question.id, option, e.target.checked)}
+                            className="sr-only"
+                          />
+                          <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center mr-4 transition-all duration-300 ${
+                            (responses[question.id] || []).includes(option)
+                              ? 'border-indigo-600 bg-indigo-600' 
+                              : 'border-slate-200 bg-white'
+                          }`}>
+                            {(responses[question.id] || []).includes(option) && (
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className={`text-base font-bold transition-colors duration-300 ${
+                            (responses[question.id] || []).includes(option) ? 'text-indigo-900' : 'text-slate-600'
+                          }`}>
+                            {option}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
 
-                    {question.type === 'dropdown' && (
-                      <div className="relative">
-                        <select
-                          value={responses[question.id] || ''}
-                          onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                          className="w-full px-4 py-4 text-base transition-all duration-200 border-2 border-gray-200 appearance-none cursor-pointer bg-gray-50 rounded-xl focus:border-indigo-500 focus:bg-white focus:outline-none"
-                          required={question.required}
-                        >
-                          <option value="">Select an option...</option>
-                          {question.options.map((option, optionIndex) => (
-                            <option key={optionIndex} value={option}>{option}</option>
-                          ))}
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
-                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
+                  {question.type === 'linear_scale' && (
+                    <div className="bg-slate-50 p-10 rounded-[2.5rem] border border-slate-100 shadow-inner">
+                      <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+                        <div className="text-center md:text-left min-w-[120px]">
+                          <span className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Lower Bound</span>
+                          <span className="text-sm font-bold text-slate-700">{question.scaleMinLabel || 'Minimum'}</span>
                         </div>
-                      </div>
-                    )}
-
-                    {question.type === 'linear_scale' && (
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between text-sm font-medium text-gray-600">
-                          <span className="px-3 py-1 text-red-700 bg-red-100 rounded-full">{question.scaleMinLabel || question.scaleMin}</span>
-                          <span className="px-3 py-1 text-green-700 bg-green-100 rounded-full">{question.scaleMaxLabel || question.scaleMax}</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-wrap justify-center gap-4">
                           {Array.from({ length: question.scaleMax - question.scaleMin + 1 }, (_, i) => {
-                            const value = question.scaleMin + i;
-                            const isSelected = responses[question.id] == value;
+                            const val = question.scaleMin + i;
+                            const isSel = responses[question.id] == val;
                             return (
-                              <label key={value} className="flex flex-col items-center cursor-pointer group">
+                              <label key={val} className="flex flex-col items-center cursor-pointer group">
                                 <input
                                   type="radio"
                                   name={question.id}
-                                  value={value}
-                                  checked={isSelected}
+                                  value={val}
+                                  checked={isSel}
                                   onChange={(e) => handleResponseChange(question.id, parseInt(e.target.value))}
                                   className="sr-only"
                                   required={question.required}
                                 />
-                                <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                                  isSelected 
-                                    ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg scale-110' 
-                                    : 'border-gray-300 bg-white text-gray-600 group-hover:border-indigo-300 group-hover:bg-indigo-50'
+                                <div className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center text-lg font-bold transition-all duration-300 ${
+                                  isSel 
+                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-xl shadow-indigo-100 scale-110' 
+                                    : 'border-white bg-white text-slate-300 hover:border-indigo-300 hover:text-indigo-600'
                                 }`}>
-                                  <span className="text-sm font-bold">{value}</span>
+                                  {val}
                                 </div>
                               </label>
                             );
                           })}
                         </div>
-                      </div>
-                    )}
-
-                    {question.type === 'date' && (
-                      <div className="relative">
-                        <input
-                          type="date"
-                          value={responses[question.id] || ''}
-                          onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                          className="w-full px-4 py-4 text-base transition-all duration-200 border-2 border-gray-200 bg-gray-50 rounded-xl focus:border-indigo-500 focus:bg-white focus:outline-none"
-                          required={question.required}
-                        />
-                      </div>
-                    )}
-
-                    {question.type === 'time' && (
-                      <div className="relative">
-                        <input
-                          type="time"
-                          value={responses[question.id] || ''}
-                          onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                          className="w-full px-4 py-4 text-base transition-all duration-200 border-2 border-gray-200 bg-gray-50 rounded-xl focus:border-indigo-500 focus:bg-white focus:outline-none"
-                          required={question.required}
-                        />
-                      </div>
-                    )}
-
-                    {question.type === 'true_false' && (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
-                          <label className="relative flex items-center cursor-pointer group">
-                            <input
-                              type="radio"
-                              name={question.id}
-                              value="true"
-                              checked={responses[question.id] === 'true'}
-                              onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                              className="sr-only"
-                              required={question.required}
-                            />
-                            <div className={`w-full px-4 py-4 text-center rounded-xl border-2 transition-all duration-200 ${
-                              responses[question.id] === 'true'
-                                ? 'border-green-500 bg-green-50 text-green-700'
-                                : 'border-gray-300 bg-gray-50 text-gray-600 group-hover:border-green-300 group-hover:bg-green-50'
-                            }`}>
-                              <span className="font-medium">True</span>
-                            </div>
-                          </label>
-
-                          <label className="relative flex items-center cursor-pointer group">
-                            <input
-                              type="radio"
-                              name={question.id}
-                              value="false"
-                              checked={responses[question.id] === 'false'}
-                              onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                              className="sr-only"
-                              required={question.required}
-                            />
-                            <div className={`w-full px-4 py-4 text-center rounded-xl border-2 transition-all duration-200 ${
-                              responses[question.id] === 'false'
-                                ? 'border-red-500 bg-red-50 text-red-700'
-                                : 'border-gray-300 bg-gray-50 text-gray-600 group-hover:border-red-300 group-hover:bg-red-50'
-                            }`}>
-                              <span className="font-medium">False</span>
-                            </div>
-                          </label>
+                        <div className="text-center md:text-right min-w-[120px]">
+                          <span className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Upper Bound</span>
+                          <span className="text-sm font-bold text-slate-700">{question.scaleMaxLabel || 'Maximum'}</span>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+                    </div>
+                  )}
 
-          {/* Enhanced Submit Section */}
-          <div className="relative overflow-hidden bg-white border border-gray-100 shadow-xl rounded-2xl">
-            {/* Decorative gradient bar */}
-            <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500"></div>
-            
-            <div className="p-8">
-              <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-12 h-12 shadow-lg bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Ready to submit?</h3>
-                    <p className="text-sm text-gray-600">Review your answers before submitting</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const initialResponses = {};
-                      form.questions.forEach(question => {
-                        initialResponses[question.id] = question.type === 'checkboxes' ? [] : '';
-                      });
-                      setResponses(initialResponses);
-                    }}
-                    className="px-6 py-3 font-medium text-gray-600 transition-all duration-200 bg-gray-100 border-2 border-gray-200 rounded-xl hover:bg-gray-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                  >
-                    Clear form
-                  </button>
-                  
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="relative px-8 py-3 font-semibold text-white transition-all duration-200 transform shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:scale-105 active:scale-95"
-                  >
-                    {isSubmitting ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
-                        Submitting...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span>Submit Form</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
+                  {(question.type === 'date' || question.type === 'time') && (
+                    <div className="max-w-xs">
+                      <input
+                        type={question.type}
+                        value={responses[question.id] || ''}
+                        onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                        className="w-full px-6 py-4 text-lg font-bold text-slate-900 border-2 border-slate-100 bg-slate-50/30 rounded-2xl focus:border-indigo-600 focus:bg-white outline-none transition-all duration-300"
+                        required={question.required}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          </div>
-        </form>
+            ))}
+          </form>
         </div>
       </div>
 
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className={`mx-4 duration-300 transform bg-white shadow-2xl rounded-2xl animate-in fade-in-0 zoom-in-95 ${submissionResult?.score ? 'max-w-2xl' : 'max-w-md'}`}>
-            <div className="relative overflow-hidden">
-              {/* Decorative gradient bar */}
-              <div className={`h-2 ${submissionResult?.score ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500' : 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500'}`}></div>
+      {/* Success Modal Restructured for New Layout */}
+      {showSuccessModal && isMounted && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className={`relative w-full max-h-[90vh] overflow-y-auto bg-white shadow-2xl rounded-[2.5rem] animate-in zoom-in-95 duration-300 ${submissionResult?.score ? 'max-w-2xl' : 'max-w-md'} border border-white/20 custom-scrollbar`}>
+              <div className="relative">
+                <div className={`sticky top-0 z-20 h-2 w-full ${submissionResult?.score ? 'bg-indigo-600' : 'bg-emerald-600'}`}></div>
 
-              <div className="p-8">
-                {/* Success icon */}
-                <div className={`flex items-center justify-center w-16 h-16 mx-auto mb-6 ${submissionResult?.score ? 'bg-blue-100' : 'bg-green-100'} rounded-full`}>
-                  {submissionResult?.score ? (
-                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div className="p-8 lg:p-12">
+                  <div className={`flex items-center justify-center w-20 h-20 mx-auto mb-6 ${submissionResult?.score ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'} rounded-3xl shadow-inner border border-white`}>
+                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
-                  ) : (
-                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  )}
-                </div>
-
-                <h3 className="mb-4 text-2xl font-bold text-center text-gray-900">
-                  {submissionResult?.score ? 'Form Submitted - Here are your results!' : 'Form Submitted Successfully!'}
-                </h3>
-
-                {submissionResult?.score && (
-                  <div className="mb-6">
-                    {/* Score Summary */}
-                    <div className="p-4 mb-4 text-center border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
-                      <div className="mb-2 text-3xl font-bold text-blue-600">
-                        {submissionResult.score.earnedPoints}/{submissionResult.score.totalPoints}
-                      </div>
-                      <div className="mb-1 text-lg font-semibold text-blue-800">
-                        {submissionResult.score.percentage}% Score
-                      </div>
-                      <div className="text-sm text-blue-600">
-                        You got {submissionResult.score.questionResults.filter(r => r.isCorrect).length} out of {submissionResult.score.questionResults.length} questions correct
-                      </div>
-                    </div>
-
-                    {/* Question Results */}
-                    <div className="space-y-3 overflow-y-auto max-h-60">
-                      <h4 className="mb-3 font-semibold text-gray-900">Question Breakdown</h4>
-                      {submissionResult.score.questionResults.map((result, index) => (
-                        <div key={result.questionId} className={`p-3 rounded-lg border ${result.isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                          <div className="flex items-start justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-900">Q{index + 1}</span>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs px-2 py-1 rounded-full ${result.isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                {result.isCorrect ? '✓ Correct' : '✗ Incorrect'}
-                              </span>
-                              <span className="text-sm font-medium text-gray-700">
-                                {result.pointsEarned}/{result.maxPoints} pts
-                              </span>
-                            </div>
-                          </div>
-                          <div className="mb-1 text-sm text-gray-600">{result.questionTitle}</div>
-                          {!result.isCorrect && result.showCorrectAnswer && result.correctAnswer && (
-                            <div className="text-xs text-gray-500">
-                              Correct answer: {result.displayText.includes('Correct:') ? result.displayText.split('Correct: ')[1] : result.correctAnswer}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
                   </div>
-                )}
 
-                <p className={`text-center ${submissionResult?.score ? 'mb-4' : 'mb-6'} text-gray-600`}>
-                  {submissionResult?.score ? 'Review your performance above. Your responses have been recorded.' : 'Thank you for completing the form. Your responses have been recorded.'}
-                </p>
+                  <h3 className="mb-2 text-xl font-bold text-center text-slate-900 tracking-tight leading-none">
+                    {submissionResult?.score ? 'Submission Finalized' : 'Confirmed!'}
+                  </h3>
+                  
+                  <p className="mb-8 text-xs font-bold text-center text-slate-400 uppercase tracking-widest">
+                    {submissionResult?.score 
+                      ? 'Your performance has been evaluated.' 
+                      : 'Your responses are safely recorded.'}
+                  </p>
 
-                <div className="flex justify-center">
+                  {submissionResult?.score && (
+                    <div className="mb-10 space-y-8">
+                      {/* High-End Score Card */}
+                      <div className="relative p-10 text-center border-2 border-slate-50 bg-slate-50/50 rounded-[2.5rem] overflow-hidden">
+                        <div className="relative z-10">
+                          <span className="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4">Final Grade Evaluation</span>
+                          <div className="flex items-baseline justify-center gap-2 mb-2">
+                            <span className="text-7xl font-black text-indigo-600 tracking-tighter">{submissionResult.score.earnedPoints}</span>
+                            <span className="text-2xl font-black text-slate-300">/ {submissionResult.score.totalPoints}</span>
+                          </div>
+                          <div className="inline-block px-6 py-2 rounded-full bg-indigo-600 text-white font-black text-xs tracking-widest shadow-xl shadow-indigo-100 uppercase">
+                            Level: {submissionResult.score.percentage}%
+                          </div>
+                        </div>
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100/30 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-50 rounded-full -ml-16 -mb-16 blur-3xl"></div>
+                      </div>
+
+                      {/* Question Map Results */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between px-2">
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Response Analysis</h4>
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">
+                            {submissionResult.score.questionResults.filter(r => r.isCorrect).length} Correct
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-3 overflow-y-auto max-h-[240px] pr-2 custom-scrollbar">
+                          {submissionResult.score.questionResults.map((result, idx) => (
+                            <div key={idx} className={`p-5 rounded-2xl border-2 transition-all duration-300 ${
+                              result.isCorrect ? 'bg-white border-slate-50' : 'bg-rose-50/30 border-rose-50'
+                            }`}>
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Q{idx + 1} • {result.pointsEarned}/{result.maxPoints} PTS</div>
+                                  <div className="text-sm font-bold text-slate-800 leading-snug">{result.questionTitle}</div>
+                                </div>
+                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border-2 ${result.isCorrect ? 'border-emerald-100 bg-emerald-50 text-emerald-600' : 'border-rose-100 bg-rose-50 text-rose-600'}`}>
+                                  {result.isCorrect ? (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <button
                     onClick={() => {
                       setShowSuccessModal(false);
-                      router.push('/home');
+                      if (courseSlug) {
+                        router.push(`/courses/${courseSlug}`);
+                      } else {
+                        router.push('/home');
+                      }
                     }}
-                    className="px-8 py-3 font-semibold text-white transition-all duration-200 transform shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl hover:scale-105 active:scale-95"
+                    className="w-full py-5 font-black text-sm text-white bg-slate-900 hover:bg-black rounded-2xl shadow-2xl transition-all duration-300 hover:-translate-y-1 active:translate-y-0 uppercase tracking-widest"
                   >
-                    Return to Dashboard
+                    Return to Course
                   </button>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </div>,
+        document.body
       )}
+
+      {/* Finalize Submission Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmSubmitModal}
+        onClose={() => setShowConfirmSubmitModal(false)}
+        onConfirm={() => handleSubmit()}
+        title="Finalize Submission?"
+        message="Are you sure you want to submit your responses? You may not be able to edit them later."
+        confirmText="Yes, Submit"
+        cancelText="Review Responses"
+        variant="info"
+        loading={isSubmitting}
+        zIndex={110}
+      />
+
+      {/* Reset Progress Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showResetConfirmModal}
+        onClose={() => setShowResetConfirmModal(false)}
+        onConfirm={() => {
+          setResponses({});
+          setShowResetConfirmModal(false);
+        }}
+        title="Clear All Progress?"
+        message="This will reset all your answers in this form. This action cannot be undone."
+        confirmText="Reset Everything"
+        cancelText="Keep My Answers"
+        variant="danger"
+        zIndex={110}
+      />
+
+      {/* Error/Notification Modal */}
+      <ConfirmationModal
+        isOpen={errorModal.isOpen}
+        onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
+        onConfirm={() => setErrorModal({ ...errorModal, isOpen: false })}
+        title={errorModal.title}
+        message={errorModal.message}
+        confirmText="Understood"
+        showCancel={false}
+        variant={errorModal.variant}
+        zIndex={110}
+      />
     </div>
   );
 };

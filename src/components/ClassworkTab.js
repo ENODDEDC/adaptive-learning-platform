@@ -7,6 +7,7 @@ import CreateClassworkModal from '@/components/CreateClassworkModal';
 import SubmitAssignmentModal from '@/components/SubmitAssignmentModal';
 import TeacherAssignmentModal from '@/components/TeacherAssignmentModal';
 import StudentAssignmentModal from '@/components/StudentAssignmentModal';
+import FormResponsesModal from '@/components/FormResponsesModal';
 import ContentViewer from '@/components/ContentViewer.client';
 import { getThumbnailIframeSrc } from '@/utils/thumbnailUtils';
 import AttachmentPreview from '@/components/AttachmentPreview';
@@ -828,6 +829,10 @@ const ClassworkTab = ({
   const [isTeacherAssignmentModalOpen, setIsTeacherAssignmentModalOpen] = useState(false);
   const [isStudentAssignmentModalOpen, setIsStudentAssignmentModalOpen] = useState(false);
 
+  // New states for form responses
+  const [selectedFormForResponses, setSelectedFormForResponses] = useState(null);
+  const [isFormResponsesModalOpen, setIsFormResponsesModalOpen] = useState(false);
+
   // Enhanced filtering and view states
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // grid, list
@@ -961,6 +966,15 @@ const ClassworkTab = ({
 
       if (isInstructor) {
         options.push({
+          label: 'View Responses',
+          icon: '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />',
+          action: () => {
+            setSelectedFormForResponses(item);
+            setIsFormResponsesModalOpen(true);
+          }
+        });
+
+        options.push({
           label: 'Edit Form',
           icon: '<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />',
           action: () => handleEditForm(item)
@@ -1050,13 +1064,27 @@ const ClassworkTab = ({
     window.location.href = `/forms/new?courseId=${courseDetails._id}`;
   };
 
-  // Handle assignment click - open appropriate modal based on user role
-  const handleAssignmentClick = (assignment) => {
+  // Handle activity click - open appropriate modal or link based on user role and type
+  const handleAssignmentClick = (item) => {
+    // Check if it's a form
+    const isForm = item.itemType === 'form' || item.type === 'form';
+
+    if (isForm) {
+      if (isInstructor) {
+        handleEditForm(item);
+      } else {
+        // For students: open form in new tab
+        window.open(`/forms/${item._id}`, '_blank');
+      }
+      return;
+    }
+
+    // Standard assignment logic
     if (isInstructor) {
-      setSelectedAssignment(assignment);
+      setSelectedAssignment(item);
       setIsTeacherAssignmentModalOpen(true);
     } else {
-      setSelectedAssignment(assignment);
+      setSelectedAssignment(item);
       setIsStudentAssignmentModalOpen(true);
     }
   };
@@ -2388,20 +2416,24 @@ const ClassworkTab = ({
     if (!courseDetails) return;
 
     try {
+      console.log('🔍 FORMS: Fetching forms for course:', courseDetails._id);
       const res = await fetch(`/api/courses/${courseDetails._id}/forms`, {
         credentials: 'include' // Use cookies for authentication
       });
 
       if (res.ok) {
         const data = await res.json();
-        console.log('🔍 FORMS: Fetched forms:', data.forms.length, 'items');
+        console.log('🔍 FORMS: Fetched forms count:', data.forms?.length || 0);
+        console.log('🔍 FORMS: Forms data:', data.forms);
         setForms(data.forms || []);
       } else {
         console.error('🔍 FORMS: Failed to fetch forms, status:', res.status);
+        const errorData = await res.json().catch(() => ({}));
+        console.error('🔍 FORMS: Error data:', errorData);
         setForms([]);
       }
     } catch (err) {
-      console.warn('🔍 FORMS: Failed to fetch forms:', err);
+      console.warn('🔍 FORMS: Error during fetch:', err);
       setForms([]);
     }
   }, [courseDetails]);
@@ -2734,7 +2766,7 @@ const ClassworkTab = ({
                   </div>
                 ))}
               </div>
-            ) : assignments.length === 0 ? (
+            ) : (assignments.length === 0 && forms.length === 0) ? (
               <div className="py-20 text-center group">
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl group-hover:from-blue-400/30 group-hover:to-purple-400/30 transition-all duration-500"></div>
@@ -2902,7 +2934,14 @@ const ClassworkTab = ({
                                 }
                               }}
                               onDelete={() => handleDeleteClasswork(item._id)}
-                              onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
+                              onSubmit={() => {
+                                if (item.itemType === 'form') {
+                                  window.open(`/forms/${item._id}`, '_blank');
+                                } else {
+                                  setSubmittingAssignmentId(item._id);
+                                  setIsSubmitAssignmentModalOpen(true);
+                                }
+                              }}
                               onOpenContent={onOpenContent}
                               viewMode="grid"
                             />
@@ -2967,7 +3006,14 @@ const ClassworkTab = ({
                               }
                             }}
                             onDelete={() => handleDeleteClasswork(item._id)}
-                            onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
+                            onSubmit={() => {
+                              if (item.itemType === 'form') {
+                                window.open(`/forms/${item._id}`, '_blank');
+                              } else {
+                                setSubmittingAssignmentId(item._id);
+                                setIsSubmitAssignmentModalOpen(true);
+                              }
+                            }}
                             onOpenContent={onOpenContent}
                             viewMode="grid"
                           />
@@ -3003,7 +3049,14 @@ const ClassworkTab = ({
                               }
                             }}
                             onDelete={() => handleDeleteClasswork(item._id)}
-                            onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
+                            onSubmit={() => {
+                              if (item.itemType === 'form') {
+                                window.open(`/forms/${item._id}`, '_blank');
+                              } else {
+                                setSubmittingAssignmentId(item._id);
+                                setIsSubmitAssignmentModalOpen(true);
+                              }
+                            }}
                             onOpenContent={onOpenContent}
                             viewMode="list"
                           />
@@ -3041,7 +3094,14 @@ const ClassworkTab = ({
                                 }
                               }}
                               onDelete={() => handleDeleteClasswork(item._id)}
-                              onSubmit={() => { setSubmittingAssignmentId(item._id); setIsSubmitAssignmentModalOpen(true); }}
+                              onSubmit={() => {
+                                if (item.itemType === 'form') {
+                                  window.open(`/forms/${item._id}`, '_blank');
+                                } else {
+                                  setSubmittingAssignmentId(item._id);
+                                  setIsSubmitAssignmentModalOpen(true);
+                                }
+                              }}
                               onOpenContent={onOpenContent}
                               viewMode="timeline"
                             />
@@ -3229,6 +3289,19 @@ const ClassworkTab = ({
           assignment={selectedAssignment}
           courseId={courseDetails?._id}
           onSubmissionSuccess={fetchAssignments}
+        />
+      )}
+
+      {/* Form Responses Modal */}
+      {isFormResponsesModalOpen && selectedFormForResponses && (
+        <FormResponsesModal
+          isOpen={isFormResponsesModalOpen}
+          onClose={() => {
+            setIsFormResponsesModalOpen(false);
+            setSelectedFormForResponses(null);
+          }}
+          formId={selectedFormForResponses._id}
+          formTitle={selectedFormForResponses.title}
         />
       )}
 

@@ -7,15 +7,24 @@ const config = {
   ],
   theme: {
     extend: {
+      animation: {
+        'shimmer': 'shimmer 2s infinite linear',
+      },
+      keyframes: {
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+      },
       colors: {
         'base-light': '#F6F3FA',
         'divider-light': '#E4E2E7',
         'text-primary': '#4B4B4B',
       },
       fontFamily: {
-        sans: ['Inter', 'var(--font-jakarta)', 'Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
         serif: ['Crimson Text', 'Georgia', 'serif'],
-        display: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
       },
       typography: (theme) => ({
         premium: {

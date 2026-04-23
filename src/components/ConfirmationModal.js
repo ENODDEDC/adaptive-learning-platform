@@ -37,7 +37,9 @@ export default function ConfirmationModal({
   variant = 'danger',
   icon,
   loading = false,
-  showCancel = true
+  showCancel = true,
+  noBackdrop = false,
+  zIndex = 50
 }) {
   // Validate required props
   if (!title || !message || !onConfirm || !onClose) {
@@ -84,22 +86,24 @@ export default function ConfirmationModal({
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as="div" style={{ zIndex }} className="relative" onClose={onClose}>
         {/* Backdrop overlay */}
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
-        </Transition.Child>
+        {!noBackdrop && (
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div style={{ zIndex: zIndex - 1 }} className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+          </Transition.Child>
+        )}
 
         {/* Modal container */}
-        <div className="fixed inset-0 overflow-y-auto">
+        <div style={{ zIndex }} className="fixed inset-0 overflow-y-auto">
           <div className="flex items-center justify-center min-h-full p-4 text-center">
             <Transition.Child
               as={Fragment}

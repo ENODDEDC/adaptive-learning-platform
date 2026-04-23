@@ -12,10 +12,10 @@ export async function POST(request, { params }) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('Form submission - User ID:', payload.userId, 'Form ID:', params.id);
+    const { id } = await params;
+    console.log('Form submission - User ID:', payload.userId, 'Form ID:', id);
 
     await connectMongo();
-    const { id } = params;
 
     // Validate request body
     let body;

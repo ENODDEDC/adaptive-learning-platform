@@ -1,0 +1,2559 @@
+﻿FULL Documentation
+DEVELOPMENT OF AN ADAPTIVE LEARNING MANAGEMENT SYSTEM SUPPORTING STUDENTS' UNIQUE LEARNING STYLES
+
+
+
+
+
+
+
+
+A Capstone Project
+
+
+
+
+Presented to the Faculty of the 
+College of Information Technology 
+Systems Plus Computer College 
+Caloocan Campus 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+By
+ANDEZA, JAYVIN
+CARCUEVA, JUSTINE
+ESPIRITU, JOHN CARL
+LALOAN, PJAY
+NICERIO, KYLE
+ROSERO, JOEDEMAR
+TAHARI, RHYIO
+UBA, HARRES
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+In Partial Fulfillment of the Requirements for the Degree 
+Bachelor of Science in Information Technology
+April 2026
+Chapter 1        
+INTRODUCTION
+Background of the Study
+To meet the demands of a fast-changing, information-driven society, educational systems must integrate technological tools that support flexible, individualized, and accessible learning (Atmaca-Aksoy, 2024). An LMS platform fosters an environment that cultivates engagement and learner achievement, enabling learners to register for classes, track their progress, and stay updated on course announcements and other relevant information. Fundamentally, an LMS behaves as a platform to distribute and oversee educational material (Bradley, 2020). Phan et al. (2022) state that systems like the LMS turn learning into a more active and interactive process, requiring more effort from students and increasing the retention of knowledge and the acquisition of new skills. Technology doesn’t simply provide convenience but a more efficient learning environment; this provides an opportunity for innovations like the integration of artificial intelligence.
+        Chen et al. (2020) define artificial intelligence as the culmination of computers, computer-related technologies, machines, and information communication technology innovations and developments to give computers the ability to perform near-human or human-like functions. In line with the use of new technology, artificial intelligence has also been extensively utilized in the education sector. Artificial intelligence has a wide range of applications, including adaptive learning. Daugherty et al. (2022) state that adaptive learning provides students with the means to acquire information according to their individual needs and cognitive differences, thus facilitating the learning process of each individual. Despite its potential, adaptive learning has not been widely implemented in current LMS platforms.
+        Current learning management systems provide the same services to all users regardless of their needs. Students learn according to their preferred methods, and a key move in making education flexible is to evaluate these preferences (Aldahwan & Alsaeed, 2020). Traditional one-size-fits-all educational approaches struggle to adequately cater to this individual variability, leading to suboptimal learning experiences and potentially hindering learners' overall performance (Das et al., 2023). Students in the same course do not all progress or feel satisfied in the same way because they start with different skill levels and learning habits. To support everyone, there needs to be a focus on strengthening the factors that drive improvement. By doing this, learners of all levels have a better chance to improve their skills, feel more confident about managing their learning, and be satisfied with their progress (Koenig & Guertler, 2021).
+        Every learner possesses a unique set of strengths, weaknesses, and interests, which can significantly impact their academic performance and engagement in the learning process. It is of particular importance for example, in Massive Open Online Courses (MOOC), where the same course is followed by thousands of learners, all with different backgrounds, knowledge, and culture, making it impossible to provide efficient one-size-fits-all learning environments (Paquette et al., 2021).
+        Educational experts often formulate policies that address a single or relatively small set of problems and then implement them, believing the solution they advocate will be efficient, complete, widely scalable, comprehensive, and easily implemented. Unfortunately, linear approaches are rarely sufficient to address complex issues as they are essentially incapable of generating viable solutions for a broader audience. In contrast, complex systems are characterized by “highly connected networks of semi-independent agents from which system-wide patterns emerge that can learn and adapt over time” (Gunawardena et al., 2023).
+        The researchers' proposed solution is to develop a learning management system that utilizes artificial intelligence to adapt to learners' specific styles or preferences in studying to give them a more personalized learning experience. In the researchers’ study, the Felder-Silverman Learning Style Model (FSLSM) was applied to categorize students’ learning styles. This model defines each learner based on their distinct preferences across its dimensions. The system will be able to identify these learning styles using machine learning, specifically through the XGBoost algorithm. 
+
+
+
+
+        
+
+
+________________
+
+
+Objectives of the Study
+General Objective
+This project aims to develop a learning management system that utilizes artificial intelligence to adapt to each learner’s unique study preferences, providing a more personalized learning experience. The goal is to make learning more personalized by allowing students to facilitate their learning using their preferred methods. The system will use the Felder-Silverman Learning Style Model (FSLSM) and apply the XGBoost algorithm to classify students’ learning styles.
+Specific Objectives
+* To design an adaptive learning management system that can transform course materials to students' specific learning styles to boost performance and engagement.
+* To develop an adaptive learning system that tracks users behavior to find out each learner's preference by using XGBoost, the main component to determine the learning style of each student.  To transform learning material according to the user's learning preferences by utilizing Gemini AI, an artificial intelligence model used for providing transformed content within the adaptive learning management system.
+* To evaluate the functionality of digital learning features through model evaluation metrics, performance of generative artificial intelligence, and testing the main functionalities of the learning management system.
+* To evaluate the system by using Functionality, Usability, Reliability, Performance, and Supportability (FURPS) framework, and conducting a pre-test and post-test.
+Scope and Limitations of the Study
+Scope of the System
+1. Functionalities: Core LMS functionalities such as course management, learning content management, and learning objects. 
+2. Administrative Controls: Tools for managing users, courses, system settings, and monitoring overall platform health and usage.
+3. Content Generation: The system is capable of taking learning materials and transforming them into other forms of material such as practice quizzes, questions and activities.
+4. Supervised Machine Learning (Classification): The system applies supervised ML, specifically XGBoost, to classify students’ learning styles based on the Felder-Silverman Learning Style Model (FSLSM). This allows the platform to adapt course materials according to individual preferences.
+5. Rule-Based Algorithm: To generate initial labels by mapping students’ behaviors, such as time spent on videos, replay counts, or forum participation, into preliminary categories. These labels serve only as a starting point for training the machine learning model, which then learns more accurate patterns from the data.
+Limitations of the System
+1. AI Model: The AI model includes a rate limit as it can vary by the license.
+2. Assistance: The AI-generated content does not provide direct answers to the students’ assigned activities.
+3. Learning Model: The Supervised ML (XGBoost) requires sufficient labeled training data; predictions may be inaccurate if the dataset is small or unbalanced.
+4. Datasets: The acquired datasets used to train the machine learning algorithm may not be entirely compatible with the features present within the system.
+________________
+Chapter 2
+CONCEPTUAL FRAMEWORK
+Review of Related Literature and Studies
+E-learning, Online Learning, and Distance Learning
+Methods like face-to-face education have been the standard form of education. However, with the advancement of technology, online learning is becoming more popular. Although considered traditional, face-to-face and newer methods of learning, like online learning mechanisms, are indeed the learning methodologies that we can depend on in the 21st century. Many of our academic institutions rely on effective ways of teaching our learners and how we can develop a transformative learning innovation for their learning pleasure. Teachers must continually develop instructional strategies using innovative technology tools to ensure optimal development of students' critical thinking skills and overall academic performance in both asynchronous and synchronous learning environments. The effectiveness of online learning compared to face-to-face learning is a subject of much debate (Lee, 2024).
+Culduz (2024) states that there are several key differences between online and traditional education. Firstly,  traditional training typically occurs in a specific place and at a particular time. Students are given a schedule of their weekly lessons, and the teacher expects them to attend the lesson at the specified time. This time dependency complicates the traditional approach to education for some students who have external commitments such as family or work. In these cases, the online education approach provides much-needed flexibility.
+Additionally, the researchers provided a contrast between terms related to online education. E-learning refers to all educational activities carried out synchronously or asynchronously by individuals or groups working online or offline, through networked or independent computers and other electronic devices. Online education is a form of e-learning that involves learning experiences in synchronous or asynchronous environments utilizing various devices with internet access to deliver educational programs, courses, and certifications. In these environments, students can learn and interact with instructors and other students anywhere. Distance learning, on the other hand, is a form of education that features the physical separation of teachers and students during teaching and the use of various technologies to facilitate student-teacher and student-student communication. These forms of learning present a different set of affordances and challenges.
+Virtual Learning Environment
+Yadav et al. (1998) describe the virtual learning environment as a means to overcome the shortcomings of the traditional classroom environment and the distance learning method. Students and teachers do not have to meet at the same time and location. However, the students can retrieve course content at their own convenience and interact with the instructors according to their needs.
+Kovtoniuk et al. (2022) emphasized that the important components of virtual learning environments are ensuring expediency of learning by maintaining the priority of learning over teaching; dominance of activity-based type of learning; organization of independent learning activities; increasing motivation for learning through the use of means of complex presentation and manipulation of audiovisual information; increasing the level of emotional perception of information and formation of abilities to implement various forms of independent activities for information processing.
+Furthermore, the authors proposed that virtual learning environments are designed by using a modern learning management system (LMS), a web-based application that enables the administration of educational content in the distance learning process. The presence of a convenient learning management system will allow you to solve several problems that previously required a large number of disparate tools.
+Learning Management System
+  
+
+	Figure 1. The Structure of the Learning Management System
+	Source: https://tinyurl.com/3dvbdp26
+	Adzharuddin (2013) stated that learning management systems are used worldwide to connect students and teachers outside the traditional classroom setting. It is primarily used to share materials and activities with students and also to initiate discussions. Zahra et al. (2024) describe a learning management system as an online system to facilitate progressive learning. The system is capable of distributing and tracking learning materials, registering in courses, tracking their grades, and staying updated with their respective courses. At the same time, Furqon et al. (2023) added that learning management systems have beneficial effects on academic performance among students and foster a favorable perception of their usage. Features such as accessibility, flexibility, interactivity, and availability of learning materials are what make the learning management system favorable for students. 
+Artificial Intelligence
+According to Jiang et al. (2022), there are several definitions of artificial intelligence. In the Turing test, AI is defined as the ability of machines to communicate with humans (using electronic output devices) without revealing that they are not humans, where the essential judgment criterion is binary. Marvin Minsky, one of the pioneers of AI, defined AI as enabling machines to do things that require human intelligence. The symbolic school believes that AI is the operation of symbols, and the most primitive symbols correspond to the physical entities. Although the descriptions of AI are various, the core of AI is widely believed to be the research theories, methods, technologies, and applications for simulating, extending, and expanding human intelligence. Nowadays, the concept of AI has an increasingly profound impact on human life. Throughout the history of scientific and technological development, the emergence of any scientific and technological revolution is not only reflected in technology, but also changes in human social structure, moral constraints, laws, and education.
+Artificial intelligence is used in education in many ways. AI is integrated into several technologies, such as chatbots and automated grading systems. Previous research suggests that AI supports collaboration, personalization of learning experiences, adaptive feedback, profiling students' backgrounds, and monitoring their progress (Celik et al., 2022).
+Wang et al. (2024) identified different categories of AIED (Artificial Intelligence in Education) applications. One of these categories is adaptive learning and personalized tutoring, the most studied among all applications. This category of AIED applications aims to customize the learning process and create an adaptive learning environment for learners based on their knowledge level, learning style, emotional state, and interest preferences. These applications have evolved significantly in recent years, transitioning from rule-based expert systems to more complex AI techniques and algorithms like neural networks and decision trees. The design of these applications has become increasingly interactive and learner-centered.
+Lee et al. (2024) highlight AI's potential to enhance the educational landscape. Educators see AI as a tool to provide personalized learning experiences and create a more inclusive curriculum. This includes the potential to benefit students from vulnerable groups, such as those with learning disabilities. The most commonly cited benefit involves efficiency, time saving, and the reduction of workload. AI is perceived as a tool that can "kick-start" ideas, design multiple-choice questions, and speed up data processing.
+Generative AI
+Mirea et al. (2025) state that generating simple explanations for advanced concepts, formulating concise summaries of other texts, and creating questions for self-assessment are some common use cases for AI for students. Moreover, generative AI has the potential to serve as a feedback tool for improvement by intervening in metacognition. Students perceive ChatGPT as a way to streamline the learning process, enhance the quality of their homework, and help them to learn. Students put artificial intelligence in a favorable light when it comes to its use in the learning process.  Even if that is the case, there are concrete examples of studies that demonstrate that positive feedback does not lead to improvements in learning outcomes, being an “illusion of utility”. 
+Mittal et al. (2024) highlighted the many advantages and benefits that generative AI provides. Most of the time, lectures at schools and universities can become boring, and teachers often lack effective ways to make the lectures interesting. It can help in this area by providing engaging and immersive learning content to the students, which would make learning fun. Generative AI can easily adapt to the teaching style of each individual, a capability that teachers in traditional settings struggle to achieve. Lastly, the models are efficient, and they can help the teachers generate various quizzes and assignments for the students as well as assist with corrections, which otherwise is a very long and tedious task.
+Machine Learning
+França et al. (2021) describe machine learning as an aspect of artificial intelligence that competently performs automation in the process of building analytical models that allow machines to adapt independently to new scenarios, enabling software to successfully predict and react to the deployment of scenarios based on past results. 
+Rashid and Kausik (2024) say that machine learning (ML) serves as the critical technological foundation for optimizing operations and enhancing decision-making across diverse global industries. In the agricultural and manufacturing sectors, ML algorithms drive automation by enabling autonomous robots to perform precision tasks like weed removal and by facilitating predictive maintenance through the forecasting of equipment lifecycles. The healthcare industry leverages these techniques for high-precision diagnostics, utilizing deep neural networks to analyze medical imagery for conditions such as skin cancer with accuracy that rivals human practitioners. Furthermore, ML fundamentally alters service-oriented domains; it powers adaptive tutoring systems that personalize education, drives dynamic content recommendation engines in e-commerce and entertainment, and strengthens financial security by identifying fraudulent transaction patterns.
+Ersozlu et al. (2024) emphasize that exploring the potential uses of ML in areas such as predicting student outcomes, identifying students at risk, and customising learning experiences has all grown in recent years, with increasing interest in the use of ML in the analysis of educational data.
+Decision Tree
+  
+
+	Figure 2. Decision Tree
+	Source: https://tinyurl.com/mvkk8aa6
+	
+
+        Srihith et al. (2023) state that decision tree algorithms are the foundation of decision tree models, which are used for both classification and regression tasks. At its core, a decision tree is a tree-like structure composed of nodes and edges. Each node in the tree represents a decision or a test on a specific attribute (feature). Each edge represents the outcome of the test, leading to another node or a leaf node. Leaf nodes contain the final decision or prediction. However, they have drawbacks, such as overfitting and sensitivity to data variations.
+Ensemble Learning/Methods
+Mishra et al. (2025) define ensemble learning as the act of integrating several different models based on machine learning to get results that are superior to those produced by the algorithms when used independently. Instead of relying just on one machine learning model, a combination of rules is used to integrate the predictions from many models, yielding a single forecast that is more accurate than those from different models of machine learning models.
+Random Forest (Random Decision Tree)
+  
+
+	Figure 3. Random Forest
+	Source: https://tinyurl.com/msv4dwcz
+	Yuan et al. (2024) state that the Random Forest method constructs numerous decision trees during training, where each tree is built based on a randomly sampled subset of training data, and the final prediction is made by aggregating the predictions of all the trees. This approach enhances robustness and generalization performance, reducing the risk of overfitting by using a single decision tree. The Random Forest method is deemed a popular ML method for its effectiveness in handling complex datasets and high-dimensional feature spaces.
+Boosting
+Mishra et al. (2025) define boosting as an ensemble learning method that focuses on successively training several weak learners, with each learner aiming to rectify the mistakes of the one before it, thereby improving prediction accuracy. Boosting attempts to increase model accuracy by progressively introducing weak learners, but since it targets data that earlier models failed to predict successfully, it is vulnerable to noise, outliers, and overfitting. Popular techniques to minimize variance include cross-validation and bagging. However, boosting is commonly used for reducing bias.
+XGBoosting (eXtreme Gradient Boosting)
+  
+
+	Figure 4. eXtreme Gradient Boosting
+	Source: https://tinyurl.com/hayuhcmz
+	Zhang et al. (2023) describe XGBoost, or Extreme Gradient Boosting, as a gradient boosting framework and also a decision-tree-based ensemble method. The core principle of this method is that it builds classification or regression trees one by one, and then the residuals of the previous tree are used to train the subsequent model. In the training process, this method can integrate the values of the previously trained trees to achieve a better outcome. It can use the pruning procedure to avoid over-fitting, which reduces the size of a decision tree by removing decision nodes that contribute little to target values.
+GridSearchCV
+  
+
+	Figure 5. Hyperparameter tuning using fivefold cross-validation (GridSearchCV)
+	Source: https://tinyurl.com/ybeus97p
+	Zhao et al. (2024) state that GridSearchCV utilizes an exhaustive grid search over a predefined hyper-parameter space, evaluating each combination through cross-validation. Alhakeem et al. (2022) expands on this by stating that, a new model is automatically fitted using this method to the whole training dataset. This method aids in obtaining a more accurate generalization performance estimate. For example, with k = 5, the K-fold cross-validation procedure was used. A portion of the data is used in the K-fold cross-validation to test the model and another portion to fit it.
+Rule Based Algorithm
+Rule-based systems are appropriate for fields where the problem area can be written in the form of if-then rule statements and for which the problem area is not too great. In case of too many rules, the system may become difficult to maintain and can result in decreased performance speeds (Lengyel, 2015).
+Synthetic Data
+Hao et al. (2024) Synthetic data possesses several advantages that natural data lacks, making it an attractive choice in many fields. Compared to natural data, synthetic datasets are relatively easy to acquire and can provide data in rare or challenging scenarios, thereby addressing diversity issues in certain datasets. Additionally, this technology can effectively avoid privacy concerns, safeguarding user information security. As this technology becomes increasingly prominent, its practical applications are becoming increasingly widespread.
+Lu et al. (2025) synthetic data usage in education involves simulating student performance data to aid in designing teaching strategies. Suppose an educational researcher wants to investigate the impact of teaching styles on student performance across different backgrounds and learning abilities. However, obtaining real student data for such studies can be ethically complex and potentially intrusive. In such a situation, synthetic data can be generated that mirrors the demographic distributions, learning patterns, and likely performance of a typical student population. This data can then be used to model the effects of various teaching strategies without compromising student privacy.
+K-Fold Cross Validation
+Nti et al. (2021) state that in machine learning, one technique used for assessing training models that have received much attention over the years is cross-validation (CV). An ML model is given a labelled dataset called training data, on which model training is carried out in a classification or prediction task. The trained model is then tested on an unseen dataset commonly referred to as a testing set or validation dataset. The goal of a CV is to evaluate the model’s ability to classify new data that was not employed in estimating the model, to flag problems like selection bias or overfitting. In addition, for offers a piece of in-depth knowledge into how a trained model will generalise to an unseen dataset or a real-world problem.
+Furthermore, The essential configuration parameter for k-fold CV is k, which describes the number of folds in which a given dataset for a machine learning task is partitioned. In literature, the most commonly used values of k are five (5) or ten (10), as these two values are believed to give test error rate estimates that suffer neither from extremely high bias nor very high variance. However, there is no formal rule
+Model Evaluation Metrics
+Miller et al. (2024) highlight the following metrics used to evaluate machine learning models, which can influence the critical interpretation of results.
+
+	Figure 6. Accuracy Equation
+	Source: https://tinyurl.com/bcajdj4e
+	Accuracy is the easiest metric to understand. The accuracy metric is used to evaluate how well an algorithm assigns individuals to the correct category (e.g., predicting whether someone has a particular trait or not). However, accuracy is heavily impacted by imbalanced datasets. it is important to understand the dataset structure to enable an objective assessment of the accuracy measure.
+ 
+	Figure 7. Precision Equation
+	Source: https://tinyurl.com/bcajdj4e
+	Precision (or positive predictive value [PPV]) refers to the percentage of samples predicted to be “positive” that are actually “positive”; that is, a 100% precision means that there were no samples incorrectly labelled as “positive”. However, precision does not consider positive samples that were incorrectly labelled “negative”. By contrast, recall (or sensitivity) refers to the percentage of “positive” samples that were correctly labelled as positive; that is, a 100% recall score means that no positive samples were incorrectly labelled as negative.
+
+	Figure 8. Precision
+	Source: https://tinyurl.com/bcajdj4e
+	Recall (or sensitivity) refers to the percentage of “positive” samples that were correctly labelled as positive; that is, a 100% recall score means that no positive samples were incorrectly labelled as negative.
+
+	Figure 9. F1 Score
+	Source: https://tinyurl.com/bcajdj4e
+	The F1 score is the harmonic mean of these precision and recall metrics. Therefore, a high F1 score requires both a high precision and a high recall. The importance of the precision and recall metrics varies according to the problem.
+Feature Engineering
+Nargesian et al. (2017) define feature engineering as a central task in data preparation for machine learning. It is the practice of constructing suitable features from given features that leads to improved predictive performance. Feature engineering involves the application of transformation functions such as arithmetic and aggregate operators, on given features to generate new ones. Transformations help scale a feature or convert a non-linear relation between a feature and a target class into a linear relation, which is easier to learn.
+Wang et al. (2024) emphasize that feature engineering, a prominent phase of machine learning,has been applied to identify student success forecasting or customize educational experiences from raw data. The approach can refine data according to distinct learning styles/processes depending on individuals. This conversion of data into effective learning has raised the interest of researchers in the inclusive application of machine learning.
+Learning Style
+Mestre (2012) describes learning styles as the various ways in which individuals prefer to receive and process information, influencing the instructional methods that teachers may employ. It encompasses the notion that recognizing and adapting to different learning styles can promote self-awareness, metacognition, and improved educational outcomes. While Kaur et al. (2023) state that learning styles refer to a set of personal traits that determine the effectiveness of teaching and learning methods for different individuals. It is an important factor in educational achievement and is positively correlated with academic performance in students.
+Various Learning Style Models
+Kolb’s learning cycle has four stages: concrete experience (CE), reflective observation (RO), abstract conceptualization (AC), and active experimentation (AE). Learners ideally move through each stage—starting with direct involvement in an experience (CE), reflecting on it from different perspectives (RO), forming ideas and theories (AC), and then testing those ideas through problem solving or decision-making (AE). Kolb’s experiential learning cycle is often applied only to short-term learning events, without considering its role in long-term learning that connects past and future experiences (Egan et al., 2023).
+Honey and Mumford identified four learning styles: activist, reflector, theorist, and pragmatist. Activists learn best through trial and error, hands-on activities, and brainstorming. Theorists prefer to use logical frameworks and models to analyze and organize information. Pragmatists are eager to apply theories and techniques in real situations through systematic practice. Reflectors learn by carefully observing, reflecting on experiences, and considering how they contribute to outcomes. However, even though Honey & Mumford's learning styles focused on learning from experience, it did not guarantee whether the experience was effective learning, and the meaning of learning from experience by Honey & Mumford's learning styles was ambiguous (Ferdiani et al., 2021).
+The VARK model is an educational framework for classifying learning preferences. Developed in 1987 by Fleming, it helps customize content to meet individual needs. It consists of four preferences: Visual (graphs, diagrams), Auditory (podcasts, conversations), Reading/Writing (reading, writing), and kinesthetic (hands-on activities). The VARK model is criticized for lacking strong validation of its four learning categories and for showing little evidence that matching teaching to student preferences improves learning outcomes (Melhem & Al-Zoubi, 2025).
+Felder & Silverman Learning Style Model
+Masegosa et al. (2024) define the Felder–Silverman Learning Styles Model (FSLSM), developed by Richard M. Felder and Linda K. Silverman (1988), which proposes that individuals have varying patterns of preferences and tendencies in learning and information processing. This model structures learning styles across four dimensions, each consisting of an opposing pair of categories that represent an individual’s preferred approach to learning. A person's preference within each dimension can range in intensity (strong, moderate, or mild). The FSLSM is widely regarded for its comprehensive approach to understanding educational experiences, with many researchers contending that learning styles play a crucial role in improving instructional design and learner engagement.
+Carver et al. (1999) state that the Felder & Silverman Learning Style Model is the most appropriate for hypermedia courseware, such as a learning management system. Graf et al. (2007) state that this model is frequently used in research related to learning styles in advanced learning technologies and in technology-enhanced learning that is designed for traditional education.
+The Four Dimensions of Felder & Silverman Learning Style Model
+  
+
+	Figure 10. Felder–Silverman Learning Style Dimensions.
+	Source: https://tinyurl.com/3snp8t9n
+	
+
+Masegosa et al. (2024) expanded on the Felder–Silverman Learning Styles Model (FSLSM) by emphasizing its four key dimensions as seen in Figure 10.
+Information processing: active or reflective learners. This dimension refers to how learners engage with new information. Active learners prefer to engage with the learning material through physical or interactive means. They learn best by doing, discussing, and actively participating in hands-on activities. They enjoy group work, experiments, and practical applications of knowledge. Active learners often thrive in collaborative environments where they can interact with their peers and instructors. Reflective learners, in contrast to active learners, prefer to process information internally. They are introspective and thoughtful, often taking their time to think through concepts before formulating their own understanding. Reflective learners benefit from quiet environments that allow for contemplation and introspection. They prefer individual study, writing, and self-reflection to solidify their understanding of new information, being fond of lectures and seminars.
+Information perception: sensing or intuitive learners. This dimension relates to how learners perceive and process information. Sensing learners rely on their senses and prefer concrete, factual information. They appreciate practical examples, real-world applications, and hands-on experiences that allow them to engage with the subject matter in a tangible way. Sensing learners pay close attention to details, prefer step-by-step instructions, and may find memorization and repetition helpful in their learning process. Sensing learners tend to become distressed when faced with challenging tasks. They typically harbor concerns regarding the efficacy of academic practices and programs. Additionally, they dislike being assessed based on vague or embedded concepts and ideas. Intuitive learners are more interested in abstract and theoretical concepts. They enjoy exploring ideas, making connections between different concepts, and identifying underlying patterns and principles. Intuitive learners thrive in environments that encourage creativity, critical thinking, and conceptual understanding. They often seek out the bigger picture and are comfortable with ambiguity and uncertainty. Activities involving computation, rote learning, and conventional practices are unattractive to them. 
+Information input: visual or verbal learners. This dimension describes the preferred mode of input for learners. Visual learners learn best through visual aids and representations. They prefer information presented in the form of diagrams, charts, graphs, and visual illustrations. Visual learners exhibit a higher capacity for observation, so they benefit from seeing relationships, spatial arrangements, and visual patterns. They may use color coding, mind maps, or visual organizers to enhance their understanding and retention of information. Verbal learners prefer to learn through written and spoken words. They excel in activities such as reading, writing, listening to lectures, and engaging in discussions. Verbal learners are skilled at understanding and remembering information when it is presented through words, explanations, and verbal instructions. They may benefit from reading textbooks, taking notes, and discussing concepts with others.
+Information understanding: sequential or global learners. This dimension reflects the learners’ approach to organizing and processing information. Sequential learners prefer learning in a linear and step-by-step manner. They thrive when presented with a logical progression of information and appreciate clear and structured instructions. Sequential learners prefer to understand each concept thoroughly before moving on to the next. They often excel in subjects that involve logical reasoning, problem-solving, and following well-defined processes. Global learners have a holistic approach to learning and prefer to see the big picture. They can quickly grasp overarching concepts and connections without necessarily needing detailed step-by-step instructions. Global learners enjoy synthesizing information, making associations, and understanding the broader context. They may struggle with tasks that require a linear approach or intricate, sequential details.
+
+
+
+
+
+
+
+
+
+
+Conceptual and Statistical Models
+Rashid et al. (2024) conducted a literature review to identify the essential online activities within a learning management system that contribute significantly to determining a student's learning style.
+Table 1. 
+Online Learning Activities in LMSs
+Activities
+	Description
+	Forum
+	Forum involves forum posts, replies, and readings
+	Chat
+	Participates, listens, no participation
+	Mail
+	Use, does not use
+	Reading materials
+	Concrete, abstract
+	Exam delivery time
+	Time taken to submit the exam questions
+	Exercises
+	The number of exercises that had been done
+	Access to examples
+	The number of access to examples
+	Answer changes
+	The numbers in the answer change during exams
+	Learning materials
+	Diagrams, pictures, videos, text, and presentations
+	Exam results
+	High, moderate, low
+	Information access
+	Global, sequential
+	Source: Rashid et al. (2024)
+	Based on the review's results, eleven classes of online learning activities were identified, as seen in Table 1. The first basic components are forums, chat, and mail. These components are used to evaluate students' active involvement in the online communication. The next components are related to a student's perception. They are reading materials, whether abstract or concrete. The time taken to submit quiz questions, tests, and exams, the time spent on reinforcement exercises, access to examples, the frequency of changing answers during exams, and the number of attempted exercises. The learning materials component categorizes students as visual or verbal learners. In this component, learning materials are implemented into two categories, namely through diagrams and listening. After that, a quiz can be implemented based on the given input. The obtained score can assess student tendencies. The activities involved are reading materials in the form of videos, text, diagrams, and pictures. The final component is accessing information and exam results. This component describes how students receive the information provided and then sort it according to their understanding. Their level of understanding can be seen through the results of the examination based on the scales that have been set
+  
+
+	Figure 11. The Proposed Model by Rashid et al. 
+	Source: https://tinyurl.com/yc3mdaje
+	Additionally, they introduced a framework, illustrated in Figure 11, that logically connects specific, trackable actions within a Learning Management System (LMS) to the dimensions of the Felder-Silverman Learning Style Model (FSLSM). Their research further identified eleven distinct LMS activities that correspond to each of the four FSLSM dimensions. 
+Although the study focuses solely on a literature review and a suggested framework, it demonstrates a significant relationship between interactions with a learning management system’s learning objects and the learning preferences of each user or student. By incorporating this framework into a learning environment, instructors can gain a deeper understanding of their students' individual differences, thereby creating a more adaptive learning experience.
+        It is stated that typical learning management systems lack the necessary features to provide an adaptive learning experience; they still provide essential information about how a student uses the system and what they prefer to do within it. Daoud et al. (2024) state that studies have focused on analyzing log data, including user interactions, access logs, and forum participation, to understand student engagement and even disengagement.
+Table 2. 
+Moodle Logs
+Field Name
+	Type
+	Field Description
+	Id
+	bigint (10)
+	Identifier corresponding to the action performed
+	Time
+	bigint (10)
+	Date and time of the action
+	Userid
+	bigint (10)
+	ID number of the user who performed this action
+	IP
+	varchar (45)
+	IP address of this user at this time
+	Course
+	bigint (10)
+	Course ID
+	Module
+	varchar (20)
+	The activity in question
+	Action
+	varchar (40)
+	Any action taken by the learner in a module.
+	Info
+	varchar (455)
+	Information about the action
+	Source: Daoud et al. (2024)
+	        LMSs such as Moodle are one of the most important sources of data about a student’s behavior in e-learning. The logs, or traces of execution, recorded by the Moodle platform for each action taken by its users are stored in a single, unstructured table in its database, called log (Table 2). This information is necessary to truly understand each student’s learning style and how their behaviors can be translated to create an adaptive experience.
+
+
+
+
+  
+
+	Figure 12. Performance and learning style Forma-SMC.
+	Source: https://tinyurl.com/4ar5teak
+	The data were collected by completing a learning styles survey and participating in all supplementary online activities, including forums and discussion boards. This strategy involved students earning an extra point on their final grade, which not only encouraged engagement but also provided valuable data for refining instructional approaches. 
+Table 3.
+t-test of the mean between the performance variables and the learning styles
+
+
+	Note
+	Action
+	Dur_course
+	Nb_session
+	P-Value
+	P-Value
+	P-Value
+	P-Value
+	Processing
+	0.189
+	0.044
+	0.02
+	0.003
+	Perception
+	0.241
+	0.05
+	0.017
+	0.02
+	Input
+	0.077
+	0.094
+	0.018
+	0.089
+	Understanding
+	0.501
+	0.150
+	0.096
+	0.250
+	All values less than 0.05 indicate significant values.
+	Source:  Daoud et al. (2024)
+	Furthermore, to ensure an effective and sustainable learning environment on this platform, we are working on applying statistical analysis techniques to the learners’ performance traces, allowing for a formative evaluation of the offered learning. They found that the variables of the learning style dimensions have a significant impact on the performance indicators Action, Duration (Dur_course), and Number of Sessions (Nb_session). The data indicate a significant correlation between learning styles and student performance, particularly in the dimensions of Processing (Active/Reflective) and Perception (Intuitive/ Sensitive). 
+Although the study does not utilize machine learning algorithms, it still provides educators with valuable information about their students’ learning preferences and the impact of those preferences on their performance. By incorporating this knowledge into teaching strategies and instructional design, educators can optimize their students’ learning experience and improve their overall performance.
+Yousuf et al. (2025) adapted a similar approach for learning. They aimed to group students who have a high degree of similarity using learning style knowledge graphs, showing a student’s association with different learning styles based on their responses. Learning style knowledge graphs were used to determine a student’s learning style through the Index of Learning Style (ILS)  questionnaires. Once the ILS is obtained, a decision is made on each question. The ILS is then transformed to suit a specific context for the learners. The transformed ILS questions are used to develop students’ LSKG.
+  
+
+	Figure 13.  A student’s results of answers to ILS and creating the LSKG
+	Source: https://tinyurl.com/m9w73zxm
+	Figure 13 provides a sample visualization for an LSKG of a student based on their responses to the transformed ILS questionnaire. Each node, marked with labels such as A9, B1, etc., represents a specific question and the student’s corresponding answer. These responses are linked to the central node, which represents the student (individual), to illustrate the student’s learning preferences. They formed 26 clusters, which they state is the best number for making good clusters.
+This study enables the course administration section to form course sections based on the LSKG. It can also assist in assigning teachers accordingly. Students’ LSKG can be used for personalized learning, which is based on effective learning. LSKG addresses the strengths and weaknesses of the students. The graph highlights areas where students are weak that can be converted into their strengths. LSKG can help to create AI-based adaptive learning systems that can adjust learning according to the student’s LSKG. LSKG can create student Groups and help to teach resource-effective allocation according to the students’ learning styles.
+Predictive Models (Ensemble & Deep Learning)
+Nazempour and Darabi (2023) utilized a similar framework and statistically demonstrated that students whose actual learning styles were close to the optimal styles calculated by the system achieved better grades.
+  
+
+	Figure 14. Module Presentation Quarters and Features
+	Source: https://tinyurl.com/52dmex2j
+	The study introduced the LSOpt (Learning Style Optimization) framework, which is designed to identify the learning style (LS) features that maximize student academic performance. The framework's methodology is divided into three predictive states, each corresponding to a different quarter of the course, as illustrated in Figure 14. 
+  
+
+	
+
+	Figure 15. State III Modeling Process
+	Source: https://tinyurl.com/52dmex2j
+	Each state involves an "ML Training" phase where various machine learning models are trained to predict satisfactory/not satisfactory (S/NS) grades for the upcoming quarter, as seen in Figure 15.
+Table 4.
+Best performing models for each state
+State
+	Model
+	Accuracy
+	AUC
+	Recall
+	Precision
+	F1
+	State I
+	Gradient Boosting Classifier
+	0.7685
+	0.8421
+	0.8629 
+	0.7770 
+	0.8177
+	State II
+	Gradient Boosting Classifier
+	0.8071
+	0.8899
+	0.8635
+	0.7928
+	0.8266
+	State III
+	Light Gradient Boosting Machine
+	0.8273
+	0.9120
+	0.8457
+	0.8071
+	0.8259
+	Source: Nazempour and Darabi (2025)
+	The performance of these models is detailed in Table 4. The best-performing model for each state was selected based on the highest AUC score. For State I (Q2 prediction), the Gradient Boosting Classifier (GBC) performed best, achieving an AUC of 0.8421 on the test set. The GBC was also the top model for State II (Q3 prediction), with an AUC of 0.8899. For State III (Q4 prediction), the Light Gradient Boosting Machine (LGBM) was superior, achieving a test AUC of 0.9120.
+
+
+  
+
+	Figure 16. Average of calculated learning style features in All Quarters
+	Source: https://tinyurl.com/52dmex2j
+	The analysis of the calculated optimal learning style features shows a clear shift in student needs as they progress through a course. In the second quarter (Q2), the Active/Reflective (processing) style was the most critical, accounting for an average of 42% of optimal behavior. However, this style's importance decreased to 33% in Q3 and 14% in Q4.
+Conversely, the optimal percentage for the Sensitive/Intuitive (perception) style grew significantly, rising from 31% in Q2 to 48% in Q3, and peaking at 70% in Q4. This suggests that as a course progresses, behaviors related to perception (Sensitive/Intuitive) become substantially more important for academic success than those related to processing (Active/Reflective). Both Visual/Verbal and Sequential/Global styles saw their optimal percentages decline, from 21% to 13% and 6% to 3%, respectively, between Q2 and Q4.
+  
+
+	Figure 17. Actual and calculated learning style features in all quarters
+	Source: https://tinyurl.com/52dmex2j
+	When comparing the calculated optimal LS features to students' actual behaviors, the study identified key discrepancies. For the Visual/Verbal style, the calculated optimal percentage was consistently lower than the students' actual average engagement across all quarters. In contrast, the optimal Active/Reflective feature was found to be greater than or equal to the students' actual average behavior in all three quarters. A significant finding was that students demonstrated zero interaction with resources related to the Sequential/Global style, even though the optimization model calculated a small but necessary percentage for this feature (e.g., 6% in Q2).
+  
+
+	Figure 18. S/NS transitions (Q2-Q4) using personalized vs. average calculated LSs. (Note: Module E excluded in Q4.)
+	Source: https://tinyurl.com/52dmex2j
+	Based on Figure 18, the study modeled two strategies to compare outcomes from actual learning styles versus calculated optimal ones by tracking shifts between "Satisfactory" (S) and "Not Satisfactory" (NS) grades. The "Personalized LS Strategy," which tailors resources to each student's calculated optimal style, predicted significant improvements: 22% of students in Q2 and 18% in Q3/Q4 were projected to shift from an NS (their actual grade) to an S (their calculated potential grade). The potential negative shift (S to NS) was minimal, at 4% in Q2/Q3 and 2% in Q4. As a less expensive alternative, the "Average LS Strategy" applied the average calculated LS features to all students. This broader approach still predicted that 20% of students in Q2 and 14% in Q3/Q4 would move from their actual NS grade to a calculated S grade, though it carried a slightly higher potential negative impact, with 6-7% of students shifting from S to NS.
+        Ikawati et al. (2021) conducted a study that uses a similar framework. They utilized student behavior based on the frequency of visits to access learning objects in the learning management system to determine learning patterns using the Felder and Silverman Learning Style Model.
+  
+
+	Figure 19. Overview of the Target Dataset
+	Source: https://tinyurl.com/4nbt2b46
+	The process of extracting Moodle logs in E-Learning produces a target dataset of learning style detection results focused on the frequency of student visits to E-Learning. The dataset labels are the largest total number of frequencies of each student on Moodle. Figure 19 shows the target dataset formed.
+  
+
+	Figure 20. A Dashboard of the Student Learning Style
+	Source: https://tinyurl.com/4nbt2b46
+	Figure 20 shows each student's learning style based on the dimensions of FSLSM. There is more than one dimension of learning style in Figure 20 for each student. The learning style is selected based on the most significant number of measurements of the learning style. 
+Table 5. 
+Comparison of Accuracy Results
+Algorithm
+	Accuracy using Stratified K-Fold
+	k=3
+	k=5
+	k=10
+	Decision Tree
+	82.10%
+	84.20%
+	84.30%
+	Gradient Boosted Tree
+	87.80%
+	88.90%
+	89.80%
+	Bagging
+	88.90%
+	89.10%
+	90%
+	Source: Ikawati et al. (2021)
+	Based on Table 5, after conducting a classification experiment using the Decision Tree algorithm, Gradient Boosted Tree, and Bagging using Stratified K-Fold. The k value or the number of iterations is altered by the values 3, 5, and 10. The highest accuracy is achieved by both ensemble tree methods when k = 10. It establishes that the use of the Ensemble Tree method is superior to the Single Decision Tree Algorithm, and accuracy increases with the usage of cross-validation methods.
+Angeioplastis et al. (2025)  study introduces a hybrid profiling methodology that combines psychometric data from an extended Felder–Silverman Learning Style Model (FSLSM) questionnaire with behavioral analytics derived from Moodle Learning Management System interaction logs. A structured mapping process was employed to associate over 200 unique log event types with the FSLSM cognitive dimensions, enabling dynamic, behavior-driven learner profiles.
+Although they utilized deep learning architectures for their experiment, they suggested that simpler linear or tree-based models often offer stronger interpretability at comparable performance due to the tabular nature of most LMS features. Deep learning was simply used as a performance benchmark.
+Ayyoub and Al-Kadi (2024) demonstrate the effectiveness of their proposed semi-supervised machine learning approach, referring to it as a "self-training" or "self-taught labeling" framework. This method was chosen to build a reliable classification model despite having only a small amount of labeled data. The approach involves training an initial model on the small labeled set, using it to predict labels for the larger unlabeled set, and then combining both the original and the new "self-taught" data to train the final, more robust classification models.
+Table 6.
+Results of Self-Training Of Semi-Supervised Learning Methods for Computer Skills for Humanities Dataset
+Input Dimension
+	Evaluation Metrics
+	SVM
+	NN
+	RF
+	J4.8
+	Correctly Classified Instances (%)
+	96.86% 
+	96.92% 
+	97.54% 
+	97.54%
+	Incorrectly Classified Instances (%)
+	3.14%
+	3.08%
+	2.46%
+	2.46%
+	Specificity
+	0.76
+	0.76
+	0.79
+	0.79
+	Precision
+	0.97
+	0.97
+	0.98
+	0.98
+	Recall
+	0.97
+	0.97
+	0.98
+	0.98
+	AUC - ROC
+	0.94
+	0.99
+	0.99
+	0.97
+	Perception Dimension
+	Evaluation Metrics
+	SVM
+	NN
+	RF
+	J4.8
+	Correctly Classified Instances (%)
+	98.20% 
+	98.38% 
+	98.42% 
+	98.28%
+	Incorrectly Classified Instances (%)
+	1.79%
+	3.08%
+	2.46%
+	2.46%
+	Specificity
+	0.77
+	0.81
+	0.83
+	0.83
+	Precision
+	0.99
+	0.99
+	0.99
+	0.98
+	Recall
+	0.98
+	0.98
+	0.98
+	0.98
+	AUC - ROC
+	0.99
+	0.99
+	0.99
+	0.95
+	Processing Dimension
+	Evaluation Metrics
+	SVM
+	NN
+	RF
+	J4.8
+	Correctly Classified Instances (%)
+	97.48% 
+	97.48% 
+	99.06% 
+	98.89%
+	Incorrectly Classified Instances (%)
+	2.52%
+	2.52%
+	0.94%
+	1.11%
+	Specificity
+	0.90
+	0.85
+	0.96
+	0.95
+	Precision
+	0.98
+	0.98
+	0.99
+	0.99
+	Recall
+	0.98
+	0.98
+	0.98
+	0.98
+	AUC - ROC
+	0.94
+	0.99
+	0.99
+	0.95
+	Understanding Dimension
+	Evaluation Metrics
+	SVM
+	NN
+	RF
+	J4.8
+	Correctly Classified Instances (%)
+	93.75% 
+	93.68% 
+	92.97% 
+	93.49%
+	Incorrectly Classified Instances (%)
+	6.25%
+	6.32%
+	7.03%
+	7.51%
+	Specificity
+	0.64
+	0.62
+	0.96
+	0.65
+	Precision
+	0.94
+	0.95
+	0.94
+	0.93
+	Recall
+	0.94
+	0.94
+	0.93
+	0.94
+	AUC - ROC
+	0.83
+	0.97
+	0.97
+	0.91
+	Source: Ayyoub and Al-Kadi (2024)
+	
+
+	
+
+	
+
+	
+
+An evaluation was conducted across the four dimensions using four distinct classifiers: SVM, Neural Network, Random Forest, and J4.8. The results indicated exceptionally high accuracy across most dimensions; for instance, the Random Forest classifier achieved 99.06% accuracy in the Processing dimension and 98.42% in the Perception dimension. While still robust, the Understanding dimension yielded the lowest accuracy rates, such as the 93.75% accuracy achieved by the SVM classifier.
+Table 7.
+Results of Self-Training Of Semi-Supervised Learning Methods for Computer Skills for Medical Students Dataset
+Input Dimension
+	Evaluation Metrics
+	SVM
+	NN
+	RF
+	J4.8
+	Correctly Classified Instances (%)
+	94.76% 
+	95.03% 
+	96.60% 
+	96.60%
+	Incorrectly Classified Instances (%)
+	5.24%
+	4.97%
+	3.40%
+	3.40%
+	Specificity
+	0.96
+	0.98
+	0.99
+	0.99
+	Precision
+	0.95
+	0.95
+	0.97
+	0.97
+	Recall
+	0.95
+	0.95
+	0.97
+	0.97
+	AUC - ROC
+	0.79
+	0.99
+	0.98
+	0.99
+	Perception Dimension
+	Evaluation Metrics
+	SVM
+	NN
+	RF
+	J4.8
+	Correctly Classified Instances (%)
+	74.73%
+	73.82%
+	76.00%
+	72.73%
+	Incorrectly Classified Instances (%)
+	25.27%
+	26.18%
+	24.00%
+	27.27%
+	Specificity
+	0.75
+	0.79
+	0.80
+	0.76
+	Precision
+	0.77
+	0.71
+	0.74
+	0.68
+	Recall
+	0.75
+	0.74
+	0.76
+	0.74
+	AUC - ROC
+	0.52
+	0.73
+	0.79
+	0.70
+	Processing Dimension
+	Evaluation Metrics
+	SVM
+	NN
+	RF
+	J4.8
+	Correctly Classified Instances (%)
+	78.06% 
+	74.93%
+	75.37% 
+	76.57%
+	Incorrectly Classified Instances (%)
+	21.94%
+	25.07%
+	24.63%
+	23.43%
+	Specificity
+	0.77
+	0.69
+	0.73
+	0.74
+	Precision
+	0.78
+	0.75
+	0.75
+	0.76
+	Recall
+	0.78
+	0.75
+	0.75
+	0.77
+	AUC - ROC
+	0.75
+	0.75
+	0.73
+	0.73
+	Understanding Dimension
+	Evaluation Metrics
+	SVM
+	NN
+	RF
+	J4.8
+	Correctly Classified Instances (%)
+	72.71% 
+	73.04% 
+	72.71% 
+	70.59%
+	Incorrectly Classified Instances (%)
+	27.29%
+	26.96%
+	27.29%
+	29.41%
+	Specificity
+	0.65
+	0.68
+	0.68
+	0.64
+	Precision
+	0.77
+	0.74
+	0.77
+	0.73
+	Recall
+	0.72
+	0.73
+	0.72
+	0.70
+	AUC - ROC
+	0.74
+	0.80
+	0.79
+	0.72
+	Source: Ayyoub and Al-Kadi (2024)
+	
+
+	
+
+	
+
+	
+
+Table 8 details a notable contrast to the first dataset. While the Input dimension achieves high accuracy (e.g., 96.60% for RF and J4.8), the Perception, Processing, and Understanding dimensions yield comparatively lower performance, with accuracies generally ranging from 70% to 78%.
+The two courses were designed differently and were of unequal sizes. The types of activities, learning materials, and assessments in each course would vary, leading to different student interaction patterns. The "Computer Skills for Humanities" (CSFH) dataset was significantly larger, with 1,749 learners and 1,139,810 events. In contrast, the "Computer Skills for Medical Students" (CSFM) dataset had 564 learners and 484,410 events. This difference in the volume of data can impact the training and final performance of the machine learning models.
+  
+
+	Figure 21. Comparison between supervised learning (SL) and self-training learning (SSL).
+	Source: https://tinyurl.com/cfbtjhny
+	Figure 21 provides a comparative performance evaluation of two semi-supervised learning methods: the authors' proposed "Self-Taught" (self-training) framework and the "Tri-Training" approach. This evaluation is conducted on both datasets. The bar chart illustrates the performance of both methods across all four FSLSM dimensions. Their self-training approach demonstrates an enhanced performance over a supervised model, such as the tri-training model.
+Baihaqi et al. (2024) introduce a novel predictive framework designed to identify student learning styles by analyzing data from the Open University Learning Analytics Dataset (OULAD). To optimize the dataset for machine learning, the study employs dimension reduction to prevent overfitting and feature selection using the Random Forest method. Crucially, the framework addresses significant data imbalance by applying a combination of resampling techniques: ADASYN, RandomUnderSampler, and SMOTEENN. The resulting data is split into 80% for training and 20% for testing. This data is then used to train and evaluate five different classification models: Logistic Regression, K-Nearest Neighbor (KNN), Random Forest, Support Vector Machine (SVM), and Artificial Neural Network (ANN).
+Table 8.
+Algorithm performance when training model 80 and testing model 20, Without Tuning 
+Algorithm
+	Precision
+	Recall
+	F1 Score
+	Accuracy
+	Logistic Regression
+	94%
+	79%
+	85%
+	79%
+	KNN
+	69%
+	74%
+	71%
+	74%
+	Random Forest
+	99%
+	99%
+	99%
+	99%
+	SVM
+	94%
+	97%
+	96%
+	91%
+	ANN
+	94%
+	94%
+	94%
+	99%
+	Source: Baihaqi et al. (2024)
+	In Table 8, which shows the initial algorithm performance without tuning, the Random Forest and Artificial Neural Network (ANN) models demonstrated the highest level of performance, achieving nearly perfect results across all metrics. The Support Vector Machine (SVM) also performed strongly, with high accuracy and F1-score. Logistic Regression was less effective, with a significant gap between its high precision and its much lower recall and accuracy. The K-Nearest Neighbor (KNN) model had the lowest performance of the group, showing comparatively weak results across all metrics.
+Table 9.
+Result of algorithm performance when training model 80 and test model 20 With Tuning
+Algorithm
+	Precision
+	Recall
+	F1 Score
+	Accuracy
+	Logistic Regression
+	98%
+	95%
+	97%
+	92%
+	KNN
+	92%
+	91%
+	92%
+	91%
+	Random Forest
+	95%
+	88%
+	92%
+	97%
+	SVM
+	95%
+	94%
+	94%
+	97%
+	ANN
+	95%
+	97%
+	98%
+	95%
+	Source: Baihaqi et al. (2024)
+	Table 9 details the results after hyperparameter tuning was applied. This process led to substantial improvements for most models. Logistic Regression and KNN, which were previously weaker, saw significant boosts in their accuracy and all other metrics, bringing them to a high level of performance. The SVM model's accuracy also improved, placing it as one of the top performers. Interestingly, the Random Forest and ANN models, which had the highest initial scores, showed a slight decrease in their final accuracy, a change that the study notes was made to enhance generalization and reduce overfitting. After tuning, Random Forest and SVM finished with the highest accuracy, followed closely by the ANN.
+The results indicate that after hyperparameter tuning, the machine learning model effectively classifies students' learning preferences based on their activities in the Virtual Learning Environment (VLE). Key methods, such as Random Forest for feature selection and oversampling techniques to tackle data imbalance, have significantly enhanced the model's accuracy and overall performance.
+
+
+
+
+
+
+Table 10.
+Models' Performance Comparison on the OULAD Dataset for Disabled Learners
+Model
+	Accuracy(%)
+	Precision(%)
+	Recall(%)
+	F1-Score(%)
+	Gradient Boosting
+	86.03
+	86.53
+	86.03 
+	85.99
+	MLP
+	74.08 
+	74.61
+	74.08
+	73.93
+	Naive Bayes
+	72.78 
+	74.13
+	72.78 
+	72.38
+	AdaBoost 
+	82.85 
+	83.05 
+	82.85 
+	82.82
+	Logistic Regression
+	77.69 
+	77.72 
+	77.69
+	77.69
+	DNN
+	89.81 
+	90.00 
+	89.8 
+	89.80
+	LSTM 
+	92.88
+	92.96
+	92.80
+	92.79
+	Source: Kalita et al. (2025)
+	Although the findings from Kalita et al. (2025) pertained to learners with disabilities, they still employed a similar behavior tracking and various machine learning algorithms,  as shown in Table 10. 
+Table 11.
+Model’s Performance Comparison using the 5-Fold Cross-Validated Method
+Model
+	Accuracy(%)
+	Precision(%)
+	Recall(%)
+	F1-Score(%)
+	Gradient Boosting
+	86.02 ± 0.12 
+	86.48 ± 0.17 
+	86.04 ± 0.10
+	85.96 ± 0.10
+	MLP
+	74.08 ± 0.07 
+	74.62 ± 0.07
+	74.08 ± 0.07
+	73.98 ± 0.07
+	Naive Bayes
+	72.78 ± 0.12
+	74.12 ± 0.07
+	72.80 ± 0.09
+	72.42 ± 0.07
+	AdaBoost 
+	82.82 ± 0.07
+	83.06 ± 0.05 
+	82.86 ± 0.05
+	82.80 ± 0.06
+	Logistic Regression
+	77.70 ± 0.06
+	77.70 ± 0.06
+	77.70 ± 0.06
+	77.68 ± 0.04
+	DNN
+	89.82 ± 0.12
+	90.00 ± 0.06
+	89.84 ± 0.05
+	89.80 ± 0.06
+	LSTM 
+	92.84 ± 0.08
+	92.94 ± 0.05
+	92.82 ± 0.07
+	92.76 ± 0.05
+	Source: Kalita et al. (2025)
+	They applied a 5 Fold Cross-validation, in which the dataset was partitioned into five equal subsets. Each of the models they used was trained on four subsets and tested on the remaining one, and this process was repeated five times, such that every subset was used once as the validation set. The final performance metrics, accuracy, precision, recall, and F1 Score, were computed as the mean across all five folds.
+Further analysis revealed that assessment scores, forum participation, and time spent on course materials are important determinants of student success, enabling educators to target interventions specifically at students with disabilities to enhance their learning experience.
+Adaptive/Personalized Learning Approaches
+A study done by Contrino et al. (2024) measured the learning performance (exams and final term averages) and satisfaction (using a Likert scale) of students taking a course with adaptive learning (AL), compared to a control group that uses only flexible, interactive, and with technology (FIT) modality. In AL courses, students completed pre-class activities on the CogBooks platform, which created personalized learning paths. Instructors reviewed analytics before class to tailor sessions. Control groups accessed the same materials via Canvas but without AL integration. 
+Table 12.
+Scenarios for class preparation using CogBooks as an AL system
+Scenario
+	Number of students who do not understand the topic
+	Actions
+	1
+	1 –  2
+	* Theoretical explanation + solved exercise
+* Pair work: hard exercise (one understands, one doesn’t) as a solution
+	2
+	3 – 5
+	* Theoretical explanation + solved exercise
+* Team work: hard exercise (most understand, one doesn’t) as a solution
+	3
+	6 – 10
+	* Theoretical explanation + solved exercise
+* Hard exercises: individual for those who understand; teams for those who don’t
+	4
+	11+
+	* Theoretical explanation and solution of an exercise
+* Individual solutions and later group exercises complicated by all students
+	5
+	+ 10 (without entering CogBooks)
+	* Theoretical explanation and solution of an exercise
+* Address students’ doubts during the session
+* Whole-class step-by-step problem solving until all doubts cleared
+	Source: Contrino et al. (2024)
+	        Table 12 illustrates the actions Contrino et al. (2024) implemented when a certain number of students were to have difficulty understanding their current topic. These actions were done after the topic had been explained.
+Table 13.
+Comparison FIT with FIT + AL courses
+Semester Aug – Dec
+	FIT
+	FIT+AL
+	I1
+	I2
+	AVG
+	I3
+	I4
+	AVG
+	Mid Term Exam
+	60.3
+	58.4
+	58.4
+	65.4
+	62.4
+	63.9
+	Final Exam
+	71.8
+	52.8
+	61.4
+	86.5
+	75
+	80.6
+	Final Grade
+	82.7
+	77.5
+	79.9
+	75.8
+	84.6
+	80.3
+	Percentage Passing students
+	100
+	94.4
+	97
+	77.8
+	100
+	89.2
+	Percentage of grades > 90
+	13.3
+	16.7
+	15.2
+	11.1
+	36.8
+	24.3
+	*Instructors participating in this study are identified by a number (I1 to I4)
+	Source: Contrino et al. (2024)
+	The comparison between FIT (flexible, interactive, with technology) and FIT + AL (Adaptive Learning) is made regarding the midterm exam, final exam, and final grades, as well as the percentage of students passing and scoring above 90. The average grades for the midterm exam, final exam, and final grade of the FIT + AL course were 63.9, 80.6, and 80.3; in all three cases, the grade point average was higher than the FIT course without AL, 59.3, 61.4, and 79.9. An interesting aspect is that even though the percentage of students approved (with a grade higher than or equal to 70) the FIT course (97%) is higher than the FIT + AL course (89.2%), the percentage of passers with grades higher than 90/100 is higher in the FIT + AL (24.3%) compared to FIT (15.2%).
+One of the primary implications of recognizing LSs is the potential for personalized learning. By aligning resources with students’ needs and preferences, instructors and designers can enhance student engagement and motivation. This tailored approach caters to individual tendencies and promotes a deeper understanding of resources, as students are more likely to connect with content that resonates with them.
+Rincon-Flores et al. (2024) state that when applied correctly, their adaptive learning system can make a significant difference in impacting students’ learning levels. The findings reveal that the implementation of an ALS tends to positively impact student learning, when combined with Flipped Classroom, Teaching Strategies, Self-regulated Learning Microlearning and adaptive learning platform aligned with this strategy, in addition to placing special emphasis on the Content Design and an adequate Implementation Model by the professor where the required actions are established before, during and after the time of each class. The authors conclude that to achieve a successful adaptive learning system, it is necessary to combine
+The authors conclude that to achieve a successful adaptive learning system, it is necessary to combine it with various elements that are related to an adequate content design strategy, incorporation of didactic strategies and an adequate implementation model by the professor in addition to supporting it with the appropriate technology that offers key aspects such as performance and learning analytics, personalized learning routes, support for multiple contents in different formats, ease of use, diagnostic exams, integration with the EdTech Ecosystem, among other things.
+Adaptive Learning Platforms
+        CogBooks, an adaptive learning tool developed between 2015 and 2020, has documented significant improvements in student performance when integrated into university courses (Chen et al. 2024). It also responds to a learner's performance at each "step" (individual question/activity) and remaps the learning sequence in real-time and continuously develops an 18-parameter "learner profile" based on student answers, which dictates the individual's learning path and the specific questions presented (Brown, 2015).
+Although this is similar to the current system’s capabilities, it does not employ machine learning and learning style detection, and only considers their performance and interaction. In addition, the content does not get transformed depending on the students' learning style, but only the content provided by the instructor.
+        Other than Moodle and CogBooks, other adaptive learning platforms have common issues such as cost and subject or content focus. Carnegie Learning operates on a mastery-based model, using real-time data analysis to adjust curriculum and ensure students advance only after demonstrating competence in current concepts. DreamBox Learning focuses on creating unique personalized paths by continuously analyzing student performance and cognitive data while embedding gamification elements to enhance engagement and reduce math anxiety. Smart Sparrow emphasizes the use of rich multimedia and interactive elements, delivering content in bite-sized modules that utilize spaced repetition to cater to diverse learning styles and optimize knowledge retention. Finally, Knewton leverages powerful AI algorithms to generate tailored learning paths strictly based on an individual's strengths and weaknesses, prioritizing the demonstration of competence over simply completing assignments. However, just like CogBooks, it is missing components such as generative AI and learning style detection (Dutta et al., 2024).
+Core Programming & Markup
+  
+
+	Figure 22. Python
+	Source: https://tinyurl.com/2eznamde
+	Saabith et al. (2021) state that Python is the most widely used programming language today. When it comes to solving data science tasks and challenges, Python consistently surprises its users. Most data scientists are already leveraging the power of Python programming every day. Python is an easy-to-learn, easy-to-debug, widely used, object-oriented, open-source, high-performance language, and there are many more benefits to Python programming. Python has been built with extraordinary Python libraries that programmers use every day in solving problems. Python provides various libraries such as matplotlib, seaborn, TensorFlow, scikit-learn, and other important tools required for data science processing. Furthermore, it offers additional tools such as Flask, support for SQLite, and other functionalities that can lead to a comprehensive data product. Python IDEs for data science that make data analysis and machine learning easier.
+  
+
+	Figure 23. JS
+	Source: https://tinyurl.com/386xsvya
+	JavaScript is a widely used programming language that enables the creation of interactive and dynamic web pages. It is employed in a variety of contexts, ranging from refreshing social media feeds to rendering animations and interactive maps, thereby enhancing the overall user experience. As a client-side scripting language, JavaScript is considered one of the core technologies of the World Wide Web, alongside HTML and CSS. Initially developed as a browser-based technology, it was designed to make web applications more responsive by allowing browsers to react to user interactions and modify the structure or presentation of webpage content in real time (What Is JavaScript? - JavaScript (JS) Explained - AWS, n.d.).
+  
+
+	Figure 24. HTML
+	Source: https://tinyurl.com/59er2t2f
+	HTML5 provides detailed processing models to promote consistent and interoperable implementations. It enhances and streamlines existing markup for documents while also introducing new markup and APIs to support sophisticated web applications. These same capabilities make HTML5 a strong option for cross-platform mobile apps, as it includes features tailored for use on low-power devices (HTML5 Differences From HTML4, n.d.).
+  
+
+	Figure 25. CSS
+	Source: https://tinyurl.com/386xsvya
+	Cascading Style Sheets (CSS) is a versatile language used to control the visual presentation of web pages. It enables developers to apply text styling, such as modifying the color, size, and formatting of headings and hyperlinks, as well as to design complex layouts including grid-based structures and multi-column arrangements. CSS also supports the creation of dynamic visual effects, such as animations, which enhance user engagement and interactivity. The language is organized into modules, each of which encompasses a related set of functionalities. For example, the Backgrounds and Borders module defines properties and features specific to those design elements. In addition, module reference pages often provide links to official specifications, which formally establish the standards and technical details governing CSS technologies (What Is CSS? - Learn Web Development | MDN, n.d.).
+Development Ecosystem & Flow
+  
+
+	Figure 26. VS Code
+	Source: https://tinyurl.com/5yppm4c8
+	
+
+Visual Studio Code is a lightweight, powerful source code editor for Windows, macOS, and Linux. It supports JavaScript, TypeScript, and Node.js and has a rich ecosystem of extensions for other languages like C++, C#, Java, Python, PHP, and Go, and runtimes like .NET and Unity. Visual Studio Code allows you to extend your capability through extensions. Visual Studio Code extensions can add more features (Nandwana, n.d.).
+ Git 
+
+	Figure 27. git
+	Source: https://tinyurl.com/mtdycaau
+	Git offers a range of advantages that make it a dominant version control system in modern software development. Its branching and merging capabilities enable developers to create, merge, and delete independent lines of development quickly and efficiently, thereby supporting flexible workflows. The system is also small and fast, with most operations performed locally, providing a significant speed advantage over centralized alternatives. As a distributed tool, Git gives each contributor a complete repository copy, ensuring both resilience and the ability to work offline. Furthermore, it guarantees data integrity by checksumming all content through SHA-1 hashes, making unauthorized changes easily detectable. The inclusion of a staging area allows developers to review and refine changes before committing, thereby enhancing control and precision in code management. Finally, Git is free and open source, ensuring accessibility without financial or licensing barriers, which further contributes to its widespread adoption in both academic and professional contexts (Git, n.d.
+  
+
+	Figure 28. GitHub
+	Source: https://tinyurl.com/7ads8k3t
+	        GitHub is a cloud-based service that provides a centralized platform for software development, facilitating collaborative coding and version control. The platform utilizes "repositories" for code storage, which enables developers to systematically track and manage source code modifications over time (GitHub, n.d.).
+  
+
+	Figure 29. Mermaid
+	Source: https://tinyurl.com/4t43tpt8
+	Mermaid is a JavaScript based diagramming and charting tool that uses Markdown-inspired text definitions and a renderer to create and modify complex diagrams. The main purpose of Mermaid is to help documentation catch up with development (About Mermaid, 2025).
+  
+
+	Figure 30. Jupyter Notebook
+	Source: https://tinyurl.com/jd3tvktd
+	JupyterLab is the latest web-based interactive development environment for notebooks, code, and data. Its flexible interface allows users to configure and arrange workflows in data science, scientific computing, computational journalism, and machine learning. A modular design invites extensions to expand and enrich functionality. A notebook is a shareable document that combines computer code, plain language descriptions, data, rich visualizations like 3D models, charts, graphs, and figures, and interactive controls. A notebook, along with an editor (like JupyterLab), provides a fast interactive environment for prototyping and explaining code, exploring and visualizing data, and sharing ideas with others. (Project Jupyter, n.d.).
+Application Frameworks & Libraries
+  
+
+	Figure 31. Next.js
+	Source: https://tinyurl.com/22y2jn4d
+	Next.js is a React framework for building full-stack web applications. You use React Components to build user interfaces and Next.js for additional features and optimizations. It also automatically configures lower-level tools like bundlers and compilers. You can instead focus on building your product and shipping quickly. Whether you're an individual developer or part of a larger team, Next.js can help you build interactive, dynamic, and fast React applications (Vercel, n.d.).
+
+
+  
+
+	Figure 32. Flask
+	Source: https://tinyurl.com/caam2z2u
+	Surayah and Sholeh (2025) describe the Flask Framework as a python framework that can be used to create web-based applications. Flask enables developers to build Python-based web applications and utilize various extensions as needed. Flask provides several standard functions for developers to add multiple libraries or plugins to an extension. The advantages of Flask are that it’s easy to understand. Flask is a framework that is suitable for beginners because it is easy to understand. This framework is also simple enough that developers can create navigation and applications easily. Flexible, Flask is a flexible and minimalist framework that allows for almost all parts of Flask to be modified.
+  
+
+	Figure 33. React
+	Source: https://tinyurl.com/swptcpfp
+	        React is a JavaScript library for building user interfaces (UIs), encompassing both web and native applications. Its core function is achieved through enabling the creation of UIs from encapsulated, reusable, individual pieces (components), allowing developers to write components as JavaScript functions using JSX (a syntax extension), which integrates UI structure with rendering logic, and updating the rendered UI to reflect changes in data (state), ensuring the visual output remains synchronized with the underlying application data (React, n.d.).
+  
+
+	Figure 34. Tailwind
+	Source: https://tinyurl.com/38znr4ru
+	        Tailwind CSS works by scanning all of your HTML files, JavaScript components, and any other templates for class names, generating the corresponding styles, and then writing them to a static CSS file (Installing With Vite - Installation, n.d.).
+Tailwind is a set of low-level, reusable utility classes that can be used like building blocks to create virtually any design we can imagine. This utility-first framework covers the most important CSS properties, but it can be easily extended in a variety of ways. It can be used either for rapid prototyping or for creating full-blown designs. A utility class is mostly a single CSS property or behavior that we can use freely in a predictable way. This gives us the freedom to combine, mix, and match different settings depending on our requirements. We have greater control over each element’s appearance. We can change and fine-tune an element’s appearance much more effortlessly with utility classes (Gerchev, 2022). 
+
+
+
+
+
+
+  
+
+	Figure 35. Mongoose
+	Source: https://tinyurl.com/yzeyac6x
+	Mongoose is an Object Data Modeling (ODM) library for MongoDB. You can use Mongoose to help with data modeling, schema enforcement, model validation, and general data manipulation. Because MongoDB has a flexible data model that allows you to alter and update databases in the future, there aren't rigid schemas. However, Mongoose enforces a semi-rigid schema from the beginning, so you must define a schema and model (MongoDB Documentation, n.d.).
+  
+
+	Figure 36. Scikit Learn
+	Source: https://tinyurl.com/ykrxbu3k
+	Pedregose et al. (2011) describes scikit-learn as a Python module integrating a wide range of state-of-the-art machine learning algorithms for medium-scale supervised and unsupervised problems. This package focuses on bringing machine learning to non-specialists using a general-purpose high-level language. Scikit-learn harnesses the rich environment of Python to provide state-of-the-art implementations of many well known machine learning algorithms, while maintaining an easy-to-use interface tightly integrated with the Python language. This answers the growing need for statistical data analysis by non-specialists in the software and web industries, as well as in fields outside of computer science.
+  
+
+	Figure 37. Joblib
+	Source: https://tinyurl.com/bdzxp8mk
+	Zerbo et al. (2024) state that Joblib is widely recognized for its simplicity and efficiency, particularly in the context of data preprocessing and machine learning tasks.2 It is designed to facilitate parallel processing with minimal effort, making it a popular choice among practitioners who require efficient execution of large scale computations. Joblib’s ability to cache results and avoid recomputations further enhances its utility in iterative processes commonly found in biometric systems.
+
+
+  
+
+	Figure 38. Pandas
+	Source: https://tinyurl.com/2wnv8cbw
+	Pandas is a Python package designed to provide fast, flexible, and expressive data structures that make working with relational or labeled data intuitive. Its primary goal is to serve as the fundamental high-level building block for practical, real-world data analysis, aiming to become the most powerful open-source manipulation tool available. The library is highly versatile and well-suited for handling various data formats, including tabular data with heterogeneous columns (similar to SQL tables or Excel spreadsheets), ordered and unordered time series, arbitrary matrix data, and other forms of observational or statistical datasets, even those without labels (Package Overview — Pandas 2.3.3 Documentation, n.d.).
+  
+
+	Figure 39. Numpy
+	Source: https://tinyurl.com/4wjb8v2k
+	NumPy is a powerful, open-source library that establishes the de-facto standard for array computing through its fast and versatile N-dimensional arrays, which feature advanced vectorization, indexing, and broadcasting capabilities. It provides a comprehensive suite of numerical computing tools, ranging from mathematical functions and random number generators to linear algebra routines and Fourier transforms. Built on a core of well-optimized C code, NumPy delivers high performance by combining the speed of compiled code with the flexibility of Python. It is designed to be both easy to use, thanks to its accessible high-level syntax, and highly interoperable, supporting a wide range of hardware and integrating well with distributed, GPU, and sparse array libraries. The library is distributed under a liberal BSD license and is actively developed by a diverse community on GitHub (NumPy, n.d.).
+  
+
+	Figure 40. Heroicons
+	Source: https://tinyurl.com/yf9r9mzt
+	        Heroicons is a set of free SVG icons originally crafted to support Tailwind UI components. The collection currently includes over 220 icons available in two distinct sizes, each tailored for specific use cases. Medium icons are designed for 24x24 rendering, making them ideal for primary navigation and marketing sections. Small icons are optimized for 20x20 rendering, suitable for buttons, form elements, and text support. All icons are fully compatible with Tailwind, allowing for effortless styling using the framework's built-in size and color utilities (Schoger, 2020).
+
+
+  
+
+	Figure 41. Motion
+	Source: https://tinyurl.com/ynvbksue
+	        The Motion library is a performant JavaScript animation library that is easy to master, built on a unique hybrid engine that leverages both the performance of the browser and the limitless potential of a standard JavaScript engine. This architecture enables Motion to animate nearly anything, including standard HTML/CSS elements, SVG attributes and paths, and even WebGL/3D graphics objects. Motion provides smart defaults but allows for fine-tuning with options like duration, easing, delay, and repetition, and it fully supports advanced features such as kinetic spring animations and elegant staggering for multiple elements. (Motion, n.d.)
+Data & Backend Infrastructure
+  
+
+	Figure 42. MongoDB 
+	Source: https://tinyurl.com/mv5hs8fw
+	The NoSQL database MongoDB stands among the most popular solutions because it delivers excellent scalability, flexible features, flexible schema management, and fast response times. MongoDB implements a document-oriented methodology that enables developers to store data using BSON format, which resembles JSON but extends its capabilities through extra features. Through its schema-free data architecture, MongoDB delivers rapid development possibilities, making it the top selection for diverse systems that must adapt quickly, like real-time analytics projects, content systems, and IoT initiatives. MongoDB takes an eventual consistency model, wherein even the partition tolerance is preferred over the consistency (Dhanagari, 2024).
+  
+
+	Figure 43. Firebase
+	Source: https://tinyurl.com/mv5hs8fw
+	Firebase is a Google-backed application development software that allows developers to develop iOS, Android, and web apps. Firebase provides tools for tracking analytics, reporting and fixing app crashes, and creating marketing and product experiments.
+The Firebase Solutions framework provides a modular set of tools for addressing common challenges in mobile and web application development. It is structured around five domains: backend construction, web application hosting, feature testing and rollout, application monitoring, and user engagement with monetization. Core services such as Cloud Firestore, Realtime Database, Authentication, and Cloud Storage support scalable serverless backends, while Hosting and global CDNs enable secure and efficient web delivery. Tools like Test Lab, Crashlytics, and Remote Config facilitate iterative testing, staged deployment, and performance monitoring. Additionally, Google Analytics and AdMob enable data-driven personalization and monetization without requiring new releases. Overall, Firebase promotes a flexible, data-informed, and adaptive development ecosystem, aligning infrastructure with evolving user needs (Solutions for App Development Challenges | Firebase, n.d.).
+  
+
+	Figure 44. Render
+	Source: https://tinyurl.com/rumry2n8
+	Render streamlines application deployment by connecting directly to Git branches and automatically building and releasing code on each push. It supports web applications in a variety of languages and frameworks, such as Node.js with Express, Python with Django, and FastAPI. The platform manages infrastructure needs—including servers, networking, storage, security, and runtime upkeep—so developers can focus on building. It also provides easy scaling options and supports stateful apps through persistent disks and fully managed databases.
+
+
+
+
+  
+
+	Figure 45. Backblaze
+	Source: https://tinyurl.com/2s4eakwd
+	Backblaze provides B2 Cloud Storage, an enterprise-grade, S3-compatible object storage solution. The primary service is positioned as "always-hot" storage suitable for active archiving, data backup, and recovery workloads. A high-performance tier, B2 Overdrive, is offered for computationally intensive applications such as artificial intelligence (AI), machine learning (ML), and high-performance computing (HPC). This tier provides terabit-speed access at exabyte scale and includes unlimited free data egress (Backblaze, 2025).
+Content Design and Production
+  
+
+	Figure 46. Inkscape
+	Source: https://tinyurl.com/2mr5mzd9
+	Inkscape is a Free and open source vector graphics editor for GNU/Linux, Windows and macOS. It offers a rich set of features and is widely used for both artistic and technical illustrations such as cartoons, clip art, logos, typography, diagramming and flowcharting. It uses vector graphics to allow for sharp printouts and renderings at unlimited resolution and is not bound to a fixed number of pixels like raster graphics. Inkscape uses the standardized SVG file format as its main format, which is supported by many other applications including web browsers (Inkscape, n.d.).
+  
+
+	Figure 47. Figma
+	Source: https://tinyurl.com/7z7r2p8d
+	Figma Design is the primary tool for people to create, share, and test designs for websites, mobile apps, and other digital products and experiences. It is a known tool for designers, product managers, writers, developers, and helps anyone involved in the design process contribute, give feedback, and make better decisions, faster (What Is Figma?, n.d.).
+  
+
+	Figure 48. Figjam
+	Source: https://tinyurl.com/3dhp5mc7
+	FigJam lets you create online whiteboards where anyone can take part. People use FigJam for meetings, brainstorms, diagrams, planning, and research to enhance team collaboration. In FigJam, you can use text, shapes, drawings, images, sticky notes, and other elements to visually represent ideas and jam on work together (What Is Figma?, n.d.).
+  
+
+	Figure 49. Canva
+	Source: https://tinyurl.com/333dm5dn
+	Canva Visual Suite functions as an integrated visual communication ecosystem that consolidates a diverse array of content creation tools into a unified, seamless workflow. Designed to support scalable organizational needs, the suite emphasizes collaborative efficacy with features for real-time co-editing, task assignment, and centralized brand management. Furthermore, it prioritizes accessibility and interoperability by combining an intuitive drag-and-drop interface with a vast library of templates and stock assets, while offering robust integration with external file formats (PDF, PPTX, AI) and third-party enterprise applications to streamline the production of professional visual content (Canva, n.d.).
+File & Document Utility
+  
+
+	Figure 50. Sharp
+	Source: https://tinyurl.com/ypvha4de
+	        The typical use case for the Sharp module is to convert large images in common formats to smaller, web-friendly JPEG, PNG, WebP, GIF and AVIF images of varying dimensions. As well as image resizing, operations such as rotation, extraction, compositing and gamma correction are available. Most modern macOS, Windows and Linux systems do not require any additional install or runtime dependencies.
+Mammoth
+        Mammoth is designed to convert .docx documents, such as those created by Microsoft Word, Google Docs and LibreOffice, and convert them to HTML. Mammoth aims to produce simple and clean HTML by using semantic information in the document, and ignoring other details. There's a large mismatch between the structure used by .docx and the structure of HTML, meaning that the conversion is unlikely to be perfect for more complicated documents. Mammoth works best if you only use styles to semantically mark up your document (Williamson, n.d.).
+pdf-parse
+Kozen, (2025) describes the npm package pdf-parse as a pure TypeScript, cross-platform module designed for extracting text, images, and tables from PDF files. It offers support for CommonJS (CJS), ES Modules (ESM), Node.js, and browser environments, making it easily integratable with frameworks like React, Vue, and Angular. The key features and usage of the pdf-parse library are centered around comprehensive PDF content extraction, supporting both buffers and URLs for input. Text Extraction from all or specific pages. Metadata Retrieval including document title, author, and dates. Detects and extracts embedded images and tabular data. Renders entire pages as PNG screenshots. For checking file size and validating PDF type before full download/parsing.
+Pandoc
+Pandoc is a Haskell library for converting from one markup format to another, and a command-line tool that uses this library. It can convert between numerous markup and word processing formats, including, but not limited to, various flavors of Markdown, HTML, LaTeX and Word docx. Pandoc can also produce PDF output. Pandoc has a modular design as it consists of a set of readers, which parse text in a given format and produce a native representation of the document (an abstract syntax tree or AST), and a set of writers, which convert this native representation into a target format. Thus, adding an input or output format requires only adding a reader or writer. Users can also run custom pandoc filters to modify the intermediate AST (Pandoc, n.d.).
+  
+
+	Figure 51. LibreOffice
+	Source: https://tinyurl.com/yek385az
+	        LibreOffice constitutes a comprehensive, cross-platform, and freely licensed office productivity suite, established as the actively maintained successor project to OpenOffice. Developed and governed under the non-profit Document Foundation, it adheres to the principles of Free and Open Source Software (FOSS), emphasizing user liberty for usage, distribution, and modification, thereby fostering a collaborative, globally distributed development model. The suite encompasses core applications—Writer, Calc, Impress, Draw, Base, and Math—for word processing, spreadsheet management, presentation design, vector graphics, database structuring, and formula editing, respectively. Crucially, LibreOffice maintains broad interoperability with proprietary formats, including Microsoft Office documents, while natively utilizing and promoting the adoption of the Open Document Format (ODF), an internationally recognized open standard for data portability and archival (LibreOffice, n.d.).
+  
+
+	Figure 52. Poppler
+	Source: https://tinyurl.com/2zrcctfx
+	The Poppler library serves as a foundational, open-source rendering engine for Portable Document Format (PDF) files, originating from the Xpdf codebase, and is instrumental across numerous applications and operating systems due to its robust architecture and focus on standard compliance. As a core component of document viewing ecosystems, particularly in Linux desktop environments such as GNOME and KDE, Poppler provides critical functionality for accurately interpreting, rendering, and manipulating PDF content. Its utility is not confined to mere visual display, extending through its various API frontends (C++, GLib, Qt) to power high-level tools, enabling data extraction, image conversion, and structural analysis—capabilities that are foundational for advanced digital document processing and academic research requiring programmatic interaction with archival data (Poppler, n.d.).
+Emerging Technology
+  
+
+	Figure 53. Gemini AI
+	Source: https://tinyurl.com/mtdycaau
+	Gemini is a multimodal large language model (LLM) developed by Google, capable of processing text, images, audio, and more. Gemini evolved into a versatile tool supporting diverse tasks such as writing, coding, brainstorming, and learning. It continues to expand in functionality, fostering productivity, creativity, and knowledge exploration (About Gemini, n.d.). This versatility allows Gemini to generate more complete answers that fit the context, making it helpful for various tasks and applications. Moreover, Gemini is a potential source of educational technology advancement and practical applications beyond its theoretical framework (Imran & Almusharraf, 2024).
+Initial Dataset
+Bittner et al. (2023) conducted an eye-tracking study with 117 individuals. Specific patterns of the participants’ eye tracking behaviour are attributed to their learning styles, as determined by the validated Index of Learning Styles (ILS) questionnaire, applying more than just the metrics commonly used in eye tracking research. Hypothesis-driven analysis, as well as Machine Learning (ML) methods, are used to supplement these investigations, allowing for more in-depth analytics. By combining eye tracking data with ML algorithms, an accurate and insightful understanding of students’ individual learning paths can be achieved, which could ultimately contribute to better educational results and decreased dropout rates.
+In this experiment, calibration of the eye tracker is performed on each participant to ensure an appropriate experimental setup. As soon as successful calibration is achieved, the eye tracking experiment begins with introductions before each task. The presentation of the stimuli is not restricted in time. There is no need for prior knowledge of the information contained in the stimuli. As this experiment is based on the within-subject design, each stimulus is exposed to each subject. Following completion of the experiment, participants anonymously complete the ILS questionnaire. To avoid any influence on the experiment, it is important that the participants complete the questionnaire after the study and not beforehand. The questionnaire aids triangulation and provides valuable target variables for classification, enabling validation and testing of the study results using information convergence from multiple sources. Finally, the findings from the eye movement research are utilized to predict the learning styles as determined by each student’s responses to the ILS questionnaire.
+The results stated that the machine learning model would correctly classify at least 80% of the participants' learning style attributes for each of the four FSLSM dimensions, which made it a plausible data source.
+
+
+
+
+________________
+Conceptual Model of the Study
+INPUT
+	PROCESS
+	OUTPUT
+	Knowledge Requirements
+	System Design
+	DEVELOPMENT OF AN ADAPTIVE LEARNING MANAGEMENT SYSTEM SUPPORTING STUDENTS' UNIQUE LEARNING STYLES
+	* Learning Management System: Core functions, workflows and use in education
+* Machine Learning Fundamentals: Supervised learning, classification, feature engineering, and evaluation.
+* Rule-Based Systems: Mapping behavioral details into provisional FSLSM labels before training ML models.
+* Validation Techniques: Train and validate iteratively to prevent overfitting.
+* Synthetic Data Generation: Generate synthetic data to balance datasets.
+	* System Architecture: Define the overall structure (frontend, backend, database, AI engine, cloud deployment).
+* Database Schema: Design MongoDB collections for users, courses, activities, and interaction data.
+* Content Personalization Engine: Define logic for adapting lessons into text, audio, visuals, or interactives.
+* User Interface Design: Wireframe and prototype using Next.js and Tailwind CSS for responsive layouts.
+* Security Framework: Incorporate Firebase Authentication, role-based access control, and encryption.
+	Software Requirements
+	Project Development
+	Core Programming & Markup
+* Python: Runtime environment required for the ML service.
+* JavaScript: Interactive and dynamic content for the website
+* HTML: Structuring the website content
+* CSS: Used to style and present the content
+Development & Ecosystem Flow
+* VSCode (Visual Studio Code): For writing, editing, testing, and debugging.
+* Git: For version control and collaborative development.
+* GitHub: For storage, management, and version control.
+* Mermaid: For diagrams and charts.
+* Jupyter Notebook: For visualization, data analysis, and model evaluation.
+Application Framework & Libraries
+* Next.js: For building the frontend and backend of the web-based LMS.
+* Flask: Python web framework used for the Machine Learning service API (configured on port 5000).
+* Flask-CORS: Extension used to enable cross-origin requests between the Next.js frontend and the ML service.
+* React: Frontend framework for building the user interface.
+* TailwindCSS:  For rapid and responsive UI design.
+* scikit-learn: Library for feature scaling and preprocessing.
+* joblib: Utility for model serialization.
+* pandas: Library for data processing.
+* numpy: Library for numerical computations.
+* Mongoose: Object Data Modeling (ODM) tool for MongoDB.
+* Heroicons: Library for UI icons.
+* Framer Motion: Library for handling UI animations.
+Data & Backend Infrastructure
+* MongoDB:  For managing and storing user, course, and activity data.
+* Firebase: For authentication, analytics, and optional real-time data.
+* Backblaze: For storing learning materials.
+* Render: Utilized for cloud deployment and hosting of the Learning Management System (LMS)
+Content Design & Production
+* Inkscape: For creating logos and other assets.
+* Figma: For user interface and wireframing.
+* Figjam: For collaboration.
+* Canva: For visual content.
+File & Document Utility
+* Sharp: Module for high-performance image processing.
+* Mammoth: Library for processing .docx files.
+* pdf-parse: Tool for PDF text extraction.
+* Pandoc: Universal tool for document conversion.
+* LibreOffice: Suite used for .pptx conversion.
+* Poppler Utils: Utility library for PDF operations.
+Emerging Technologies
+* Gemini: For generating adaptive content, quizzes, and multimodal materials.
+	* Project Development
+* Synthetic Data Generation
+* Validation Method
+* Model Training
+* Integration & Testing
+* High Fidelity UI Design
+
+
+	Hardware Requirements
+	System Implementation
+	* 8 GB RAM Minimum
+* 100 GB free disk space
+* GPU recommended for faster ML training. 
+	* Developing Test Case Scenarios
+* Generating Test Data
+* Executing Test Cases
+* Observing & Documenting Results
+* Debugging & Iterating
+	
+
+	
+
+	  
+
+	
+
+	EVALUATION
+	Figure 54. IPO Diagram
+Operational Definition of Terms
+* E-learning: All educational activities, whether synchronous or asynchronous, conducted by individuals or groups using networked or independent computers and other electronic devices, for the purpose of delivering or engaging with educational content.
+* Online Learning: A specific form of e-learning that involves educational experiences utilizing various devices with internet access to deliver programs, courses, and certifications in synchronous or asynchronous environments, enabling students to learn and interact with instructors and peers from any location.
+* Distance Learning: An educational model characterized by the physical separation of teachers and students during instruction, using various technologies to facilitate communication and content delivery.
+* Virtual Learning Environment (VLE): A digital platform, typically implemented using a modern Learning Management System (LMS), designed to overcome the constraints of traditional classrooms and distance learning by allowing students to retrieve course content and interact with instructors at their own convenience and location.
+* Learning Management System (LMS): "A web-based application (e.g., Moodle) that serves as the administrative and delivery platform for educational content in distance learning. 
+* Artificial Intelligence (AI): The research theories, methods, technologies, and applications for simulating, extending, and expanding human intelligence in machines. In an educational context, it is operationally defined by its integrated use in technologies like chatbots, automated grading systems, and personalized tutoring to provide adaptive feedback and profile students.
+* Generative AI: A category of AI (e.g., ChatGPT) used by students and educators to generate new content, such as simple explanations, concise summaries, self-assessment questions, and quizzes/assignments, or to provide streamlined learning and feedback tools.
+* Machine Learning (ML): An aspect of AI that focuses on building analytical models through automation that allow machines to adapt and predict based on past results. Operationally utilized through algorithms like Decision Trees, Random Forest, and Gradient Boosting for tasks such as predicting student outcomes and customizing learning experiences.
+* Decision Tree: A specific tree-like structure algorithm used for classification and regression tasks. Operationally defined by its structure where nodes represent a test on an attribute and leaf nodes contain the final prediction.
+* Ensemble Learning/Methods: A machine learning technique that integrates several different individual models (weak learners) to combine their predictions and yield a single, superior forecast (e.g., Random Forest, Boosting).
+* Random Forest: An ensemble learning method that constructs numerous decision trees during training, each built on a randomly sampled subset of data. The final prediction is made by aggregating the predictions of all individual trees.
+* Boosting: A powerful ensemble learning method in machine learning that aims to convert a set of weak predictive models (called "weak learners”) into a single, highly accurate model (a "strong learner").
+* XGBoost (eXtreme Gradient Boosting): A gradient boosting framework and decision-tree-based ensemble method that sequentially builds classification or regression trees, where each subsequent model is trained to correct the residuals/mistakes of the previous one"
+* GridSearchCV: A hyperparameter tuning method that utilizes an exhaustive grid search over a predefined hyper-parameter space, evaluating each combination's performance through K-fold cross-validation.
+* K-Fold Cross-Validation (CV): A technique for assessing the generalizability of a machine learning model by partitioning the dataset into k equal subsets (folds). The model is trained on k−1 folds and tested on the remaining fold, repeating the process k times, with the final performance being the average across all trials.
+* Model Evaluation Metrics: Statistical measures used to quantify the performance of a machine learning model (e.g., Random Forest, Neural Network) against a test dataset. Key metrics include Accuracy, Precision, Recall, and F1 Score"
+* Accuracy: Evaluates how well an algorithm assigns individuals to the correct category.
+* Precision: The percentage of samples predicted to be “positive” that are actually “positive”
+* Recall: Refers to the percentage of “positive” samples that were correctly labelled as positive
+* F1 Score: The harmonic mean of these precision and recall metrics. Therefore, a high F1 score requires both a high precision and a high recall.
+* Feature Engineering: The practice of constructing suitable, new features from existing raw data/features by applying transformation functions (e.g., arithmetic, aggregate operators) to improve the predictive performance of machine learning models in identifying student success or learning styles.
+* Felder & Silverman Learning Style Model (FSLSM): "An educational framework that categorizes individual learning preferences and tendencies across four dimensions, each with an opposing pair of categories: Active/Reflective, Sensing/Intuitive, Visual/Verbal, and Sequential/Global."
+* Adaptive/Personalized Learning (AL): An educational approach where the learning experience (e.g., resources, activities, instructional strategy) is tailored to the individual student's needs and preferences to enhance engagement and performance.
+________________
+
+
+Chapter 3
+RESEARCH METHODOLOGY
+        This chapter outlines the methodology employed in the development of Intelevo, an adaptive learning management system made to cater to each student's preferences to make their learning more personalized with the use of machine learning algorithms, specifically Extreme Gradient Boosting.
+The study began with the conceptualization of the system architecture, including the appropriate features, libraries, and other tools required for the learning management system’s adaptive features. The selected components were then integrated to form the learning management system.
+Data collection began with another study which used eye-tracking data, which is then used to train the  machine learning algorithm, which tracks interactions with the learning management system features. The machine learning algorithm was also trained on synthetic datasets that mirror most learning management systems and their functionalities. These interactions provide the system with the necessary information to determine the learning style or preference of the user. Testing was conducted to evaluate the functionality of both features, identifying learning preferences by measuring the accuracy of machine learning algorithm from training to identification.
+The effectiveness of Intelevo was further assessed by FURPS. The findings were then compared against the defined performance indicators to determine the reliability and usability of the system.
+
+
+ 
+________________
+Project Design 
+User-Interface Design (Low-Mid Fidelity)
+  
+
+	Figure 54.  Low 1: Desktop 1 LogIn UI
+	
+
+	
+
+  
+
+	Figure 55. Mid 2: Desktop 1 LogIn UI
+	
+
+	
+
+
+
+  
+
+	Figure 56. Low 1: Desktop LogIn UI
+	
+
+	
+
+  
+
+	Figure 57. Mid 2: Desktop LogIn UI
+
+
+	
+
+	________________
+
+
+
+
+  
+
+	Figure 58. Low 1: Homepage UI
+	
+
+	
+
+  
+
+	Figure 59. Mid 2: Homepage UI
+	
+
+	
+
+
+
+  
+
+	Figure 60. Low 1: Homepage UI
+	
+
+	
+
+
+
+  
+
+	Figure 61. Mid 2: Homepage UI
+	
+
+	
+
+  
+
+	Figure 62. Low 1: Add Course UI
+	
+
+	
+
+
+
+  
+
+	Figure 63. Mid 2: Add Course UI
+	
+
+	
+
+                                 
+  
+
+	Figure 64. Low 1: Create UI
+	
+
+	
+
+  
+
+	Figure 65. Mid 2 Create UI
+	
+
+  
+
+	 Figure 66. Low 1: Course Dashboard Feed
+	
+
+	
+
+	
+
+  
+
+	Figure 67. Mid 2: Course Dashboard Feed
+	
+
+	
+
+________________
+
+
+
+
+  
+
+	Figure 68. Low 1: Join UI
+	
+
+	
+
+
+
+  
+
+	Figure 69. Mid 2: Join UI
+	
+
+	                                
+  
+
+	Figure 70. Low 1:  Quiz/Exam UI
+	
+
+	
+
+  
+
+	Figure 71. Mid 2: Quiz/Exam UI
+	
+
+	
+
+	
+
+
+
+  
+
+	Figure 72. Low 1: Schedule UI
+
+
+	
+
+
+
+
+
+  
+
+	Figure 73. Mid 2: Schedule UI
+	
+
+  
+
+	Figure 74. Low 1: DashBoard UI
+
+
+
+
+	
+
+
+
+
+
+  
+
+	Figure 75. Mid 2: DashBoard UI
+ 
+	
+
+  
+
+	 Figure 76. Low 1: Profile Settings UI
+
+
+	
+
+  
+
+	Figure 77. Mid 2: Profile Settings UI
+	
+
+  
+
+	Figure 78. Low 1: Account & Security UI
+
+
+	
+
+
+
+	  
+Figure 79. Mid 2: Account & Security UI
+ 
+	
+
+
+
+  
+
+	Figure 80. Low 1: Learning Preferences UI
+ 
+	
+
+  
+
+	Figure 81. Mid 2: Learning Preferences UI
+
+
+
+
+	
+
+  
+
+	Figure 82. Low 1: Notifications UI
+
+
+
+
+	
+
+  
+
+	Figure 83. Mid 2: Notifications UI 
+	
+
+  
+
+	Figure 84. Low 1: Privacy & Data UI
+ 
+	
+
+  
+
+	Figure 85. Mid 2: Privacy Controls UI
+ 
+	
+
+
+
+  
+
+	Figure 86. Low 1: Analytics % Insights UI
+
+
+	
+
+
+
+
+
+  
+
+	Figure 87. Mid 2: Analytics % Insights UI
+ 
+	________________
+Brand Guidelines
+  
+
+	Figure 88. Brand Guidelines
+ 
+	This document defines the brand identity of Intelevo, an AI-powered adaptive learning system. It ensures a cohesive and professional visual style across all components—from the web platform to its intelligent personalization features—reflecting the project’s focus on modern educational technology and learner-centered innovation.
+________________
+  
+
+	Figure 89. Logo Variations
+ 
+	This section outlines the core of the Intelevo brand, emphasizing the project's values and the ideal visual representation. It outlines our goal of providing an AI-supported, thoughtfully designed, and adaptive learning environment. Our personality—modern, clever, and student-focused—is identified in the brand overview, which also illustrates how these characteristics influence our visual design. Creators can create materials that convey the appropriate values and emotions by knowing the brand's tone and key message.
+________________
+  
+
+	Figure 90. Logo Clearspace
+	In order to maintain the Intelevo logo's clarity, recognizability, and visual consistency, this article explains how to use it correctly. It specifies the proper proportions, the permitted alterations, and the necessary clean area surrounding the logo. In order to avoid distortion, crowding, stretching, or color misuse, this section also provides examples of proper and improper uses. The integrity and professionalism of the Intelevo logo is maintained in all media by following these guidelines. 
+________________
+  
+
+	Figure 91. Color Palette
+	        To guarantee precise reproduction in digital and print forms, the official Intelevo colors are displayed on the Color Palette page together with their precise HEX, RGB, and CMYK values. Each color choice—such as clarity, reliability, and technical innovation—is explained in this section along with its intended mood. There are instructions on how and when to use each color, along with suggestions for contrast, primary versus secondary color applications, and backdrop utilization. Using this palette consistently promotes brand awareness. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+	Figure 91. Typography
+	This page details the official typefaces used for the Intelevo brand, including headings, subheadings, body text, and special cases. It explains how typography supports readability, hierarchy, and the overall visual tone of the system. The section outlines proper font weights, sizes, spacing, and usage examples to maintain consistency across documents, interface designs, and promotional materials. Clear typographic standards ensure a polished, organized, and modern presentation in all forms of communication.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+System Workflow
+  
+
+	Figure 92. System Workflow
+	Figure 92 illustrates the process flow of the Intelevo System. The first step in this system workflow is authentication, which enables users to either log in as an existing user using a Google account or an email address and password, or register as a new user by entering credentials. If authentication is successful, the system creates a session token and continues; otherwise, an error message is presented. The User Role controls access from then on. The figure shows pathways for a teacher and a student. A teacher can create a course (set up records and keys), upload course material (save files and metadata), make an assignment (set up submission records), and see student submissions. A student can enroll in a course utilizing a Unique Course Key to obtain access to resources and complete assignments by submitting text and files. What if the student's submission was successful? , a confirmation message appears; otherwise, an error occurs. The workflow closes by informing the student and instructor of the actions made. 
+________________
+Process Flow
+  
+
+	Figure 93. Process Flow Diagram
+	
+
+Figure 93 shows the process flow of the Intelevo System, which describes the route a user takes on the platform, beginning with user authentication and continuing through role-based access and other system operations .The flow starts with the user choosing either a New Registration/Sign-Up or an Existing User Login path. New users register with an email address and a password, which results in a success message and the login procedure. 
+Existing users can log in using their email address and password, or with Google Sign-In. If you use Google Sign-In, the system will transfer you to Google for verification before processing your information. If an email address and password are entered, the system validates the user's OTP (One-Time Password) if necessary and determines if the login was successful. If the process is successful, the user is routed to the dashboard; otherwise, an error notice is provided. After logging in, the system calculates the User Role (implied Teacher and Student). 
+The user can select an action based on their role. The Teacher may create courses, upload materials, create assignments, and see submissions. For example, Create Course requires entering course information, verifying for data correctness, and either showing an error or establishing the course record and generating a key. The Student's actions include joining the course (by entering a course key), seeing the course materials, and viewing/submitting the assignment. For the Join Course, the system checks the key; if it is valid, the student is enrolled and has access to the contents; otherwise, an error message is presented. Both roles finally lead to a state of System Information Management Access Granted or an appropriate system output, which redirects the user to the Dashboard/Home Page. 
+
+
+
+
+User-Flow
+
+
+  
+
+	Figure 94. User-Flow
+	The User-flow illustrates the Intelevo System's login and registration process. The procedure begins when the user goes to the login page and is asked to confirm if they already have an account. If the user is an existing Intelevo user, they will input their credentials and submit them for authentication. The system next checks the credentials; if authentication fails, the user is returned to the credential entering stage to attempt again. When the credentials are properly confirmed, the Intelevo System redirects the user to the dashboard to complete the login process. If the user does not already have an account, they are taken through the registration process by clicking "Register." They complete the registration form and submit their information for validation.  If the data is incorrect, the system advises the user to modify the relevant fields and resubmit the form. Once the information has been checked, the server will establish a new user account and send a verification email. After verifying their email, the user returns to the login page and enters their credentials. After successful authentication, the Intelevo System allows access to the dashboard, indicating the completion of the procedure. 
+  
+
+	Figure 95. Data Flow Diagram – Level 0
+	Figure 95 illustrates the Level 0 Data Flow Diagram of the Intelevo System, This system workflow describes the processes and data interactions within an integrated Learning Management System (LMS) that supports both instructional and machine-driven learning. The flow initiates with User Authentication via registration, standard login, or Google sign-in, which validates credentials and grants access. Once logged in, the system differentiates between Teacher and Student roles. 
+The Teacher manages content by Creating Courses and Uploading Materials (files and metadata) to the central LMS, while also receiving Analytics and retrieving stored data. Through Login & Interactions, the student engages with the system, enrolling in classes, viewing and submitting assignments, and obtaining the Course Dashboard View. 
+The LMS acts as a central hub (Process 0), managing data flow between all entities, including two external, intelligent components: it manages a Prompt Request and AI Response with a Generative AI system, enabling sophisticated interactions, while simultaneously feeding Behavior Data to a Machine Learning system and receiving Learning Data to improve the platform. Before sending the user to the dashboard, this thorough process flow guarantees safe access, role-based functionality, and integration with contemporary AI technologies to control and improve the learning experience. 
+  
+
+	Figure 96. Data Flow Diagram – Level 1
+	The Intelevo System Level 1 Data Flow Diagram is shown in Figure This system is a sophisticated Learning Management System (LMS) that integrates administrative, instructional, and AI-powered processes. The Authentication (1.0) process, which checks against the User DB (D1), receives Creds from the student at the start of the flow. The main feature is Learning (3.0), which manages content uploads from the instructor. After a successful login, the user can access Courses (2.0), where profile data can be updated in the User DB. Importantly, this procedure creates Raw Behavior Data, which is sent to ML Classification (4.0), which then produces data to update the User Database.
+
+
+Additionally, the system has two AI integrations: the STUDENT sends a Prompt to Google AI, which creates Responses that are handled by the AI Content (5.0) module. After that, this module communicates with the cloud for storage and retrieval and returns New Content to the Learning (3.0) process. The entire system (LMS Process 0 in the DFD) acts as a central hub, handling uploads and giving the instructor analytics, managing login and interactions with the student (who also receives a Course Dashboard View), and exchanging behavior data and learning data with machine learning and prompt request/AI response with generative AI. 
+  
+
+	Figure 97. Data Flow Diagram – Level 2
+	Figure 97 shows the Intelevo System Level 2 context diagram. The user chooses an Access Method (Registration, Standard Login, or Google Sign-In) at the start of the procedure. Authentication (1.0) then verifies Creds against the User DB (D1). After logging in, the student can access Courses (2.0), where the instructor uploads content to the Learning (3.0) process. In Learning (3.0), the system logs user action, producing Raw Behavior Data that is then analyzed by ML Classification (4.0).
+ In addition to using a Prediction Model (4.3) (similar to XGBoost) to predict learning dimensions (such as Active/Reflective) and a Recommend Engine (4.4) to determine Primary and Secondary Modes, this ML component computes 27 Base Features and 19 Derived Features from the behavior data. Finally, it provides Update Profile data back to the User DB. 
+Additionally, the student can submit a Prompt to Google AI, which generates Responses handled by the AI Content (5.0) module to create New Content that feeds back into the Learning (3.0) process. The overall LMS (0) serves as the focal point, handling student login and interactions, uploading and delivering analytics to the instructor, and sharing data with generative AI and machine learning. 
+________________
+Project Development
+
+
+
+
+  
+
+	Figure 98. Authentication Register Flow
+	The figure shows the Authentication Registration Flow of the Intelevo System, this multi-phase process is designed to ensure secure account creation and reliable user verification. The procedure begins when a user enters their Name, Email, and Password during registration. Once the information is submitted, the system immediately applies a security measure by hashing the password using the bcrypt algorithm, preventing any unencrypted credentials from being stored. At the same time, a temporary 6-digit One-Time Password (OTP) is generated and sent to the user’s email with a 10-minute validity period to verify ownership of the communication channel. 
+During this stage, the user’s initial, unverified account is stored in the MongoDB database with the attribute isVerified set to false. The user is then prompted to provide the OTP for validation. The system performs a conditional check: if the OTP is valid, the database is updated to mark the account as verified, and the temporary OTP is removed, granting the user full access. If the OTP is incorrect or has expired, the system displays an error message and returns the user to the OTP input step. This ensures that only users who successfully complete this required two-factor verification process are granted access to the Intelevo System.
+________________
+
+
+
+
+  
+
+	Figure 99. Create Classwork Flow
+	The figure presents the Create Classwork Flow of the Intelevo System, outlining the step-by-step process an instructor follows when generating new classwork within a course. The procedure begins on the Course Page, where the instructor selects the "Create Classwork" option. The system then prompts the instructor to choose the classwork type-Assignment, Material, or Form-before proceeding to the required form fields, which include the Title, Description, and Due Date.
+An optional step allows the instructor to upload attachments; if provided, these files are securely transferred to Backblaze B2 cloud storage. Once the upload is completed, the system records the file metadata in the Content Model and subsequently saves the primary classwork information in the Classwork Assignment Model. After the data is successfully stored, the system automatically notifies the enrolled students and displays the newly created classwork within the course. The process concludes with the classwork being officially created and made accessible to all intended users.
+________________
+
+
+
+
+  
+
+	Figure 100. Create Course Flow (Teacher)
+	________________
+
+
+Within the Intelevo System, two essential and interconnected processes manage the platform's primary functions: course setup and instructional content creation. The Create Course Flow begins on the Teacher Dashboard, where an instructor initiates a new course. The system prompts the instructor to complete the Course Form, which includes the Subject, Section, and Color, as well as an optional schedule entry. After submission, the system performs data validation and, once confirmed, generates a unique six-character enrollment key for students. The finalized course information-linked to the instructor's ID-is then stored in MongoDB. Upon successful creation, the enrollment key is displayed, and the course is added to the dashboard.
+After a course is established, the Create Classwork Flow proceeds from the Course Page. The instructor first selects the classwork Type, choosing whether it will be an Assignment, Material, or Form. They then complete the required form fields, such as the Title, Description, and Due Date. If attachments are included, the files are securely uploaded to Backblaze B2. The system then records the file metadata in the Content Model and stores the main classwork details in the Classwork Assignment Model. Once these steps are completed, the system automatically notifies students and displays the new classwork within the course, ensuring clear and
+________________
+
+
+
+
+  
+
+	Figure 101. Document Process Flow
+	The Intelevo System incorporates several coordinated workflows that manage secure document processing, course creation, and classwork development. The Create Course Flow starts when a teacher initiates a new course from the Teacher Dashboard and completes the Course Form, which includes the Subject, Section, and Color, with an optional option to Add Schedules. After submission, the system verifies the provided data; once validated, it generates a unique six-character enrollment key, saves the course information to MongoDB under createdBy: teacherld, and displays the newly created course on the dashboard.
+For instructional content management, the Create Classwork Flow begins on the Course Page when the instructor chooses to create classwork. The instructor selects the classwork Type-Assignment, Material, or Form-and completes the required fields such as Title, Description, and Due Date. If attachments are included, the files are uploaded to Backblaze B2 and handled by the system's Document Process Flow. During this process, uploaded files undergo initial upload and validation for type and size. Depending on the file format (e.g., PDF, DOCX, PPTX), the system performs specific processing steps like text extraction or conversion to HTML or images, generates a thumbnail, and stores the processed outputs in Backblaze B2.
+File metadata is then written to MongoDB and cached to enhance performance.
+After processing, the Create Classwork Flow resumes with saving the file metadata to the Content Model and the classwork details to the Classwork Assignment Model. The system automatically notifies students and displays the newly created classwork within the course, completing the workflow. 
+
+
+________________
+
+
+
+
+
+
+  
+
+	Figure 102. Join Course Flow (Student)
+	The Intelevo System's Join Course Flow accelerates the process of joining in courses. The procedure begins with the student selecting the Join Course from the Student Dashboard and entering a six-character Course Key. Once the key is entered, the system searches for a course that matches the specified code. If the system cannot discover a matching course, an error notice appears and the student is invited to provide a new key. 
+In order to preserve data integrity, the system performs two additional validation checks when a course is accessed: it verifies that the student is not the course author and ensures that the student is not already enrolled. If either condition is true, the system halts the process and displays an error message. If all validations pass, the student's ID is appended to the enrolledUsers list, and the updated course record is saved in MongoDB. The newly enrolled course is then reflected on the student's dashboard, indicating a successful enrollment process.
+________________
+
+
+
+
+  
+
+	Figure 103. Login-Logout-Flow
+	The Intelevo System relies on a series of integrated, secure workflows to manage user access and educational content. The Login-Logout-Flow ensures secure entry, requiring the user to submit credentials that are validated against the database for existence and email verification. A password match, confirmed via bcrypt.compare, leads to the generation of a JWT Token (7-day expiry), the setting of an HTTP Cookie, and redirection to the dashboard. For course creation, the teacher's Create Course Flow involves filling a form for Subject, Section, and Color.
+Upon valid submission, a unique 6-character key is generated, the course record is saved to MongoDB with the teacher's ID, and the course is displayed in the dashboard. The student's Join Course Flow complements this by having the student enter the 6-character key, which, after checks for course existence, creator status, and existing enrollment, leads to the student's ID being Add[ed] to enrolledUsers and saved to MongoDB, the Create Classwork Flow begins with the teacher selecting the Type (Assignment, Material, or Form) and filling in details. Any Attachments are uploaded to Backblaze B2, initiating the Document Process Flow, which validates the file, processes it based on its type (PDF, DOCX, PPTX) to Extract Text, Convert to HTML or Images, and Generate [a] Thumbnail. This processed content is stored in B2, and its metadata is saved to MongoDB and Cache[d]. The flow concludes by saving the file metadata and assignment details to their respective models, notifying students, and displaying the classwork in the course.
+
+
+
+
+
+
+
+
+
+
+  
+
+	Figure 104. User Authentication & Security
+	The user authentication and security module of the Intelevo system is responsible for ensuring that only authorized users can access the platform. The login process begins when the user submits their email and password. The system validates the email format, checks request frequency through rate limiting, and verifies whether the account is temporarily locked due to repeated failed login attempts. If the credentials are valid, the system compares the encrypted password with the stored hash, resets security counters, and generates a ISON Web Token (WT) to securely authenticate the user for subsequent requests.
+
+
+
+
+  
+
+Figure 105. User Authentication & Security
+	
+
+        To further enhance security, the system implements an account lockout mechanism that records failed attempts within a defined time window. Once the maximum number of attempts is exceeded, the use account is temporarily locked to prevent brute-force attacks. Additionally, a rate-limiting mechanism applied to restrict the number of login attempts from a single user or IP address within a specific period protecting the system from excessive or malicious requests.
+
+
+  
+
+	Figure 107. Password Validation & Security
+	        
+The password validation module makes sure that every user password satisfies the security standards of the system. The system assesses the length, complexity, and character composition of passwords during account creation and password resets. Passwords that don't meet these requirements are rejected, and the user receives the proper feedback. In order to promote secure password practices, a password strength assessment is also carried out to categorize passwords as weak, fair, good, or strong.                
+  
+
+	Figure 108. Password Validation & Security
+	Using a time-limited reset token, users can safely update their credentials through the password reset procedure. The system updates the user record, encrypts the new password using secure hashing, validates the token, and confirms the strength of the password. Reset tokens are invalidated after use to prevent unauthorized password changes.
+
+
+                                                
+  
+
+	Figure 109. Input Validation & Sanitization
+	
+
+        The input validation and sanitization module is designed to protect the Intelevo system from invalid and malicious inputs. The system validates email addresses and sanitizes text-based inputs by removing potentially harmful characters and scripts. This process helps prevent security vulnerabilities such as cross-site scripting (XSS) and injection attacks, ensuring that only safe and well-formed data is processed by the system.
+
+
+
+
+
+
+
+
+
+
+  
+
+	Figure 110. Middleware & Route Protection
+	The middleware module serves as a security gateway for all Intelevo-protected routes. It intercepts incoming requests, validates JWT tokens, and imposes role-based access control, notably for administrative services. Furthermore, the middleware uses security headers to strengthen protection against typical online risks, ensuring that important system resources are only available to authorized users.
+________________
+
+
+  
+
+	Figure 111. Learning Style Classification (FSLSM)
+	The learning style categorization module uses the Felder-Silverman Learning Style Model (FSLSM) to enable adaptive learning in the Intelevo system. User interaction data is gathered and analyzed to provide behavioral traits that characterize learning preferences such as active vs introspective and visual versus verbal inclinations. These features are then fed into the machine learning model, which classifies learners and allows for more customized learning experiences.
+
+
+  
+
+	Figure 112. Learning Style Classification (FSLSM)
+	User learning behaviors are continually monitored, including content interactions and navigation patterns. This behavioral data aids learning analytics and enables the system to automatically initiate learning style categorization after enough interaction data has been collected.
+________________
+  
+
+	Figure 113. Course Management
+	The course administration module allows teachers to develop and administer courses in the Intelevo system. Course information, including subject, section, and teacher details, is securely maintained in the database. The system assigns ownership to the course developer and configures enrollment and collaboration settings, allowing for controlled and coordinated course delivery.
+________________
+  
+
+	Figure 114. Assignment & Classwork
+	The assignment and classwork management module enables teachers to generate and publish classwork for their courses. Assignment data and learning materials are processed and securely saved, with file attachments associated with the proper course. This guarantees that students have access to course-related activities and materials via the system interface.
+________________
+  
+
+	Figure 115. Assignment & Classwork
+	On the user interface, the classwork display component dynamically retrieves and displays assignment information. This enables both students and instructors to view and manage classwork efficiently within the Intelevo platform.
+________________
+  
+
+	Figure 116. Submission Management
+	        The submission management module is in charge of evaluating student entries. Before enabling grading activities, the system first checks teacher authority. Grades, comments, and grading timestamps are tracked and saved to guarantee openness and accountability. Updated submission information is then sent back to the system for appropriate tracking and evaluation.
+
+
+Synthetic data
+
+
+  
+
+	Figure 117. Synthetic data
+	The first function is designed to simulate a student's learning style profile, closely mirroring the results obtained from a questionnaire like the Index of Learning Styles (ILS). It returns a dictionary containing scores for the four core dimensions of the Felder-Silverman Learning Style Model (FSLSM): 'activeReflective', 'sensingIntuitive', 'visualVerbal', and 'sequentialGlobal'. For each dimension, the function uses the numpy.random.randint() method to generate a random integer score between -11 and 11 (inclusive). A strongly positive or negative score simulates a dominant preference (e.g., strong Visual or strong Verbal), while a score close to zero suggests a balanced or moderate preference across the dimension.
+________________
+                                                
+  
+
+	Figure 118. Synthetic Data Features
+	
+
+  
+
+	Figure 119. Synthetic data 2
+	
+
+Feature Engineering
+  
+
+	Figure 120. Feature Engineering
+	
+
+
+
+
+
+The system employs Feature Engineering to transform raw student interaction data into a suitable format for the machine learning model. This process takes simple behaviors (like activity counts) and converts them into the features needed for prediction.
+  
+
+	Figure 121. Feature Engineering
+	
+
+
+
+
+
+  
+
+	Figure 122. Feature Engineering
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+Cross Validation
+                                                
+  
+
+	Figure 123. Cross Validation
+	
+
+The resulting model is rigorously evaluated using Cross-Validation. This technique partitions the data into multiple folds, repeatedly training and testing the model to ensure it is accurate and generalizable before deployment, preventing problems like overfitting.
+Operations and Testing Procedures
+The operation and testing phase of a Learning Management System (LMS) is a critical quality assurance process designed to bridge the gap between initial development and real-world deployment. By evaluating the software, researchers and developers can guarantee that the platform is effective for educational delivery.
+Before testing is conducted, the environment is prepared where all components are synchronized for full functionality. To mitigate the risk of user error skewing the results, participants were guided through a preliminary demonstration and provided with specific instructional sets. This was critical in the user experience, ensuring that the interactions made with the system are representative of actual operational conditions, ultimately resulting in a validated evaluation of the system’s educational efficacy.
+The testing itself was split to address both the technical and the qualitative aspects of the platform. The functional analysis verified that the underlying architecture—such as database retrieval and module transitions—remained stable. Simultaneously, the efficacy testing evaluated the platform’s success as an educational tool, focusing on how a user could navigate the learning materials and achieve learning objectives.
+Pretest and Posttest
+Pre-testing, also known as baseline testing, serves as the initial assessment conducted before the implementation of an intervention or program. It establishes a foundational benchmark, allowing researchers to discern the starting point of participants or variables under study. By providing a baseline against which subsequent changes can be measured, pre-testing offers invaluable context for interpreting the results of interventions.
+On the other hand, post-testing involves assessment conducted after the intervention has been implemented. Its primary objective is to gauge the changes or outcomes resulting from the intervention compared to the baseline established during pre-testing. Post-testing enables researchers to evaluate the effectiveness of interventions, monitor participants' progress over time, and make informed decisions based on evidence.
+Together, pre and post-testing form a dynamic framework for research and evaluation, offering insights into the effectiveness of interventions and contributing to evidence-based decision-making. In this context, the pretest and posttest design will be used for the following:
+Evaluating the efficacy of Generative AI in enhancing student comprehension by tailoring instructional materials to individual learning preferences. By investigating the system's capacity to dynamically adapt content delivery to accommodate diverse learning styles.
+Validating the precision of its automated detection engine against the established Index of Learning Styles (ILS) psychometric standard.
+1. Define Learning Objectives: Establish and communicate explicit pedagogical goals for all instructional materials.
+2. Develop Assessment: Design validated testing tools, such as multiple-choice and Likert-scale assessments, aligned with the defined objectives.
+3. Conduct Pretest: Execute a pretest to determine the learners' initial knowledge state prior to platform exposure.
+4. Deployment: Implement the AI-driven learning management system, leveraging Machine Learning to deliver personalized content.
+5. Conduct Posttest: Conduct a post-intervention test to quantify knowledge acquisition and retention.
+6. Data Evaluation: Apply statistical treatments to the gathered data to evaluate the efficacy of the AI intervention.
+Functional Testing
+Different operational elements are highlighted, depending on which type of software testing is being employed as part of the overall testing strategy. Functional testing assesses overall compatibility between different software modules, which has a direct bearing on other related aspects, such as expected user interactions and the viability of the user interface.
+The test environment provided by functional testing is considered an example of black-box testing, in which testers don’t gain insight to the inner machinations of the system (as is found in white-box testing)—and are instead given a “Pass/Fail” report on whether the system and its pipelines function as desired.
+1. Functional Identification: Identify the various functions that the software needs to execute.
+2. Data Preparation: Create input data according to functional requirements.
+3. Establish Benchmark: Establish expected outputs per functional specifications.
+4. Testing: Conduct test cases.
+5. Analysis: Evaluate how actual outputs compare to expected outputs.
+6. Validation: Determine whether the software application works satisfactorily per expectations.
+Evaluation Procedure
+The evaluation procedure was conducted to systematically gather data from the respondents regarding the performance and acceptability of the AVONIC system. The process included selecting respondents, explaining the study, demonstrating the system, allowing user interaction, distributing the questionnaire, collecting responses, and analyzing the data.
+This structured evaluation procedure ensures that the collected data reflects actual user experience. Studies show that user-based evaluation methods are effective in assessing system performance and usability through real-world interaction (Alvaran et al., 2022).
+Sampling Strategy
+The study used purposive sampling in selecting respondents. Purposive sampling is a non-probability sampling technique where participants are selected based on their relevance to the study and their ability to provide meaningful data. (random sampling)
+This method is commonly used in research where respondents must have specific knowledge or experience related to the study (Nyimbili & Nyimbili, 2024). In this study, respondents were selected based on their familiarity with agricultural systems and technology.
+
+
+Research Participants
+The respondents consisted of farmers, relatives of farmers, agricultural students, and individuals interested in agricultural technology. These participants were selected because they represent the potential users of the AVONIC system.
+The participants are students from the college level, instructors who teach college level, and IT professionals with familiarity for AI/ML. These participants were chosen potential users due to their 
+The following groups of respondents were included in the study:
+* General Users: Consists of general users with varying levels of digital literacy, ranging from non-tech-savvy individuals to regular internet users. This includes students, working professionals, and community members who require foundational or specialized digital skills.
+The evaluation procedure for the study was designed to systematically assess the system’s performance, functionality, and overall user satisfaction based on the predefined objectives. The steps below outline the comprehensive process employed to gather reliable and actionable feedback from the respondents.
+1. Each respondent was given a system evaluation questionnaire to measure the system’s performance.
+2. The research objectives were explained, and a system demonstration was conducted to present the system’s functionality.
+3. The respondents were allowed to use the system.
+4. The respondents were asked to evaluate the system using the FURPS standard evaluation criteria with a 5-point Likert scale rating system, where 5 is the highest and 1 is the lowest.
+5. The collected data were tallied, analyzed, and interpreted using the weighted mean.
+Table 5
+Likert Scale
+Numerical Scale
+	Descriptive Rating
+	5.0
+	Excellent
+	4.0
+	Very Good
+	3.0
+	Good
+	2.0
+	Fair/Fairly
+	1.0
+	Poor
+	1. Based on the collected evaluation, the overall mean ratings for each criterion shall be computed.
+2. Using the scale shown in Table X, the evaluation result must be translated into quantitative interpretation
+Table X
+Descriptive Interpretation of the Mean
+Numerical Scale
+	Descriptive Rating
+	4.51 - 5.00
+	Excellent
+	3.51 - 4.50
+	Very Good
+	2.51 - 3.50
+	Good
+	1.51 - 2.50
+	Fair/Fairly
+	1.00 - 1.50
+	Poor
+	        Ratings ranging from 4.51 to 5.00 are interpreted as "Excellent", indicating a very high level of system performance, as presented in Table X. Scores between 3.51 and 4.50 are classified as "Very Good", suggesting that the system performs effectively with only minimal improvements needed. Ratings within 2.51 to 3.50 fall under "Good", which means the system meets the expected standards but still requires some enhancements. A rating between 1.51 and 2.50 is considered "Fair", indicating that the system has noticeable limitations and requires considerable improvement. Lastly, scores ranging from 1.00 to 1.50 are interpreted as "Poor", reflecting major deficiencies that need immediate corrective action.
+
+
+________________
+
+
+Chapter 4
+RESULTS AND DISCUSSION  
+        This section presents an operational overview of the developed Intelevo system. It provides a detailed discussion of the system’s overall structure, core functionalities, and performance based on actual testing. The section also outlines the specific capabilities and limitations of the system. Lastly, the overall efficacy of Intelevo is evaluated through user assessment results and comprehensive system analysis.
+Project Description
+Intellevo is a learning management system designed to assist learners in finding their preferred learning styles based on the Felder-Silverman Learning Style Model through the use of machine learning and allows learners to transform content based on those learning preferences by utilizing generative artificial intelligence. To ensure that the application runs regardless of where it is deployed, the application will be packaged using Docker. The testing procedure involves testing the system by its ability to adapt to the users preferences and the ability to transform content uploaded to the learning management system.
+
+
+________________
+
+
+
+
+Project Structure
+        The overall structure of the Intelevo system integrates artificial intelligence, machine learning, and web-based technologies into a unified adaptive learning platform. The system is designed to personalize educational content by analyzing student interaction data dynamically adjusting learning materials according to individual learning styles. 
+        The system begins with user interaction through a web-based interface where students and instructors access the platform. As users engage with lessons, quizzes, and activities, the system continuously collects behavioral data such as navigation patterns, response time, and module, which classifies learners based on The Felder-Silverman Learning Style Model (FSLSM).
+        The processed data is then utilized by the content personalization engine, which transforms learning materials into adaptive formats such as textual explanations, visual diagrams, audio narration, and interactive exercises. The system operates entirely online, a centralized web platform.
+        The Intelevo interface is designed to provide users with a comprehensive and structured learning environment, including course management, adaptive content delivery, and performance monitoring. The following sections describe the system interface and its key components as presented in the Intelevo platform.
+
+
+
+
+
+
+
+
+Secure User Access
+
+
+	  
+
+	  
+
+	       Figure 1 . Intelevo - Secure User Access
+        As shown in Figure 1, The interface serves as the primary security gateway of  the Intelevo platform, it enables users to securely access the system through multiple authentication options while maintaining usability and accessibility. The core features of the interface are as follows:
+* Multi-Method Authentication:
+This feature allows users to log in using traditional email and password credentials or third-party OAuth integration (e.g., Google). This approach enhances both flexibility and security in user authentication.
+
+
+* Account Recovery and Session Management:
+The interface includes a “Forgot Password?” function to assist users in recovering their accounts in case of credential loss. Additionally, the “Remember Me” option enables sessions persistence, allowing users to remain logged in across sessions for improved convenience.
+* User Onboarding Gateway:
+A “Create Account” option is provided for new users, facilitating seamless navigation to the registration module. This ensures efficient onboarding and system accessibility for first time users.
+
+
+Course Management Dashboard
+
+
+	  
+
+	
+
+	                          Figure 2, Intelevo - Course Management Dashboard
+As shown in Figure 2, the interface serves as the central hub for managing the user’s academic environment within the Intevelo web-based platform. It provides an integrated view of courses, schedules, activities, and intelligent support tools. The core features of the interface are as follows:
+* Global Navigation Sidebar:
+        This feature provides a structured menu that allows users to seamlessly navigate between the home dashboard, course modules, task list, and schedules. It ensures efficient and user-friendly system navigation.
+* Dynamic Course Overview:
+The dashboard centralizes active enrollments into interactive course cards that display key information such as instructor details, class schedules, and real-time counters for learning materials and assignments.
+* Activity and Time Tracking:
+A synchronized calendar widget and recent activity feed are integrated into the interface, enabling students to monitor deadlines and track their academic progress in a chronological manner.
+
+
+Assignment and Activity Management
+
+
+	  
+
+	
+
+	
+
+	  
+
+	
+
+	Figure 3, Intelevo - Activity and Content Management Interface
+As shown in Figure 4, the interface provides a comprehensive environment for organizing, accessing, and managing academic deliverables and learning resources within the Intelevo web-based platform. It enables users to efficiently track tasks, locate materials, and customize their viewing experience. The core features of the interface are as follows:
+* Categorical Filtering and Sorting
+This feature provides a multi-layered filtering system that allows users to organize content based on type (e.g., Assignments, Forms, Materials) or urgency (e.g., Due This Week, Overdue, Completed). This improves task prioritization and overall resource management.
+* Content-Specific Metadata Cards
+Each activity is displayed through structured cards containing relevant metadata such as tags, timestamps, and content type. For learning materials, the system supports interactive previews (e.g., PDF thumbnails), enabling users to quickly verify content without leaving the main interface.
+* Global Search and Retrieval
+A centralized search function allows users to quickly locate specific assignments or resources using keyword-based queries. This significantly enhances navigation efficiency, especially in large course repositories.
+
+
+Progress Tracking and Monitoring
+  
+
+	
+
+	  
+
+	
+
+	  
+
+	
+
+	      Figure 4, Intelevo - Progress Tracking and Monitoring
+       As shown in Figure 5, the interface presents a comprehensive view of both the system adaptive learning analysis and the student’s academic performance. It integrates machine learning insights with performance data to support continuous learning monitoring and evaluation. The following are the core features of the interface:
+* Adaptive Learning Classification Status:
+Displays the current development of the learner’s profile based on collected interaction data. A milestone-based indicator (e.g., Initial, Developing, Stable) reflects the level of accuracy achieved by the machine learning model in identifying the student’s learning preferences.
+* User Engagement Summary:
+        Provides key metrics such as total interactions, accumulated learning time, and  number of learning sessions. These indicators help monitor the level of user participation and system usage.
+* AI Usage Analysis:
+Presents categorized information on how the AI features are utilized within the system. This includes different interaction modes, which support the system in refining content delivery based on user behavior.
+* Academic Performance Overview:
+Shows summarized academic results, including average grades and task completion rates. A detailed grade record may also be included to allow tracking of individual performance across activities.
+* Data Update and Synchronization:
+Includes a control feature that allows users to refresh and update system data to ensure that all displayed information reflects the most recent interactions and results.
+AI-Generated Learning Support
+
+
+	  
+
+	
+
+	  
+
+	  
+
+	
+
+	
+
+	Figure 5, Intelevo - AI-Generated Learning Support
+As shown in Figure 5, the interface integrates artificial intelligence tools to support real-time academic assistance and enhance knowledge acquisition. It provides students with accessible and structured AI-driven features that improve learning efficiency. The following are the core features of the interface:
+* Accessible AI Support Control:
+Provides a persistent access point for the AI assistant through a visible interface element, allowing users to quickly initiate assistance from any part of the system.
+* Multi-Mode AI Assistance:
+Includes an input interface where users can submit academic queries. The system supports multiple modes such as basic inquiry, in-depth exploration, and structured output generation to accommodate different learning needs.
+* Integrated Note-Taking Feature:
+Allows users to record important information, including AI-generated responses and personal notes, within the same interface to support better information retention and organization.
+* Keyboard Interaction Support:
+Incorporates shortcut commands to improve efficiency in navigating and managing notes, enabling a smoother and more productive user experience.
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+________________
+CHAPTER 5
+SUMMARY OF FINDINGS, CONCLUSION, AND RECOMMENDATIONS
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+                
+________________
+
+
+REFERENCES
+
+
+About Mermaid. (2025, April 11). 
+
+
+About Gemini. (n.d.). What is Gemini and how it works. Gemini. 
+
+
+Adzharuddin, N. (2013). Learning Management System (LMS) among University Students: Does It Work? International Journal of e-Education e-Business e-Management and e-Learning. https://doi.org/10.7763/ijeeee.2013.v3.233 
+
+
+Aldahwan, N. S., & Alsaeed, N. I. (2020). Use of artificial Intelligent in Learning Management System (LMS): A systematic literature review. International Journal of Computer Applications, 175(13), 16–26. https://doi.org/10.5120/ijca2020920611 
+
+
+Alhakeem, Z. M., Jebur, Y. M., Henedy, S. N., Imran, H., Bernardo, L. F. A., & Hussein, H. M. (2022). Prediction of Ecofriendly Concrete Compressive Strength Using Gradient Boosting Regression Tree Combined with GridSearchCV Hyperparameter-Optimization Techniques. Materials, 15(21), 7432. https://doi.org/10.3390/ma15217432 
+
+
+Ally, M. (2004). Foundations of educational theory for online learning. Theory and practice of online learning, 2(1), 15-44. 
+
+
+Angeioplastis, A., Aliprantis, J., Konstantakis, M., Varsamis, D., & Tsimpiris, A. (2025). The learning style decoder: FSLSM-guided behavior mapping meets deep neural prediction in LMS settings [Preprint]. Preprints.org. https://doi.org/10.20944/preprints202506.1018.v1
+
+
+Atmaca-Aksoy, A. C. (2024). Using Technology in Science Education:A Bibliometric analysis. Journal of Education in Science Environment and Health, 230–244. https://doi.org/10.55549/jeseh.730 
+
+
+Ayyoub, H. Y., & Al-Kadi, O. S. (2024). Learning style identification using semi-supervised self-taught labeling. IEEE Transactions on Learning Technologies, 17, 1093–1106. https://doi.org/10.1109/TLT.2024.3358864
+
+
+Backblaze. (2025). B2 cloud storage pricing. 
+
+
+Baihaqi, W. M., Saputro, R. E., Utomo, F. S., & Sarmini. (2024). Novel predictive framework for student learning styles based on Felder-Silverman and machine learning model. Journal of Applied Data Sciences, 5(4), 1726–1737. https://doi.org/10.47738/jads.v5i4.408
+
+
+Balogh, Zoltan & Turčáni, Milan. (2011). Possibilities of modelling web-based education using IF-THEN rules and fuzzy petri nets in LMS. Communications in Computer and Information Science. 251. 93-106. 10.1007/978-3-642-25327-0_9 
+
+
+Bittner, D., Ezer, T., Grabinger, L., Hauser, F., & Mottok, J. (2023). Unveiling the secrets of learning styles: decoding eye movements via machine learning. In ICERI2023 Proceedings (pp. 5153–5162). IATED.
+
+
+Blockeel, H., Devos, L., Frénay, B., Nanfack, G., & Nijssen, S. (2023). Decision trees: from efficient prediction to responsible AI. Frontiers in Artificial Intelligence, 6. https://doi.org/10.3389/frai.2023.1124553 
+
+
+Bradley, V. M. (2021). Learning Management System (LMS) use with online instruction. International Journal of Technology in Education (IJTE), 4(1), 68-92.https://doi.org/10.46328/ijte.36 
+
+
+Brown, J. (2015). Personalizing post-secondary education: An overview of adaptive learning solutions for higher education (Report). ITHAKA S+R. 
+
+
+Burbules, N. C., Fan, G., & Repp, P. (2020). Five trends of education and technology in a sustainable future. Geography and Sustainability, 1(2), 93–97. https://doi.org/10.1016/j.geosus.2020.05.0012x.2020.1749239 
+Canva. (n.d.). Introducing the Visual Suite | Canva. Retrieved November 25, 2025, from https://www.canva.com/visual-suite/ 
+
+
+Carver, C. A., Howard, R. A., & Lane, W. D. (2002). Enhancing student learning through hypermedia courseware and incorporation of student learning styles. IEEE transactions on Education, 42(1), 33-38. 
+
+
+Celik, I., Dindar, M., Muukkonen, H., & Järvelä, S. (2022). The Promises and Challenges of Artificial Intelligence for Teachers: a Systematic Review of Research. TechTrends, 66(4), 616–630. https://doi.org/10.1007/s11528-022-00715-y 
+
+
+Chen, L., Chen, P., & Lin, Z. (2020). Artificial Intelligence in Education: A Review. IEEE Access, 8, 75264–75278. https://doi.org/10.1109/access.2020.2988510 
+
+
+Chen, L., Zhao, Y., & Parker, E. (2025). The impact of AI-powered adaptive learning on student performance in undergraduate mathematics. Frontiers in Humanities and Social Research, 2(3), 378–399. 
+
+
+Contrino, M. F., Reyes-Millán, M., Vázquez-Villegas, P., & Membrillo-Hernández, J. (2024). Using an adaptive learning tool to improve student performance and satisfaction in online and face-to-face education for a more personalized approach. Smart Learning Environments, 11(1). https://doi.org/10.1186/s40561-024-00292-y
+
+
+Culduz, M. (2024). Benefits and challenges of E-Learning, online education, and distance learning. In Advances in higher education and professional development book series (pp. 1–27). https://doi.org/10.4018/979-8-3693-4131-5.ch001 
+
+
+Daugherty, K., Morse, R., Schmauder, A. R., Hoshaw, J., & Taylor, J. (2022) Adjusting the Future of Adaptive Learning Technologies via a SWOT Analysis. Intersection: A journal at the intersection of assessment and learning, 3(2).
+
+
+Daoud, M. A., Namir, A., & Talbi, M. (2024). FSLSM-Based analysis of student performance information in a blended learning course using Moodle LMS. Open Information Science, 8, 20220163.https://doi.org/10.1515/opis-2022-0163
+ 
+Das, A., Malaviya, S., & Singh, M. (2023). The impact of AI-Driven personalization on learners performance. International Journal of Computer Sciences and Engineering, 11(8), 15–22. https://doi.org/10.26438/ijcse/v11i8.1522 
+
+
+Dhanagari, N. M. R. (2024). MongoDB and Data Consistency: Bridging the Gap between Performance and Reliability. Journal of Computer Science and Technology Studies, 6(2), 183–198. https://doi.org/10.32996/jcsts.2024.6.2.21 
+
+
+Dutta, S., Ranjan, S., Mishra, S., Sharma, V., Hewage, P., & Iwendi, C. (2024). Enhancing Educational Adaptability: A Review and Analysis of AI-Driven Adaptive Learning Platforms. 2024 4th International Conference on Innovative Practices in Technology and Management (ICIPTM), 1–5. https://doi.org/10.1109/iciptm59628.2024.10563448 
+
+
+Egan, J., Tolman, S., McBrayer, J. S., & Ballesteros, E. (2023). Reconceptualizing Kolb’s learning cycle as episodic and lifelong. Experiential Learning and Teaching in Higher Education, 6(1), 24–33. https://doi.org/10.46787/elthe.v6i1.3607 
+
+
+Ersozlu, Z., Taheri, S., & Koch, I. (2024). A review of machine learning methods used for educational data. Education and Information Technologies, 29(16), 22125–22145. https://doi.org/10.1007/s10639-024-12704-0 
+
+
+Ferdiani, R. D., Manuharawati, M., & Khabibah, S. (2021). Activist learners’ creative thinking processes in posing and solving geometry problem. European Journal of Educational Research, volume–11–2022(volume–11–issue–1–january–2022), 117–126. https://doi.org/10.12973/eu-jer.11.1.117 
+
+
+França, R. P., Monteiro, A. C. B., Arthur, R., & Iano, Y. (2021). An overview of deep learning in big data, image, and signal processing in the modern digital age. In Elsevier eBooks (pp. 63–87). https://doi.org/10.1016/b978-0-12-822226-3.00003-9 
+
+
+Furqon, M., Sinaga, P., Liliasari, L., & Riza, L. S. (2023). The impact of Learning Management System (LMS) usage on students. TEM Journal, 1082–1089. https://doi.org/10.18421/tem122-54 
+
+
+Gerchev, I. (2022). Tailwind CSS. O’Reilly Media. https://www.worldcat.org/oclc/1314257318 
+
+
+Git. (n.d.). https://git-scm.com/ 
+
+
+GitHub. (n.d.). About GitHub and Git. GitHub Docs. https://docs.github.com/en/get-started/start-your-journey/about-github-and-git 
+
+
+Graf, S., Viola, S. R., Leo, T., & Kinshuk, N. (2007). In-Depth analysis of the Felder-Silverman learning style dimensions. Journal of Research on Technology in Education, 40(1), 79–93. https://doi.org/10.1080/15391523.2007.10782498 
+
+
+Gunawardena, M., Bishop, P., & Aviruppola, K. (2023). Personalized learning: The simple, the complicated, the complex and the chaotic. Teaching and Teacher Education, 139, 104429. https://doi.org/10.1016/j.tate.2023.104429 
+
+
+Hakkal, S., & Lahcen, A. A. (2024). XGBOOST to enhance Learner Performance Prediction. Computers and Education Artificial Intelligence, 7, 100254. https://doi.org/10.1016/j.caeai.2024.100254 
+
+
+Hao, S., Han, W., Jiang, T., Li, Y., Wu, H., Zhong, C., Zhou, Z., & Tang, H. (2024b). Synthetic data in AI: challenges, applications, and ethical implications. arXiv (Cornell University). https://doi.org/10.48550/arxiv.2401.01629 
+
+
+HTML5 Differences from HTML4. (n.d.). https://www.w3.org/TR/html5-diff 
+
+
+Ikawati, Y., Rasyid, M. U. H. A., & Winarno, I. (2021). Student behavior analysis to predict learning styles based Felder Silverman model using ensemble tree method. EMITTER International Journal of Engineering Technology, 9(1), 92–106. https://doi.org/10.24003/emitter.v9i1.590
+
+
+Imran, M., & Almusharraf, N. (2024). Google Gemini as a next generation AI educational tool: a review of emerging educational technology. Smart Learning Environments, 11(1). https://doi.org/10.1186/s40561-024-00310-z 
+
+
+Inkscape. (n.d.). About. https://inkscape.org/about 
+
+
+Installing with Vite - Installation. (n.d.). Tailwind CSS. https://tailwindcss.com/docs/installation/using-vite 
+
+
+Iqbal, S. (2011). Learning Management Systems (LMS): inside matters. Information Management and Business Review, 3(4), 206–216. https://doi.org/10.22610/imbr.v3i4.935 
+
+
+Ismail, J. (2001). The design of an e-learning system: Beyond the hype. The internet and higher education, 4(3-4), 329-336. 
+
+
+Jiang, Y., Li, X., Luo, H., Yin, S., & Kaynak, O. (2022). Quo vadis artificial intelligence? Discover Artificial Intelligence, 2(1). https://doi.org/10.1007/s44163-022-00022-8 
+
+
+Kaleci, D. (2025). Integration and application of artificial intelligence tools in the Moodle platform: A theoretical exploration. Journal of Educational Technology and Online Learning, 8(1), 100–111. https://doi.org/10.31681/jetol.1595079 
+
+
+Kalita, E., El Aouifi, H., Kukkar, A., Hussain, S., Ali, T., & Gaftandzhieva, S. (2025). LSTM-SHAP based academic performance prediction for disabled learners in virtual learning environments: A statistical analysis approach. Social Network Analysis and Mining, 15(65). https://doi.org/10.1007/s13278-025-01484-1
+
+
+Kalyani, N. D. L. K. (2024). The role of Technology in Education: Enhancing learning outcomes and 21st century skills. International Journal of Scientific Research in Modern Science and Technology, 3(4), 05–10. https://doi.org/10.59828/ijsrmst.v3i4.199 
+
+
+Kaur, P., Kumar, H., & Kaushal, S. (2023). Technology-Assisted Language Learning Adaptive Systems: A Comprehensive review. International Journal of Cognitive Computing in Engineering, 4, 301–313. https://doi.org/10.1016/j.ijcce.2023.09.002 
+
+
+Kozen, M. (2025, October 20). pdf-parse. Retrieved November 28, 2025, from https://www.npmjs.com/package/pdf-parse 
+
+
+Kovtoniuk, M., Kosovets, O., Soia, O., & Tyutyun, L. (2022). Virtual learning environments: major trends in the use of modern digital technologies in higher education institutions. Educational Technology Quarterly, 2022(3), 183–202. https://doi.org/10.55056/etq.35 
+
+
+Lazuardy, M. F. S., & Anggraini, D. (2022). Modern front end web architectures with react.js and next.js. Research Journal of Advanced Engineering and Science, 7(1), 132-141. 
+
+
+Lee, Christopher M.. (2024). Online Learning versus Face to Face Learning toward Students: Which can be an effective way of Learning Methodology to our current Educational System?. 10.17632/m2prrm7c3g.1. 
+
+
+Lee, D., Arnold, M., Srivastava, A., Plastow, K., Strelan, P., Ploeckl, F., Lekkas, D., & Palmer, E. (2024). The impact of generative AI on higher education learning and teaching: A study of educators’ perspectives. Computers and Education Artificial Intelligence, 6, 100221. https://doi.org/10.1016/j.caeai.2024.100221 
+
+
+Lengyel, L. (2015). Validating Rule-Based algorithms. Acta Polytechnica Hungarica, 12(4). https://acta.uni-obuda.hu/Lengyel_60.pdf 
+
+
+LibreOffice. (n.d.). What is LibreOffice? | LibreOffice - Free and private office suite - Based on OpenOffice - Compatible with Microsoft. https://www.libreoffice.org/discover/libreoffice/ 
+
+
+Lu, Y., Wang, H., & Wei, W. (2023). Machine Learning for Synthetic Data Generation: A review. arXiv (Cornell University). https://doi.org/10.48550/arxiv.2302.04062 
+
+
+Masegosa, A. R., Cabañas, R., Maldonado, A. D., & Morales, M. (2024). Learning styles impact students’ perceptions on active learning methodologies: a case study on the use of live coding and short programming exercises. Education Sciences, 14(3), 250. https://doi.org/10.3390/educsci14030250 
+
+
+Melhem, D. Z., & Al-Zoubi, A. M. (2025). The Effect of Universal Design for Learning (UDL)-Based VARK Model in Students with Learning Difficulties and Various Learning Preferences. Educational Process International Journal, 15(1). https://doi.org/10.22521/edupij.2025.15.152 
+
+
+Mestre, L. S. (2012). The learning styles debate: do we need to match up learning styles with presentation styles? In Elsevier eBooks (pp. 1–18). https://doi.org/10.1016/b978-1-84334-688-3.50001-9 
+
+
+Miller, C., Portlock, T., Nyaga, D. M., & O’Sullivan, J. M. (2024). A review of model evaluation metrics for machine learning in genetics and genomics. Frontiers in Bioinformatics, 4, 1457619. https://doi.org/10.3389/fbinf.2024.1457619 
+
+
+Mirea, C., Bologa, R., Toma, A., Clim, A., Plăcintă, D., & Bobocea, A. (2025). Transforming Learning with Generative AI: From Student Perceptions to the Design of an Educational Solution. Applied Sciences, 15(10), 5785. https://doi.org/10.3390/app15105785 
+
+
+Mishra, D., Tripathi, S. M., Chaurasia, A., & Chaurasia, P. K. (2025). A review on Ensemble Learning Methods: Machine Learning Approach. International Journal of Research Publication and Reviews, 6(2), 3795–3803. https://doi.org/10.55248/gengpi.6.0225.0971 
+MongoDB Documentation. (n.d.). Tutorial: Get Started with Mongoose. Node.js Driver - MongoDB Docs. https://www.mongodb.com/docs/drivers/node/current/integrations/mongoose-get-started/ 
+
+
+Motion. (n.d.). Get started with Motion — Install, First Animation. https://motion.dev/docs/quick-start. https://motion.dev/docs/quick-start 
+
+
+Mittal, U., Sai, S., Chamola, V., & Devika, N. (2024). A Comprehensive Review on Generative AI for Education. IEEE Access, 12, 142733–142759. https://doi.org/10.1109/access.2024.3468368 
+
+
+Nandwana, N., (n.d.). Use the Visual Studio Code extension. Microsoft Learn. https://learn.microsoft.com/en-us/power-pages/configure/vs-code-extension#prerequisites 
+
+
+Nargesian, F., Samulowitz, H., Khurana, U., Khalil, E. B., & Turaga, D. S. (2017, August). Learning feature engineering for classification. In Ijcai (Vol. 17, pp. 2529-2535). 
+
+
+Nazempour, R., & Darabi, H. (2023). Personalized learning in virtual learning environments using students’ behavior analysis. Education Sciences, 13(5), 457. https://doi.org/10.3390/educsci13050457 
+
+
+Next.js docs. (n.d.). Next.js. https://nextjs.org/docs 
+
+
+Nti, I. K., Nyarko-Boateng, O., & Aning, J. (2021). Performance of Machine Learning Algorithms with Different K Values in K-fold CrossValidation. International Journal of Information Technology and Computer Science, 13(6), 61–71. https://doi.org/10.5815/ijitcs.2021.06.05 
+
+
+NumPy. (n.d.). https://numpy.org/ 
+
+
+Package overview — pandas 2.3.3 documentation. (n.d.). https://pandas.pydata.org/docs/getting_started/overview.html 
+
+
+Paquette, G., Marino, O., & Bejaoui, R. (2021). A new competency ontology for learning environments personalization. Smart Learning Environments, 8(1). https://doi.org/10.1186/s40561-021-00160-z 
+
+
+Pandoc. (n.d.). Pandoc - Pandoc User’s Guide. https://pandoc.org/MANUAL.html 
+
+
+Pedregosa Fabian, Varoquaux Gaël, Gramfort Alexandre, Michel Vincent, Thirion Bertrand, Grisel Olivier, Blondel Mathieu, Prettenhofer Peter, Weiss Ron, Dubourg Vincent, Vanderplas Jake, Passos Alexandre, Cournapeau David, Brucher Matthieu, Perrot Matthieu, & Duchesnay Édouard. (2011). SciKit-Learn: Machine Learning in Python. Journal of Machine Learning Research. https://doi.org/10.5555/1953048.2078195 
+
+
+Perrotta, C., & Selwyn, N. (2020). Deep learning goes to school: Toward a relational understanding of AI in education. Learning, media and technology, 45(3), 251-269. 
+
+
+Phan, T. T., Vu, C., Doan, P. T., Luong, D., Bui, T., Le, T., & Nguyen, D. (2022). Two decades of studies on learning management systems in higher education: A bibliometric analysis with Scopus database, 2000-2020. Journal of University Teaching & Learning Practice, 19(3). 
+
+
+PHP. (2025, August 28). https://www.php.net/ 
+
+
+Photopoulos, P., Tsonos, C., Stavrakas, I., & Triantis, D. (2022). Remote and In-Person Learning: Utility versus Social Experience. SN Computer Science, 4(2). https://doi.org/10.1007/s42979-022-01539-6 
+
+
+Poppler. (n.d.). https://poppler.freedesktop.org/ 
+
+
+Project Jupyter. (n.d.). Home. https://jupyter.org/ 
+
+
+Rashid, A. B., & Kausik, M. a. K. (2024). AI revolutionizing industries worldwide: A comprehensive overview of its diverse applications. Hybrid Advances, 7, 100277. https://doi.org/10.1016/j.hybadv.2024.100277 
+
+
+React. (n.d.). https://react.dev/ 
+
+
+Rekkedal, T., Qvist-Eriksen, S., Keegan, D., Súilleabháin, G. Ó., Coughlan, R., & Fritsch, H. (2003). Internet-based e-learning, pedagogy, and support systems. Norway: NKI Distance Education. 
+
+
+Rincon-Flores, E. G., Castano, L., Guerrero Solis, S. L., Olmos Lopez, O., Rodríguez Hernández, C. F., Castillo Lara, L. A., & Aldape Valdés, L. P. (2024). Improving the learning-teaching process through adaptive learning strategy. Smart Learning Environments, 11(27). https://doi.org/10.1186/s40561-024-00314-9
+
+
+Saabith, Sayeth & Thangarajah, Vinothraj & Fareez, MMM. (2021). A Review on Python Libraries and IDEs for Data Science. 
+
+
+Saul Carliner. (2004). An overview of online learning. 
+
+
+Schoger, S. (2020, August 25). Introducing Heroicons.com. Tailwind CSS. https://tailwindcss.com/blog/introducing-heroicons 
+
+
+Sharp. (n.d.). High performance Node.js image processing. Sharp. https://sharp.pixelplumbing.com/ 
+
+
+Solutions for app development challenges | Firebase. (n.d.). Firebase. https://firebase.google.com/solutions 
+
+
+Sotnik, S., Manakov, V., & Lyashenko, V. (2023). Overview: PHP and MySQL features for creating modern web projects. 
+
+
+Srihith, I. D., Lakshmi, P. V., Donald, A. D., Srinivas, T. A. S., & Thippanna, G. (2023, September). A Forest of Possibilities: Decision Trees and Beyond. Zenodo. https://doi.org/10.5281/zenodo.8372196 
+
+
+Suraya, S., & Sholeh, M. (2022). Designing and implementing a database for thesis data management by using the python Flask Framework. International Journal of Engineering, Science and Information Technology, 2(1), 9-14. 
+
+
+Torres-Martín, C., Acal, C., El-Homrani, M., & Mingorance-Estrada, Á. C. (2022). Implementation of the flipped classroom and its longitudinal impact on improving academic performance. Educational Technology Research and Development, 70(3), 909–929. https://doi.org/10.1007/s11423-022-10095-y 
+
+
+Vercel. (n.d.). Next.js docs. Next.js. https://nextjs.org/docs 
+
+
+Viner, M., Singh, A., & Shaughnessy, M. F. (2021). Assistive technology to help students with disabilities. In IGI Global eBooks (pp. 579–600). https://doi.org/10.4018/978-1-6684-3670-7.ch033 
+
+
+Volery, T., & Lord, D. (2000). Critical success factors in online education. International Journal of Educational Management, 14(5), 216–223. https://doi.org/10.1108/09513540010344731 
+
+
+Wanniarachchi, W., & Premadasa, H. (2024). Identifying the learning style of students using Machine Learning techniques: An approach of Felder Silverman Learning Style Model (FSLSM). Asian Journal of Research in Computer Science, 17(3), 15–37. https://doi.org/10.9734/ajrcos/2024/v17i3422 
+
+
+Wang, C., Li, T., Lu, Z., Wang, Z., Alballa, T., Alhabeeb, S. A., Albely, M. S., & Khalifa, H. a. E. (2024). Application of artificial intelligence for feature engineering in education sector and learning science. Alexandria Engineering Journal, 110, 108–115. https://doi.org/10.1016/j.aej.2024.09.100 
+
+
+Wang, S., Wang, F., Zhu, Z., Wang, J., Tran, T., & Du, Z. (2024). Artificial intelligence in education: A systematic literature review. Expert Systems With Applications, 252, 124167. https://doi.org/10.1016/j.eswa.2024.124167 
+
+
+What is CSS? - Learn web development | MDN. (n.d.). https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/What_is_CSS 
+
+
+What is Figma? (n.d.). Figma Learn - Help Center. https://help.figma.com/hc/en-us/articles/14563969806359-What-is-Figma 
+What is JavaScript? - JavaScript (JS) Explained - AWS. (n.d.). Amazon Web Services, Inc. https://aws.amazon.com/what-is/javascript 
+
+
+Williamson, M. (n.d.). GitHub - mwilliamson/mammoth.js: Convert Word documents (.docx files) to HTML. GitHub. https://github.com/mwilliamson/mammoth.js 
+
+
+Yadav, Awanish & Pakala, R. & Ragade, Rammohan & Wong, J.P.. (1998). The Virtual Learning Environment system. 2. 711-716 vol.2. 10.1109/FIE.1998.738777. 
+
+
+Yousuf, M., Jami, S. I., Wasi, S., & Siddiqui, M. S. (2asses). Knowledge graph representation of Felder-Silverman Learning Style Model for computing education. IEEE Access, 13, 134721–134734. https://doi.org/10.1109/ACCESS.2025.359342
+
+
+Yuan, J., Qiu, X., Wu, J., Guo, J., Li, W., & Wang, Y. (2024). Integrating behavior analysis with machine learning to predict online learning performance: A scientometric review and empirical study. arXiv (Cornell University). https://doi.org/10.48550/arxiv.2406.11847 
+
+
+Zahra, N. O. F., Amel, N. N., Soufiane, N. O., & Mohamed, N. K. (2024). From platforms to online communication tools. DIROSAT Journal of Education Social Sciences & Humanities, 2(3), 130–147. https://doi.org/10.58355/dirosat.v2i3.68 
+
+
+ZERBO, A., OUEDRAOGO, M., SERE, A., & DIARRA, M. (2024). Comparison of Joblib and Pymp for Parallel Fingerprint Recognition. 
+
+
+Zhang, W., Gu, X., Hong, L., Han, L., & Wang, L. (2023). Comprehensive review of machine learning in geotechnical reliability analysis: Algorithms, applications and further challenges. Applied Soft Computing, 136, 110066. https://doi.org/10.1016/j.asoc.2023.110066 
+
+
+Zhao, Y., Zhang, W., & Liu, X. (2024). Grid search with a weighted error function: Hyper-parameter optimization for financial time series forecasting. Applied Soft Computing, 154, 111362. https://doi.org/10.1016/j.asoc.2024.111362
