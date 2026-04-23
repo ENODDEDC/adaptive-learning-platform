@@ -6,6 +6,7 @@ import { Form } from '@/models/Form';
 
 export async function POST(request, { params }) {
   try {
+    const { id: courseId } = await params;
     // Get token from cookies instead of Authorization header
     const token = request.cookies.get('token')?.value;
     if (!token) {
@@ -44,7 +45,6 @@ export async function POST(request, { params }) {
     }
 
     const { title, description, questions, type, settings } = requestBody;
-    const { id: courseId } = params;
 
     console.log('=== FORM CREATION API DEBUG ===');
     console.log('Form data received:', { title, description, questionsCount: questions?.length, courseId, settings });
@@ -161,10 +161,12 @@ export async function GET(request, { params }) {
     await connectMongo();
 
     const { id: courseId } = await params;
+    console.log('🔍 API GET FORMS: Fetching for courseId:', courseId);
 
     // Verify the course exists and user has access
     const course = await Course.findById(courseId);
     if (!course) {
+      console.error('🔍 API GET FORMS: Course not found:', courseId);
       return NextResponse.json({ message: 'Course not found' }, { status: 404 });
     }
 
@@ -173,6 +175,7 @@ export async function GET(request, { params }) {
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 });
 
+    console.log(`🔍 API GET FORMS: Found ${forms.length} forms for course ${courseId}`);
     return NextResponse.json({ forms }, { status: 200 });
 
   } catch (error) {

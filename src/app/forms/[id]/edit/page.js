@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const FormEditPage = ({ params }) => {
-  const { id } = React.use(params);
+  const resolvedParams = React.use(params);
+  const id = resolvedParams?.id;
   const router = useRouter();
   
   // Form basic info

@@ -13,24 +13,11 @@ export async function GET(request, { params }) {
       .lean();
 
     if (!form) {
+      console.warn('🔍 API GET FORM: Form not found for ID:', id);
       return NextResponse.json({ message: 'Form not found' }, { status: 404 });
     }
 
-    console.log('=== FORM LOAD API DEBUG ===');
-    console.log('Form being sent to frontend:', {
-      id: form._id,
-      title: form.title,
-      questionsCount: form.questions?.length,
-      sampleQuestion: form.questions?.[0] ? {
-        id: form.questions[0].id,
-        title: form.questions[0].title,
-        type: form.questions[0].type,
-        correctAnswer: form.questions[0].correctAnswer,
-        points: form.questions[0].points,
-        options: form.questions[0].options
-      } : 'No questions'
-    });
-
+    console.log('🔍 API GET FORM: Success for ID:', id, 'Title:', form.title);
     return NextResponse.json({ form }, { status: 200 });
   } catch (error) {
     console.error('Error fetching form:', error);

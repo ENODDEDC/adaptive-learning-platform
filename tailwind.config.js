@@ -22,9 +22,9 @@ const config = {
         'text-primary': '#4B4B4B',
       },
       fontFamily: {
-        sans: ['Inter', 'var(--font-jakarta)', 'Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
         serif: ['Crimson Text', 'Georgia', 'serif'],
-        display: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
       },
       typography: (theme) => ({
         premium: {

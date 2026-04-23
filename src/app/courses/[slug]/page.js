@@ -220,9 +220,10 @@ const CourseDetailPage = ({
     }
 
     try {
-      const [announcementsRes, classworkRes] = await Promise.all([
-        fetch(`/api/courses/${courseDetails._id}/announcements`), // No need for manual token header
-        fetch(`/api/courses/${courseDetails._id}/classwork`), // No need for manual token header
+      const [announcementsRes, classworkRes, formsRes] = await Promise.all([
+        fetch(`/api/courses/${courseDetails._id}/announcements`),
+        fetch(`/api/courses/${courseDetails._id}/classwork`),
+        fetch(`/api/courses/${courseDetails._id}/forms`),
       ]);
 
       if (!announcementsRes.ok) {
@@ -231,44 +232,35 @@ const CourseDetailPage = ({
       if (!classworkRes.ok) {
         throw new Error(`Error fetching classwork: ${classworkRes.status} ${classworkRes.statusText}`);
       }
+      if (!formsRes.ok) {
+        throw new Error(`Error fetching forms: ${formsRes.status} ${formsRes.statusText}`);
+      }
 
       const announcementsData = await announcementsRes.json();
       const classworkData = await classworkRes.json();
+      const formsData = await formsRes.json();
 
-      console.log('🔍 DEBUG: Announcements data received:', {
-        count: announcementsData.announcements?.length || 0,
-        announcements: announcementsData.announcements?.map(a => ({
-          id: a._id,
-          content: a.content?.substring(0, 50) + '...',
-          postedBy: a.postedBy?.name || 'Unknown',
-          createdAt: a.createdAt
-        })) || []
-      });
-      console.log('🔍 DEBUG: Classwork data received:', {
-        count: classworkData.classwork?.length || 0,
-        classwork: classworkData.classwork?.map(c => ({
-          id: c._id,
-          title: c.title,
-          type: c.type,
-          createdAt: c.createdAt
-        })) || []
+      console.log('🔍 DEBUG: Stream data counts:', {
+        announcements: announcementsData.announcements?.length || 0,
+        classwork: classworkData.classwork?.length || 0,
+        forms: formsData.forms?.length || 0
       });
 
       const combinedItems = [
         ...announcementsData.announcements.map(item => ({ ...item, type: 'announcement' })),
         ...classworkData.classwork.map(item => ({ ...item, type: item.type || 'assignment' })),
-      ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by creation date, newest first
+        ...formsData.forms.map(item => ({ ...item, type: 'form' })),
+      ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
       console.log('🔍 DEBUG: Combined items details:', combinedItems.map(item => ({
         id: item._id,
         type: item.type,
         title: item.title || 'No title',
-        content: item.content?.substring(0, 30) + '...' || item.description?.substring(0, 30) + '...' || 'No content',
         createdAt: item.createdAt
       })));
 
-      // Don't fetch comments upfront to improve performance - lazy load them when needed
       setStreamItems(combinedItems.map(item => ({ ...item, comments: [] })));
-      setItemComments({}); // Clear comments cache
+      setItemComments({});
     } catch (err) {
       console.error('🔍 DEBUG: Failed to fetch stream items:', err);
       setError(err.message);
@@ -874,12 +866,12 @@ const CourseDetailPage = ({
 
   // Callback function to refresh both assignments and stream items when new classwork is created
   const handleClassworkCreated = useCallback(async () => {
-    console.log('🔍 CLASSWORK: handleClassworkCreated called - refreshing both assignments and stream items');
+    console.log('🔍 CLASSWORK: handleClassworkCreated called - refreshing assignments, forms, and stream items');
     await Promise.all([
       fetchAssignments(),
       fetchStreamItems()
     ]);
-    console.log('🔍 CLASSWORK: Both assignments and stream items refreshed successfully');
+    console.log('🔍 CLASSWORK: All items refreshed successfully');
   }, [fetchAssignments, fetchStreamItems]);
 
   const toggleActivityExpansion = (activityId) => {
