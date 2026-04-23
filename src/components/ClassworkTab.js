@@ -1133,6 +1133,9 @@ const ClassworkTab = ({
       ...forms.map(item => ({ ...item, itemType: 'form' }))
     ];
 
+    console.log('🔍 FILTER DEBUG: Starting with', allItems.length, 'items');
+    console.log('🔍 FILTER DEBUG: Forms in allItems:', allItems.filter(item => item.itemType === 'form').length);
+
     let filtered = allItems.filter(item => {
       // Search filter
       if (searchQuery) {
@@ -1141,11 +1144,17 @@ const ClassworkTab = ({
           item.title?.toLowerCase().includes(query) ||
           item.description?.toLowerCase().includes(query) ||
           item.type?.toLowerCase().includes(query);
-        if (!matchesSearch) return false;
+        if (!matchesSearch) {
+          console.log('🔍 FILTER DEBUG: Item filtered by search:', item.title, 'query:', searchQuery);
+          return false;
+        }
       }
 
       // Type filter
-      if (filter !== 'all' && item.type !== filter && item.itemType !== filter) return false;
+      if (filter !== 'all' && item.type !== filter && item.itemType !== filter) {
+        console.log('🔍 FILTER DEBUG: Item filtered by type:', item.title, 'filter:', filter, 'item.type:', item.type, 'item.itemType:', item.itemType);
+        return false;
+      }
 
       // Date range filter (only for assignments, forms don't have due dates)
       if (dateRange !== 'all' && item.itemType === 'assignment' && item.dueDate) {
@@ -1155,19 +1164,29 @@ const ClassworkTab = ({
 
         switch (dateRange) {
           case 'thisWeek':
-            if (daysDiff < 0 || daysDiff > 7) return false;
+            if (daysDiff < 0 || daysDiff > 7) {
+              console.log('🔍 FILTER DEBUG: Item filtered by date range (thisWeek):', item.title);
+              return false;
+            }
             break;
           case 'thisMonth':
-            if (daysDiff < 0 || daysDiff > 30) return false;
+            if (daysDiff < 0 || daysDiff > 30) {
+              console.log('🔍 FILTER DEBUG: Item filtered by date range (thisMonth):', item.title);
+              return false;
+            }
             break;
           case 'overdue':
-            if (daysDiff >= 0) return false;
+            if (daysDiff >= 0) {
+              console.log('🔍 FILTER DEBUG: Item filtered by date range (overdue):', item.title);
+              return false;
+            }
             break;
         }
       }
 
       // Status filter
       if (statusFilter !== 'all') {
+        console.log('🔍 FILTER DEBUG: Checking status filter for:', item.title, 'statusFilter:', statusFilter, 'itemType:', item.itemType);
         // Forms don't have submissions, so only filter assignments
         if (item.itemType === 'assignment') {
           const submission = submissions.find(s => String(s.assignment) === String(item._id));
@@ -1176,23 +1195,39 @@ const ClassworkTab = ({
 
           switch (statusFilter) {
             case 'notStarted':
-              if (submission) return false;
+              if (submission) {
+                console.log('🔍 FILTER DEBUG: Assignment filtered by status (notStarted, has submission):', item.title);
+                return false;
+              }
               break;
             case 'inProgress':
-              if (!isInProgress) return false;
+              if (!isInProgress) {
+                console.log('🔍 FILTER DEBUG: Assignment filtered by status (inProgress, not in progress):', item.title);
+                return false;
+              }
               break;
             case 'completed':
-              if (!isCompleted) return false;
+              if (!isCompleted) {
+                console.log('🔍 FILTER DEBUG: Assignment filtered by status (completed, not completed):', item.title);
+                return false;
+              }
               break;
           }
         } else if (item.itemType === 'form') {
           // Forms are always considered "not started" for status filtering
-          if (statusFilter !== 'notStarted') return false;
+          if (statusFilter !== 'notStarted') {
+            console.log('🔍 FILTER DEBUG: Form filtered by status:', item.title, 'statusFilter:', statusFilter, '(forms only show for notStarted)');
+            return false;
+          }
         }
       }
 
+      console.log('🔍 FILTER DEBUG: Item passed all filters:', item.title, 'itemType:', item.itemType);
       return true;
     });
+
+    console.log('🔍 FILTER DEBUG: Final filtered count:', filtered.length);
+    console.log('🔍 FILTER DEBUG: Forms in filtered:', filtered.filter(item => item.itemType === 'form').length);
 
     // Sorting
     filtered.sort((a, b) => {
