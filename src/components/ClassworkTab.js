@@ -1245,7 +1245,7 @@ const ClassworkTab = ({
     });
 
     return filtered;
-  }, [assignments, submissions, searchQuery, filter, dateRange, statusFilter, sortBy]);
+  }, [assignments, forms, submissions, searchQuery, filter, dateRange, statusFilter, sortBy]);
 
   // Note: Dropdown menu replaced with right-click context menu
 
