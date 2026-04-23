@@ -258,6 +258,17 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview, compactMod
       attachment?.title?.toLowerCase().endsWith('.pptx');
   };
 
+  const isVideoFile = (attachment) => {
+    const videoMimeTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+    const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'ogv', 'wmv', 'flv'];
+    const ext = (attachment?.originalName || attachment?.title || '').split('.').pop()?.toLowerCase();
+    return videoMimeTypes.includes(attachment?.mimeType) || videoExtensions.includes(ext);
+  };
+
+  const getVideoUrl = (attachment) => {
+    return attachment?.cloudStorage?.url || attachment?.url || attachment?.filePath || '';
+  };
+
   useEffect(() => {
     // Check cache first
     const cachedUrl = thumbnailCache.getThumbnailUrl(attachment._id);
@@ -283,6 +294,7 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview, compactMod
     } else if (isPptxFile(attachment)) {
       generatePptxThumbnail();
     }
+    // Video files use native browser preview — no thumbnail generation needed
   }, []);
 
   const generatePdfThumbnail = async () => {
@@ -409,6 +421,60 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview, compactMod
   };
 
   const fileName = attachment.originalName || attachment.title || 'Document';
+
+  // Video file — render inline preview card instead of thumbnail
+  if (isVideoFile(attachment)) {
+    const videoUrl = getVideoUrl(attachment);
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onPreview) onPreview(attachment);
+        }}
+        className={`w-full group ${compactMode && compactVariant === 'student' ? 'h-full flex flex-col' : ''}`}
+      >
+        <div className={`relative w-full ${compactMode ? (compactVariant === 'student' ? 'h-full mb-0' : 'h-40 mb-2') : 'aspect-[4/3] mb-3'} bg-black rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
+          {videoUrl ? (
+            <video
+              src={videoUrl}
+              preload="metadata"
+              muted
+              className="w-full h-full object-cover pointer-events-none"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900">
+              <svg className="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+              </svg>
+              <span className="text-xs text-gray-400">Video</span>
+            </div>
+          )}
+          {/* VIDEO badge */}
+          <div className="absolute top-2 right-2 bg-slate-700 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm">
+            VIDEO
+          </div>
+          {/* Play button overlay on hover */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+            <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg">
+              <svg className="w-6 h-6 text-slate-800" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        {!compactMode && (
+          <div className="text-left w-full min-w-0">
+            <p className="font-medium text-gray-900 text-sm truncate group-hover:text-slate-700 transition-colors" title={fileName}>
+              {fileName}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : 'Video File'}
+            </p>
+          </div>
+        )}
+      </button>
+    );
+  }
 
   return (
     <button
@@ -526,6 +592,17 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview, compactMod
       attachment?.title?.toLowerCase().endsWith('.pptx');
   };
 
+  const isVideoFile = (attachment) => {
+    const videoMimeTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+    const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'ogv', 'wmv', 'flv'];
+    const ext = (attachment?.originalName || attachment?.title || '').split('.').pop()?.toLowerCase();
+    return videoMimeTypes.includes(attachment?.mimeType) || videoExtensions.includes(ext);
+  };
+
+  const getVideoUrl = (attachment) => {
+    return attachment?.cloudStorage?.url || attachment?.url || attachment?.filePath || '';
+  };
+
   useEffect(() => {
     // Check cache first
     const cachedUrl = thumbnailCache.getThumbnailUrl(attachment._id);
@@ -551,6 +628,7 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview, compactMod
     } else if (isPptxFile(attachment)) {
       generatePptxThumbnail();
     }
+    // Video files use native browser preview — no thumbnail generation needed
   }, []);
 
   const generatePdfThumbnail = async () => {
@@ -677,6 +755,75 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview, compactMod
   };
 
   const fileName = attachment.originalName || attachment.title || 'Document';
+
+  // Video file — render video card with native preview
+  if (isVideoFile(attachment)) {
+    const videoUrl = getVideoUrl(attachment);
+    return (
+      <div className="w-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group">
+        {/* Video Header */}
+        <div className="px-4 py-2 flex items-center justify-between bg-gradient-to-r from-slate-700 to-slate-800">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
+              <span className="text-white text-sm font-bold">🎥</span>
+            </div>
+            <span className="text-white font-semibold text-sm">Video</span>
+          </div>
+          <div className="text-white/70 text-xs">
+            {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : ''}
+          </div>
+        </div>
+
+        {/* Video Preview */}
+        <div className={compactMode ? 'p-3' : 'p-4'}>
+          <div className={`relative w-full ${compactMode ? 'h-40 mb-2' : 'aspect-[4/3] mb-3'} bg-black rounded-lg overflow-hidden shadow-inner`}>
+            {videoUrl ? (
+              <video
+                src={videoUrl}
+                preload="metadata"
+                muted
+                className="w-full h-full object-cover pointer-events-none"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900">
+                <svg className="w-12 h-12 text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                </svg>
+                <span className="text-sm text-slate-400 font-medium">Video Preview</span>
+              </div>
+            )}
+            {/* Play button overlay on hover */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 transform scale-75 group-hover:scale-100 transition-all duration-300">
+                <svg className="w-6 h-6 text-slate-800" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* File Info */}
+          <div className="text-center">
+            <h4 className="font-semibold text-white text-sm mb-1 truncate group-hover:text-slate-300 transition-colors">
+              {fileName}
+            </h4>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onPreview) onPreview(attachment);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md bg-slate-600 hover:bg-slate-500"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              Play Video
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group">

@@ -1402,29 +1402,61 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
 
       case 'video':
         return (
-          <div className="flex items-center justify-center h-full">
-            <video 
-              controls 
-              className="w-full max-h-[70vh] rounded-lg bg-black"
-              src={getAttachmentFileUrl(content)}
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
-              }}
-            >
-              Your browser does not support the video tag.
-            </video>
-            <div className="hidden flex-col items-center justify-center text-center p-8">
-              <div className="text-6xl mb-4">{fileInfo.icon}</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{content.title || 'Video'}</h3>
-              <p className="text-gray-600 mb-4">{fileInfo.category} • {fileSize}</p>
-              <a 
-                href={content.filePath} 
-                download 
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          <div className="flex flex-col h-full bg-gray-950">
+            {/* Video Header */}
+            <div className="flex items-center justify-between px-6 py-4 bg-gray-900 border-b border-gray-800 flex-shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 bg-slate-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-white font-semibold text-sm truncate">{content.title || content.originalName || 'Video'}</h3>
+                  <p className="text-gray-400 text-xs mt-0.5">{fileSize} • Video</p>
+                </div>
+              </div>
+              <a
+                href={getAttachmentFileUrl(content)}
+                download
+                className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium rounded-lg transition-colors flex-shrink-0"
               >
-                Download Video
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download
               </a>
+            </div>
+
+            {/* Video Player — fills remaining height, video centered */}
+            <div className="flex-1 flex items-center justify-center min-h-0 overflow-hidden">
+              <video
+                controls
+                autoPlay={false}
+                className="w-full h-full object-contain bg-black"
+                src={getAttachmentFileUrl(content)}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              >
+                Your browser does not support the video tag.
+              </video>
+              {/* Error fallback */}
+              <div className="hidden w-full h-full flex-col items-center justify-center text-center p-12 bg-gray-900">
+                <svg className="w-16 h-16 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                </svg>
+                <h3 className="text-white font-semibold text-lg mb-2">Unable to play video</h3>
+                <p className="text-gray-400 text-sm mb-6">Your browser may not support this format.</p>
+                <a
+                  href={getAttachmentFileUrl(content)}
+                  download
+                  className="px-5 py-2.5 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors text-sm font-medium"
+                >
+                  Download to watch
+                </a>
+              </div>
             </div>
           </div>
         );

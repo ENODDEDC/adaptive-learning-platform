@@ -44,6 +44,17 @@ const SmartThumbnail = ({ attachment, onPreview, className = "" }) => {
            attachment?.title?.toLowerCase().endsWith('.pptx');
   };
 
+  const isVideoFile = (attachment) => {
+    const videoMimeTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+    const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'ogv', 'wmv', 'flv'];
+    const ext = (attachment?.originalName || attachment?.title || '').split('.').pop()?.toLowerCase();
+    return videoMimeTypes.includes(attachment?.mimeType) || videoExtensions.includes(ext);
+  };
+
+  const getVideoUrl = (attachment) => {
+    return attachment?.cloudStorage?.url || attachment?.url || attachment?.filePath || '';
+  };
+
   // Intersection Observer for viewport detection
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -85,6 +96,7 @@ const SmartThumbnail = ({ attachment, onPreview, className = "" }) => {
         } else if (isPptxFile(attachment)) {
           generatePptxThumbnail();
         }
+        // Video files use native browser preview — no thumbnail generation needed
       }
     }
   }, [isInView, thumbnailUrl, attachment]);
@@ -280,7 +292,36 @@ const SmartThumbnail = ({ attachment, onPreview, className = "" }) => {
       <div ref={elementRef} className={`w-full group cursor-pointer ${className}`} onClick={handlePreview}>
         {/* File Thumbnail Container */}
         <div className="relative w-full aspect-[4/3] bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 mb-3">
-          {isGeneratingThumbnail ? (
+          {isVideoFile(attachment) ? (
+            // Video — native browser preview with play overlay
+            <div className="w-full h-full bg-black">
+              {getVideoUrl(attachment) ? (
+                <video
+                  src={getVideoUrl(attachment)}
+                  preload="metadata"
+                  muted
+                  className="w-full h-full object-cover pointer-events-none"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900">
+                  <svg className="w-10 h-10 text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                  </svg>
+                  <span className="text-xs text-slate-400">Video</span>
+                </div>
+              )}
+              <div className="absolute top-2 right-2 bg-slate-700 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm">
+                VIDEO
+              </div>
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg">
+                  <svg className="w-6 h-6 text-slate-800" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          ) : isGeneratingThumbnail ? (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
               <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
               <span className="text-sm text-blue-700 font-medium">Generating preview...</span>
@@ -303,9 +344,14 @@ const SmartThumbnail = ({ attachment, onPreview, className = "" }) => {
               {/* File Type Badge */}
               <div className={`absolute top-2 right-2 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm ${
                 isPdfFile(attachment) ? 'bg-red-500' :
-                isDocxFile(attachment) ? 'bg-blue-500' : 'bg-orange-500'
+                isDocxFile(attachment) ? 'bg-blue-500' :
+                isVideoFile(attachment) ? 'bg-slate-700' :
+                'bg-orange-500'
               }`}>
-                {isPdfFile(attachment) ? 'PDF' : isDocxFile(attachment) ? 'DOCX' : 'PPTX'}
+                {isPdfFile(attachment) ? 'PDF' :
+                 isDocxFile(attachment) ? 'DOCX' :
+                 isVideoFile(attachment) ? 'VIDEO' :
+                 'PPTX'}
               </div>
 
 
@@ -335,6 +381,10 @@ const SmartThumbnail = ({ attachment, onPreview, className = "" }) => {
                 </svg>
               ) : isDocxFile(attachment) ? (
                 <DocumentTextIcon className="w-12 h-12 text-blue-400 mb-3" />
+              ) : isVideoFile(attachment) ? (
+                <svg className="w-12 h-12 text-slate-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                </svg>
               ) : (
                 <svg className="w-12 h-12 text-orange-400 mb-3" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8.5 5h11a1.5 1.5 0 011.5 1.5v11a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 017 17.5v-11A1.5 1.5 0 018.5 5z" />
@@ -342,9 +392,13 @@ const SmartThumbnail = ({ attachment, onPreview, className = "" }) => {
               )}
               <span className="text-sm text-gray-600 font-medium">
                 {isPdfFile(attachment) ? 'PDF Document' :
-                 isDocxFile(attachment) ? 'Word Document' : 'PowerPoint'}
+                 isDocxFile(attachment) ? 'Word Document' :
+                 isVideoFile(attachment) ? 'Video File' :
+                 isPptxFile(attachment) ? 'PowerPoint' : 'File'}
               </span>
-              <span className="text-xs text-gray-500 mt-1">Preview will load automatically</span>
+              <span className="text-xs text-gray-500 mt-1">
+                {isVideoFile(attachment) ? 'Click to play' : 'Preview will load automatically'}
+              </span>
             </div>
           )}
         </div>
