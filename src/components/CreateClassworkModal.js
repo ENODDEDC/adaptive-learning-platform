@@ -137,6 +137,60 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
 
     setVideoLinks(prev => [...prev, newLink]);
     setVideoLinkInput('');
+
+    // For non-YouTube direct video URLs, generate thumbnail from first frame
+    if (platform !== 'youtube' && platform !== 'gdrive' && platform !== 'vimeo') {
+      generateVideoThumbnail(trimmed, newLink._id);
+    }
+  };
+
+  const generateVideoThumbnail = (videoUrl, linkId) => {
+    try {
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.preload = 'metadata';
+      video.muted = true;
+      video.style.display = 'none';
+      document.body.appendChild(video);
+
+      const cleanup = () => {
+        try { document.body.removeChild(video); } catch {}
+      };
+
+      video.onloadeddata = () => {
+        // Seek to 1 second or 10% of duration for a meaningful frame
+        video.currentTime = Math.min(1, video.duration * 0.1);
+      };
+
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 320;
+          canvas.height = 180;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          // Update the link with the generated thumbnail
+          setVideoLinks(prev => prev.map(v =>
+            v._id === linkId ? { ...v, thumbnailUrl: dataUrl } : v
+          ));
+        } catch {
+          // Canvas tainted by CORS — can't capture, leave as null
+        } finally {
+          cleanup();
+        }
+      };
+
+      video.onerror = cleanup;
+
+      // Timeout fallback — if video doesn't load in 10s, give up
+      setTimeout(cleanup, 10000);
+
+      video.src = videoUrl;
+      video.load();
+    } catch {
+      // Silently fail — thumbnail is optional
+    }
   };
 
   const handleRemoveVideoLink = (id) => {
@@ -818,6 +872,12 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                                 {videoLinkError}
                               </p>
                             )}
+                            {!videoLinkError && videoLinkInput.trim().length > 0 && (
+                              <p className="mt-2 text-xs text-amber-600 flex items-center gap-1">
+                                <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                                Click &quot;Add&quot; to attach this video before proceeding.
+                              </p>
+                            )}
                             <div className="mt-3 flex flex-wrap gap-2">
                               {['YouTube', 'Google Drive', 'Vimeo', 'Direct .mp4', 'Any video URL'].map(platform => (
                                 <span key={platform} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
@@ -1089,13 +1149,17 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                     disabled={
                       (currentStep === 1 && !isFormValid()) ||
                       isUploadingFiles ||
+                      // Block if on video tab with text typed but not yet added
+                      (currentStep === 2 && attachTab === 'video' && videoLinkInput.trim().length > 0) ||
                       // Block if any non-YouTube video link is missing a description
                       (currentStep === 2 && videoLinks.some(v => v.platform !== 'youtube' && !v.videoDescription?.trim()))
                     }
                     title={
-                      currentStep === 2 && videoLinks.some(v => v.platform !== 'youtube' && !v.videoDescription?.trim())
-                        ? 'Add a description for all non-YouTube video links to continue'
-                        : undefined
+                      currentStep === 2 && attachTab === 'video' && videoLinkInput.trim().length > 0
+                        ? 'Click "Add" to attach the video link first'
+                        : currentStep === 2 && videoLinks.some(v => v.platform !== 'youtube' && !v.videoDescription?.trim())
+                          ? 'Add a description for all non-YouTube video links to continue'
+                          : undefined
                     }
                     className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-2"
                   >
