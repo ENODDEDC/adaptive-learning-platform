@@ -1253,6 +1253,7 @@ const CourseDetailPage = ({
                       setTimeout(() => setSelectedContent(content), 180);
                     }}
                     onClassworkCreated={handleClassworkCreated}
+                    onClassworkDeleted={() => fetchStorageInfo(courseDetails._id)}
                     isCreateClassworkModalOpen={isCreateClassworkModalOpen}
                     setIsCreateClassworkModalOpen={setIsCreateClassworkModalOpen}
                     editingClasswork={editingClasswork}
@@ -1417,6 +1418,7 @@ const CourseDetailPage = ({
                   setEditingClasswork={setEditingClasswork}
                   classworkType={classworkType}
                   setClassworkType={setClassworkType}
+                  onClassworkDeleted={() => fetchStorageInfo(courseDetails._id)}
                   compactMode={true}
                 />
               )}

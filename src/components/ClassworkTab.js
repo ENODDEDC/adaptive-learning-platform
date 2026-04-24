@@ -939,6 +939,7 @@ const ClassworkTab = ({
   isInstructor,
   onOpenContent,
   onClassworkCreated,
+  onClassworkDeleted,
   // Props from parent for create classwork panel
   isCreateClassworkModalOpen,
   setIsCreateClassworkModalOpen,
@@ -2667,7 +2668,7 @@ const ClassworkTab = ({
         throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
       }
       showToast('Classwork deleted successfully!', 'success');
-
+      if (onClassworkDeleted) onClassworkDeleted();
       fetchAssignments(); // Refresh assignments list
       fetchForms(); // Also refresh forms list
     } catch (err) {
