@@ -91,7 +91,8 @@ export async function POST(request, { params }) {
                 bucket: null,
                 metadata: {
                   platform: attachment.platform || 'unknown',
-                  videoLinkType: true
+                  videoLinkType: true,
+                  videoDescription: attachment.videoDescription || null
                 }
               }
             };
