@@ -28,7 +28,7 @@ const contentSchema = new Schema({
   },
   contentType: {
     type: String,
-    enum: ['document', 'video', 'audio', 'material'],
+    enum: ['document', 'video', 'audio', 'material', 'video-link'],
     required: true,
   },
   fileSize: {
@@ -88,7 +88,7 @@ const contentSchema = new Schema({
   cloudStorage: {
     provider: {
       type: String,
-      enum: ['local', 'backblaze-b2', 'aws-s3', 'firebase'],
+      enum: ['local', 'backblaze-b2', 'aws-s3', 'firebase', 'external'],
       default: 'local',
     },
     key: {

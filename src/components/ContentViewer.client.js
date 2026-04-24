@@ -1371,6 +1371,97 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
     const fileInfo = getFileTypeInfo(content.mimeType, content.title || content.originalName);
     const fileSize = content.fileSize ? formatFileSize(content.fileSize) : 'Unknown size';
 
+    // Handle video-link type (YouTube, Google Drive, Vimeo, direct URL)
+    if (content.type === 'video-link' || content.contentType === 'video-link') {
+      const url = content.url || content.filePath || content.cloudStorage?.url || '';
+      const platform = content.platform || content.cloudStorage?.metadata?.platform || 'unknown';
+
+      const getEmbedUrl = () => {
+        // YouTube
+        const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+        if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=0&rel=0`;
+        // Vimeo
+        const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+        if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+        // Google Drive
+        if (/drive\.google\.com/.test(url)) {
+          const driveMatch = url.match(/\/d\/([^/]+)/);
+          if (driveMatch) return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+        }
+        return null;
+      };
+
+      const embedUrl = getEmbedUrl();
+      const isDirectVideo = /\.(mp4|webm|mov|avi|mkv)(\?|$)/i.test(url);
+      const platformLabel = { youtube: 'YouTube', gdrive: 'Google Drive', vimeo: 'Vimeo', direct: 'Video', unknown: 'Video' }[platform] || 'Video';
+
+      return (
+        <div className="flex flex-col h-full bg-gray-950">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 bg-gray-900 border-b border-gray-800 flex-shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 bg-slate-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-white font-semibold text-sm truncate">{content.title || platformLabel}</h3>
+                <p className="text-gray-400 text-xs mt-0.5">{platformLabel} • Video Link</p>
+              </div>
+            </div>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium rounded-lg transition-colors flex-shrink-0"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Open
+            </a>
+          </div>
+
+          {/* Player */}
+          <div className="flex-1 min-h-0">
+            {embedUrl ? (
+              <iframe
+                src={embedUrl}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={content.title || platformLabel}
+              />
+            ) : isDirectVideo ? (
+              <video
+                controls
+                className="w-full h-full object-contain bg-black"
+                src={url}
+              >
+                Your browser does not support the video tag.
+              </video>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                <svg className="w-16 h-16 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                </svg>
+                <h3 className="text-white font-semibold text-lg mb-2">Cannot embed this video</h3>
+                <p className="text-gray-400 text-sm mb-4">Open it directly in a new tab.</p>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors text-sm font-medium"
+                >
+                  Open Video
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
 
     switch (fileInfo.type) {
       case 'image':

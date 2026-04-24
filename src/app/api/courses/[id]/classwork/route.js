@@ -70,6 +70,38 @@ export async function POST(request, { params }) {
         console.log(`📎 Processing attachment ${i + 1}:`, attachment);
         
         try {
+          // Handle video-link attachments (YouTube, Vimeo, Google Drive, etc.)
+          if (attachment.type === 'video-link') {
+            console.log('🎬 Creating Content document for video link:', attachment.url);
+            const contentData = {
+              courseId: id,
+              title: attachment.title || attachment.originalName || 'Video Link',
+              originalName: attachment.originalName || 'Video Link',
+              filename: attachment.originalName || 'Video Link',
+              filePath: attachment.url,
+              contentType: 'video-link',
+              fileSize: 0,
+              mimeType: 'video/link',
+              uploadedBy: userId,
+              thumbnailUrl: attachment.thumbnailUrl || null,
+              cloudStorage: {
+                provider: 'external',
+                key: attachment.url,
+                url: attachment.url,
+                bucket: null,
+                metadata: {
+                  platform: attachment.platform || 'unknown',
+                  videoLinkType: true
+                }
+              }
+            };
+            const newContent = new Content(contentData);
+            await newContent.save();
+            console.log('✅ Video link Content saved, ID:', newContent._id);
+            attachmentIds.push(newContent._id);
+            continue;
+          }
+
           // If it's already a saved Content document (has _id), just use it
           if (attachment._id) {
             console.log('✅ Using existing content ID:', attachment._id);

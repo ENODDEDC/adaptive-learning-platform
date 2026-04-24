@@ -1775,6 +1775,45 @@ const ClassworkTab = ({
             ) : Array.isArray(item.attachments) && item.attachments.length > 0 && (
               <div className={compactStudentCard ? 'mb-0 flex-1 flex' : compactMode ? 'mb-2' : 'mb-4'}>
                 {item.attachments.slice(0, 1).map((attachment, index) => {
+                  // Video link attachment
+                  if (attachment.type === 'video-link' || attachment.contentType === 'video-link') {
+                    const videoUrl = attachment.url || attachment.filePath || attachment.cloudStorage?.url || '';
+                    const platform = attachment.platform || attachment.cloudStorage?.metadata?.platform || 'unknown';
+                    const platformLabel = { youtube: 'YouTube', gdrive: 'Google Drive', vimeo: 'Vimeo', direct: 'Video', unknown: 'Video' }[platform] || 'Video';
+                    const thumb = attachment.thumbnailUrl || null;
+                    return (
+                      <button
+                        key={attachment._id || index}
+                        onClick={(e) => { e.stopPropagation(); if (onOpenContent) onOpenContent(attachment); }}
+                        className={`w-full group ${compactMode && compactStudentCard ? 'h-full flex flex-col' : ''}`}
+                      >
+                        <div className={`relative w-full ${compactMode ? (compactStudentCard ? 'h-full mb-0' : 'h-40 mb-2') : 'aspect-[4/3] mb-3'} bg-black rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
+                          {thumb ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={thumb} alt="" className="w-full h-full object-cover pointer-events-none" />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900">
+                              <svg className="w-10 h-10 text-slate-500 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                              </svg>
+                              <span className="text-xs text-slate-400">{platformLabel}</span>
+                            </div>
+                          )}
+                          {/* Platform badge */}
+                          <div className="absolute top-2 right-2 bg-slate-800/90 text-white px-2 py-0.5 rounded text-xs font-semibold">
+                            {platformLabel}
+                          </div>
+                          {/* Play overlay */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <div className="bg-white/90 rounded-full p-2.5 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg">
+                              <svg className="w-5 h-5 text-slate-800" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  }
+
                   // Enhanced DOCX thumbnail with AI narrator for DOCX files
                   if (attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                     attachment.originalName?.toLowerCase().endsWith('.docx') ||
