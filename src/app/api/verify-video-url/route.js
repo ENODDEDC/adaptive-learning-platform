@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 
 /**
- * Verifies that a URL points to a video by doing a HEAD request
- * and checking the Content-Type header.
+ * Verifies that a URL points to a video by checking Content-Type header.
+ * Only called for unknown/unrecognized URLs (not YouTube, Drive, Vimeo).
+ * Must return video/* content-type to be accepted.
  */
 export async function POST(request) {
   try {
@@ -25,45 +26,20 @@ export async function POST(request) {
       return NextResponse.json({ isVideo: false, reason: 'Only HTTP/HTTPS URLs are supported.' });
     }
 
-    // Try HEAD request first (faster, no body download)
+    // Try HEAD request first
+    let contentType = '';
+    let httpStatus = 0;
+
     try {
       const headRes = await fetch(url, {
         method: 'HEAD',
         signal: AbortSignal.timeout(8000),
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; VideoVerifier/1.0)',
-        },
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; VideoVerifier/1.0)' },
       });
-
-      const contentType = headRes.headers.get('content-type') || '';
-
-      if (contentType.startsWith('video/')) {
-        return NextResponse.json({ isVideo: true, contentType });
-      }
-
-      // Some servers return text/html for video pages (embeds) — allow those too
-      // but reject clearly non-video types
-      const nonVideoTypes = ['application/json', 'application/xml', 'text/css', 'application/javascript'];
-      if (nonVideoTypes.some(t => contentType.startsWith(t))) {
-        return NextResponse.json({
-          isVideo: false,
-          reason: `This URL returns ${contentType}, not a video. Make sure it links directly to a video.`
-        });
-      }
-
-      // If content-type is text/html or unknown, it might be an embeddable page — allow it
-      // The browser will handle whether it can actually play
-      if (headRes.ok || headRes.status === 206) {
-        return NextResponse.json({ isVideo: true, contentType, note: 'Accepted as potentially embeddable' });
-      }
-
-      return NextResponse.json({
-        isVideo: false,
-        reason: `URL returned HTTP ${headRes.status}. Make sure the video is publicly accessible.`
-      });
-
-    } catch (fetchError) {
-      // HEAD request failed — try GET with range to get just headers
+      contentType = headRes.headers.get('content-type') || '';
+      httpStatus = headRes.status;
+    } catch {
+      // HEAD failed — try GET with Range header to fetch just the first byte
       try {
         const getRes = await fetch(url, {
           method: 'GET',
@@ -73,23 +49,40 @@ export async function POST(request) {
           },
           signal: AbortSignal.timeout(8000),
         });
-
-        const contentType = getRes.headers.get('content-type') || '';
-        if (contentType.startsWith('video/') || getRes.ok) {
-          return NextResponse.json({ isVideo: true, contentType });
-        }
-
-        return NextResponse.json({
-          isVideo: false,
-          reason: 'Could not access this URL. Make sure the video is publicly accessible.'
-        });
+        contentType = getRes.headers.get('content-type') || '';
+        httpStatus = getRes.status;
       } catch {
         return NextResponse.json({
           isVideo: false,
-          reason: 'Could not reach this URL. Check that it is publicly accessible and try again.'
+          reason: 'Could not reach this URL. Make sure it is publicly accessible.'
         });
       }
     }
+
+    // STRICT: only accept video/* content-type
+    if (contentType.startsWith('video/')) {
+      return NextResponse.json({ isVideo: true, contentType });
+    }
+
+    // Anything else — reject with a clear reason
+    if (contentType.startsWith('text/html')) {
+      return NextResponse.json({
+        isVideo: false,
+        reason: 'This URL points to a webpage, not a video file. Use a direct video URL (e.g. ending in .mp4) or a supported platform like YouTube.'
+      });
+    }
+
+    if (!httpStatus || httpStatus >= 400) {
+      return NextResponse.json({
+        isVideo: false,
+        reason: `URL returned HTTP ${httpStatus || 'error'}. Make sure the video is publicly accessible.`
+      });
+    }
+
+    return NextResponse.json({
+      isVideo: false,
+      reason: `This URL returns "${contentType || 'unknown content'}", not a video. Use a direct video file URL or a supported platform.`
+    });
 
   } catch (error) {
     return NextResponse.json({ isVideo: false, reason: error.message }, { status: 500 });

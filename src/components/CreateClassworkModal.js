@@ -91,6 +91,12 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
       return;
     }
 
+    // Only 1 video link allowed
+    if (videoLinks.length >= 1) {
+      setVideoLinkError('Only one video link can be attached. Remove the existing one first.');
+      return;
+    }
+
     const platform = detectVideoPlatform(trimmed);
 
     // Known platforms — accept immediately, no verification needed
@@ -776,45 +782,56 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                         <p className="text-xs text-gray-500 mb-3">
                           Paste any video URL — YouTube, Google Drive, Vimeo, or any direct video link.
                         </p>
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                              type="url"
-                              placeholder="https://youtube.com/watch?v=..."
-                              value={videoLinkInput}
-                              onChange={(e) => { setVideoLinkInput(e.target.value); setVideoLinkError(''); }}
-                              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddVideoLink())}
-                              className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleAddVideoLink}
-                            disabled={isVerifyingUrl}
-                            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors flex-shrink-0 disabled:opacity-60 flex items-center gap-2"
-                          >
-                            {isVerifyingUrl ? (
-                              <>
-                                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Verifying...
-                              </>
-                            ) : 'Add'}
-                          </button>
-                        </div>
-                        {videoLinkError && (
-                          <p className="mt-2 text-xs text-red-600 flex items-center gap-1">
-                            <ExclamationTriangleIcon className="w-3.5 h-3.5" />
-                            {videoLinkError}
+
+                        {/* Only show input if no video added yet */}
+                        {videoLinks.length === 0 ? (
+                          <>
+                            <div className="flex gap-2">
+                              <div className="relative flex-1">
+                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                  type="url"
+                                  placeholder="https://youtube.com/watch?v=..."
+                                  value={videoLinkInput}
+                                  onChange={(e) => { setVideoLinkInput(e.target.value); setVideoLinkError(''); }}
+                                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddVideoLink())}
+                                  className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleAddVideoLink}
+                                disabled={isVerifyingUrl}
+                                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors flex-shrink-0 disabled:opacity-60 flex items-center gap-2"
+                              >
+                                {isVerifyingUrl ? (
+                                  <>
+                                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Verifying...
+                                  </>
+                                ) : 'Add'}
+                              </button>
+                            </div>
+                            {videoLinkError && (
+                              <p className="mt-2 text-xs text-red-600 flex items-center gap-1">
+                                <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                                {videoLinkError}
+                              </p>
+                            )}
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {['YouTube', 'Google Drive', 'Vimeo', 'Direct .mp4', 'Any video URL'].map(platform => (
+                                <span key={platform} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                  ✓ {platform}
+                                </span>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                            <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            One video link attached. Remove it to add a different one.
                           </p>
                         )}
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {['YouTube', 'Google Drive', 'Vimeo', 'Direct .mp4', 'Any video URL'].map(platform => (
-                            <span key={platform} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                              ✓ {platform}
-                            </span>
-                          ))}
-                        </div>
                       </div>
 
                       {/* Added video links */}
