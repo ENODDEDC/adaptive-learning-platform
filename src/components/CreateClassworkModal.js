@@ -205,6 +205,8 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
     setFiles(newFiles);
   }, []);
 
+  const [isCheckingDescription, setIsCheckingDescription] = useState(false);
+
   // Function to handle Next Step - auto-upload files on Step 2
   const handleNextStep = async () => {
     // For forms, skip the attachments step entirely and go straight to review
@@ -213,15 +215,46 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
       return;
     }
 
-    // If on Step 2 and there are pending files, upload them first
+    // If on Step 2 — validate non-YouTube video descriptions before proceeding
     if (currentStep === 2) {
+      const nonYouTubeWithDesc = videoLinks.filter(
+        v => v.platform !== 'youtube' && v.videoDescription?.trim()
+      );
+
+      if (nonYouTubeWithDesc.length > 0) {
+        setIsCheckingDescription(true);
+        setError('');
+        try {
+          for (const link of nonYouTubeWithDesc) {
+            const res = await fetch('/api/content/educational-gate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: link.videoDescription }),
+            });
+            const data = await res.json();
+
+            if (data.isEducational === false) {
+              setError(
+                `Description is not educational. Write a proper topic description so students can use AI learning modes. (${data.reasoning || 'Classified as non-educational.'})`
+              );
+              setIsCheckingDescription(false);
+              return;
+            }
+          }
+        } catch {
+          // Gate unavailable — allow through, learning modes will handle it
+        } finally {
+          setIsCheckingDescription(false);
+        }
+      }
+
+      // Upload pending files if any
       const pendingFiles = files.filter(file => !file.url && !file._id);
       if (pendingFiles.length > 0) {
         setIsUploadingFiles(true);
         setError('');
         
         try {
-          // Trigger file upload via FileUpload component
           const formData = new FormData();
           pendingFiles.forEach(file => {
             formData.append('files', file);
@@ -241,12 +274,8 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
           }
 
           const result = await response.json();
-          
-          // Update files with uploaded data
           const uploadedFiles = files.filter(file => file.url || file._id);
           setFiles([...uploadedFiles, ...result.files]);
-          
-          // Move to next step
           setCurrentStep(currentStep + 1);
         } catch (err) {
           setError('Failed to upload files. Please try again.');
@@ -606,9 +635,9 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
 
           {/* Error Display */}
           {error && (
-            <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-              <ExclamationTriangleIcon className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="mx-6 mt-3 p-2.5 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+              <ExclamationTriangleIcon className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-700 leading-snug">{error}</p>
             </div>
           )}
 
@@ -1149,6 +1178,7 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                     disabled={
                       (currentStep === 1 && !isFormValid()) ||
                       isUploadingFiles ||
+                      isCheckingDescription ||
                       // Block if on video tab with text typed but not yet added
                       (currentStep === 2 && attachTab === 'video' && videoLinkInput.trim().length > 0) ||
                       // Block if any non-YouTube video link is missing a description
@@ -1167,6 +1197,11 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         <span>Uploading files...</span>
+                      </>
+                    ) : isCheckingDescription ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Checking description...</span>
                       </>
                     ) : (
                       <span>Next Step →</span>
