@@ -719,7 +719,7 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                           <PaperClipIcon className="w-7 h-7 text-white" />
                         </div>
                         <h3 className="text-base font-semibold text-gray-900 mb-1">Attach Files</h3>
-                        <p className="text-xs text-gray-500">PDF, DOCX, PPTX, images</p>
+                        <p className="text-xs text-gray-500">PDF, DOCX, PPTX, images — no video files</p>
                       </div>
                       <FileUpload
                         onFilesReady={handleFilesReady}
