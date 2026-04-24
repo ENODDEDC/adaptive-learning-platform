@@ -3680,54 +3680,47 @@ const ClassworkTab = ({
       `}</style>
 
       {/* Toast Notification System */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
+      <div className="fixed bottom-6 left-6 z-50 space-y-2">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg backdrop-blur-sm border transform transition-all duration-300 animate-in slide-in-from-right-5 ${toast.type === 'success'
-              ? 'bg-emerald-50/90 border-emerald-200 text-emerald-800'
-              : toast.type === 'error'
-                ? 'bg-red-50/90 border-red-200 text-red-800'
-                : toast.type === 'warning'
-                  ? 'bg-amber-50/90 border-amber-200 text-amber-800'
-                  : 'bg-blue-50/90 border-blue-200 text-blue-800'
-              }`}
+            className="flex items-start gap-3 px-4 py-3.5 rounded-xl shadow-2xl border bg-zinc-900 border-zinc-800 text-zinc-100 transform transition-all duration-300 animate-in slide-in-from-bottom-5 max-w-sm"
           >
             {/* Toast Icon */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mt-0.5">
               {toast.type === 'success' && (
-                <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               )}
               {toast.type === 'error' && (
-                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               )}
               {toast.type === 'warning' && (
-                <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               )}
               {toast.type === 'info' && (
-                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               )}
             </div>
 
             {/* Toast Message */}
-            <div className="flex-1 font-medium text-sm">
+            <div className="flex-1 text-sm font-medium leading-snug pt-0.5">
               {toast.message}
             </div>
 
             {/* Close Button */}
             <button
               onClick={() => removeToast(toast.id)}
-              className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              className="flex-shrink-0 text-zinc-600 hover:text-zinc-400 transition-colors duration-200"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
