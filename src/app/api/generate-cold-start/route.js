@@ -53,6 +53,42 @@ E: [one sentence what Detail 2 means]
 
 Rules: max 8 nodes, short node labels (max 4 words), descriptions max 15 words each.`,
 
+  'Hands-On Lab': `Create practical examples and exercises. Format EXACTLY like this:
+
+🔬 HANDS-ON EXAMPLES
+
+💡 Real-World Example 1:
+[concrete example from daily life]
+
+💡 Real-World Example 2:
+[another practical application]
+
+🛠️ Try This Exercise:
+[simple hands-on activity they can do]
+
+📊 Practice Scenario:
+[realistic situation to apply the concept]
+
+Max 250 words.`,
+
+  'Concept Constellation': `Identify patterns and theoretical frameworks. Format EXACTLY like this:
+
+🌟 PATTERN RECOGNITION
+
+🔍 Pattern 1:
+[underlying pattern or principle]
+
+🔍 Pattern 2:
+[another recurring theme]
+
+🧠 Theoretical Framework:
+[academic or conceptual model that applies]
+
+🔗 Hidden Connections:
+[surprising relationships between ideas]
+
+Max 250 words.`,
+
   'Active Learning Hub': `Create practice challenges. Format EXACTLY like this:
 
 🎯 PRACTICE CHALLENGES
