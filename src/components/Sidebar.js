@@ -243,6 +243,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
   return (
     <React.Fragment>
       <aside
+        data-sidebar="main-container"
         className={`bg-white/95 backdrop-blur-md border-r border-white/30 fixed top-0 left-0 h-screen z-30 flex flex-col shadow-2xl transition-all duration-500 ease-in-out ${isCollapsed ? 'w-16 items-center rounded-r-2xl' : 'w-52 rounded-r-3xl'}`}
         style={{ height: sidebarHeight, boxShadow: '8px 0 16px rgba(0, 0, 0, 0.1)', width: isCollapsed ? '64px' : '208px' }}
       >
@@ -360,7 +361,7 @@ const Sidebar = ({ pathname, toggleSidebar, isCollapsed }) => {
       </div>
 
       {/* Navigation Section */}
-      <nav className={`flex-1 ${navPaddingClass}`} role="navigation" aria-label="Main navigation">
+      <nav className={`flex-1 ${navPaddingClass}`} role="navigation" aria-label="Main navigation" data-sidebar="main">
         <div
           className={`${isCollapsed ? 'h-full' : 'overflow-y-auto elegant-scrollbar relative pr-1'}`}
           style={!isCollapsed ? { height: `${expandedNavHeight}px` } : undefined}

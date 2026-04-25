@@ -94,6 +94,21 @@ const CourseDetailPage = ({
     }
   }, [documentPanelOpen]);
 
+  // Hide/Show main sidebar based on PDF viewing state
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (selectedContent) {
+        // PDF is being viewed - hide sidebar
+        window.dispatchEvent(new Event('hideMainSidebar'));
+        console.log('🔍 PDF: Hiding main sidebar (selectedContent active)');
+      } else {
+        // PDF closed - show sidebar again
+        window.dispatchEvent(new Event('showMainSidebar'));
+        console.log('🔍 PDF: Showing main sidebar (selectedContent cleared)');
+      }
+    }
+  }, [selectedContent]);
+
   // Scores Tab State
   const [submissions, setSubmissions] = useState([]);
   const [filteredSubmissions, setFilteredSubmissions] = useState([]);
@@ -1396,19 +1411,15 @@ const CourseDetailPage = ({
                   submissions={submissions}
                   currentUser={user}
                   onOpenContent={(content) => {
+                    // Hide main sidebar completely when PDF is opened
                     try {
-                      console.log('🔍 WINDOW: Dispatching collapseSidebar event for classwork');
-                      console.log('🔍 WINDOW: Window available:', typeof window !== 'undefined');
                       if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new Event('collapseSidebar'));
-                        console.log('🔍 WINDOW: Event dispatched successfully');
-                      } else {
-                        console.log('🔍 WINDOW: Cannot dispatch event - not on client');
+                        window.dispatchEvent(new Event('hideMainSidebar'));
+                        console.log('🔍 PDF: Hiding main sidebar completely');
                       }
                     } catch (error) {
-                      console.log('🔍 WINDOW: Error dispatching event:', error);
+                      console.log('🔍 PDF: Error hiding sidebar:', error);
                     }
-                    // Slight delay to let the sidebar collapse animate smoothly
                     setTimeout(() => setSelectedContent(content), 180);
                   }}
                   onClassworkCreated={handleClassworkCreated}
