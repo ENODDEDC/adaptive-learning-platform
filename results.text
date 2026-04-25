@@ -1,0 +1,62 @@
+[OK] Completed in 25.1 minutes
+[OK] Best parameters: {'colsample_bytree': 0.8, 'learning_rate': 0.05, 'max_depth': 6, 'min_child_weight': 1, 'n_estimators': 150, 'subsample': 0.9}
+[OK] Best CV R2: 88.1%
+[RESULT] Train MAE: 1.224, R2: 0.953 (95.3%)
+[RESULT] Val MAE: 1.850, R2: 0.884 (88.4%)
+[RESULT] Test MAE: 1.848, R2: 0.888 (88.8%)
+[OK] Model saved to: /content/drive/MyDrive/ml-service/models/active_reflective_improved.pkl
+
+
+
+[OK] Completed in 25.0 minutes
+[OK] Best parameters: {'colsample_bytree': 0.8, 'learning_rate': 0.05, 'max_depth': 6, 'min_child_weight': 1, 'n_estimators': 150, 'subsample': 0.9}
+[OK] Best CV R2: 87.9%
+[RESULT] Train MAE: 1.224, R2: 0.952 (95.2%)
+[RESULT] Val MAE: 1.914, R2: 0.890 (89.0%)
+RESULT] Test MAE: 2.008, R2: 0.875 (87.5%)
+[OK] Model saved to: /content/drive/MyDrive/ml-service/models/sensing_intuitive_improved.pkl
+
+
+[OK] Completed in 25.5 minutes
+[OK] Best parameters: {'colsample_bytree' : 0.8, 'learning_rate': 0.05, 'max_depth': 6, 'min_child_weight': 5, 'n_estimators': 150, 'subsample': 0.8}
+[OK] Best CV R2: 87.0%
+[RESULT] Train MAE: 1.255, R2: 0.948 (94.8%)
+[RESULT] Val MAE: 2.083, R2: 0.871 (87.1%)
+[RESULT] Test MAE: 2.034, R2: 0.872 (87.2%)
+[OK] Model saved to: /content/drive/MyDrive/ml-service/models/visual_verbal_improved.pkl
+
+
+[OK] Completed in 25.2 minutes
+[OK] Best parameters: {'colsample_bytree': 0.8, 'learning_rate': 0.05, 'max_depth': 6, 'min_child_weight': 1, 'n_estimators': 150, 'subsample': 0.9}
+[OK] Best CV R2: 88.3%
+[RESULT] Train MAE: 1.228, R2: 0.952 (95.2%)
+[RESULT] Val MAE: 2.007, R2: 0.876 (87.6%)
+[RESULT] Test MAE: 1.850, R2: 0.895 (89.5%)
+[OK] Model saved to: /content/drive/MyDrive/ml-service/models/sequential_global_improved.pkl
+
+
+======================================================================
+Training Summary
+======================================================================
+
+activeReflective:
+  Validation R2: 0.884 (88.4%)
+  Test R2:       0.888 (88.8%)
+
+sensingIntuitive:
+  Validation R2: 0.890 (89.0%)
+  Test R2:       0.875 (87.5%)
+
+visualVerbal:
+  Validation R2: 0.871 (87.1%)
+  Test R2:       0.872 (87.2%)
+
+sequentialGlobal:
+  Validation R2: 0.876 (87.6%)
+  Test R2:       0.895 (89.5%)
+
+[FINAL] Overall Performance:
+  Average Test R2: 0.882 (88.2%)
+
+[INFO] Current: 88.2%, Target: 96%
+   Gap: 7.8%
