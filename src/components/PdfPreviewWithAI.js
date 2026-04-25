@@ -18,6 +18,7 @@ import SensingLearning from './SensingLearning';
 import IntuitiveLearning from './IntuitiveLearning';
 import ActiveLearning from './ActiveLearning';
 import ReflectiveLearning from './ReflectiveLearning';
+import MermaidDiagram from './MermaidDiagram';
 import CacheIndicator from './CacheIndicator';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 import { databaseModeToButtonLabel } from '@/constants/learningModeLabels';
@@ -79,6 +80,15 @@ const PdfPreviewWithAI = ({
   const [allRecommendations, setAllRecommendations] = useState([]);
   const [hasClassification, setHasClassification] = useState(false);
   const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
+
+  // Cold Start: right panel for new users (no classification yet)
+  const [coldStartPanelContent, setColdStartPanelContent] = useState(null);
+  const [coldStartPanelLoading, setColdStartPanelLoading] = useState(false);
+  const [coldStartPanelMode, setColdStartPanelMode] = useState('Global Learning'); // default mode
+  const [coldStartDismissed, setColdStartDismissed] = useState(false);
+  const [coldStartEngagementTimer, setColdStartEngagementTimer] = useState(null);
+  const coldStartModeQueue = ['Global Learning', 'Sequential Learning', 'Visual Learning', 'Active Learning Hub', 'Reflective Learning'];
+  const [coldStartModeIndex, setColdStartModeIndex] = useState(0);
   const [showPdfView, setShowPdfView] = useState(false); // Start with generated content view when mode is active
   const [willAutoLoad, setWillAutoLoad] = useState(false); // Track if we're going to auto-load a mode
   const [currentRecommendationIndex, setCurrentRecommendationIndex] = useState(0); // Track current position in carousel
@@ -93,6 +103,55 @@ const PdfPreviewWithAI = ({
   // Automatic time tracking for ML classification
   useLearningModeTracking('aiNarrator', aiTutorActive);
   useLearningModeTracking('visualLearning', showVisualContent);
+
+  // Cold Start: auto-generate right panel for new users
+  useEffect(() => {
+    if (!hasClassification && !coldStartDismissed && !coldStartPanelContent && !coldStartPanelLoading && pdfUrl) {
+      triggerColdStartPanel(coldStartModeQueue[0]);
+    }
+  }, [hasClassification, coldStartDismissed, pdfUrl]);
+
+  // Cold Start: auto-switch mode after 60s of low engagement
+  useEffect(() => {
+    if (!hasClassification && !coldStartDismissed && coldStartPanelContent) {
+      const timer = setTimeout(() => {
+        const nextIndex = coldStartModeIndex + 1;
+        if (nextIndex < coldStartModeQueue.length) {
+          setColdStartModeIndex(nextIndex);
+          setColdStartPanelContent(null);
+          triggerColdStartPanel(coldStartModeQueue[nextIndex]);
+        }
+      }, 60000); // 60 seconds
+      setColdStartEngagementTimer(timer);
+      return () => clearTimeout(timer);
+    }
+  }, [coldStartPanelContent, hasClassification, coldStartDismissed]);
+
+  const triggerColdStartPanel = async (modeName) => {
+    setColdStartPanelLoading(true);
+    setColdStartPanelMode(modeName);
+    try {
+      // Extract PDF content if not already done
+      const textContent = pdfContent || await extractPdfContent();
+      if (!textContent || !textContent.trim()) {
+        setColdStartPanelLoading(false);
+        return;
+      }
+      const response = await fetch('/api/generate-cold-start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: textContent, mode: modeName, title: content?.title || '' })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setColdStartPanelContent(data.content || '');
+      }
+    } catch (e) {
+      console.error('Cold start panel error:', e);
+    } finally {
+      setColdStartPanelLoading(false);
+    }
+  };
 
   // Set data attribute for conditional styling based on ML recommendations
   useEffect(() => {
@@ -1496,7 +1555,9 @@ Reflective Learning works best with instructional content, lessons, or study mat
                       </div>
                     )}
 
-                    <div className="flex-1">
+                    <div className="flex-1 flex">
+                      {/* PDF */}
+                      <div className={!hasClassification && !coldStartDismissed ? 'flex-1 min-w-0' : 'flex-1'}>
                       {pdfUrl ? (
                         <CleanPDFViewer
                           content={{
@@ -1532,6 +1593,191 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           <div className="text-center">
                             <div className="w-8 h-8 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4"></div>
                             <p className="text-gray-600">Loading PDF...</p>
+                          </div>
+                        </div>
+                      )}
+                      </div>
+
+                      {/* Cold Start Right Panel - only for new users */}
+                      {!hasClassification && !coldStartDismissed && (
+                        <div
+                          className="w-80 flex-shrink-0 border-l border-gray-200 bg-white flex flex-col"
+                          style={{ minWidth: '300px', maxWidth: '340px', height: '100%', maxHeight: '100vh', position: 'sticky', top: 0 }}
+                          onWheel={e => e.stopPropagation()}
+                        >
+                          {/* Header */}
+                          <div className="flex items-center justify-between px-3 py-2 bg-blue-50 border-b border-blue-100">
+                            <div className="flex items-center gap-2">
+                              <SparklesIcon className="w-4 h-4 text-blue-600" />
+                              <span className="text-xs font-semibold text-blue-800">
+                                {databaseModeToButtonLabel(coldStartPanelMode)}
+                              </span>
+                              <span className="text-xs text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded-full">Auto</span>
+                            </div>
+                            <button
+                              onClick={() => { setColdStartDismissed(true); if (coldStartEngagementTimer) clearTimeout(coldStartEngagementTimer); }}
+                              className="text-gray-400 hover:text-gray-600 transition-colors"
+                              title="Dismiss"
+                            >
+                              <XMarkIcon className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Mode switcher */}
+                          <div className="flex gap-1 px-2 py-1.5 border-b border-gray-100 overflow-x-auto">
+                            {coldStartModeQueue.map((mode, idx) => (
+                              <button
+                                key={mode}
+                                onClick={() => { setColdStartModeIndex(idx); setColdStartPanelContent(null); triggerColdStartPanel(mode); if (coldStartEngagementTimer) clearTimeout(coldStartEngagementTimer); }}
+                                className={`text-xs px-2 py-1 rounded-full whitespace-nowrap transition-all ${coldStartPanelMode === mode ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                              >
+                                {databaseModeToButtonLabel(mode)}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Content */}
+                          <div
+                            className="flex-1 overflow-y-auto p-3 overscroll-contain"
+                            style={{ minHeight: 0 }}
+                            onWheel={e => e.stopPropagation()}
+                          >
+                            {coldStartPanelLoading ? (
+                              <div className="flex flex-col items-center justify-center h-full gap-3">
+                                <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                                <p className="text-xs text-gray-500 text-center">Generating {databaseModeToButtonLabel(coldStartPanelMode)} for you...</p>
+                              </div>
+                            ) : coldStartPanelContent ? (
+                              coldStartPanelMode === 'Visual Learning' ? (
+                                <div className="space-y-3">
+                                  <p className="text-xs text-violet-600 font-semibold">🖼️ Visual Diagram</p>
+                                  {/* Parse DIAGRAM and DESCRIPTIONS sections */}
+                                  {(() => {
+                                    const diagramMatch = coldStartPanelContent.match(/DIAGRAM:\s*([\s\S]*?)(?=DESCRIPTIONS:|$)/);
+                                    const descMatch = coldStartPanelContent.match(/DESCRIPTIONS:\s*([\s\S]*?)$/);
+                                    const diagramCode = diagramMatch?.[1]?.trim() || coldStartPanelContent;
+                                    const descLines = descMatch?.[1]?.trim().split('\n').filter(l => l.trim()) || [];
+
+                                    // Extract node labels from mermaid for color matching
+                                    const nodeColors = ['bg-violet-100 border-violet-300 text-violet-800', 'bg-blue-100 border-blue-300 text-blue-800', 'bg-indigo-100 border-indigo-300 text-indigo-800', 'bg-purple-100 border-purple-300 text-purple-800', 'bg-fuchsia-100 border-fuchsia-300 text-fuchsia-800'];
+
+                                    return (
+                                      <>
+                                        {/* Diagram - bigger */}
+                                        <div className="w-full overflow-x-auto bg-white rounded-xl border border-violet-100 shadow-sm" style={{ minHeight: '220px' }}>
+                                          <MermaidDiagram chart={diagramCode} />
+                                        </div>
+
+                                        {/* Description cards */}
+                                        {descLines.length > 0 && (
+                                          <div className="space-y-1.5">
+                                            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">Concepts</p>
+                                            {descLines.map((line, i) => {
+                                              const colonIdx = line.indexOf(':');
+                                              if (colonIdx === -1) return null;
+                                              const desc = line.slice(colonIdx + 1).trim().replace(/^\[|\]$/g, '');
+                                              // Extract node label from mermaid for display
+                                              const nodeId = line.slice(0, colonIdx).trim();
+                                              const nodeLabel = diagramCode.match(new RegExp(`${nodeId}\\[([^\\]]+)\\]`))?.[1] || nodeId;
+                                              return (
+                                                <div key={i} className="flex items-start gap-2.5 bg-white border border-gray-100 rounded-xl px-3 py-2.5 shadow-sm hover:shadow-md transition-shadow">
+                                                  <div className="w-5 h-5 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                    <span className="text-white text-xs font-bold" style={{ fontSize: '9px' }}>{i + 1}</span>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-xs font-semibold text-gray-800">{nodeLabel}</p>
+                                                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{desc}</p>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              ) : (
+                              <div className="text-sm text-gray-700 leading-relaxed space-y-3">
+                                {coldStartPanelContent.split('\n').map((line, i) => {
+                                  if (!line.trim()) return null;
+                                  // Section headers with emoji
+                                  if (/^[🌐🔑🔗📋🖼️📌🗂️🔄🎯💡🤔✍️]/.test(line)) {
+                                    return (
+                                      <div key={i} className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mt-3">
+                                        <p className="font-semibold text-blue-800 text-xs">{line}</p>
+                                      </div>
+                                    );
+                                  }
+                                  // Step lines
+                                  if (/^Step \d+:/.test(line)) {
+                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                                    return (
+                                      <div key={i} className="bg-indigo-50 border-l-4 border-indigo-400 px-3 py-1.5 rounded-r-lg">
+                                        <p className="font-semibold text-indigo-800 text-xs" dangerouslySetInnerHTML={{ __html: boldLine }} />
+                                      </div>
+                                    );
+                                  }
+                                  // Question lines
+                                  if (/^❓|^💭|^💡/.test(line)) {
+                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                                    return (
+                                      <div key={i} className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                                        <p className="font-medium text-amber-800 text-xs" dangerouslySetInnerHTML={{ __html: boldLine }} />
+                                      </div>
+                                    );
+                                  }
+                                  // Visual CARD lines
+                                  if (line.startsWith('CARD:')) {
+                                    const parts = line.replace('CARD:', '').split('|');
+                                    const cardTitle = parts[0]?.trim();
+                                    const cardDesc = parts[1]?.trim();
+                                    return (
+                                      <div key={i} className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-lg px-3 py-2 flex gap-2 items-start">
+                                        <div className="w-2 h-2 rounded-full bg-violet-500 mt-1.5 flex-shrink-0"></div>
+                                        <div>
+                                          <p className="text-xs font-bold text-violet-800">{cardTitle}</p>
+                                          {cardDesc && <p className="text-xs text-violet-600 mt-0.5">{cardDesc}</p>}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  // Visual STEP/FLOW lines
+                                  if (line.startsWith('STEP:')) {
+                                    const flowText = line.replace('STEP:', '').trim();
+                                    return (
+                                      <div key={i} className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
+                                        <span className="text-blue-500 text-xs">▶</span>
+                                        <p className="text-xs text-blue-700 font-medium">{flowText}</p>
+                                      </div>
+                                    );
+                                  }
+                                  // Bullet points
+                                  if (line.startsWith('•') || line.startsWith('│') || line.startsWith('┌') || line.startsWith('└')) {
+                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                                    return <p key={i} className="text-xs text-gray-600 pl-2 font-mono" dangerouslySetInnerHTML={{ __html: boldLine }} />;
+                                  }
+                                  // Arrow flows
+                                  if (line.includes('→')) {
+                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                                    return <p key={i} className="text-xs text-gray-700 bg-gray-50 px-2 py-1 rounded font-mono" dangerouslySetInnerHTML={{ __html: boldLine }} />;
+                                  }
+                                  // Bold text
+                                  const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                                  return <p key={i} className="text-xs text-gray-700" dangerouslySetInnerHTML={{ __html: boldLine }} />;
+                                })}
+                              </div>
+                              )
+                            ) : (
+                              <div className="flex flex-col items-center justify-center h-full gap-2">
+                                <p className="text-xs text-gray-400 text-center">Read the PDF to start generating personalized content</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Footer hint */}
+                          <div className="px-3 py-2 bg-gray-50 border-t border-gray-100">
+                            <p className="text-xs text-gray-400 text-center">Auto-switches mode if not engaging • Use buttons to switch manually</p>
                           </div>
                         </div>
                       )}
