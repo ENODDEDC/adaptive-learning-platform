@@ -1697,6 +1697,101 @@ Reflective Learning works best with instructional content, lessons, or study mat
                                     );
                                   })()}
                                 </div>
+                              ) : coldStartPanelMode === 'Hands-On Lab' ? (
+                                // Modern UI for Examples mode only
+                                <div className="space-y-4">
+                                  {coldStartPanelContent.split('\n').map((line, i) => {
+                                    if (!line.trim()) return null;
+                                    
+                                    // Modern section headers
+                                    if (line.startsWith('SECTION_HEADER:')) {
+                                      const headerText = line.replace('SECTION_HEADER:', '').trim();
+                                      return (
+                                        <div key={i} className="bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200 rounded-xl px-4 py-3">
+                                          <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                                              <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                              </svg>
+                                            </div>
+                                            <h3 className="font-semibold text-slate-800 text-sm">{headerText}</h3>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Example cards with modern styling
+                                    if (line.startsWith('EXAMPLE_CARD:')) {
+                                      const parts = line.replace('EXAMPLE_CARD:', '').split('|');
+                                      const cardTitle = parts[0]?.trim();
+                                      const cardDesc = parts[1]?.trim();
+                                      return (
+                                        <div key={i} className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
+                                          <div className="flex items-start gap-3">
+                                            <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                              <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                              </svg>
+                                            </div>
+                                            <div className="flex-1">
+                                              <h4 className="font-semibold text-slate-800 text-xs mb-1">{cardTitle}</h4>
+                                              <p className="text-xs text-slate-600 leading-relaxed">{cardDesc}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Exercise blocks
+                                    if (line.startsWith('EXERCISE_BLOCK:')) {
+                                      const parts = line.replace('EXERCISE_BLOCK:', '').split('|');
+                                      const exerciseTitle = parts[0]?.trim();
+                                      const exerciseDesc = parts[1]?.trim();
+                                      return (
+                                        <div key={i} className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl px-4 py-3">
+                                          <div className="flex items-start gap-3">
+                                            <div className="w-6 h-6 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                              <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                              </svg>
+                                            </div>
+                                            <div className="flex-1">
+                                              <h4 className="font-semibold text-emerald-800 text-xs mb-1">{exerciseTitle}</h4>
+                                              <p className="text-xs text-emerald-700 leading-relaxed">{exerciseDesc}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Scenario blocks
+                                    if (line.startsWith('SCENARIO_BLOCK:')) {
+                                      const parts = line.replace('SCENARIO_BLOCK:', '').split('|');
+                                      const scenarioTitle = parts[0]?.trim();
+                                      const scenarioDesc = parts[1]?.trim();
+                                      return (
+                                        <div key={i} className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl px-4 py-3">
+                                          <div className="flex items-start gap-3">
+                                            <div className="w-6 h-6 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                              <svg className="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                              </svg>
+                                            </div>
+                                            <div className="flex-1">
+                                              <h4 className="font-semibold text-amber-800 text-xs mb-1">{scenarioTitle}</h4>
+                                              <p className="text-xs text-amber-700 leading-relaxed">{scenarioDesc}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Skip unstructured content for Hands-On Lab mode
+                                    // Fallback: show unstructured content temporarily for debugging
+                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                                    return <p key={i} className="text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded px-3 py-2" dangerouslySetInnerHTML={{ __html: boldLine }} />;
+                                  })}
+                                </div>
                               ) : (
                               <div className="text-sm text-gray-700 leading-relaxed space-y-3">
                                 {coldStartPanelContent.split('\n').map((line, i) => {
