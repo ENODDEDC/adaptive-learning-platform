@@ -1743,8 +1743,8 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
         <div className="bg-sky-600 h-1" style={{ width: `${scrollProgress}%`, transition: 'width 0.1s linear' }}></div>
       </div>
 
-      <div className="flex-grow flex-1 flex overflow-auto min-h-0 h-full">
-        <main className="flex-grow overflow-auto min-h-0 h-full relative" ref={contentRef}>
+      <div className="flex-grow flex-1 flex min-h-0 h-full">
+        <main className="flex-grow min-h-0 h-full relative" ref={contentRef}>
           {renderPreview()}
         </main>
       </div>
