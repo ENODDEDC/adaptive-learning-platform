@@ -941,6 +941,9 @@ ${error.message}
   }, [showAnalysisToast]);
 
   const handleAITutorClick = async () => {
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     if (aiTutorActive) {
       // Stop current session
       setAiTutorActive(false);
@@ -1023,6 +1026,9 @@ DEBUG INFO:
 
   // Visual Learning Handler
   const handleVisualContentClick = async () => {
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsVisualLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
@@ -1085,6 +1091,9 @@ Visual Learning needs readable text to create diagrams and visual content.`;
 
   // Sequential Learning Handler
   const handleSequentialLearningClick = async () => {
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsSequentialLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
@@ -1129,6 +1138,9 @@ Sequential Learning works best with instructional content, lessons, or study mat
 
   // Global Learning Handler
   const handleGlobalLearningClick = async () => {
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsGlobalLearningLoading(true);
       setGlobalLearningStatusMessage('Checking if this content is educational...');
@@ -1176,6 +1188,9 @@ Sequential Learning works best with instructional content, lessons, or study mat
 
   // Sensing Learning Handler
   const handleSensingLearningClick = async () => {
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsSensingLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
@@ -1220,6 +1235,9 @@ Sensing Learning works best with instructional content, lessons, or study materi
 
   // Intuitive Learning Handler
   const handleIntuitiveLearningClick = async () => {
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsIntuitiveLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
@@ -1264,6 +1282,9 @@ Intuitive Learning works best with instructional content, lessons, or study mate
 
   // Active Learning Handler
   const handleActiveLearningClick = async () => {
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsActiveLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
@@ -1308,6 +1329,9 @@ Active Learning works best with instructional content, lessons, or study materia
 
   // Reflective Learning Handler
   const handleReflectiveLearningClick = async () => {
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsReflectiveLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
