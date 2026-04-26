@@ -73,7 +73,9 @@ const CleanPDFViewer = ({
   isContentEducational = true,
   // Cold start highlighting props
   coldStartActive = false,
-  coldStartHighlightMode = null
+  coldStartHighlightMode = null,
+  // Button refs for overlay targeting
+  learningModeButtonRefs = { current: {} }
 }) => {
   // State management
   const [currentPage, setCurrentPage] = useState(1);
@@ -597,6 +599,11 @@ const CleanPDFViewer = ({
             {allModes.map(mode => (
               <div key={mode.name} className="relative">
                 <button
+                  ref={(el) => {
+                    if (learningModeButtonRefs.current) {
+                      learningModeButtonRefs.current[mode.dbKey] = el;
+                    }
+                  }}
                   data-tour={getTourAttribute(mode.dbKey)}
                   onClick={mode.handler}
                   disabled={mode.loading}

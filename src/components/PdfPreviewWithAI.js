@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   SparklesIcon,
   AcademicCapIcon,
@@ -20,7 +20,10 @@ import ActiveLearning from './ActiveLearning';
 import ReflectiveLearning from './ReflectiveLearning';
 import MermaidDiagram from './MermaidDiagram';
 import CacheIndicator from './CacheIndicator';
+import ColdStartInterestOverlay from './ColdStartInterestOverlay';
+import ColdStartDebugPanel from './ColdStartDebugPanel';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
+import { useColdStartInterestTracking } from '@/hooks/useColdStartInterestTracking';
 import { databaseModeToButtonLabel } from '@/constants/learningModeLabels';
 
 /**
@@ -104,6 +107,25 @@ const PdfPreviewWithAI = ({
   // Automatic time tracking for ML classification
   useLearningModeTracking('aiNarrator', aiTutorActive);
   useLearningModeTracking('visualLearning', showVisualContent);
+
+  // Cold Start Interest Tracking
+  const {
+    shouldShowOverlay,
+    overlayTriggeredFor,
+    interestData,
+    handleScroll,
+    handleMouseMove,
+    handleMouseEnter,
+    handleMouseLeave,
+    dismissOverlay,
+    getCurrentModeData
+  } = useColdStartInterestTracking(
+    coldStartPanelMode,
+    !hasClassification && !coldStartDismissed && coldStartPanelContent
+  );
+
+  // Refs for learning mode buttons (for overlay targeting)
+  const learningModeButtonRefs = useRef({});
 
   // Cold Start: auto-generate right panel for new users
   useEffect(() => {
@@ -1344,6 +1366,31 @@ Reflective Learning works best with instructional content, lessons, or study mat
     }
   };
 
+  // Handle overlay activation - triggers the corresponding learning mode
+  const handleOverlayActivation = useCallback((mode) => {
+    console.log(`🎯 Overlay activated for mode: ${mode}`);
+    
+    // Map mode to handler function
+    const modeHandlers = {
+      'Global Learning': handleGlobalLearningClick,
+      'Sequential Learning': handleSequentialLearningClick,
+      'Visual Learning': handleVisualContentClick,
+      'Hands-On Lab': handleSensingLearningClick,
+      'Concept Constellation': handleIntuitiveLearningClick,
+      'Active Learning Hub': handleActiveLearningClick,
+      'Reflective Learning': handleReflectiveLearningClick,
+      'AI Narrator': handleAITutorClick
+    };
+
+    const handler = modeHandlers[mode];
+    if (handler) {
+      // Dismiss cold start panel first
+      setColdStartDismissed(true);
+      // Activate the learning mode
+      handler();
+    }
+  }, []);
+
   // Carousel Navigation Functions
   const handleNextRecommendation = () => {
     if (filteredRecommendations.length === 0) return;
@@ -1624,6 +1671,8 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           // Cold start highlighting props
                           coldStartActive={!hasClassification && !coldStartDismissed}
                           coldStartHighlightMode={coldStartPanelMode}
+                          // Button refs for overlay targeting
+                          learningModeButtonRefs={learningModeButtonRefs}
                           // ML Recommendations
                           topRecommendation={topRecommendation}
                           allRecommendations={allRecommendations}
@@ -1691,6 +1740,10 @@ Reflective Learning works best with instructional content, lessons, or study mat
                             className="flex-1 overflow-y-auto p-3 overscroll-contain"
                             style={{ minHeight: 0 }}
                             onWheel={e => e.stopPropagation()}
+                            onScroll={handleScroll}
+                            onMouseMove={handleMouseMove}
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
                           >
                             {coldStartPanelLoading ? (
                               <div className="flex flex-col items-center justify-center h-full gap-3">
@@ -2363,6 +2416,25 @@ Reflective Learning works best with instructional content, lessons, or study mat
         onClose={() => setShowAITutor(false)}
         fileName={fileName}
         docxContent={pdfContent}
+      />
+
+      {/* Cold Start Interest Overlay */}
+      <ColdStartInterestOverlay
+        isVisible={shouldShowOverlay}
+        targetMode={overlayTriggeredFor}
+        onDismiss={dismissOverlay}
+        onActivateMode={handleOverlayActivation}
+        buttonRef={learningModeButtonRefs.current[overlayTriggeredFor]}
+        excludeRightPx={!hasClassification && !coldStartDismissed ? 320 : 0}
+      />
+
+      {/* Debug Panel (Development Only) */}
+      <ColdStartDebugPanel
+        interestData={interestData}
+        currentMode={coldStartPanelMode}
+        shouldShowOverlay={shouldShowOverlay}
+        overlayTriggeredFor={overlayTriggeredFor}
+        getCurrentModeData={getCurrentModeData}
       />
     </>
   );
