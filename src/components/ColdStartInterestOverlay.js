@@ -125,17 +125,6 @@ const ColdStartInterestOverlay = ({
         animationPhase === 'entering' ? 'opacity-0' : 'opacity-100'
       }`}
     >
-      {/* Non-blocking dim layer */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: animationPhase === 'entering'
-            ? 'rgba(0, 0, 0, 0)'
-            : `radial-gradient(circle 140px at ${spotlightPosition.x}px ${spotlightPosition.y}px, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.14) 45%, rgba(0,0,0,0.36) 100%)`,
-          clipPath: excludeRightPx > 0 ? `inset(0 ${excludeRightPx}px 0 0)` : 'none'
-        }}
-      />
-
       {/* Subtle target highlight */}
       {animationPhase !== 'entering' && (
         <div
