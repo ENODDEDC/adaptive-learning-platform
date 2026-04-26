@@ -83,6 +83,7 @@ const PdfPreviewWithAI = ({
 
   // Cold Start: right panel for new users (no classification yet)
   const [coldStartPanelContent, setColdStartPanelContent] = useState(null);
+  const [coldStartPanelCache, setColdStartPanelCache] = useState({}); // Cache for generated modes
   const [coldStartPanelLoading, setColdStartPanelLoading] = useState(false);
   const [coldStartPanelMode, setColdStartPanelMode] = useState('Global Learning'); // default mode
   const [coldStartDismissed, setColdStartDismissed] = useState(false);
@@ -117,9 +118,13 @@ const PdfPreviewWithAI = ({
       const timer = setTimeout(() => {
         const nextIndex = coldStartModeIndex + 1;
         if (nextIndex < coldStartModeQueue.length) {
+          const nextMode = coldStartModeQueue[nextIndex];
           setColdStartModeIndex(nextIndex);
-          setColdStartPanelContent(null);
-          triggerColdStartPanel(coldStartModeQueue[nextIndex]);
+          // Only clear if not in cache to avoid flickering
+          if (!coldStartPanelCache[nextMode]) {
+            setColdStartPanelContent(null);
+          }
+          triggerColdStartPanel(nextMode);
         }
       }, 60000); // 60 seconds
       setColdStartEngagementTimer(timer);
@@ -128,6 +133,13 @@ const PdfPreviewWithAI = ({
   }, [coldStartPanelContent, hasClassification, coldStartDismissed]);
 
   const triggerColdStartPanel = async (modeName) => {
+    // Check cache first
+    if (coldStartPanelCache[modeName]) {
+      setColdStartPanelMode(modeName);
+      setColdStartPanelContent(coldStartPanelCache[modeName]);
+      return;
+    }
+
     setColdStartPanelLoading(true);
     setColdStartPanelMode(modeName);
     try {
@@ -140,11 +152,31 @@ const PdfPreviewWithAI = ({
       const response = await fetch('/api/generate-cold-start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: textContent, mode: modeName, title: content?.title || '' })
+        body: JSON.stringify({ 
+          content: textContent, 
+          mode: modeName, 
+          title: content?.title || '',
+          contentId: content?._id || content?.id || (typeof content === 'string' ? content : null)
+        })
       });
       if (response.ok) {
         const data = await response.json();
-        setColdStartPanelContent(data.content || '');
+        const generatedContent = data.content || '';
+        setColdStartPanelContent(generatedContent);
+        
+        // Show cache indicator if it came from DB
+        if (data.isCached) {
+          setIsCached(true);
+          setShowCacheIndicator(true);
+          // Auto-hide after 2 seconds
+          setTimeout(() => setShowCacheIndicator(false), 2000);
+        }
+
+        // Store in local cache for this session
+        setColdStartPanelCache(prev => ({
+          ...prev,
+          [modeName]: generatedContent
+        }));
       }
     } catch (e) {
       console.error('Cold start panel error:', e);
@@ -414,6 +446,13 @@ AI learning features work best with instructional content, lessons, or study mat
   const extractPdfContent = async () => {
     if (pdfContent) return pdfContent;
 
+    // Check if the content object already has extractedText from the database
+    if (content?.extractedText) {
+      console.log('🚀 Using pre-extracted text from Database property');
+      setPdfContent(content.extractedText);
+      return content.extractedText;
+    }
+
     setExtractionError('');
 
     try {
@@ -432,7 +471,8 @@ AI learning features work best with instructional content, lessons, or study mat
 
       const requestBody = {
         fileKey: extractedKey,
-        filePath: content.filePath
+        filePath: content.filePath,
+        contentId: content._id // Send the content ID to enable DB caching
       };
 
       const response = await fetch('/api/pdf-extract', {
@@ -1628,7 +1668,14 @@ Reflective Learning works best with instructional content, lessons, or study mat
                             {coldStartModeQueue.map((mode, idx) => (
                               <button
                                 key={mode}
-                                onClick={() => { setColdStartModeIndex(idx); setColdStartPanelContent(null); triggerColdStartPanel(mode); if (coldStartEngagementTimer) clearTimeout(coldStartEngagementTimer); }}
+                                onClick={() => {
+                                  setColdStartModeIndex(idx);
+                                  if (!coldStartPanelCache[mode]) {
+                                    setColdStartPanelContent(null);
+                                  }
+                                  triggerColdStartPanel(mode);
+                                  if (coldStartEngagementTimer) clearTimeout(coldStartEngagementTimer);
+                                }}
                                 className={`text-xs px-2 py-1 rounded-full whitespace-nowrap transition-all ${coldStartPanelMode === mode ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                               >
                                 {databaseModeToButtonLabel(mode)}

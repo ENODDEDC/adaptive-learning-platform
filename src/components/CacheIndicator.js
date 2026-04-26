@@ -39,8 +39,8 @@ const CacheIndicator = ({ show, isCached, onHide }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             <div>
-              <div className="font-semibold">📦 Loaded from Cache</div>
-              <div className="text-xs">Instant access - No download!</div>
+              <div className="font-semibold">📦 Loaded from Database</div>
+              <div className="text-xs">Instant access from cache!</div>
             </div>
           </>
         ) : (

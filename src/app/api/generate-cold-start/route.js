@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GroqGenAI } from '@/lib/groqGenAI';
+import Content from '@/models/Content';
+import connectToDatabase from '@/lib/mongodb';
 
 const MODE_PROMPTS = {
   'Global Learning': `Give a big-picture overview. Format your response EXACTLY like this:
@@ -128,10 +130,34 @@ Max 250 words.`,
 
 export async function POST(request) {
   try {
-    const { content, mode, title } = await request.json();
+    const { content, mode, title, contentId } = await request.json();
 
     if (!content || !mode) {
       return NextResponse.json({ error: 'Missing content or mode' }, { status: 400 });
+    }
+
+    // 1. Check database cache if contentId is provided
+    if (contentId) {
+      await connectToDatabase();
+      const contentDoc = await Content.findById(contentId);
+      
+      let cachedContent = null;
+      if (contentDoc?.coldStartCache) {
+        if (typeof contentDoc.coldStartCache.get === 'function') {
+          cachedContent = contentDoc.coldStartCache.get(mode);
+        } else {
+          cachedContent = contentDoc.coldStartCache[mode];
+        }
+      }
+
+      if (cachedContent) {
+        console.log(`🚀 [CACHE HIT] Found ${mode} in Database for ${contentId}`);
+        return NextResponse.json({ 
+          content: cachedContent,
+          isCached: true 
+        });
+      }
+      console.log(`🔍 [CACHE MISS] No ${mode} in Database for ${contentId}`);
     }
 
     const prompt = MODE_PROMPTS[mode] || MODE_PROMPTS['Global Learning'];
@@ -144,6 +170,18 @@ export async function POST(request) {
     );
     const response = await result.response;
     const text = response.text();
+
+    // 2. Save to database cache if contentId is provided
+    if (contentId) {
+      try {
+        await Content.findByIdAndUpdate(contentId, {
+          $set: { [`coldStartCache.${mode}`]: text }
+        });
+        console.log(`💾 Saved generated ${mode} to Database cache.`);
+      } catch (dbError) {
+        console.error('Failed to save cold start cache to DB:', dbError);
+      }
+    }
 
     return NextResponse.json({ content: text });
   } catch (error) {

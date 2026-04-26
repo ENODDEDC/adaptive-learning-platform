@@ -107,6 +107,15 @@ const contentSchema = new Schema({
       type: Schema.Types.Mixed, // Additional provider-specific metadata
     },
   },
+  extractedText: {
+    type: String, // Cached text content for PDF/Docx
+    default: '',
+  },
+  coldStartCache: {
+    type: Map,
+    of: String,
+    default: {},
+  },
 }, {
   timestamps: true
 });
