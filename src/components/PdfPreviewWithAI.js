@@ -90,7 +90,6 @@ const PdfPreviewWithAI = ({
   const [coldStartPanelLoading, setColdStartPanelLoading] = useState(false);
   const [coldStartPanelMode, setColdStartPanelMode] = useState('Global Learning'); // default mode
   const [coldStartDismissed, setColdStartDismissed] = useState(false);
-  const [coldStartEngagementTimer, setColdStartEngagementTimer] = useState(null);
   const coldStartModeQueue = ['Global Learning', 'Sequential Learning', 'Visual Learning', 'Hands-On Lab', 'Concept Constellation', 'Active Learning Hub', 'Reflective Learning'];
   const [coldStartModeIndex, setColdStartModeIndex] = useState(0);
   const [showPdfView, setShowPdfView] = useState(false); // Start with generated content view when mode is active
@@ -133,26 +132,6 @@ const PdfPreviewWithAI = ({
       triggerColdStartPanel(coldStartModeQueue[0]);
     }
   }, [hasClassification, coldStartDismissed, pdfUrl]);
-
-  // Cold Start: auto-switch mode after 60s of low engagement
-  useEffect(() => {
-    if (!hasClassification && !coldStartDismissed && coldStartPanelContent) {
-      const timer = setTimeout(() => {
-        const nextIndex = coldStartModeIndex + 1;
-        if (nextIndex < coldStartModeQueue.length) {
-          const nextMode = coldStartModeQueue[nextIndex];
-          setColdStartModeIndex(nextIndex);
-          // Only clear if not in cache to avoid flickering
-          if (!coldStartPanelCache[nextMode]) {
-            setColdStartPanelContent(null);
-          }
-          triggerColdStartPanel(nextMode);
-        }
-      }, 60000); // 60 seconds
-      setColdStartEngagementTimer(timer);
-      return () => clearTimeout(timer);
-    }
-  }, [coldStartPanelContent, hasClassification, coldStartDismissed]);
 
   const triggerColdStartPanel = async (modeName) => {
     // Check cache first
@@ -1704,10 +1683,9 @@ Reflective Learning works best with instructional content, lessons, or study mat
                               <span className="text-xs font-semibold text-blue-800">
                                 {databaseModeToButtonLabel(coldStartPanelMode)}
                               </span>
-                              <span className="text-xs text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded-full">Auto</span>
                             </div>
                             <button
-                              onClick={() => { setColdStartDismissed(true); if (coldStartEngagementTimer) clearTimeout(coldStartEngagementTimer); }}
+                              onClick={() => { setColdStartDismissed(true); }}
                               className="text-gray-400 hover:text-gray-600 transition-colors"
                               title="Dismiss"
                             >
@@ -1726,7 +1704,6 @@ Reflective Learning works best with instructional content, lessons, or study mat
                                     setColdStartPanelContent(null);
                                   }
                                   triggerColdStartPanel(mode);
-                                  if (coldStartEngagementTimer) clearTimeout(coldStartEngagementTimer);
                                 }}
                                 className={`text-xs px-2 py-1 rounded-full whitespace-nowrap transition-all ${coldStartPanelMode === mode ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                               >
@@ -1975,7 +1952,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
 
                           {/* Footer hint */}
                           <div className="px-3 py-2 bg-gray-50 border-t border-gray-100">
-                            <p className="text-xs text-gray-400 text-center">Auto-switches mode if not engaging • Use buttons to switch manually</p>
+                            <p className="text-xs text-gray-400 text-center">Use the buttons above to switch between learning modes</p>
                           </div>
                         </div>
                       )}

@@ -194,7 +194,7 @@ export function useColdStartInterestTracking(currentMode, isActive) {
   // Check if overlay should be triggered
   const checkOverlayTrigger = useCallback((mode, score) => {
     // DEVELOPER MODE: Force overlay to show for testing (remove this in production)
-    const DEVELOPER_MODE = true; // Set to false for production
+    const DEVELOPER_MODE = false; // Set to false for production
     
     console.log(`🔍 Checking overlay trigger for ${mode}:`, {
       score: score.toFixed(3),
