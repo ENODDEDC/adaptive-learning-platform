@@ -1621,6 +1621,9 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           isIntuitiveLearningLoading={isIntuitiveLearningLoading}
                           isActiveLearningLoading={isActiveLearningLoading}
                           isReflectiveLearningLoading={isReflectiveLearningLoading}
+                          // Cold start highlighting props
+                          coldStartActive={!hasClassification && !coldStartDismissed}
+                          coldStartHighlightMode={coldStartPanelMode}
                           // ML Recommendations
                           topRecommendation={topRecommendation}
                           allRecommendations={allRecommendations}

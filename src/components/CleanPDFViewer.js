@@ -70,7 +70,10 @@ const CleanPDFViewer = ({
   allRecommendations = [],
   hasClassification = false,
   // Content Educational Status
-  isContentEducational = true
+  isContentEducational = true,
+  // Cold start highlighting props
+  coldStartActive = false,
+  coldStartHighlightMode = null
 }) => {
   // State management
   const [currentPage, setCurrentPage] = useState(1);
@@ -104,6 +107,12 @@ const CleanPDFViewer = ({
     buttonLabelToDatabaseMode[buttonName] || buttonName;
 
   const getModeDisplayName = (databaseName) => databaseModeToButtonLabel(databaseName);
+
+  // Helper function to check if a mode should be highlighted by cold start
+  const isColdStartHighlighted = (modeDbKey) => {
+    if (!coldStartActive || !coldStartHighlightMode) return false;
+    return coldStartHighlightMode === modeDbKey;
+  };
 
   // Get tour attribute for learning mode buttons
   const getTourAttribute = (dbKey) => {
@@ -598,23 +607,67 @@ const CleanPDFViewer = ({
                     setShowTooltip({ mode: mode.name, content: tooltip });
                   }}
                   onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-                  className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    recommendedModeNames.includes(mode.name)
+                  className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden ${
+                    isColdStartHighlighted(mode.dbKey)
+                      ? 'bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100 border-2 border-purple-400 text-purple-800 shadow-lg transform scale-105 ring-2 ring-purple-300 ring-opacity-50'
+                      : recommendedModeNames.includes(mode.name)
                       ? 'bg-blue-50 border border-blue-200 text-blue-700 ring-1 ring-blue-300'
                       : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
                   }`}
                   title=""
                 >
-                  {mode.loading ? (
-                    <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-                  ) : (
-                    <LearningModeToolbarIcon databaseMode={mode.dbKey} className="w-5 h-5 flex-shrink-0 text-current" />
+                  {/* Cold start highlight animation overlay */}
+                  {isColdStartHighlighted(mode.dbKey) && (
+                    <>
+                      {/* Pulsing glow effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-blue-400/20 to-indigo-400/20 animate-pulse rounded-lg"></div>
+                      
+                      {/* Shimmer effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer rounded-lg"></div>
+                      
+                      {/* Floating particles effect */}
+                      <div className="absolute top-1 right-1 w-1 h-1 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                      <div className="absolute top-2 right-3 w-0.5 h-0.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="absolute top-3 right-2 w-0.5 h-0.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    </>
                   )}
-                  <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
+                  
+                  {mode.loading ? (
+                    <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin flex-shrink-0 z-10"></div>
+                  ) : (
+                    <div className="relative z-10">
+                      <LearningModeToolbarIcon 
+                        databaseMode={mode.dbKey} 
+                        className={`w-5 h-5 flex-shrink-0 transition-all duration-300 ${
+                          isColdStartHighlighted(mode.dbKey) 
+                            ? 'text-purple-700 drop-shadow-sm animate-pulse' 
+                            : 'text-current'
+                        }`} 
+                      />
+                    </div>
+                  )}
+                  
+                  <span className={`text-xs font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap overflow-hidden z-10 ${
+                    isColdStartHighlighted(mode.dbKey) 
+                      ? 'opacity-100 font-semibold text-purple-800' 
+                      : ''
+                  }`}>
                     {mode.name}
+                    {isColdStartHighlighted(mode.dbKey) && (
+                      <span className="ml-1 text-xs animate-pulse">← Preview Active</span>
+                    )}
                   </span>
-                  {recommendedModeNames.includes(mode.name) && (
-                    <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  
+                  {/* Enhanced indicator for highlighted mode */}
+                  {isColdStartHighlighted(mode.dbKey) && (
+                    <div className="flex items-center gap-1 z-10">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-ping"></div>
+                      <div className="w-1.5 h-1.5 bg-purple-600 rounded-full"></div>
+                    </div>
+                  )}
+                  
+                  {recommendedModeNames.includes(mode.name) && !isColdStartHighlighted(mode.dbKey) && (
+                    <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
                   )}
                 </button>
                 
