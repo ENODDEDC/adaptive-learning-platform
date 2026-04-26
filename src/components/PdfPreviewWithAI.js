@@ -21,7 +21,6 @@ import ReflectiveLearning from './ReflectiveLearning';
 import MermaidDiagram from './MermaidDiagram';
 import CacheIndicator from './CacheIndicator';
 import ColdStartInterestOverlay from './ColdStartInterestOverlay';
-import ColdStartDebugPanel from './ColdStartDebugPanel';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
 import { useColdStartInterestTracking } from '@/hooks/useColdStartInterestTracking';
 import { databaseModeToButtonLabel } from '@/constants/learningModeLabels';
@@ -2405,14 +2404,6 @@ Reflective Learning works best with instructional content, lessons, or study mat
         excludeRightPx={!hasClassification && !coldStartDismissed ? 320 : 0}
       />
 
-      {/* Debug Panel (Development Only) */}
-      <ColdStartDebugPanel
-        interestData={interestData}
-        currentMode={coldStartPanelMode}
-        shouldShowOverlay={shouldShowOverlay}
-        overlayTriggeredFor={overlayTriggeredFor}
-        getCurrentModeData={getCurrentModeData}
-      />
     </>
   );
 };
