@@ -31,3 +31,12 @@ A behavioral interest detection system for new users who have no learning style 
 
 ## Important Distinction
 This system is **separate from the ML classifier**. The ML classification is driven by which learning modes the user clicks and how long they spend in them (`useLearningModeTracking`). The interest tracking is a cold start UX feature only.
+
+## Why Interest Tracking Data Does NOT Go to ML
+The interest tracking data stays client-side only and is never saved to the database or sent to the ML classifier. This is on purpose.
+
+The interest tracking only watches the student passively reading the auto-generated preview content on the right side. The student did not choose that content — it was shown automatically. So we cannot use passive reading behavior to say "this is their learning style." Using it in the ML would give unreliable results.
+
+The ML only uses data from when the student actually clicks and uses a learning mode — because that is when the student is making a real choice that reflects their true learning preference.
+
+This is consistent with the distinction between **implicit feedback** (passive behavior) and **explicit feedback** (active choice) in recommender systems research — where explicit signals are recognized as more reliable for preference classification (Jawaheer et al., 2010; ACM RecSys).
