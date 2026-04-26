@@ -75,7 +75,9 @@ const CleanPDFViewer = ({
   coldStartActive = false,
   coldStartHighlightMode = null,
   // Button refs for overlay targeting
-  learningModeButtonRefs = { current: {} }
+  learningModeButtonRefs = { current: {} },
+  // PDF Loading callback
+  onPdfLoaded = null
 }) => {
   // State management
   const [currentPage, setCurrentPage] = useState(1);
@@ -393,6 +395,10 @@ const CleanPDFViewer = ({
     const getPDFPageCount = async () => {
       if (!content?.filePath && !content?.url) {
         setIsLoading(false);
+        // Notify parent that PDF is loaded (even if no content)
+        if (onPdfLoaded) {
+          onPdfLoaded();
+        }
         return;
       }
 
@@ -453,6 +459,10 @@ const CleanPDFViewer = ({
         setTotalPages(1);
       } finally {
         setIsLoading(false);
+        // Notify parent that PDF is loaded
+        if (onPdfLoaded) {
+          onPdfLoaded();
+        }
       }
     };
 
@@ -564,12 +574,22 @@ const CleanPDFViewer = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading PDF document...</p>
-          <p className="text-sm text-gray-500 mt-2">Preparing clean PDF viewer</p>
-        </div>
+      <div className="flex-1 h-full p-4 space-y-3 bg-gray-50">
+        {/* PDF Document Skeleton Loading */}
+        <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
+        <div className="h-32 bg-gray-200 rounded animate-pulse w-full mt-4"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+        <div className="h-32 bg-gray-200 rounded animate-pulse w-full mt-4"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
       </div>
     );
   }

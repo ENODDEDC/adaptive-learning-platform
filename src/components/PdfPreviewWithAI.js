@@ -100,6 +100,7 @@ const PdfPreviewWithAI = ({
   const [analysisMeta, setAnalysisMeta] = useState({ method: null, confidence: null, contentType: null, verified: false, unavailableReason: null, reasoning: null, evidence: [] });
   const [showAnalysisToast, setShowAnalysisToast] = useState(false);
   const [isAIAvailable, setIsAIAvailable] = useState(true);
+  const [isPdfLoaded, setIsPdfLoaded] = useState(false); // Track when PDF is fully loaded
   const isVerifiedNonEducationalError = analysisMeta.verified === true && isContentEducational === false;
 
   // Automatic time tracking for ML classification
@@ -131,6 +132,11 @@ const PdfPreviewWithAI = ({
       triggerColdStartPanel(coldStartModeQueue[0]);
     }
   }, [hasClassification, coldStartDismissed, pdfUrl]);
+
+  // Reset PDF loaded state when content changes
+  useEffect(() => {
+    setIsPdfLoaded(false);
+  }, [pdfUrl, content]);
 
   const triggerColdStartPanel = async (modeName) => {
     // Check cache first
@@ -1657,13 +1663,26 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           hasClassification={hasClassification}
                           // Content Educational Status
                           isContentEducational={isContentEducational}
+                          // PDF Loading callback
+                          onPdfLoaded={() => setIsPdfLoaded(true)}
                         />
                       ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center">
-                            <div className="w-8 h-8 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-gray-600">Loading PDF...</p>
-                          </div>
+                        <div className="flex-1 h-full p-4 space-y-3">
+                          {/* PDF Skeleton Loading */}
+                          <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
+                          <div className="h-32 bg-gray-200 rounded animate-pulse w-full mt-4"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                          <div className="h-32 bg-gray-200 rounded animate-pulse w-full mt-4"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
                         </div>
                       )}
                       </div>
@@ -1721,10 +1740,20 @@ Reflective Learning works best with instructional content, lessons, or study mat
                             onMouseEnter={handleMouseEnter}
                             onMouseLeave={handleMouseLeave}
                           >
-                            {coldStartPanelLoading ? (
-                              <div className="flex flex-col items-center justify-center h-full gap-3">
-                                <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                                <p className="text-xs text-gray-500 text-center">Generating {databaseModeToButtonLabel(coldStartPanelMode)} for you...</p>
+                            {coldStartPanelLoading || !isPdfLoaded ? (
+                              <div className="p-3 space-y-3">
+                                {/* Cold start panel skeleton */}
+                                <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                                <div className="h-3 bg-gray-200 rounded animate-pulse w-full"></div>
+                                <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                                <div className="h-3 bg-gray-200 rounded animate-pulse w-full"></div>
+                                <div className="h-20 bg-gray-200 rounded-xl animate-pulse w-full mt-2"></div>
+                                <div className="h-3 bg-gray-200 rounded animate-pulse w-4/5"></div>
+                                <div className="h-3 bg-gray-200 rounded animate-pulse w-full"></div>
+                                <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                                <div className="h-16 bg-gray-200 rounded-xl animate-pulse w-full mt-2"></div>
+                                <div className="h-3 bg-gray-200 rounded animate-pulse w-full"></div>
+                                <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
                               </div>
                             ) : coldStartPanelContent ? (
                               coldStartPanelMode === 'Visual Learning' ? (
