@@ -3,6 +3,51 @@ import { GroqGenAI } from '@/lib/groqGenAI';
 import Content from '@/models/Content';
 import connectToDatabase from '@/lib/mongodb';
 
+/**
+ * Validates and fixes common Mermaid diagram syntax errors
+ * Prevents rendering failures in the UI
+ */
+function validateAndFixMermaidDiagram(diagramCode) {
+  if (!diagramCode || typeof diagramCode !== 'string') {
+    return diagramCode;
+  }
+
+  let fixed = diagramCode;
+
+  // Fix 1: Remove parentheses from node labels (common AI mistake)
+  // Example: A[First Normal Form (1NF)] → A[First Normal Form - 1NF]
+  fixed = fixed.replace(/\[([^\]]*)\(([^)]*)\)([^\]]*)\]/g, '[$1- $2$3]');
+
+  // Fix 2: Remove numbers from node IDs (only letters allowed)
+  // Example: A1[Something] → A[Something]
+  fixed = fixed.replace(/\b([A-Z])\d+\[/g, '$1[');
+
+  // Fix 3: Truncate long labels (max 50 chars)
+  fixed = fixed.replace(/\[([^\]]{50,})\]/g, (match, label) => {
+    return `[${label.substring(0, 47)}...]`;
+  });
+
+  // Fix 4: Remove special characters that break Mermaid
+  // Keep only: letters, numbers, spaces, dashes, underscores
+  fixed = fixed.replace(/\[([^\]]+)\]/g, (match, label) => {
+    const cleaned = label.replace(/[^a-zA-Z0-9\s\-_]/g, ' ').replace(/\s+/g, ' ').trim();
+    return `[${cleaned}]`;
+  });
+
+  // Fix 5: Ensure proper flowchart syntax
+  if (!fixed.includes('flowchart') && !fixed.includes('graph')) {
+    fixed = 'flowchart TD\n' + fixed;
+  }
+
+  console.log('🔧 Diagram validation:', {
+    hadParentheses: diagramCode.includes('(') && diagramCode.includes(')'),
+    hadNumbers: /[A-Z]\d+\[/.test(diagramCode),
+    wasFixed: fixed !== diagramCode
+  });
+
+  return fixed;
+}
+
 const MODE_PROMPTS = {
   'Global Learning': `Give a big-picture overview. Format your response EXACTLY like this:
 
@@ -53,7 +98,23 @@ C: [one sentence what Concept 2 means]
 D: [one sentence what Detail 1 means]
 E: [one sentence what Detail 2 means]
 
-Rules: max 8 nodes, short node labels (max 4 words), descriptions max 15 words each.`,
+CRITICAL RULES FOR MERMAID SYNTAX:
+- Node labels MUST be SHORT (max 4 words, no parentheses)
+- Use ONLY letters A-Z for node IDs (no numbers, no special chars)
+- NO parentheses () in node labels - use dashes or commas instead
+- NO special characters in labels except spaces and dashes
+- Keep it simple: max 8 nodes total
+- Each description max 15 words
+
+EXAMPLE OF GOOD LABELS:
+✓ A[Database Design]
+✓ B[First Normal Form]
+✓ C[Remove Duplicates]
+
+EXAMPLE OF BAD LABELS (DO NOT USE):
+✗ A[First Normal Form (1NF)]  ← NO PARENTHESES
+✗ A[This is a very long label with too many words]  ← TOO LONG
+✗ A1[Something]  ← NO NUMBERS IN NODE IDS`,
 
   'Hands-On Lab': `Create practical examples and exercises. Format EXACTLY like this:
 
@@ -152,6 +213,20 @@ export async function POST(request) {
 
       if (cachedContent) {
         console.log(`🚀 [CACHE HIT] Found ${mode} in Database for ${contentId}`);
+        
+        // Validate and fix diagram if it's Visual Learning mode
+        if (mode === 'Visual Learning') {
+          const diagramMatch = cachedContent.match(/DIAGRAM:\s*([\s\S]*?)(?=DESCRIPTIONS:|$)/);
+          if (diagramMatch) {
+            const originalDiagram = diagramMatch[1].trim();
+            const fixedDiagram = validateAndFixMermaidDiagram(originalDiagram);
+            if (fixedDiagram !== originalDiagram) {
+              cachedContent = cachedContent.replace(originalDiagram, fixedDiagram);
+              console.log('🔧 Fixed cached diagram syntax');
+            }
+          }
+        }
+        
         return NextResponse.json({ 
           content: cachedContent,
           isCached: true 
@@ -169,7 +244,20 @@ export async function POST(request) {
       `You are an adaptive learning assistant. Based on the following document content, ${prompt}\n\nDocument Title: ${title || 'Untitled'}\n\nContent:\n${truncatedContent}`
     );
     const response = await result.response;
-    const text = response.text();
+    let text = response.text();
+
+    // Validate and fix diagram if it's Visual Learning mode
+    if (mode === 'Visual Learning') {
+      const diagramMatch = text.match(/DIAGRAM:\s*([\s\S]*?)(?=DESCRIPTIONS:|$)/);
+      if (diagramMatch) {
+        const originalDiagram = diagramMatch[1].trim();
+        const fixedDiagram = validateAndFixMermaidDiagram(originalDiagram);
+        if (fixedDiagram !== originalDiagram) {
+          text = text.replace(originalDiagram, fixedDiagram);
+          console.log('🔧 Fixed generated diagram syntax');
+        }
+      }
+    }
 
     // 2. Save to database cache if contentId is provided
     if (contentId) {
