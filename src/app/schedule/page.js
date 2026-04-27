@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import HorizontalNav from '@/components/HorizontalNav';
 import toast from 'react-hot-toast';
 
 const timeSlots = Array.from({ length: 15 }, (_, i) => {
@@ -65,7 +66,11 @@ const SchedulePage = () => {
   }, []);
 
   return (
-    <div className="h-screen overflow-hidden bg-gray-50 p-4">
+    <div className="h-screen overflow-hidden bg-gray-50">
+      {/* Horizontal Navigation */}
+      <HorizontalNav />
+      
+      <div className="p-4">
       <div className="flex h-full flex-col gap-4">
         <div className="mx-3 mt-1 rounded-2xl border border-gray-200 bg-white shadow-sm">
           <div className="h-1 rounded-t-2xl bg-blue-500"></div>
@@ -206,6 +211,7 @@ const SchedulePage = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

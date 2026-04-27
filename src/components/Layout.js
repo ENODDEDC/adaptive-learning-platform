@@ -7,6 +7,7 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import AdminSidebar from './AdminSidebar';
 import AdminNavbar from './AdminNavbar';
+import HorizontalNav from './HorizontalNav';
 import CreateCourseModal from '@/components/CreateCourseModal';
 import JoinCourseModal from '@/components/JoinCourseModal';
 import CreateClusterModal from '@/components/CreateClusterModal';
@@ -421,6 +422,7 @@ const Layout = ({ children }) => {
         className="main-content relative transition-all duration-500 ease-in-out ml-0 h-full overflow-hidden flex flex-col"
       >
         <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
+        
         <main className="flex-1 overflow-hidden">
           {React.isValidElement(children) && typeof children.type !== 'string'
             ? React.cloneElement(children, {

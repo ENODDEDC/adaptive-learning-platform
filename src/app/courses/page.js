@@ -11,6 +11,7 @@ import Tooltip from '@/components/Tooltip';
 import AdaptiveLayout from '@/components/AdaptiveLayout';
 import CourseFilterSort from '@/components/CourseFilterSort';
 import ProfessionalCourseCard from '@/components/ProfessionalCourseCard';
+import HorizontalNav from '@/components/HorizontalNav';
 import preferenceLearningService from '@/services/preferenceLearningService';
 import cacheService from '@/services/cacheService';
 import predictiveLoadingService from '@/services/predictiveLoadingService';
@@ -588,6 +589,9 @@ const CourseContent = () => {
     <div className="flex flex-col h-full bg-[#f8fafc] relative overflow-hidden">
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#4f46e5 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}></div>
+      
+      {/* Horizontal Navigation */}
+      <HorizontalNav />
       
       <div className="relative z-10 flex flex-col h-full">
       {/* Simple Header */}
