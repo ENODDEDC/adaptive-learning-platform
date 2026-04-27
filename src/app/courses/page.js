@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import EmptyState from '@/components/EmptyState';
-import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import CoursePreviewModal from '@/components/CoursePreviewModal';
 import Tooltip from '@/components/Tooltip';
 import AdaptiveLayout from '@/components/AdaptiveLayout';
@@ -521,58 +520,6 @@ const CourseContent = () => {
     );
   }
 
-  // Show loading state with skeleton screens
-  if (loading) {
-    return (
-      <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="skeleton-text mb-2 h-8 w-40 rounded"></div>
-              <div className="skeleton-text h-4 w-64 rounded"></div>
-            </div>
-            <div className="skeleton-button h-10 w-10 rounded-lg"></div>
-          </div>
-        </div>
-
-        <div className="bg-white border-b border-gray-200 px-6">
-          <div className="flex items-center gap-4 py-3">
-            <div className="skeleton-button h-10 w-24 rounded-lg"></div>
-            <div className="skeleton-button h-10 w-24 rounded-lg"></div>
-            <div className="skeleton-button h-10 w-24 rounded-lg"></div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-2">
-          <div className="mb-6 space-y-3">
-            <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-              <div className="flex items-start gap-3">
-                <div className="h-6 w-6 rounded bg-blue-200"></div>
-                <div className="flex-1">
-                  <div className="skeleton-text mb-2 h-4 w-40 rounded bg-blue-200"></div>
-                  <div className="skeleton-text h-3 w-72 rounded bg-blue-200"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative mb-8 ml-4 mr-4">
-            <div className="w-full transition-all duration-500 ease-in-out">
-              <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory custom-scrollbar">
-                {[...Array(5)].map((_, index) => (
-                  <CourseCardSkeleton
-                    key={`skeleton-${index}`}
-                    index={index}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Show error state
   if (error) {
     return (
@@ -605,12 +552,15 @@ const CourseContent = () => {
                   setActiveTab('courses');
                   trackInteraction('navigation', { path: 'courses_tab' });
                 }}
-                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
                   activeTab === 'courses'
                     ? 'bg-blue-50 text-blue-700 border border-blue-200'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
                 Courses
               </button>
               <button
@@ -618,18 +568,24 @@ const CourseContent = () => {
                   setActiveTab('clusters');
                   trackInteraction('navigation', { path: 'clusters_tab' });
                 }}
-                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
                   activeTab === 'clusters'
                     ? 'bg-blue-50 text-blue-700 border border-blue-200'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
                 Clusters
               </button>
               <button
                 onClick={() => router.push('/archive')}
-                className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all"
               >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
                 Archive
               </button>
             </div>
@@ -773,13 +729,7 @@ const CourseContent = () => {
           <AdaptiveLayout componentType="courses" trackInteractions={true} adaptiveMode={true}>
             <div className="flex gap-6 pb-6 pt-2">
           {activeTab === 'courses' ? (
-          loading ? (
-            <div className="flex gap-6 w-full px-10 py-6">
-              {[...Array(3)].map((_, i) => (
-                <CourseCardSkeleton key={i} index={i} />
-              ))}
-            </div>
-          ) : filteredCourses.length === 0 ? (
+          filteredCourses.length === 0 ? (
             <div className="w-full py-20 flex flex-col items-center justify-center">
               <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
                 <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
