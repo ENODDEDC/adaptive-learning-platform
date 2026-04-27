@@ -169,6 +169,12 @@ export default function Home() {
     () => sortedPublicCourses.slice(3),
     [sortedPublicCourses]
   );
+  const publicCourseTitleClass = 'text-sm font-semibold text-gray-900 leading-tight';
+  const publicCourseTeacherClass = 'text-xs text-gray-600';
+  const publicCourseMetaClass = 'text-[11px] text-gray-500';
+  const publicCoursePrimaryButtonClass = 'text-[11px] px-2.5 py-1 font-semibold rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors';
+  const publicModalPrimaryButtonClass = 'flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70';
+  const publicModalSecondaryButtonClass = 'flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50';
 
   useEffect(() => {
     setIsMounted(true);
@@ -1052,17 +1058,17 @@ export default function Home() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
-                                <h4 className="text-sm font-semibold text-gray-900 leading-tight line-clamp-2">{course.subject}</h4>
+                                <h4 className={`${publicCourseTitleClass} line-clamp-2`}>{course.subject}</h4>
                                 <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md border border-amber-200">
                                   #{index + 1}
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-600 truncate mt-0.5">{course.teacherName}</p>
+                              <p className={`${publicCourseTeacherClass} truncate mt-0.5`}>{course.teacherName}</p>
                               <div className="mt-2 flex items-center justify-between">
-                                <span className="text-[11px] text-gray-500">{course.studentCount} students</span>
+                                <span className={publicCourseMetaClass}>{course.studentCount} students</span>
                                 <button
                                   onClick={() => setSelectedPublicCourse(course)}
-                                  className="text-[11px] px-2.5 py-1 font-semibold rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
+                                  className={publicCoursePrimaryButtonClass}
                                 >
                                   Join
                                 </button>
@@ -1091,16 +1097,16 @@ export default function Home() {
                             {course.subject?.charAt(0) || 'C'}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-semibold text-gray-900 truncate">{course.subject}</h4>
-                            <p className="text-xs text-gray-600 truncate">{course.teacherName}</p>
+                            <h4 className={`${publicCourseTitleClass} truncate`}>{course.subject}</h4>
+                            <p className={`${publicCourseTeacherClass} truncate`}>{course.teacherName}</p>
                             <div className="mt-2 flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1.5 text-[11px] text-gray-500 min-w-0">
+                              <div className={`flex items-center gap-1.5 min-w-0 ${publicCourseMetaClass}`}>
                                 <span className="truncate">{course.studentCount} students</span>
                                 {course.section && <span className="truncate">• {course.section}</span>}
                               </div>
                               <button
                                 onClick={() => setSelectedPublicCourse(course)}
-                                className="text-[11px] px-2.5 py-1 font-semibold rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
+                                className={publicCoursePrimaryButtonClass}
                               >
                                 Join
                               </button>
@@ -1130,52 +1136,42 @@ export default function Home() {
 
       {/* Join Course Confirmation Modal */}
       {selectedPublicCourse && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', maxWidth: '450px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '16px', color: '#111827' }}>Join Course</h3>
-            
-            <div style={{ marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'start', gap: '16px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                <div 
-                  style={{ 
-                    width: '60px', 
-                    height: '60px', 
-                    borderRadius: '12px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    color: 'white', 
-                    fontWeight: '700', 
-                    fontSize: '24px',
-                    backgroundColor: selectedPublicCourse.coverColor || '#3b82f6',
-                    flexShrink: 0
-                  }}
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Join Course</h3>
+              <p className="mt-1 text-xs text-gray-500">Review course details before enrolling.</p>
+            </div>
+
+            <div className="mb-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div className="flex items-start gap-3">
+                <div
+                  className="h-14 w-14 rounded-xl flex items-center justify-center text-white text-xl font-bold flex-shrink-0"
+                  style={{ backgroundColor: selectedPublicCourse.coverColor || '#3b82f6' }}
                 >
                   {selectedPublicCourse.subject?.charAt(0) || 'C'}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
-                    {selectedPublicCourse.subject}
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px', color: '#6b7280' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="min-w-0 flex-1">
+                  <h4 className={`${publicCourseTitleClass} line-clamp-2`}>{selectedPublicCourse.subject}</h4>
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
-                      <span>{selectedPublicCourse.teacherName}</span>
+                      <span className={`${publicCourseTeacherClass} truncate`}>{selectedPublicCourse.teacherName}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
-                      <span>{selectedPublicCourse.studentCount} students</span>
+                      <span className={publicCourseMetaClass}>{selectedPublicCourse.studentCount} students</span>
                     </div>
                     {selectedPublicCourse.section && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex items-center gap-2">
+                        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
                         </svg>
-                        <span>Section: {selectedPublicCourse.section}</span>
+                        <span className={`${publicCourseMetaClass} truncate`}>Section: {selectedPublicCourse.section}</span>
                       </div>
                     )}
                   </div>
@@ -1183,40 +1179,18 @@ export default function Home() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div className="flex gap-2.5">
               <button
                 onClick={() => setSelectedPublicCourse(null)}
                 disabled={joiningCourse}
-                style={{ 
-                  flex: 1,
-                  padding: '10px 16px', 
-                  fontSize: '14px', 
-                  fontWeight: '600', 
-                  color: '#374151', 
-                  backgroundColor: 'white', 
-                  border: '1px solid #d1d5db', 
-                  borderRadius: '8px', 
-                  cursor: joiningCourse ? 'not-allowed' : 'pointer',
-                  opacity: joiningCourse ? 0.5 : 1
-                }}
+                className={publicModalSecondaryButtonClass}
               >
                 Cancel
               </button>
               <button
                 onClick={handleJoinPublicCourse}
                 disabled={joiningCourse}
-                style={{ 
-                  flex: 1,
-                  padding: '10px 16px', 
-                  fontSize: '14px', 
-                  fontWeight: '600', 
-                  color: 'white', 
-                  backgroundColor: '#3b82f6', 
-                  border: 'none', 
-                  borderRadius: '8px', 
-                  cursor: joiningCourse ? 'not-allowed' : 'pointer',
-                  opacity: joiningCourse ? 0.7 : 1
-                }}
+                className={publicModalPrimaryButtonClass}
               >
                 {joiningCourse ? 'Joining...' : 'Join Course'}
               </button>
@@ -1227,34 +1201,23 @@ export default function Home() {
 
       {/* Success Modal */}
       {joinSuccessModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', maxWidth: '420px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            {/* Success Icon */}
-            <div style={{ width: '80px', height: '80px', margin: '0 auto 20px', backgroundColor: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '48px', height: '48px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+              <svg className="h-9 w-9 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </div>
 
-            <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '12px', color: '#111827' }}>Successfully Joined!</h3>
-            <p style={{ fontSize: '15px', color: '#6b7280', marginBottom: '24px' }}>
-              You've been enrolled in <span style={{ fontWeight: '600', color: '#111827' }}>{joinSuccessModal.subject}</span>
+            <h3 className="text-lg font-semibold text-gray-900">Successfully Joined!</h3>
+            <p className="mt-2 mb-5 text-xs text-gray-600">
+              You are now enrolled in <span className="font-semibold text-gray-900">{joinSuccessModal.subject}</span>.
             </p>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div className="flex gap-2.5">
               <button
                 onClick={() => setJoinSuccessModal(null)}
-                style={{ 
-                  flex: 1,
-                  padding: '12px 20px', 
-                  fontSize: '14px', 
-                  fontWeight: '600', 
-                  color: '#374151', 
-                  backgroundColor: 'white', 
-                  border: '1px solid #d1d5db', 
-                  borderRadius: '8px', 
-                  cursor: 'pointer'
-                }}
+                className={publicModalSecondaryButtonClass.replace(' disabled:cursor-not-allowed disabled:opacity-50', '')}
               >
                 Close
               </button>
@@ -1263,17 +1226,7 @@ export default function Home() {
                   setJoinSuccessModal(null);
                   router.push(`/courses/${joinSuccessModal._id}`);
                 }}
-                style={{ 
-                  flex: 1,
-                  padding: '12px 20px', 
-                  fontSize: '14px', 
-                  fontWeight: '600', 
-                  color: 'white', 
-                  backgroundColor: '#10b981', 
-                  border: 'none', 
-                  borderRadius: '8px', 
-                  cursor: 'pointer'
-                }}
+                className="flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
               >
                 Go to Course
               </button>
