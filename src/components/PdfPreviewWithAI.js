@@ -35,7 +35,8 @@ const PdfPreviewWithAI = ({
   pdfUrl,
   notes = [],
   injectOverrideStyles,
-  disableTools = false
+  disableTools = false,
+  onClose = null
 }) => {
   const [showAITutor, setShowAITutor] = useState(false);
   const [showVisualContent, setShowVisualContent] = useState(false);
@@ -1648,6 +1649,8 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                           isContentEducational={isContentEducational}
                           // PDF Loading callback
                           onPdfLoaded={() => setIsPdfLoaded(true)}
+                          // Back navigation
+                          onClose={onClose}
                         />
                       ) : (
                         <div className="flex-1 h-full p-4 space-y-3">

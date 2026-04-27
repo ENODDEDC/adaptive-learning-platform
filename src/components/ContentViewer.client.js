@@ -1502,6 +1502,7 @@ const ContentViewer = ({ content, onClose, isModal = true, disableTools = false 
               pdfUrl={getAttachmentFileUrl(content)}
               notes={notes}
               injectOverrideStyles={injectOverrideStyles}
+              onClose={onClose}
             />
           );
 
