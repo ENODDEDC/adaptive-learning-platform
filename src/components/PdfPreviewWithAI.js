@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   SparklesIcon,
   AcademicCapIcon,
@@ -101,6 +102,7 @@ const PdfPreviewWithAI = ({
   const [showAnalysisToast, setShowAnalysisToast] = useState(false);
   const [isAIAvailable, setIsAIAvailable] = useState(true);
   const [isPdfLoaded, setIsPdfLoaded] = useState(false); // Track when PDF is fully loaded
+  const [recommendationPanelCollapsed, setRecommendationPanelCollapsed] = useState(false);
   const isVerifiedNonEducationalError = analysisMeta.verified === true && isContentEducational === false;
 
   // Automatic time tracking for ML classification
@@ -281,6 +283,45 @@ const PdfPreviewWithAI = ({
     }
     fetchRecommendations();
   }, []);
+
+  function activateRecommendationAtIndex(targetIndex) {
+    if (filteredRecommendations.length === 0) return;
+
+    const targetRecommendation = filteredRecommendations[targetIndex];
+    if (!targetRecommendation) return;
+
+    setCurrentRecommendationIndex(targetIndex);
+    setShowVisualContent(false);
+    setShowSequentialLearning(false);
+    setShowGlobalLearning(false);
+    setShowSensingLearning(false);
+    setShowIntuitiveLearning(false);
+    setShowActiveLearning(false);
+    setShowReflectiveLearning(false);
+    setShowPdfView(false);
+
+    if (targetRecommendation.mode === 'AI Narrator') {
+      setTimeout(() => handleAITutorClick(), 100);
+      return;
+    }
+
+    const modeHandlers = {
+      'Visual Learning': handleVisualContentClick,
+      'Sequential Learning': handleSequentialLearningClick,
+      'Global Learning': handleGlobalLearningClick,
+      'Hands-On Lab': handleSensingLearningClick,
+      'Concept Constellation': handleIntuitiveLearningClick,
+      'Active Learning Hub': handleActiveLearningClick,
+      'Reflective Learning': handleReflectiveLearningClick
+    };
+
+    const handler = modeHandlers[targetRecommendation.mode];
+    if (handler) {
+      setTimeout(() => handler(), 100);
+    }
+  }
+
+  const visibleRecommendationTabs = filteredRecommendations.slice(0, 4);
 
   useEffect(() => {
     let cancelled = false;
@@ -1404,44 +1445,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
     if (filteredRecommendations.length === 0) return;
 
     const nextIndex = (currentRecommendationIndex + 1) % filteredRecommendations.length;
-    setCurrentRecommendationIndex(nextIndex);
-    const nextRec = filteredRecommendations[nextIndex];
-
-    console.log(`🎠 Navigating to recommendation ${nextIndex + 1}/${filteredRecommendations.length}:`, nextRec.mode);
-
-    // Close current mode
-    setShowVisualContent(false);
-    setShowSequentialLearning(false);
-    setShowGlobalLearning(false);
-    setShowSensingLearning(false);
-    setShowIntuitiveLearning(false);
-    setShowActiveLearning(false);
-    setShowReflectiveLearning(false);
-
-    // Special handling for AI Narrator - activate it automatically
-    if (nextRec.mode === 'AI Narrator') {
-      console.log('🎙️ AI Narrator selected - activating audio narration');
-      // All modes are already closed above, so PDF will be visible
-      // Trigger AI Narrator functionality
-      setTimeout(() => handleAITutorClick(), 100);
-      return;
-    }
-
-    // Trigger the next mode
-    const modeHandlers = {
-      'Visual Learning': handleVisualContentClick,
-      'Sequential Learning': handleSequentialLearningClick,
-      'Global Learning': handleGlobalLearningClick,
-      'Hands-On Lab': handleSensingLearningClick,
-      'Concept Constellation': handleIntuitiveLearningClick,
-      'Active Learning Hub': handleActiveLearningClick,
-      'Reflective Learning': handleReflectiveLearningClick
-    };
-
-    const handler = modeHandlers[nextRec.mode];
-    if (handler) {
-      setTimeout(() => handler(), 100);
-    }
+    activateRecommendationAtIndex(nextIndex);
   };
 
   const handlePrevRecommendation = () => {
@@ -1450,44 +1454,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
     const prevIndex = currentRecommendationIndex === 0
       ? filteredRecommendations.length - 1
       : currentRecommendationIndex - 1;
-    setCurrentRecommendationIndex(prevIndex);
-    const prevRec = filteredRecommendations[prevIndex];
-
-    console.log(`🎠 Navigating to recommendation ${prevIndex + 1}/${filteredRecommendations.length}:`, prevRec.mode);
-
-    // Close current mode
-    setShowVisualContent(false);
-    setShowSequentialLearning(false);
-    setShowGlobalLearning(false);
-    setShowSensingLearning(false);
-    setShowIntuitiveLearning(false);
-    setShowActiveLearning(false);
-    setShowReflectiveLearning(false);
-
-    // Special handling for AI Narrator - activate it automatically
-    if (prevRec.mode === 'AI Narrator') {
-      console.log('🎙️ AI Narrator selected - activating audio narration');
-      // All modes are already closed above, so PDF will be visible
-      // Trigger AI Narrator functionality
-      setTimeout(() => handleAITutorClick(), 100);
-      return;
-    }
-
-    // Trigger the previous mode
-    const modeHandlers = {
-      'Visual Learning': handleVisualContentClick,
-      'Sequential Learning': handleSequentialLearningClick,
-      'Global Learning': handleGlobalLearningClick,
-      'Hands-On Lab': handleSensingLearningClick,
-      'Concept Constellation': handleIntuitiveLearningClick,
-      'Active Learning Hub': handleActiveLearningClick,
-      'Reflective Learning': handleReflectiveLearningClick
-    };
-
-    const handler = modeHandlers[prevRec.mode];
-    if (handler) {
-      setTimeout(() => handler(), 100);
-    }
+    activateRecommendationAtIndex(prevIndex);
   };
 
   const fileName = content.title || content.originalName || 'Document.pdf';
@@ -2042,7 +2009,8 @@ Reflective Learning works best with instructional content, lessons, or study mat
                   <div className="flex-1 flex flex-col">
                     {/* Top Navigation Bar - Learning Mode Carousel */}
                     <div className="bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-b border-gray-300 shadow-sm px-6 py-3">
-                      <div className="flex items-center justify-between gap-6">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-6">
                         {/* Left: Mode Info */}
                         <div className="flex items-center gap-3">
                           <span className="text-sm font-semibold text-gray-800">
@@ -2096,6 +2064,31 @@ Reflective Learning works best with instructional content, lessons, or study mat
                             <span>View PDF</span>
                           </button>
                         </div>
+                      </div>
+
+                        {visibleRecommendationTabs.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                              Recommended for you
+                            </span>
+                            {visibleRecommendationTabs.map((recommendation, index) => {
+                              const isActive = currentRecommendationIndex === index;
+                              return (
+                                <button
+                                  key={`${recommendation.mode}-${index}`}
+                                  onClick={() => activateRecommendationAtIndex(index)}
+                                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                                    isActive
+                                      ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
+                                      : 'border-blue-200 bg-white text-blue-700 hover:border-blue-400 hover:bg-blue-50'
+                                  }`}
+                                >
+                                  {databaseModeToButtonLabel(recommendation.mode)}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -2201,9 +2194,10 @@ Reflective Learning works best with instructional content, lessons, or study mat
 
         {/* Fixed Top Navigation Bar - Shows above all learning modes ONLY when user has ML recommendations */}
         {hasActiveLearningMode && filteredRecommendations.length > 0 && hasClassification && (
-          <div className="fixed top-0 left-0 right-0 z-[10003] bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-b border-gray-300 shadow-md" style={{ height: '48px' }}>
+          <div className="fixed top-0 left-0 right-0 z-[100030] bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-b border-gray-300 shadow-md">
             <div className="max-w-full mx-auto px-6 py-2.5">
-              <div className="flex items-center justify-between gap-6">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-6">
                 {/* Left: Mode Info */}
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold text-gray-800">
@@ -2258,9 +2252,95 @@ Reflective Learning works best with instructional content, lessons, or study mat
                   </button>
                 </div>
               </div>
+
+                {visibleRecommendationTabs.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 pb-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Recommended for you
+                    </span>
+                    {visibleRecommendationTabs.map((recommendation, index) => {
+                      const isActive = currentRecommendationIndex === index;
+                      return (
+                        <button
+                          key={`fixed-${recommendation.mode}-${index}`}
+                          onClick={() => activateRecommendationAtIndex(index)}
+                          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                            isActive
+                              ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
+                              : 'border-blue-200 bg-white text-blue-700 hover:border-blue-400 hover:bg-blue-50'
+                          }`}
+                        >
+                          {databaseModeToButtonLabel(recommendation.mode)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
+
+        {typeof document !== 'undefined' && hasActiveLearningMode && filteredRecommendations.length > 0 && hasClassification &&
+          createPortal(
+            recommendationPanelCollapsed ? (
+              <button
+                onClick={() => setRecommendationPanelCollapsed(false)}
+                className="fixed left-1/2 top-20 z-[200000] -translate-x-1/2 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 shadow-xl backdrop-blur hover:bg-slate-50"
+              >
+                Show recommendations
+              </button>
+            ) : (
+              <div className="fixed left-1/2 top-20 z-[200000] w-[min(92vw,720px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Recommended for you
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setRecommendationPanelCollapsed(true)}
+                      className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                    >
+                      Hide
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowVisualContent(false);
+                        setShowSequentialLearning(false);
+                        setShowGlobalLearning(false);
+                        setShowSensingLearning(false);
+                        setShowIntuitiveLearning(false);
+                        setShowActiveLearning(false);
+                        setShowReflectiveLearning(false);
+                      }}
+                      className="rounded-full border border-blue-200 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                    >
+                      View PDF
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {visibleRecommendationTabs.map((recommendation, index) => {
+                    const isActive = currentRecommendationIndex === index;
+                    return (
+                      <button
+                        key={`floating-${recommendation.mode}-${index}`}
+                        onClick={() => activateRecommendationAtIndex(index)}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                          isActive
+                            ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
+                            : 'border-blue-200 bg-white text-blue-700 hover:border-blue-400 hover:bg-blue-50'
+                        }`}
+                      >
+                        {databaseModeToButtonLabel(recommendation.mode)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ),
+            document.body
+          )}
 
         {/* AI Narrator Mode Selection - Platform Aligned */}
         {showModeSelection && (

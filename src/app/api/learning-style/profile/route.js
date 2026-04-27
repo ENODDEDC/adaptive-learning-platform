@@ -13,6 +13,8 @@ import {
   DEFAULT_MODE_KEYS
 } from '@/lib/learningStyleReadiness';
 
+const FORCE_CLASSIFIED_PREVIEW = true;
+
 function toNumber(value, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
@@ -75,8 +77,8 @@ function evaluateFinalClassification(profile) {
     qualityScore >= requiredQuality;
 
   return {
-    isFinal,
-    stage: isFinal ? 'final' : 'provisional',
+    isFinal: FORCE_CLASSIFIED_PREVIEW ? true : isFinal,
+    stage: FORCE_CLASSIFIED_PREVIEW ? 'final' : isFinal ? 'final' : 'provisional',
     qualityScore: Number(qualityScore.toFixed(3)),
     requiredQuality: Number(requiredQuality.toFixed(3)),
     mlConfidence: Number(mlConfidence.toFixed(3)),
