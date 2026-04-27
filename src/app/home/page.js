@@ -264,8 +264,8 @@ export default function Home() {
 
       setCreatedCourses(created);
       setEnrolledCourses(enrolled);
-      // Show both created and enrolled courses on home page
-      setAllCourses([...created, ...enrolled]);
+      // Show only enrolled courses on home page (not created courses)
+      setAllCourses(enrolled);
       hasDataRef.current = true;
     } catch (err) {
       setError(err.message);
