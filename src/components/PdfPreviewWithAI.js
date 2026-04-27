@@ -2029,25 +2029,46 @@ Visual Learning needs readable text to create diagrams and visual content.`;
 
                 {/* Loading State - Show when loading a mode OR planning to auto-load */}
                 {(isLoadingAnyMode || willAutoLoad) && !hasActiveLearningMode && !isGlobalLearningLoading && (
-                  <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-                    <div className="text-center">
-                      <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                      <p className="text-lg font-medium text-gray-900 mb-2">Preparing Your Personalized Learning Experience</p>
-                      <p className="text-sm text-gray-600">
-                        {willAutoLoad ? 'Extracting content and preparing your recommended learning mode...' : 'Generating content based on your learning style...'}
-                      </p>
+                  <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100">
+                    <div className="text-center p-8">
+                      {/* Modern animated spinner with multiple rings */}
+                      <div className="relative w-16 h-16 mx-auto mb-6">
+                        <div className="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+                        <div className="absolute inset-2 border-3 border-transparent border-t-purple-400 rounded-full animate-spin animation-delay-150"></div>
+                        <div className="absolute inset-4 border-2 border-transparent border-t-indigo-300 rounded-full animate-spin animation-delay-300"></div>
+                      </div>
+                      
+                      {/* Modern text with subtle animation */}
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-gray-900 tracking-tight">Analyzing Content</h3>
+                        <p className="text-sm text-gray-600 max-w-xs mx-auto leading-relaxed">
+                          Preparing your personalized learning experience
+                        </p>
+                        
+                        {/* Progress dots */}
+                        <div className="flex justify-center space-x-1 pt-2">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse animation-delay-200"></div>
+                          <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse animation-delay-400"></div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {isGlobalLearningLoading && !showGlobalLearning && (
-                  <div className="fixed inset-0 z-[10010] flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
-                    <div className="mx-4 w-full max-w-md rounded-2xl border border-white/50 bg-white/85 p-8 text-center shadow-2xl backdrop-blur-md">
-                      <div className="mx-auto mb-5 h-14 w-14 rounded-full border-4 border-orange-200 border-t-orange-600 animate-spin" />
-                      <p className="mb-2 text-lg font-semibold text-gray-900">{databaseModeToButtonLabel('Global Learning')}</p>
-                      <p className="text-sm text-gray-700">
-                        {globalLearningStatusMessage || 'Checking if this content is educational...'}
-                      </p>
+                  <div className="fixed inset-0 z-[10010] flex items-center justify-center bg-black/30 backdrop-blur-sm">
+                    <div className="mx-4 w-full max-w-md rounded-2xl border border-white/20 bg-white/95 backdrop-blur-md p-8 text-center shadow-2xl">
+                      {/* Modern animated spinner */}
+                      <div className="relative w-14 h-14 mx-auto mb-4">
+                        <div className="absolute inset-0 border-3 border-gray-200 rounded-full"></div>
+                        <div className="absolute inset-0 border-3 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+                        <div className="absolute inset-1 border-2 border-transparent border-t-purple-400 rounded-full animate-spin animation-delay-150"></div>
+                      </div>
+                      
+                      <h3 className="text-base font-semibold text-gray-900 mb-2">Global Learning</h3>
+                      <p className="text-sm text-gray-600">Generating big-picture overview...</p>
                     </div>
                   </div>
                 )}

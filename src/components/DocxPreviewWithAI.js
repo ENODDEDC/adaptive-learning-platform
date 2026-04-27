@@ -3054,13 +3054,30 @@ const DocxPreviewWithAI = ({
           isIntuitiveLearningLoading || isActiveLearningLoading || isReflectiveLearningLoading || willAutoLoad) &&
           !(showVisualOverlay || showSequentialLearning || showGlobalLearning || showSensingLearning ||
             showIntuitiveLearning || showActiveLearning || showReflectiveLearning) && (
-            <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-              <div className="text-center">
-                <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-lg font-medium text-gray-900 mb-2">Preparing Your Personalized Learning Experience</p>
-                <p className="text-sm text-gray-600">
-                  {willAutoLoad ? 'Extracting content and preparing your recommended learning mode...' : 'Generating content based on your learning style...'}
-                </p>
+            <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100">
+              <div className="text-center p-8">
+                {/* Modern animated spinner with multiple rings */}
+                <div className="relative w-16 h-16 mx-auto mb-6">
+                  <div className="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+                  <div className="absolute inset-2 border-3 border-transparent border-t-purple-400 rounded-full animate-spin animation-delay-150"></div>
+                  <div className="absolute inset-4 border-2 border-transparent border-t-indigo-300 rounded-full animate-spin animation-delay-300"></div>
+                </div>
+                
+                {/* Modern text with subtle animation */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-gray-900 tracking-tight">Analyzing Content</h3>
+                  <p className="text-sm text-gray-600 max-w-xs mx-auto leading-relaxed">
+                    Preparing your personalized learning experience
+                  </p>
+                  
+                  {/* Progress dots */}
+                  <div className="flex justify-center space-x-1 pt-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse animation-delay-200"></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse animation-delay-400"></div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
