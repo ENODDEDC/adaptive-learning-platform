@@ -1669,53 +1669,66 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                       )}
                       </div>
 
-                      {/* Cold Start Right Panel - only for new users */}
+                      {/* Cold Start Right Panel - Modern Design */}
                       {!hasClassification && !coldStartDismissed && (
                         <div
-                          className="w-80 flex-shrink-0 border-l border-gray-200 bg-white flex flex-col"
+                          className="w-80 flex-shrink-0 bg-white flex flex-col backdrop-blur-sm border-l border-gray-200 shadow-xl"
                           style={{ minWidth: '300px', maxWidth: '340px', height: '100%', maxHeight: '100vh', position: 'sticky', top: 0 }}
                           onWheel={e => e.stopPropagation()}
                         >
-                          {/* Header */}
-                          <div className="flex items-center justify-between px-3 py-2 bg-blue-50 border-b border-blue-100">
-                            <div className="flex items-center gap-2">
-                              <SparklesIcon className="w-4 h-4 text-blue-600" />
-                              <span className="text-xs font-semibold text-blue-800">
-                                {databaseModeToButtonLabel(coldStartPanelMode)}
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => { setColdStartDismissed(true); }}
-                              className="text-gray-400 hover:text-gray-600 transition-colors"
-                              title="Dismiss"
-                            >
-                              <XMarkIcon className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                          {/* Mode switcher */}
-                          <div className="flex gap-1 px-2 py-1.5 border-b border-gray-100 overflow-x-auto">
-                            {coldStartModeQueue.map((mode, idx) => (
+                          {/* Modern Header with Clean Design */}
+                          <div className="relative px-4 py-3 bg-gray-50/80 backdrop-blur-md border-b border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-gray-800 flex items-center justify-center shadow-lg">
+                                  <SparklesIcon className="w-4 h-4 text-white" />
+                                </div>
+                                <div>
+                                  <h3 className="text-sm font-semibold text-gray-900">
+                                    {databaseModeToButtonLabel(coldStartPanelMode)}
+                                  </h3>
+                                  <p className="text-xs text-gray-500">AI-Generated Content</p>
+                                </div>
+                              </div>
                               <button
-                                key={mode}
-                                onClick={() => {
-                                  setColdStartModeIndex(idx);
-                                  if (!coldStartPanelCache[mode]) {
-                                    setColdStartPanelContent(null);
-                                    setColdStartPanelError(null); // Clear errors when switching modes
-                                  }
-                                  triggerColdStartPanel(mode);
-                                }}
-                                className={`text-xs px-2 py-1 rounded-full whitespace-nowrap transition-all ${coldStartPanelMode === mode ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                onClick={() => { setColdStartDismissed(true); }}
+                                className="w-8 h-8 rounded-lg bg-white/80 hover:bg-white text-gray-400 hover:text-gray-600 transition-all duration-200 flex items-center justify-center shadow-sm"
+                                title="Dismiss"
                               >
-                                {databaseModeToButtonLabel(mode)}
+                                <XMarkIcon className="w-4 h-4" />
                               </button>
-                            ))}
+                            </div>
                           </div>
 
-                          {/* Content */}
+                          {/* Modern Mode Switcher */}
+                          <div className="px-3 py-3 border-b border-gray-100">
+                            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+                              {coldStartModeQueue.map((mode, idx) => (
+                                <button
+                                  key={mode}
+                                  onClick={() => {
+                                    setColdStartModeIndex(idx);
+                                    if (!coldStartPanelCache[mode]) {
+                                      setColdStartPanelContent(null);
+                                      setColdStartPanelError(null);
+                                    }
+                                    triggerColdStartPanel(mode);
+                                  }}
+                                  className={`text-xs px-3 py-2 rounded-xl whitespace-nowrap transition-all duration-200 font-medium ${
+                                    coldStartPanelMode === mode 
+                                      ? 'bg-gray-900 text-white shadow-lg' 
+                                      : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200 shadow-sm'
+                                  }`}
+                                >
+                                  {databaseModeToButtonLabel(mode)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Modern Content Area */}
                           <div
-                            className="flex-1 overflow-y-auto p-3 overscroll-contain"
+                            className="flex-1 overflow-y-auto overscroll-contain"
                             style={{ minHeight: 0 }}
                             onWheel={e => e.stopPropagation()}
                             onScroll={handleScroll}
@@ -1724,71 +1737,89 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                             onMouseLeave={handleMouseLeave}
                           >
                             {coldStartPanelLoading || !isPdfLoaded ? (
-                              <div className="p-3 space-y-3">
-                                {/* Cold start panel skeleton */}
-                                <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
-                                <div className="h-3 bg-gray-200 rounded animate-pulse w-full"></div>
-                                <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
-                                <div className="h-3 bg-gray-200 rounded animate-pulse w-full"></div>
-                                <div className="h-20 bg-gray-200 rounded-xl animate-pulse w-full mt-2"></div>
-                                <div className="h-3 bg-gray-200 rounded animate-pulse w-4/5"></div>
-                                <div className="h-3 bg-gray-200 rounded animate-pulse w-full"></div>
-                                <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4"></div>
-                                <div className="h-16 bg-gray-200 rounded-xl animate-pulse w-full mt-2"></div>
-                                <div className="h-3 bg-gray-200 rounded animate-pulse w-full"></div>
-                                <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
-                              </div>
-                            ) : coldStartPanelError ? (
-                              <div className="p-6 space-y-4">
-                                {/* Modern error display */}
-                                <div className="flex items-start gap-3">
-                                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
-                                    </svg>
+                              <div className="p-4 space-y-4">
+                                {/* Modern Loading Skeleton */}
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gray-200 rounded-xl animate-pulse"></div>
+                                    <div className="flex-1 space-y-2">
+                                      <div className="h-3 bg-gray-200 rounded-lg animate-pulse w-2/3"></div>
+                                      <div className="h-2 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                                    </div>
                                   </div>
-                                  <div className="flex-1">
-                                    <h3 className="text-sm font-medium text-gray-900 mb-1">Content Analysis</h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed">
-                                      This document appears to contain primarily administrative or procedural content rather than educational material.
-                                    </p>
+                                  
+                                  <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
+                                    <div className="h-4 bg-gray-200 rounded-lg animate-pulse w-full"></div>
+                                    <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                                    <div className="h-3 bg-gray-200 rounded animate-pulse w-4/5"></div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
+                                    <div className="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <div className="h-3 bg-gray-200 rounded animate-pulse w-full"></div>
+                                    <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                                    <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
                                   </div>
                                 </div>
-                                
-                                <div className="border-t border-gray-100 pt-4">
-                                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                                    <p className="text-xs font-medium text-gray-700 mb-2">Recommended content types:</p>
-                                    <div className="space-y-1">
-                                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                                        <span>Academic papers and research</span>
-                                      </div>
-                                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                                        <span>Educational textbooks and materials</span>
-                                      </div>
-                                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                                        <span>Technical documentation and guides</span>
-                                      </div>
+                              </div>
+                            ) : coldStartPanelError ? (
+                              <div className="p-4 space-y-4">
+                                {/* Modern Error Display */}
+                                <div className="bg-red-50 rounded-2xl p-4 border border-red-100">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center shadow-lg">
+                                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                                      </svg>
+                                    </div>
+                                    <div className="flex-1">
+                                      <h3 className="text-sm font-semibold text-gray-900 mb-1">Content Analysis</h3>
+                                      <p className="text-sm text-gray-600 leading-relaxed">
+                                        This document appears to contain primarily administrative or procedural content rather than educational material.
+                                      </p>
                                     </div>
                                   </div>
                                 </div>
                                 
-                                <div className="flex gap-2 pt-2">
+                                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                                  <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    Recommended content types
+                                  </p>
+                                  <div className="space-y-2">
+                                    {[
+                                      "Academic papers and research",
+                                      "Educational textbooks and materials", 
+                                      "Technical documentation and guides"
+                                    ].map((item, i) => (
+                                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                                        <div className="w-6 h-6 rounded-lg bg-gray-800 flex items-center justify-center">
+                                          <span className="text-white text-xs font-bold">{i + 1}</span>
+                                        </div>
+                                        <span className="text-xs text-gray-700">{item}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                                
+                                <div className="flex gap-2">
                                   <button
                                     onClick={() => {
                                       setColdStartPanelError(null);
-                                      setIsContentEducational(true); // Reset educational status
+                                      setIsContentEducational(true);
                                       triggerColdStartPanel(coldStartPanelMode);
                                     }}
-                                    className="flex-1 px-4 py-2.5 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                                    className="flex-1 px-4 py-3 bg-gray-900 text-white text-xs font-semibold rounded-xl hover:bg-gray-800 transition-all duration-200 shadow-lg"
                                   >
                                     Retry Analysis
                                   </button>
                                   <button
                                     onClick={() => setColdStartDismissed(true)}
-                                    className="px-4 py-2.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                                    className="px-4 py-3 bg-white border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
                                   >
                                     Dismiss
                                   </button>
@@ -1854,14 +1885,14 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                                     if (line.startsWith('SECTION_HEADER:')) {
                                       const headerText = line.replace('SECTION_HEADER:', '').trim();
                                       return (
-                                        <div key={i} className="bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200 rounded-xl px-4 py-3">
+                                        <div key={i} className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
                                           <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
-                                              <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                                               </svg>
                                             </div>
-                                            <h3 className="font-semibold text-slate-800 text-sm">{headerText}</h3>
+                                            <h3 className="font-semibold text-gray-800 text-sm">{headerText}</h3>
                                           </div>
                                         </div>
                                       );
@@ -1873,7 +1904,7 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                                       const cardTitle = parts[0]?.trim();
                                       const cardDesc = parts[1]?.trim();
                                       return (
-                                        <div key={i} className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
+                                        <div key={i} className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
                                           <div className="flex items-start gap-3">
                                             <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                                               <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1881,8 +1912,8 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                                               </svg>
                                             </div>
                                             <div className="flex-1">
-                                              <h4 className="font-semibold text-slate-800 text-xs mb-1">{cardTitle}</h4>
-                                              <p className="text-xs text-slate-600 leading-relaxed">{cardDesc}</p>
+                                              <h4 className="font-semibold text-gray-800 text-xs mb-1">{cardTitle}</h4>
+                                              <p className="text-xs text-gray-600 leading-relaxed">{cardDesc}</p>
                                             </div>
                                           </div>
                                         </div>
@@ -1895,7 +1926,7 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                                       const exerciseTitle = parts[0]?.trim();
                                       const exerciseDesc = parts[1]?.trim();
                                       return (
-                                        <div key={i} className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl px-4 py-3">
+                                        <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
                                           <div className="flex items-start gap-3">
                                             <div className="w-6 h-6 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                                               <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1917,7 +1948,7 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                                       const scenarioTitle = parts[0]?.trim();
                                       const scenarioDesc = parts[1]?.trim();
                                       return (
-                                        <div key={i} className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl px-4 py-3">
+                                        <div key={i} className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
                                           <div className="flex items-start gap-3">
                                             <div className="w-6 h-6 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                                               <svg className="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1940,75 +1971,122 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                                   })}
                                 </div>
                               ) : (
-                              <div className="text-sm text-gray-700 leading-relaxed space-y-3">
-                                {coldStartPanelContent.split('\n').map((line, i) => {
-                                  if (!line.trim()) return null;
-                                  // Section headers with emoji
-                                  if (/^[🌐🔑🔗📋🖼️📌🗂️🔄🎯💡🤔✍️]/.test(line)) {
-                                    return (
-                                      <div key={i} className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mt-3">
-                                        <p className="font-semibold text-blue-800 text-xs">{line}</p>
-                                      </div>
-                                    );
-                                  }
-                                  // Step lines
-                                  if (/^Step \d+:/.test(line)) {
-                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-                                    return (
-                                      <div key={i} className="bg-indigo-50 border-l-4 border-indigo-400 px-3 py-1.5 rounded-r-lg">
-                                        <p className="font-semibold text-indigo-800 text-xs" dangerouslySetInnerHTML={{ __html: boldLine }} />
-                                      </div>
-                                    );
-                                  }
-                                  // Question lines
-                                  if (/^❓|^💭|^💡/.test(line)) {
-                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-                                    return (
-                                      <div key={i} className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                                        <p className="font-medium text-amber-800 text-xs" dangerouslySetInnerHTML={{ __html: boldLine }} />
-                                      </div>
-                                    );
-                                  }
-                                  // Visual CARD lines
-                                  if (line.startsWith('CARD:')) {
-                                    const parts = line.replace('CARD:', '').split('|');
-                                    const cardTitle = parts[0]?.trim();
-                                    const cardDesc = parts[1]?.trim();
-                                    return (
-                                      <div key={i} className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-lg px-3 py-2 flex gap-2 items-start">
-                                        <div className="w-2 h-2 rounded-full bg-violet-500 mt-1.5 flex-shrink-0"></div>
-                                        <div>
-                                          <p className="text-xs font-bold text-violet-800">{cardTitle}</p>
-                                          {cardDesc && <p className="text-xs text-violet-600 mt-0.5">{cardDesc}</p>}
+                                // Modern UI for all other learning modes
+                                <div className="p-4 space-y-4">
+                                  {coldStartPanelContent.split('\n').map((line, i) => {
+                                    if (!line.trim()) return null;
+                                    
+                                    // Modern section headers with emoji
+                                    if (/^[🌐🔑🔗📋🖼️📌🗂️🔄🎯💡🤔✍️]/.test(line)) {
+                                      return (
+                                        <div key={i} className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 shadow-sm">
+                                          <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                                              <span className="text-white text-sm">{line.charAt(0)}</span>
+                                            </div>
+                                            <h3 className="font-semibold text-blue-900 text-sm">{line.slice(1).trim()}</h3>
+                                          </div>
                                         </div>
-                                      </div>
-                                    );
-                                  }
-                                  // Visual STEP/FLOW lines
-                                  if (line.startsWith('STEP:')) {
-                                    const flowText = line.replace('STEP:', '').trim();
+                                      );
+                                    }
+                                    
+                                    // Modern step lines
+                                    if (/^Step \d+:/.test(line)) {
+                                      const stepNumber = line.match(/^Step (\d+):/)?.[1] || '1';
+                                      const stepText = line.replace(/^Step \d+:\s*/, '').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                                      return (
+                                        <div key={i} className="bg-indigo-50 border-l-4 border-indigo-500 rounded-r-2xl px-4 py-3 shadow-sm">
+                                          <div className="flex items-start gap-3">
+                                            <div className="w-6 h-6 bg-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                              <span className="text-white text-xs font-bold">{stepNumber}</span>
+                                            </div>
+                                            <p className="font-semibold text-indigo-900 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: stepText }} />
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Modern question/insight lines
+                                    if (/^❓|^💭|^💡/.test(line)) {
+                                      const icon = line.charAt(0);
+                                      const text = line.slice(1).trim().replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                                      return (
+                                        <div key={i} className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 shadow-sm">
+                                          <div className="flex items-start gap-3">
+                                            <div className="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center shadow-lg">
+                                              <span className="text-white text-sm">{icon}</span>
+                                            </div>
+                                            <p className="font-medium text-amber-900 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: text }} />
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Modern visual CARD lines
+                                    if (line.startsWith('CARD:')) {
+                                      const parts = line.replace('CARD:', '').split('|');
+                                      const cardTitle = parts[0]?.trim();
+                                      const cardDesc = parts[1]?.trim();
+                                      return (
+                                        <div key={i} className="bg-violet-50 border border-violet-200 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
+                                          <div className="flex items-start gap-3">
+                                            <div className="w-3 h-3 rounded-full bg-violet-500 mt-2 flex-shrink-0 shadow-sm"></div>
+                                            <div className="flex-1">
+                                              <h4 className="text-sm font-bold text-violet-900 mb-1">{cardTitle}</h4>
+                                              {cardDesc && <p className="text-sm text-violet-700 leading-relaxed">{cardDesc}</p>}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Modern visual STEP/FLOW lines
+                                    if (line.startsWith('STEP:')) {
+                                      const flowText = line.replace('STEP:', '').trim();
+                                      return (
+                                        <div key={i} className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 shadow-sm">
+                                          <div className="flex items-center gap-3">
+                                            <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center shadow-sm">
+                                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                              </svg>
+                                            </div>
+                                            <p className="text-sm text-blue-900 font-medium leading-relaxed">{flowText}</p>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Modern bullet points and tree structures
+                                    if (line.startsWith('•') || line.startsWith('│') || line.startsWith('┌') || line.startsWith('└')) {
+                                      const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                                      const isTreeStructure = line.startsWith('│') || line.startsWith('┌') || line.startsWith('└');
+                                      return (
+                                        <div key={i} className={`${isTreeStructure ? 'bg-gray-50 border border-gray-200' : 'bg-white border border-gray-100'} rounded-xl px-3 py-2 shadow-sm`}>
+                                          <p className="text-sm text-gray-700 font-mono leading-relaxed" dangerouslySetInnerHTML={{ __html: boldLine }} />
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Modern arrow flows
+                                    if (line.includes('→')) {
+                                      const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                                      return (
+                                        <div key={i} className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 shadow-sm">
+                                          <p className="text-sm text-gray-800 font-mono leading-relaxed" dangerouslySetInnerHTML={{ __html: boldLine }} />
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Modern regular text with enhanced styling
+                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
                                     return (
-                                      <div key={i} className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5">
-                                        <span className="text-blue-500 text-xs">▶</span>
-                                        <p className="text-xs text-blue-700 font-medium">{flowText}</p>
+                                      <div key={i} className="bg-white backdrop-blur-sm border border-gray-100 rounded-xl px-4 py-3 shadow-sm">
+                                        <p className="text-sm text-gray-800 leading-relaxed" dangerouslySetInnerHTML={{ __html: boldLine }} />
                                       </div>
                                     );
-                                  }
-                                  // Bullet points
-                                  if (line.startsWith('•') || line.startsWith('│') || line.startsWith('┌') || line.startsWith('└')) {
-                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-                                    return <p key={i} className="text-xs text-gray-600 pl-2 font-mono" dangerouslySetInnerHTML={{ __html: boldLine }} />;
-                                  }
-                                  // Arrow flows
-                                  if (line.includes('→')) {
-                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-                                    return <p key={i} className="text-xs text-gray-700 bg-gray-50 px-2 py-1 rounded font-mono" dangerouslySetInnerHTML={{ __html: boldLine }} />;
-                                  }
-                                  // Bold text
-                                  const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-                                  return <p key={i} className="text-xs text-gray-700" dangerouslySetInnerHTML={{ __html: boldLine }} />;
-                                })}
-                              </div>
+                                  })}
+                                </div>
                               )
                             ) : (
                               <div className="flex flex-col items-center justify-center h-full gap-2">
@@ -2017,9 +2095,12 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                             )}
                           </div>
 
-                          {/* Footer hint */}
-                          <div className="px-3 py-2 bg-gray-50 border-t border-gray-100">
-                            <p className="text-xs text-gray-400 text-center">Use the buttons above to switch between learning modes</p>
+                          {/* Modern Footer */}
+                          <div className="px-4 py-3 bg-gray-50 backdrop-blur-sm border-t border-gray-100">
+                            <div className="flex items-center justify-center gap-2">
+                              <div className="w-2 h-2 bg-gray-800 rounded-full animate-pulse"></div>
+                              <p className="text-xs text-gray-500 font-medium">Switch between learning modes above</p>
+                            </div>
                           </div>
                         </div>
                       )}
