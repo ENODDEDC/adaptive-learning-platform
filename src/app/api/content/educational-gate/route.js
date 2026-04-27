@@ -41,23 +41,28 @@ function buildSimpleSample(text, maxChars) {
   if (!text) return { sampledText: '', chunksUsed: 0 };
   if (text.length <= maxChars) return { sampledText: text, chunksUsed: 1 };
 
-  const sectionSize = Math.max(500, Math.floor(maxChars / 3));
+  const sectionSize = Math.floor(maxChars / 4); // 2,000 chars per section
   const totalLen = text.length;
 
-  const start = text.slice(0, sectionSize);
-  const middleStart = Math.max(0, Math.floor((totalLen - sectionSize) / 2));
-  const middle = text.slice(middleStart, middleStart + sectionSize);
-  const end = text.slice(Math.max(0, totalLen - sectionSize));
-
-  const sections = [
-    `[START]\n${start}`,
-    `[MIDDLE]\n${middle}`,
-    `[END]\n${end}`
+  // Calculate 4 evenly distributed positions for better coverage
+  const positions = [
+    0, // Start (0%)
+    Math.floor(totalLen * 0.25), // Early-middle (25%)
+    Math.floor(totalLen * 0.5), // Middle (50%)
+    Math.floor(totalLen * 0.75)  // Late-middle (75%)
   ];
+
+  const sections = positions.map((pos, index) => {
+    const start = Math.max(0, pos);
+    const end = Math.min(totalLen, start + sectionSize);
+    const sectionText = text.slice(start, end);
+    const label = ['START', 'EARLY-MID', 'MIDDLE', 'LATE-MID'][index];
+    return `[${label}]\n${sectionText}`;
+  });
 
   return { 
     sampledText: sections.join('\n\n'), 
-    chunksUsed: 3 
+    chunksUsed: 4 
   };
 }
 
@@ -128,7 +133,7 @@ export async function POST(request) {
       '{ "isEducational": <true|false>, "confidence": <0-1>, "reasoning": "<brief explanation>" }'
     ].join('\n');
 
-    const userPrompt = `Please analyze this document content and determine if it has educational value:\n\n"""\n${sampledText}\n"""`;
+    const userPrompt = `Please analyze this document content and determine if it has educational value. The content is sampled from 4 sections (start, early-middle, middle, late-middle) for comprehensive coverage:\n\n"""\n${sampledText}\n"""`;
 
     const model = gateModel();
     const requestBody = {
