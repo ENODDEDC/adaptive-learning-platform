@@ -302,11 +302,13 @@ const Layout = ({ children }) => {
         .hide-main-sidebar .main-content {
           margin-left: 0 !important;
         }
+        /* Hide sidebar for non-admin pages */
+        aside[data-sidebar="main-container"] {
+          display: none !important;
+        }
       `}</style>
       
-      {!immersiveLearningShell && (
-        <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
-      )}
+      {/* Sidebar hidden - using horizontal nav instead */}
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
         onClose={closeCreateCourseModal}
@@ -416,7 +418,7 @@ const Layout = ({ children }) => {
         }}
       />
       <div
-        className={`main-content relative transition-all duration-500 ease-in-out ${mainContentMargin} h-full overflow-hidden flex flex-col ${immersiveLearningShell ? 'pl-0' : 'pl-4'}`}
+        className="main-content relative transition-all duration-500 ease-in-out ml-0 h-full overflow-hidden flex flex-col"
       >
         <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
         <main className="flex-1 overflow-hidden">
