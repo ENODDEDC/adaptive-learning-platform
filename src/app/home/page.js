@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -155,6 +155,20 @@ export default function Home() {
   const { height: viewportHeight, isShortHeight, isVeryShortHeight, isNarrowWidth, isCompactUi } = useViewportInfo();
 
   const recentActivities = [];
+  const isSearchingPublicCourses = publicCoursesSearch.trim().length > 0;
+
+  const sortedPublicCourses = useMemo(
+    () => [...publicCourses].sort((a, b) => (b.studentCount || 0) - (a.studentCount || 0)),
+    [publicCourses]
+  );
+  const featuredPublicCourses = useMemo(
+    () => sortedPublicCourses.slice(0, 3),
+    [sortedPublicCourses]
+  );
+  const remainingPublicCourses = useMemo(
+    () => sortedPublicCourses.slice(3),
+    [sortedPublicCourses]
+  );
 
   useEffect(() => {
     setIsMounted(true);
@@ -964,46 +978,52 @@ export default function Home() {
         {/* Public Courses Sidebar */}
         <div className="recent-activities flex min-h-0 flex-col overflow-hidden">
           <div className={`flex-1 flex min-h-0 flex-col ${isVeryShortHeight ? 'p-2.5' : 'p-3'} bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300`}>
-            <div className={`flex items-center gap-2.5 ${isVeryShortHeight ? 'mb-2.5 pb-2.5' : 'mb-3 pb-3'} border-b border-gray-200 flex-shrink-0`}>
-              <div className="flex items-center justify-center w-6 h-6 bg-blue-100 rounded-lg">
-                <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            <div className={`flex items-center justify-between gap-2 ${isVeryShortHeight ? 'mb-2.5 pb-2.5' : 'mb-3 pb-3'} border-b border-gray-200 flex-shrink-0`}>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center w-7 h-7 bg-slate-100 rounded-lg border border-slate-200">
+                  <GlobeAltIcon className="w-4 h-4 text-slate-700" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800">Public Courses</h3>
+                  <p className="text-[11px] text-gray-500">Discover classes you can join</p>
+                </div>
               </div>
-              <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Public Courses</h3>
+              <span className="text-[11px] font-semibold px-2 py-1 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
+                {publicCourses.length}
+              </span>
             </div>
 
             {/* Search Input */}
-            <div style={{ marginBottom: '12px', flexShrink: 0 }}>
-              <div style={{ position: 'relative' }}>
+            <div className="mb-3 flex-shrink-0">
+              <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search courses..."
+                  placeholder="Search by subject or teacher"
                   value={publicCoursesSearch}
                   onChange={(e) => setPublicCoursesSearch(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 32px 8px 12px',
-                    fontSize: '13px',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    outline: 'none'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-9 text-xs text-gray-700 outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
-                <svg 
-                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: '#9ca3af', pointerEvents: 'none' }}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
+                <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
+                {publicCoursesSearch && (
+                  <button
+                    onClick={() => {
+                      setPublicCoursesSearch('');
+                      fetchPublicCourses();
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    aria-label="Clear search"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
               {publicCourses.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center py-8">
@@ -1017,46 +1037,90 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                publicCourses.map((course) => (
-                  <div key={course._id} className="p-3 border-2 border-gray-200 cursor-pointer group bg-white rounded-xl hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all">
-                    <div className="flex items-start gap-2.5">
-                      <div 
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                        style={{ backgroundColor: course.coverColor || '#3b82f6' }}
-                      >
-                        {course.subject?.charAt(0) || 'C'}
+                <>
+                  {!isSearchingPublicCourses && featuredPublicCourses.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Featured</p>
+                        <span className="text-[11px] text-gray-400">Top enrolled</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-gray-900 truncate mb-0.5">
-                          {course.subject}
-                        </h4>
-                        <p className="text-xs text-gray-600 truncate mb-1.5">{course.teacherName}</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500 font-medium">{course.studentCount} students</span>
-                          <button
-                            onClick={() => setSelectedPublicCourse(course)}
-                            className="text-xs px-2 py-1 font-semibold rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
-                          >
-                            Join
-                          </button>
+                      {featuredPublicCourses.map((course, index) => (
+                        <div key={course._id} className="rounded-xl border border-gray-200 bg-gradient-to-r from-slate-50 to-white p-3 shadow-sm hover:shadow-md transition-all">
+                          <div className="flex items-start gap-2.5">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: course.coverColor || '#3b82f6' }}>
+                              {course.subject?.charAt(0) || 'C'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="text-sm font-semibold text-gray-900 leading-tight line-clamp-2">{course.subject}</h4>
+                                <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md border border-amber-200">
+                                  #{index + 1}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-600 truncate mt-0.5">{course.teacherName}</p>
+                              <div className="mt-2 flex items-center justify-between">
+                                <span className="text-[11px] text-gray-500">{course.studentCount} students</span>
+                                <button
+                                  onClick={() => setSelectedPublicCourse(course)}
+                                  className="text-[11px] px-2.5 py-1 font-semibold rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
+                                >
+                                  Join
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                        {isSearchingPublicCourses ? 'Search Results' : 'More Courses'}
+                      </p>
+                      {!isSearchingPublicCourses && remainingPublicCourses.length > 0 && (
+                        <span className="text-[11px] text-gray-400">{remainingPublicCourses.length} available</span>
+                      )}
+                    </div>
+
+                    {(isSearchingPublicCourses ? sortedPublicCourses : remainingPublicCourses).map((course) => (
+                      <div key={course._id} className="rounded-xl border border-gray-200 bg-white p-3 hover:border-blue-300 hover:bg-blue-50/40 transition-colors">
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-xs flex-shrink-0" style={{ backgroundColor: course.coverColor || '#3b82f6' }}>
+                            {course.subject?.charAt(0) || 'C'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-semibold text-gray-900 truncate">{course.subject}</h4>
+                            <p className="text-xs text-gray-600 truncate">{course.teacherName}</p>
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 text-[11px] text-gray-500 min-w-0">
+                                <span className="truncate">{course.studentCount} students</span>
+                                {course.section && <span className="truncate">• {course.section}</span>}
+                              </div>
+                              <button
+                                onClick={() => setSelectedPublicCourse(course)}
+                                className="text-[11px] px-2.5 py-1 font-semibold rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
+                              >
+                                Join
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))
+                </>
               )}
             </div>
 
             {publicCourses.length > 0 && (
               <div className="pt-3 mt-3 border-t border-gray-200 flex-shrink-0">
                 <button 
-                  onClick={() => {
-                    // Scroll to top of public courses
-                    document.querySelector('.recent-activities .overflow-y-auto')?.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="w-full text-sm font-semibold text-blue-600 hover:text-blue-700 py-1 hover:bg-blue-50 rounded-lg transition-colors"
+                  onClick={() => fetchPublicCourses()}
+                  className="w-full text-xs font-semibold text-slate-700 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  View All Courses
+                  Refresh Public Courses
                 </button>
               </div>
             )}
