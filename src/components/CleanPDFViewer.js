@@ -74,6 +74,7 @@ const CleanPDFViewer = ({
   // Cold start highlighting props
   coldStartActive = false,
   coldStartHighlightMode = null,
+  coldStartPanelError = null,
   // Button refs for overlay targeting
   learningModeButtonRefs = { current: {} },
   // PDF Loading callback
@@ -114,7 +115,7 @@ const CleanPDFViewer = ({
 
   // Helper function to check if a mode should be highlighted by cold start
   const isColdStartHighlighted = (modeDbKey) => {
-    if (!coldStartActive || !coldStartHighlightMode) return false;
+    if (!coldStartActive || !coldStartHighlightMode || !isContentEducational || coldStartPanelError) return false;
     return coldStartHighlightMode === modeDbKey;
   };
 

@@ -1637,6 +1637,7 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                           // Cold start highlighting props
                           coldStartActive={!hasClassification && !coldStartDismissed}
                           coldStartHighlightMode={coldStartPanelMode}
+                          coldStartPanelError={coldStartPanelError}
                           // Button refs for overlay targeting
                           learningModeButtonRefs={learningModeButtonRefs}
                           // ML Recommendations
