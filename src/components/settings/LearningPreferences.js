@@ -78,6 +78,8 @@ const LearningPreferences = () => {
   const [mlRuntime, setMlRuntime] = useState({ checked: false, available: false });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showDebugDialog, setShowDebugDialog] = useState(false);
+  const [debugData, setDebugData] = useState(null);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -90,6 +92,22 @@ const LearningPreferences = () => {
       if (data.data?.dataQuality) {
         profileData.dataQuality = data.data.dataQuality;
       }
+
+      // Debug: Fetch additional data for comparison
+      const [seedRes, classifyRes] = await Promise.all([
+        fetch('/api/seed-interactions').catch(() => null),
+        fetch('/api/learning-style/classify').catch(() => null)
+      ]);
+      
+      const seedData = seedRes?.ok ? await seedRes.json() : null;
+      const classifyData = classifyRes?.ok ? await classifyRes.json() : null;
+      
+      setDebugData({
+        profileAPI: data,
+        seedAPI: seedData,
+        classifyAPI: classifyData,
+        timestamp: new Date().toISOString()
+      });
 
       try {
         const behaviorRes = await fetch('/api/learning-behavior/track');
@@ -255,17 +273,28 @@ const LearningPreferences = () => {
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="text-xs uppercase text-slate-500">Classification</p>
-          <p className="mt-2 text-lg font-semibold text-slate-900">
-            {hasClassification ? 'Final' : (profile?.classificationStage === 'provisional' ? 'Provisional' : 'Not ready')}
-          </p>
-          <p className="mt-1 text-xs text-slate-600">
-            Engine:{' '}
-            {mlRuntime.checked
-              ? mlRuntime.available
-                ? 'Machine Learning service active'
-                : 'Rule-based fallback (ML unavailable)'
-              : 'Checking ML service...'}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="mt-2 text-lg font-semibold text-slate-900">
+                {hasClassification ? 'Final' : (profile?.classificationStage === 'provisional' ? 'Provisional' : 'Not ready')}
+              </p>
+              <p className="mt-1 text-xs text-slate-600">
+                Engine:{' '}
+                {mlRuntime.checked
+                  ? mlRuntime.available
+                    ? 'Machine Learning service active'
+                    : 'Rule-based fallback (ML unavailable)'
+                  : 'Checking ML service...'}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDebugDialog(true)}
+              className="ml-2 p-1 text-slate-400 hover:text-slate-600 transition-colors"
+              title="Debug Classification Data"
+            >
+              <CogIcon className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -400,6 +429,153 @@ const LearningPreferences = () => {
           </div>,
           document.body
         )}
+
+      {/* Debug Dialog */}
+      {showDebugDialog && debugData && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Classification Debug Data</h3>
+              <button
+                onClick={() => setShowDebugDialog(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <div className="space-y-6">
+                {/* Profile API Data */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Profile API (/api/learning-style/profile)</h4>
+                  <div className="bg-gray-50 rounded-lg p-3 text-xs">
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <span className="font-medium">Total Interactions:</span> {debugData.profileAPI?.data?.dataQuality?.totalInteractions || 'N/A'}
+                      </div>
+                      <div>
+                        <span className="font-medium">Has Been Classified:</span> {debugData.profileAPI?.data?.profile?.hasBeenClassified ? 'true' : 'false'}
+                      </div>
+                      <div>
+                        <span className="font-medium">Classification Stage:</span> {debugData.profileAPI?.data?.profile?.classificationStage || 'N/A'}
+                      </div>
+                      <div>
+                        <span className="font-medium">Classification Method:</span> {debugData.profileAPI?.data?.profile?.classificationMethod || 'N/A'}
+                      </div>
+                    </div>
+                    <details>
+                      <summary className="cursor-pointer font-medium text-blue-600">View Full Profile API Response</summary>
+                      <pre className="mt-2 text-xs overflow-x-auto">{JSON.stringify(debugData.profileAPI, null, 2)}</pre>
+                    </details>
+                  </div>
+                </div>
+
+                {/* Seed API Data */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Seed API (/api/seed-interactions)</h4>
+                  <div className="bg-gray-50 rounded-lg p-3 text-xs">
+                    {debugData.seedAPI ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-4 mb-3">
+                          <div>
+                            <span className="font-medium">Total Interactions:</span> {debugData.seedAPI?.data?.totalInteractions || 'N/A'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Seeded Interactions:</span> {debugData.seedAPI?.data?.seededInteractions || 'N/A'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Real Interactions:</span> {debugData.seedAPI?.data?.realInteractions || 'N/A'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Ready for Classification:</span> {debugData.seedAPI?.data?.readyForClassification ? 'true' : 'false'}
+                          </div>
+                        </div>
+                        <details>
+                          <summary className="cursor-pointer font-medium text-blue-600">View Full Seed API Response</summary>
+                          <pre className="mt-2 text-xs overflow-x-auto">{JSON.stringify(debugData.seedAPI, null, 2)}</pre>
+                        </details>
+                      </>
+                    ) : (
+                      <p className="text-red-600">Failed to fetch seed API data</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Classify API Data */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Classify API (/api/learning-style/classify)</h4>
+                  <div className="bg-gray-50 rounded-lg p-3 text-xs">
+                    {debugData.classifyAPI ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-4 mb-3">
+                          <div>
+                            <span className="font-medium">Total Interactions:</span> {debugData.classifyAPI?.data?.totalInteractions || 'N/A'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Confidence Level:</span> {debugData.classifyAPI?.data?.confidenceLevel || 'N/A'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Ready for Classification:</span> {debugData.classifyAPI?.data?.readyForClassification ? 'true' : 'false'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Progress:</span> {debugData.classifyAPI?.data?.progress || 'N/A'}%
+                          </div>
+                        </div>
+                        <details>
+                          <summary className="cursor-pointer font-medium text-blue-600">View Full Classify API Response</summary>
+                          <pre className="mt-2 text-xs overflow-x-auto">{JSON.stringify(debugData.classifyAPI, null, 2)}</pre>
+                        </details>
+                      </>
+                    ) : (
+                      <p className="text-red-600">Failed to fetch classify API data</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Debug Actions</h4>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/learning-style/classify', { method: 'POST' });
+                          const data = await res.json();
+                          console.log('Classification triggered:', data);
+                          await fetchProfile(); // Refresh data
+                          setMessage({ type: 'success', text: 'Classification triggered successfully!' });
+                        } catch (error) {
+                          console.error('Classification failed:', error);
+                          setMessage({ type: 'error', text: 'Classification failed: ' + error.message });
+                        }
+                      }}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                    >
+                      Trigger Classification (POST)
+                    </button>
+                    <button
+                      onClick={() => {
+                        fetchProfile();
+                        setMessage({ type: 'success', text: 'Data refreshed!' });
+                      }}
+                      className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                    >
+                      Refresh Data
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-xs text-gray-500">
+                  Debug data fetched at: {debugData.timestamp}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
