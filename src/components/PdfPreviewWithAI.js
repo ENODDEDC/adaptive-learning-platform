@@ -442,13 +442,7 @@ const PdfPreviewWithAI = ({
         if (!analysisResult.isEducational) {
           console.log('⚠️ Non-educational content detected during auto-load - showing notification');
 
-          const errorMessage = `This document does not appear to contain educational or learning material suitable for AI learning features.
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-AI learning features work best with instructional content, lessons, or study materials.`;
+          const errorMessage = `Not educational content.`;
 
           setIsContentEducational(false); // Mark content as non-educational - hide AI buttons
           setErrorSource('auto-load'); // Mark this error as coming from auto-load
@@ -1082,18 +1076,7 @@ ${error.message}
       });
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for AI narration. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-AI Narrator works best with instructional content, lessons, or study materials.
-
-DEBUG INFO:
-- Content Length: ${extractedContent.length} characters
-- Word Count: ${extractedContent.split(/\s+/).length} words
-- First 100 chars: "${extractedContent.substring(0, 100)}..."`;
+        const errorMessage = `Not educational content.`;
 
         setIsContentEducational(false); // Mark content as non-educational
         setErrorSource('manual'); // Mark as manual click
@@ -1148,13 +1131,7 @@ DEBUG INFO:
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for visual learning materials. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Visual Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -1215,13 +1192,7 @@ Visual Learning needs readable text to create diagrams and visual content.`;
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for sequential learning. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Sequential Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -1267,7 +1238,7 @@ Sequential Learning works best with instructional content, lessons, or study mat
       if (analysisResult.verified === true && !analysisResult.isEducational) {
         const reason = analysisResult.reasoning || 'This content is not suitable for global learning.';
         setErrorSource('manual');
-        setExtractionError(`This document does not appear to contain educational or learning material suitable for global learning.\n\nReason: ${reason}`);
+        setExtractionError(`Not educational content.`);
         return;
       }
 
@@ -1318,13 +1289,7 @@ Sequential Learning works best with instructional content, lessons, or study mat
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for sensing learning. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Sensing Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -1368,13 +1333,7 @@ Sensing Learning works best with instructional content, lessons, or study materi
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for intuitive learning. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Intuitive Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -1418,13 +1377,7 @@ Intuitive Learning works best with instructional content, lessons, or study mate
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for active learning. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Active Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -1468,13 +1421,7 @@ Active Learning works best with instructional content, lessons, or study materia
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for reflective learning. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Reflective Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -1570,16 +1517,16 @@ Reflective Learning works best with instructional content, lessons, or study mat
           </div>
         )}
 
-        {/* Toast Notification - Compact Design */}
+        {/* Toast Notification - Center Top Position */}
         {extractionError && (
-          <div className="fixed bottom-6 left-6 z-50 pointer-events-auto animate-slide-up">
-            <div className="bg-white rounded-xl shadow-2xl max-w-sm border-l-4 border-amber-500 overflow-hidden">
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 pointer-events-auto animate-slide-down">
+            <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl max-w-md border border-gray-200/80 overflow-hidden">
               <div className="p-4">
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   {/* Icon */}
                   <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
                     </div>
@@ -1588,60 +1535,23 @@ Reflective Learning works best with instructional content, lessons, or study mat
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                      {isVerifiedNonEducationalError ? 'Learning Features Not Available' : 'Something Went Wrong'}
+                      {isVerifiedNonEducationalError ? 'Not Educational Content' : 'Analysis Failed'}
                     </h3>
-                    <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                    <p className="text-xs text-gray-600 leading-relaxed">
                       {isVerifiedNonEducationalError
-                        ? "This document doesn't contain educational content. Zero-shot analysis allows learning modes only for instructional material."
-                        : (extractionError || 'An unexpected error happened while preparing learning features.')}
+                        ? "Not educational content."
+                        : (extractionError || "Analysis failed.")}
                     </p>
-                    {isVerifiedNonEducationalError && (analysisMeta.unavailableReason || !analysisMeta.verified) && (
-                      <p className="text-[11px] text-amber-700 leading-relaxed mb-2">
-                        Reason: {analysisMeta.unavailableReason || analysisMeta.reasoning || extractionError || 'Zero-shot metadata missing (analysis may not have executed for this action).'}
-                      </p>
-                    )}
-
-                    {/* Quick Info */}
-                    {isVerifiedNonEducationalError && (
-                    <div className="flex items-center gap-3 text-xs">
-                      <div className="flex items-center gap-1">
-                        <span className="text-gray-500">Type:</span>
-                        <span className="font-medium text-gray-700">
-                          {analysisMeta.contentType || 'Unknown'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-gray-500">Confidence:</span>
-                        <span className="font-medium text-green-600">
-                          {typeof analysisMeta.confidence === 'number' ? `${Math.round(analysisMeta.confidence * 100)}%` : 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                    )}
                   </div>
 
                   {/* Close Button */}
                   <button
                     onClick={() => setExtractionError('')}
-                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors p-1"
                   >
-                    <XMarkIcon className="w-5 h-5" />
+                    <XMarkIcon className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
-
-              {/* Footer with AI badge */}
-              <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                  <span>{isVerifiedNonEducationalError ? (analysisMeta.verified ? 'Zero-shot Analysis (Verified)' : 'Zero-shot Analysis (Unavailable)') : 'Runtime Error'}</span>
-                </div>
-                <button
-                  onClick={() => setExtractionError('')}
-                  className="text-xs font-medium text-amber-600 hover:text-amber-700 transition-colors"
-                >
-                  Dismiss
-                </button>
               </div>
             </div>
           </div>
@@ -1650,12 +1560,15 @@ Reflective Learning works best with instructional content, lessons, or study mat
         {/* Content Analysis Loading */}
         {(isAITutorLoading || isVisualLearningLoading || isSequentialLearningLoading || isGlobalLearningLoading || isSensingLearningLoading || isIntuitiveLearningLoading || isActiveLearningLoading || isReflectiveLearningLoading) && (
           <div className="absolute bottom-4 left-4 z-10 max-w-sm">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-lg">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <div className="flex-1">
-                  <p className="text-sm text-blue-800 font-medium">Analyzing Content</p>
-                  <p className="text-xs text-blue-600 mt-1">Extracting text from PDF and checking educational content...</p>
+            <div className="bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-xl p-4 shadow-2xl shadow-black/10">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 w-5 h-5 border border-gray-100 rounded-full"></div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-900 font-medium tracking-tight">Analyzing Content</p>
+                  <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">Validating educational content and extracting key concepts...</p>
                 </div>
               </div>
             </div>

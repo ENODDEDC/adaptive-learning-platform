@@ -2380,6 +2380,21 @@ Slide-up animation for bottom notifications */
   animation: slide-up 0.3s ease-out;
 }
 
+@keyframes slide-down {
+  from {
+    transform: translate(-50%, -20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
+}
+
 /* Slide-in-right animation for side panels */
 @keyframes slideInRight {
   from {
