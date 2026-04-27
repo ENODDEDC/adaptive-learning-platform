@@ -2192,106 +2192,17 @@ Reflective Learning works best with instructional content, lessons, or study mat
           })()}
         </div>
 
-        {/* Fixed Top Navigation Bar - Shows above all learning modes ONLY when user has ML recommendations */}
-        {hasActiveLearningMode && filteredRecommendations.length > 0 && hasClassification && (
-          <div className="fixed top-0 left-0 right-0 z-[100030] bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-b border-gray-300 shadow-md">
-            <div className="max-w-full mx-auto px-6 py-2.5">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-6">
-                {/* Left: Mode Info */}
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-gray-800">
-                    Currently viewing: {filteredRecommendations[currentRecommendationIndex]?.mode || 'Loading...'}
-                  </span>
-                  <span className="text-xs text-gray-600 px-2.5 py-1 bg-white/80 border border-gray-200 rounded-md shadow-sm">
-                    Recommendation {currentRecommendationIndex + 1} of {filteredRecommendations.length}
-                  </span>
-                </div>
-
-                {/* Right: Navigation Controls + View PDF */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handlePrevRecommendation}
-                    disabled={filteredRecommendations.length <= 1}
-                    className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
-                    title="Previous recommendation"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={handleNextRecommendation}
-                    disabled={filteredRecommendations.length <= 1}
-                    className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
-                    title="Next recommendation"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      // Close all learning modes to show PDF
-                      setShowVisualContent(false);
-                      setShowSequentialLearning(false);
-                      setShowGlobalLearning(false);
-                      setShowSensingLearning(false);
-                      setShowIntuitiveLearning(false);
-                      setShowActiveLearning(false);
-                      setShowReflectiveLearning(false);
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-medium shadow-md hover:shadow-lg ml-2"
-                    title="View original PDF document"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>View PDF</span>
-                  </button>
-                </div>
-              </div>
-
-                {visibleRecommendationTabs.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2 pb-1">
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Recommended for you
-                    </span>
-                    {visibleRecommendationTabs.map((recommendation, index) => {
-                      const isActive = currentRecommendationIndex === index;
-                      return (
-                        <button
-                          key={`fixed-${recommendation.mode}-${index}`}
-                          onClick={() => activateRecommendationAtIndex(index)}
-                          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
-                            isActive
-                              ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
-                              : 'border-blue-200 bg-white text-blue-700 hover:border-blue-400 hover:bg-blue-50'
-                          }`}
-                        >
-                          {databaseModeToButtonLabel(recommendation.mode)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
         {typeof document !== 'undefined' && hasActiveLearningMode && filteredRecommendations.length > 0 && hasClassification &&
           createPortal(
             recommendationPanelCollapsed ? (
               <button
                 onClick={() => setRecommendationPanelCollapsed(false)}
-                className="fixed left-1/2 top-20 z-[200000] -translate-x-1/2 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 shadow-xl backdrop-blur hover:bg-slate-50"
+                className="fixed right-6 top-24 z-[200000] rounded-full border border-slate-200 bg-white/95 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600 shadow-lg backdrop-blur hover:bg-slate-50"
               >
                 Show recommendations
               </button>
             ) : (
-              <div className="fixed left-1/2 top-20 z-[200000] w-[min(92vw,720px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur">
+              <div className="fixed right-6 top-24 z-[200000] w-[min(90vw,560px)] rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                     Recommended for you

@@ -576,7 +576,7 @@ const SequentialLearning = ({ isActive, onClose, docxContent, fileName }) => {
     <div
       className="fixed inset-0 left-0 top-0 z-[100020] flex flex-col bg-slate-950 font-sans text-slate-100 antialiased"
       style={{
-        paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0',
+        paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '16px' : '0',
         backgroundImage:
           'radial-gradient(ellipse 100% 70% at 50% -30%, rgba(79,70,229,0.12), transparent 55%), radial-gradient(ellipse 50% 40% at 0% 100%, rgba(30,27,75,0.35), transparent)'
       }}
@@ -643,7 +643,7 @@ const SequentialLearning = ({ isActive, onClose, docxContent, fileName }) => {
       )}
 
       <header className="border-b border-slate-800/90 bg-slate-950/95 px-3 py-2 backdrop-blur-md sm:px-4">
-        <div className="mx-auto flex max-w-[min(1200px,calc(100%-0.25rem))] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <button
               type="button"

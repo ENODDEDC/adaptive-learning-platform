@@ -579,13 +579,13 @@ const GlobalLearning = ({ isActive, onClose, docxContent, fileName, pdfSource = 
     <div
       className={`fixed inset-0 left-0 top-0 z-[100020] flex flex-col bg-zinc-950 text-zinc-100 antialiased ${glDisplay.variable} font-sans`}
       style={{
-        paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0',
+        paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '16px' : '0',
         backgroundImage:
           'radial-gradient(ellipse 100% 80% at 50% -30%, rgba(113,113,122,0.14), transparent 55%), radial-gradient(ellipse 70% 50% at 100% 100%, rgba(63,63,70,0.2), transparent)'
       }}
     >
       <header className="border-b border-zinc-800/90 bg-zinc-950/90 px-3 py-2 backdrop-blur-md sm:px-4">
-        <div className="mx-auto flex max-w-[min(1200px,calc(100%-0.25rem))] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <button
               type="button"
