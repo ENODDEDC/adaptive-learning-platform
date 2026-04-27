@@ -1485,6 +1485,44 @@ Visual Learning needs readable text to create diagrams and visual content.`;
 
   const fileName = content.title || content.originalName || 'Document.pdf';
 
+  const stripColdStartDecorators = (value = '') => value
+    .replace(/^[\s\u{1F300}-\u{1FAFF}❓💭💡✍️🔍🧠🔗🌐🔑📋🖼️📌🗂️🔄🎯🤔🌟🔬🛠️📊]+/gu, '')
+    .trim();
+
+  const normalizeColdStartLine = (value = '') => {
+    const cleaned = value
+      .replace(/\r/g, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/^#{1,6}\s*/, '')
+      .trim();
+
+    return stripColdStartDecorators(cleaned);
+  };
+
+  const parseTaggedColdStartLine = (line) => {
+    if (line.startsWith('SECTION_HEADER:')) {
+      return { type: 'section', title: normalizeColdStartLine(line.replace('SECTION_HEADER:', '')) };
+    }
+
+    if (line.startsWith('EXAMPLE_CARD:') || line.startsWith('EXERCISE_BLOCK:') || line.startsWith('SCENARIO_BLOCK:') || line.startsWith('CARD:')) {
+      const payload = line.replace(/^(EXAMPLE_CARD:|EXERCISE_BLOCK:|SCENARIO_BLOCK:|CARD:)/, '');
+      const [title = '', description = ''] = payload.split('|');
+      return {
+        type: 'card',
+        title: normalizeColdStartLine(title),
+        description: normalizeColdStartLine(description)
+      };
+    }
+
+    if (line.startsWith('STEP:')) {
+      return { type: 'step', text: normalizeColdStartLine(line.replace('STEP:', '')) };
+    }
+
+    return null;
+  };
+
   // Check if any learning mode is active
   const hasActiveLearningMode = showVisualContent || showSequentialLearning || showGlobalLearning ||
     showSensingLearning || showIntuitiveLearning || showActiveLearning ||
@@ -1831,45 +1869,33 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                               </div>
                             ) : coldStartPanelContent ? (
                               coldStartPanelMode === 'Visual Learning' ? (
-                                <div className="space-y-3">
-                                  <p className="text-xs text-violet-600 font-semibold">🖼️ Visual Diagram</p>
-                                  {/* Parse DIAGRAM and DESCRIPTIONS sections */}
+                                <div className="p-4 space-y-3">
                                   {(() => {
                                     const diagramMatch = coldStartPanelContent.match(/DIAGRAM:\s*([\s\S]*?)(?=DESCRIPTIONS:|$)/);
                                     const descMatch = coldStartPanelContent.match(/DESCRIPTIONS:\s*([\s\S]*?)$/);
                                     const diagramCode = diagramMatch?.[1]?.trim() || coldStartPanelContent;
-                                    const descLines = descMatch?.[1]?.trim().split('\n').filter(l => l.trim()) || [];
-
-                                    // Extract node labels from mermaid for color matching
-                                    const nodeColors = ['bg-violet-100 border-violet-300 text-violet-800', 'bg-blue-100 border-blue-300 text-blue-800', 'bg-indigo-100 border-indigo-300 text-indigo-800', 'bg-purple-100 border-purple-300 text-purple-800', 'bg-fuchsia-100 border-fuchsia-300 text-fuchsia-800'];
+                                    const descLines = descMatch?.[1]?.trim().split('\n').filter((l) => l.trim()) || [];
 
                                     return (
                                       <>
-                                        {/* Diagram - bigger */}
-                                        <div className="w-full overflow-x-auto bg-white rounded-xl border border-violet-100 shadow-sm" style={{ minHeight: '220px' }}>
+                                        <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm" style={{ minHeight: '220px' }}>
                                           <MermaidDiagram chart={diagramCode} />
                                         </div>
 
-                                        {/* Description cards */}
                                         {descLines.length > 0 && (
-                                          <div className="space-y-1.5">
-                                            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">Concepts</p>
+                                          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">Diagram Concepts</p>
                                             {descLines.map((line, i) => {
                                               const colonIdx = line.indexOf(':');
                                               if (colonIdx === -1) return null;
-                                              const desc = line.slice(colonIdx + 1).trim().replace(/^\[|\]$/g, '');
-                                              // Extract node label from mermaid for display
-                                              const nodeId = line.slice(0, colonIdx).trim();
-                                              const nodeLabel = diagramCode.match(new RegExp(`${nodeId}\\[([^\\]]+)\\]`))?.[1] || nodeId;
+                                              const desc = normalizeColdStartLine(line.slice(colonIdx + 1).replace(/^\[|\]$/g, ''));
+                                              const nodeId = normalizeColdStartLine(line.slice(0, colonIdx));
+                                              const nodeLabel = normalizeColdStartLine(diagramCode.match(new RegExp(`${nodeId}\\[([^\\]]+)\\]`))?.[1] || nodeId);
+
                                               return (
-                                                <div key={i} className="flex items-start gap-2.5 bg-white border border-gray-100 rounded-xl px-3 py-2.5 shadow-sm hover:shadow-md transition-shadow">
-                                                  <div className="w-5 h-5 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                    <span className="text-white text-xs font-bold" style={{ fontSize: '9px' }}>{i + 1}</span>
-                                                  </div>
-                                                  <div>
-                                                    <p className="text-xs font-semibold text-gray-800">{nodeLabel}</p>
-                                                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{desc}</p>
-                                                  </div>
+                                                <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                                  <p className="text-xs font-semibold text-gray-800">{nodeLabel}</p>
+                                                  <p className="text-xs text-gray-600 leading-relaxed mt-0.5">{desc}</p>
                                                 </div>
                                               );
                                             })}
@@ -1879,214 +1905,72 @@ Visual Learning needs readable text to create diagrams and visual content.`;
                                     );
                                   })()}
                                 </div>
-                              ) : coldStartPanelMode === 'Hands-On Lab' ? (
-                                // Modern UI for Examples mode only
-                                <div className="space-y-4">
-                                  {coldStartPanelContent.split('\n').map((line, i) => {
-                                    if (!line.trim()) return null;
-                                    
-                                    // Modern section headers
-                                    if (line.startsWith('SECTION_HEADER:')) {
-                                      const headerText = line.replace('SECTION_HEADER:', '').trim();
-                                      return (
-                                        <div key={i} className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-                                          <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                              </svg>
-                                            </div>
-                                            <h3 className="font-semibold text-gray-800 text-sm">{headerText}</h3>
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-                                    
-                                    // Example cards with modern styling
-                                    if (line.startsWith('EXAMPLE_CARD:')) {
-                                      const parts = line.replace('EXAMPLE_CARD:', '').split('|');
-                                      const cardTitle = parts[0]?.trim();
-                                      const cardDesc = parts[1]?.trim();
-                                      return (
-                                        <div key={i} className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
-                                          <div className="flex items-start gap-3">
-                                            <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                              <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                              </svg>
-                                            </div>
-                                            <div className="flex-1">
-                                              <h4 className="font-semibold text-gray-800 text-xs mb-1">{cardTitle}</h4>
-                                              <p className="text-xs text-gray-600 leading-relaxed">{cardDesc}</p>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-                                    
-                                    // Exercise blocks
-                                    if (line.startsWith('EXERCISE_BLOCK:')) {
-                                      const parts = line.replace('EXERCISE_BLOCK:', '').split('|');
-                                      const exerciseTitle = parts[0]?.trim();
-                                      const exerciseDesc = parts[1]?.trim();
-                                      return (
-                                        <div key={i} className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
-                                          <div className="flex items-start gap-3">
-                                            <div className="w-6 h-6 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                              <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                              </svg>
-                                            </div>
-                                            <div className="flex-1">
-                                              <h4 className="font-semibold text-emerald-800 text-xs mb-1">{exerciseTitle}</h4>
-                                              <p className="text-xs text-emerald-700 leading-relaxed">{exerciseDesc}</p>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-                                    
-                                    // Scenario blocks
-                                    if (line.startsWith('SCENARIO_BLOCK:')) {
-                                      const parts = line.replace('SCENARIO_BLOCK:', '').split('|');
-                                      const scenarioTitle = parts[0]?.trim();
-                                      const scenarioDesc = parts[1]?.trim();
-                                      return (
-                                        <div key={i} className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                                          <div className="flex items-start gap-3">
-                                            <div className="w-6 h-6 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                              <svg className="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                              </svg>
-                                            </div>
-                                            <div className="flex-1">
-                                              <h4 className="font-semibold text-amber-800 text-xs mb-1">{scenarioTitle}</h4>
-                                              <p className="text-xs text-amber-700 leading-relaxed">{scenarioDesc}</p>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-                                    
-                                    // Skip unstructured content for Hands-On Lab mode
-                                    // Fallback: show unstructured content temporarily for debugging
-                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-                                    return <p key={i} className="text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded px-3 py-2" dangerouslySetInnerHTML={{ __html: boldLine }} />;
-                                  })}
-                                </div>
                               ) : (
-                                // Modern UI for all other learning modes
-                                <div className="p-4 space-y-4">
-                                  {coldStartPanelContent.split('\n').map((line, i) => {
-                                    if (!line.trim()) return null;
-                                    
-                                    // Modern section headers with emoji
-                                    if (/^[🌐🔑🔗📋🖼️📌🗂️🔄🎯💡🤔✍️]/.test(line)) {
+                                <div className="p-4 space-y-2.5">
+                                  {coldStartPanelContent.split('\n').map((rawLine, i) => {
+                                    const line = rawLine.trim();
+                                    if (!line) return null;
+
+                                    const taggedLine = parseTaggedColdStartLine(line);
+                                    if (taggedLine?.type === 'section') {
                                       return (
-                                        <div key={i} className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 shadow-sm">
-                                          <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                                              <span className="text-white text-sm">{line.charAt(0)}</span>
-                                            </div>
-                                            <h3 className="font-semibold text-blue-900 text-sm">{line.slice(1).trim()}</h3>
-                                          </div>
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                                          <h3 className="text-xs font-semibold tracking-wide text-gray-800 uppercase">{taggedLine.title}</h3>
                                         </div>
                                       );
                                     }
-                                    
-                                    // Modern step lines
-                                    if (/^Step \d+:/.test(line)) {
-                                      const stepNumber = line.match(/^Step (\d+):/)?.[1] || '1';
-                                      const stepText = line.replace(/^Step \d+:\s*/, '').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+                                    if (taggedLine?.type === 'card') {
                                       return (
-                                        <div key={i} className="bg-indigo-50 border-l-4 border-indigo-500 rounded-r-2xl px-4 py-3 shadow-sm">
-                                          <div className="flex items-start gap-3">
-                                            <div className="w-6 h-6 bg-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                                              <span className="text-white text-xs font-bold">{stepNumber}</span>
-                                            </div>
-                                            <p className="font-semibold text-indigo-900 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: stepText }} />
-                                          </div>
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+                                          {taggedLine.title && <h4 className="text-xs font-semibold text-gray-900">{taggedLine.title}</h4>}
+                                          {taggedLine.description && <p className="text-xs text-gray-600 leading-relaxed mt-1">{taggedLine.description}</p>}
                                         </div>
                                       );
                                     }
-                                    
-                                    // Modern question/insight lines
-                                    if (/^❓|^💭|^💡/.test(line)) {
-                                      const icon = line.charAt(0);
-                                      const text = line.slice(1).trim().replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+                                    if (taggedLine?.type === 'step') {
                                       return (
-                                        <div key={i} className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 shadow-sm">
-                                          <div className="flex items-start gap-3">
-                                            <div className="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center shadow-lg">
-                                              <span className="text-white text-sm">{icon}</span>
-                                            </div>
-                                            <p className="font-medium text-amber-900 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: text }} />
-                                          </div>
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2.5">
+                                          <p className="text-xs text-gray-700 leading-relaxed">{taggedLine.text}</p>
                                         </div>
                                       );
                                     }
-                                    
-                                    // Modern visual CARD lines
-                                    if (line.startsWith('CARD:')) {
-                                      const parts = line.replace('CARD:', '').split('|');
-                                      const cardTitle = parts[0]?.trim();
-                                      const cardDesc = parts[1]?.trim();
+
+                                    const normalized = normalizeColdStartLine(line);
+                                    if (!normalized) return null;
+
+                                    const numberedStepMatch = normalized.match(/^Step\s+(\d+):\s*(.*)$/i);
+                                    if (numberedStepMatch) {
                                       return (
-                                        <div key={i} className="bg-violet-50 border border-violet-200 rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
-                                          <div className="flex items-start gap-3">
-                                            <div className="w-3 h-3 rounded-full bg-violet-500 mt-2 flex-shrink-0 shadow-sm"></div>
-                                            <div className="flex-1">
-                                              <h4 className="text-sm font-bold text-violet-900 mb-1">{cardTitle}</h4>
-                                              {cardDesc && <p className="text-sm text-violet-700 leading-relaxed">{cardDesc}</p>}
-                                            </div>
-                                          </div>
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2.5">
+                                          <p className="text-xs font-semibold text-gray-800">Step {numberedStepMatch[1]}</p>
+                                          <p className="text-xs text-gray-600 leading-relaxed mt-1">{normalizeColdStartLine(numberedStepMatch[2])}</p>
                                         </div>
                                       );
                                     }
-                                    
-                                    // Modern visual STEP/FLOW lines
-                                    if (line.startsWith('STEP:')) {
-                                      const flowText = line.replace('STEP:', '').trim();
+
+                                    if (/^[•\-]\s+/.test(normalized)) {
                                       return (
-                                        <div key={i} className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 shadow-sm">
-                                          <div className="flex items-center gap-3">
-                                            <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center shadow-sm">
-                                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                              </svg>
-                                            </div>
-                                            <p className="text-sm text-blue-900 font-medium leading-relaxed">{flowText}</p>
-                                          </div>
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                          <p className="text-xs text-gray-700 leading-relaxed">{normalized.replace(/^[•\-]\s+/, '')}</p>
                                         </div>
                                       );
                                     }
-                                    
-                                    // Modern bullet points and tree structures
-                                    if (line.startsWith('•') || line.startsWith('│') || line.startsWith('┌') || line.startsWith('└')) {
-                                      const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-                                      const isTreeStructure = line.startsWith('│') || line.startsWith('┌') || line.startsWith('└');
+
+                                    if (/^[A-Z][A-Z\s&-]{3,}$/.test(normalized) || /^.+:\s*$/.test(normalized)) {
                                       return (
-                                        <div key={i} className={`${isTreeStructure ? 'bg-gray-50 border border-gray-200' : 'bg-white border border-gray-100'} rounded-xl px-3 py-2 shadow-sm`}>
-                                          <p className="text-sm text-gray-700 font-mono leading-relaxed" dangerouslySetInnerHTML={{ __html: boldLine }} />
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                                          <h3 className="text-xs font-semibold tracking-wide text-gray-800 uppercase">
+                                            {normalized.replace(/:\s*$/, '')}
+                                          </h3>
                                         </div>
                                       );
                                     }
-                                    
-                                    // Modern arrow flows
-                                    if (line.includes('→')) {
-                                      const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-                                      return (
-                                        <div key={i} className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 shadow-sm">
-                                          <p className="text-sm text-gray-800 font-mono leading-relaxed" dangerouslySetInnerHTML={{ __html: boldLine }} />
-                                        </div>
-                                      );
-                                    }
-                                    
-                                    // Modern regular text with enhanced styling
-                                    const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
                                     return (
-                                      <div key={i} className="bg-white backdrop-blur-sm border border-gray-100 rounded-xl px-4 py-3 shadow-sm">
-                                        <p className="text-sm text-gray-800 leading-relaxed" dangerouslySetInnerHTML={{ __html: boldLine }} />
+                                      <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2.5">
+                                        <p className="text-xs text-gray-700 leading-relaxed">{normalized}</p>
                                       </div>
                                     );
                                   })}
