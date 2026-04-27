@@ -197,7 +197,42 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing content or mode' }, { status: 400 });
     }
 
-    // 1. Check database cache if contentId is provided
+    // 1. Educational validation check (same as regular learning modes)
+    console.log('🔍 Running educational gate check for cold start content...');
+    try {
+      const gateResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/content/educational-gate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+
+      if (gateResponse.ok) {
+        const gateResult = await gateResponse.json();
+        
+        if (gateResult.success && !gateResult.isEducational) {
+          console.log('❌ Cold start blocked: Content failed educational validation');
+          return NextResponse.json({ 
+            error: 'Content not suitable for learning modes',
+            details: gateResult.rejectionReason || 'This document does not appear to contain educational or learning material suitable for cold start generation.',
+            confidence: gateResult.confidence || 0,
+            method: gateResult.method || 'educational-gate'
+          }, { status: 400 });
+        }
+        
+        console.log('✅ Cold start educational validation passed:', {
+          isEducational: gateResult.isEducational,
+          confidence: gateResult.confidence,
+          method: gateResult.method
+        });
+      } else {
+        console.warn('⚠️ Educational gate unavailable for cold start - proceeding with generation');
+      }
+    } catch (gateError) {
+      console.warn('⚠️ Educational gate error for cold start:', gateError.message);
+      // Continue with generation if gate fails (same behavior as regular modes)
+    }
+
+    // 2. Check database cache if contentId is provided
     if (contentId) {
       await connectToDatabase();
       const contentDoc = await Content.findById(contentId);
@@ -235,6 +270,7 @@ export async function POST(request) {
       console.log(`🔍 [CACHE MISS] No ${mode} in Database for ${contentId}`);
     }
 
+    // 3. Generate new content using AI
     const prompt = MODE_PROMPTS[mode] || MODE_PROMPTS['Global Learning'];
     const truncatedContent = content.slice(0, 3000);
 
@@ -259,7 +295,7 @@ export async function POST(request) {
       }
     }
 
-    // 2. Save to database cache if contentId is provided
+    // 4. Save to database cache if contentId is provided
     if (contentId) {
       try {
         await Content.findByIdAndUpdate(contentId, {

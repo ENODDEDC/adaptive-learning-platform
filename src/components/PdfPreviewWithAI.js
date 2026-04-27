@@ -88,6 +88,7 @@ const PdfPreviewWithAI = ({
   const [coldStartPanelContent, setColdStartPanelContent] = useState(null);
   const [coldStartPanelCache, setColdStartPanelCache] = useState({}); // Cache for generated modes
   const [coldStartPanelLoading, setColdStartPanelLoading] = useState(false);
+  const [coldStartPanelError, setColdStartPanelError] = useState(null);
   const [coldStartPanelMode, setColdStartPanelMode] = useState('Global Learning'); // default mode
   const [coldStartDismissed, setColdStartDismissed] = useState(false);
   const coldStartModeQueue = ['Global Learning', 'Sequential Learning', 'Visual Learning', 'Hands-On Lab', 'Concept Constellation', 'Active Learning Hub', 'Reflective Learning'];
@@ -123,7 +124,7 @@ const PdfPreviewWithAI = ({
     getCurrentModeData
   } = useColdStartInterestTracking(
     coldStartPanelMode,
-    !hasClassification && !coldStartDismissed && coldStartPanelContent
+    !hasClassification && !coldStartDismissed && coldStartPanelContent && isContentEducational
   );
 
   // Refs for learning mode buttons (for overlay targeting)
@@ -146,18 +147,25 @@ const PdfPreviewWithAI = ({
     if (coldStartPanelCache[modeName]) {
       setColdStartPanelMode(modeName);
       setColdStartPanelContent(coldStartPanelCache[modeName]);
+      setColdStartPanelError(null); // Clear any previous errors
       return;
     }
 
     setColdStartPanelLoading(true);
     setColdStartPanelMode(modeName);
+    setColdStartPanelError(null); // Clear any previous errors
+    setColdStartPanelContent(null); // Clear previous content
+    setIsContentEducational(true); // Reset educational status for retry
+    
     try {
       // Extract PDF content if not already done
       const textContent = pdfContent || await extractPdfContent();
       if (!textContent || !textContent.trim()) {
+        setColdStartPanelError('Unable to extract text from this PDF document.');
         setColdStartPanelLoading(false);
         return;
       }
+      
       const response = await fetch('/api/generate-cold-start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -168,6 +176,7 @@ const PdfPreviewWithAI = ({
           contentId: content?._id || content?.id || (typeof content === 'string' ? content : null)
         })
       });
+      
       if (response.ok) {
         const data = await response.json();
         const generatedContent = data.content || '';
@@ -186,9 +195,27 @@ const PdfPreviewWithAI = ({
           ...prev,
           [modeName]: generatedContent
         }));
+      } else {
+        // Handle API errors (including educational validation failures)
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.details || errorData.error || 'Failed to generate content';
+        
+        console.error('Cold start panel API error:', {
+          status: response.status,
+          error: errorMessage,
+          mode: modeName
+        });
+        
+        // If it's an educational validation failure, mark content as non-educational
+        if (response.status === 400 && errorMessage.includes('not suitable for learning modes')) {
+          setIsContentEducational(false);
+        }
+        
+        setColdStartPanelError(errorMessage);
       }
     } catch (e) {
       console.error('Cold start panel error:', e);
+      setColdStartPanelError('Network error occurred while generating content. Please try again.');
     } finally {
       setColdStartPanelLoading(false);
     }
@@ -1762,6 +1789,7 @@ Reflective Learning works best with instructional content, lessons, or study mat
                                   setColdStartModeIndex(idx);
                                   if (!coldStartPanelCache[mode]) {
                                     setColdStartPanelContent(null);
+                                    setColdStartPanelError(null); // Clear errors when switching modes
                                   }
                                   triggerColdStartPanel(mode);
                                 }}
@@ -1796,6 +1824,62 @@ Reflective Learning works best with instructional content, lessons, or study mat
                                 <div className="h-16 bg-gray-200 rounded-xl animate-pulse w-full mt-2"></div>
                                 <div className="h-3 bg-gray-200 rounded animate-pulse w-full"></div>
                                 <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                              </div>
+                            ) : coldStartPanelError ? (
+                              <div className="p-6 space-y-4">
+                                {/* Modern error display */}
+                                <div className="flex items-start gap-3">
+                                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
+                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                                    </svg>
+                                  </div>
+                                  <div className="flex-1">
+                                    <h3 className="text-sm font-medium text-gray-900 mb-1">Content Analysis</h3>
+                                    <p className="text-sm text-gray-600 leading-relaxed">
+                                      This document appears to contain primarily administrative or procedural content rather than educational material.
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                <div className="border-t border-gray-100 pt-4">
+                                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                                    <p className="text-xs font-medium text-gray-700 mb-2">Recommended content types:</p>
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                                        <span>Academic papers and research</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                                        <span>Educational textbooks and materials</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                                        <span>Technical documentation and guides</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex gap-2 pt-2">
+                                  <button
+                                    onClick={() => {
+                                      setColdStartPanelError(null);
+                                      setIsContentEducational(true); // Reset educational status
+                                      triggerColdStartPanel(coldStartPanelMode);
+                                    }}
+                                    className="flex-1 px-4 py-2.5 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                                  >
+                                    Retry Analysis
+                                  </button>
+                                  <button
+                                    onClick={() => setColdStartDismissed(true)}
+                                    className="px-4 py-2.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                                  >
+                                    Dismiss
+                                  </button>
+                                </div>
                               </div>
                             ) : coldStartPanelContent ? (
                               coldStartPanelMode === 'Visual Learning' ? (
