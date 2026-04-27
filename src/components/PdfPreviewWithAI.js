@@ -104,6 +104,7 @@ const PdfPreviewWithAI = ({
   const [isPdfLoaded, setIsPdfLoaded] = useState(false); // Track when PDF is fully loaded
   const [recommendationPanelCollapsed, setRecommendationPanelCollapsed] = useState(false);
   const isVerifiedNonEducationalError = analysisMeta.verified === true && isContentEducational === false;
+  const recommendationAutoTransitionRef = useRef(false);
 
   // Automatic time tracking for ML classification
   useLearningModeTracking('aiNarrator', aiTutorActive);
@@ -193,9 +194,29 @@ const PdfPreviewWithAI = ({
     }
   };
 
+  const activeLearningModeName = showVisualContent
+    ? 'Visual Learning'
+    : showSequentialLearning
+      ? 'Sequential Learning'
+      : showGlobalLearning
+        ? 'Global Learning'
+        : showSensingLearning
+          ? 'Hands-On Lab'
+          : showIntuitiveLearning
+            ? 'Concept Constellation'
+            : showActiveLearning
+              ? 'Active Learning Hub'
+              : showReflectiveLearning
+                ? 'Reflective Learning'
+                : null;
+
+  const isCurrentModeRecommended = activeLearningModeName
+    ? filteredRecommendations.some((recommendation) => recommendation.mode === activeLearningModeName)
+    : false;
+
   // Set data attribute for conditional styling based on ML recommendations
   useEffect(() => {
-    if (hasClassification && filteredRecommendations.length > 0) {
+    if (hasClassification && isCurrentModeRecommended) {
       document.body.setAttribute('data-has-ml-nav', 'true');
     } else {
       document.body.removeAttribute('data-has-ml-nav');
@@ -203,7 +224,7 @@ const PdfPreviewWithAI = ({
     return () => {
       document.body.removeAttribute('data-has-ml-nav');
     };
-  }, [hasClassification, filteredRecommendations.length]);
+  }, [hasClassification, isCurrentModeRecommended]);
 
   // Clear willAutoLoad flag when any mode starts loading
   useEffect(() => {
@@ -290,6 +311,7 @@ const PdfPreviewWithAI = ({
     const targetRecommendation = filteredRecommendations[targetIndex];
     if (!targetRecommendation) return;
 
+    setRecommendationPanelCollapsed(true);
     setCurrentRecommendationIndex(targetIndex);
     setShowVisualContent(false);
     setShowSequentialLearning(false);
@@ -315,11 +337,13 @@ const PdfPreviewWithAI = ({
       'Reflective Learning': handleReflectiveLearningClick
     };
 
-    const handler = modeHandlers[targetRecommendation.mode];
-    if (handler) {
-      setTimeout(() => handler(), 100);
+      const handler = modeHandlers[targetRecommendation.mode];
+      if (handler) {
+        setTimeout(() => {
+          handler();
+        }, 100);
+      }
     }
-  }
 
   const visibleRecommendationTabs = filteredRecommendations.slice(0, 4);
 
@@ -427,8 +451,11 @@ AI learning features work best with instructional content, lessons, or study mat
           console.log(`✨ Triggering ${topRecommendation.mode} automatically...`);
           // Small delay to ensure UI is ready
           setTimeout(() => {
-            handler();
-            setWillAutoLoad(false); // Clear the flag after triggering
+            recommendationAutoTransitionRef.current = true;
+            Promise.resolve(handler()).finally(() => {
+              recommendationAutoTransitionRef.current = false;
+              setWillAutoLoad(false);
+            });
           }, 500);
         } else {
           console.warn('⚠️ No handler found for mode:', topRecommendation.mode);
@@ -982,6 +1009,9 @@ ${error.message}
   }, [showAnalysisToast]);
 
   const handleAITutorClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
     // Dismiss interest tracking overlay when any learning mode is clicked
     dismissOverlay();
     
@@ -1067,6 +1097,9 @@ DEBUG INFO:
 
   // Visual Learning Handler
   const handleVisualContentClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
     // Dismiss interest tracking overlay when any learning mode is clicked
     dismissOverlay();
     
@@ -1132,6 +1165,9 @@ Visual Learning needs readable text to create diagrams and visual content.`;
 
   // Sequential Learning Handler
   const handleSequentialLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
     // Dismiss interest tracking overlay when any learning mode is clicked
     dismissOverlay();
     
@@ -1179,6 +1215,9 @@ Sequential Learning works best with instructional content, lessons, or study mat
 
   // Global Learning Handler
   const handleGlobalLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
     // Dismiss interest tracking overlay when any learning mode is clicked
     dismissOverlay();
     
@@ -1229,6 +1268,9 @@ Sequential Learning works best with instructional content, lessons, or study mat
 
   // Sensing Learning Handler
   const handleSensingLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
     // Dismiss interest tracking overlay when any learning mode is clicked
     dismissOverlay();
     
@@ -1276,6 +1318,9 @@ Sensing Learning works best with instructional content, lessons, or study materi
 
   // Intuitive Learning Handler
   const handleIntuitiveLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
     // Dismiss interest tracking overlay when any learning mode is clicked
     dismissOverlay();
     
@@ -1323,6 +1368,9 @@ Intuitive Learning works best with instructional content, lessons, or study mate
 
   // Active Learning Handler
   const handleActiveLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
     // Dismiss interest tracking overlay when any learning mode is clicked
     dismissOverlay();
     
@@ -1370,6 +1418,9 @@ Active Learning works best with instructional content, lessons, or study materia
 
   // Reflective Learning Handler
   const handleReflectiveLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
     // Dismiss interest tracking overlay when any learning mode is clicked
     dismissOverlay();
     
@@ -2192,8 +2243,8 @@ Reflective Learning works best with instructional content, lessons, or study mat
           })()}
         </div>
 
-        {typeof document !== 'undefined' && hasActiveLearningMode && filteredRecommendations.length > 0 && hasClassification &&
-          createPortal(
+          {typeof document !== 'undefined' && hasActiveLearningMode && filteredRecommendations.length > 0 && hasClassification && isCurrentModeRecommended &&
+            createPortal(
             recommendationPanelCollapsed ? (
               <button
                 onClick={() => setRecommendationPanelCollapsed(false)}
