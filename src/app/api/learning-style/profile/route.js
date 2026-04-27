@@ -3,9 +3,11 @@ import dbConnect from '@/lib/mongodb';
 import LearningStyleProfile from '@/models/LearningStyleProfile';
 import { verifyToken } from '@/lib/auth';
 import {
+  computeClassificationReadiness,
   computeCrossSessionFactor,
   computeDiversityScore,
   computeIdleDepthFactor,
+  MINIMUM_CLASSIFICATION_INTERACTIONS,
   sumActivityEngagement,
   totalModeOpenCount,
   DEFAULT_MODE_KEYS
@@ -34,25 +36,17 @@ function computeModeDiversityScore(profile) {
 }
 
 function evaluateFinalClassification(profile) {
-  // Try multiple possible locations for totalInteractions
   const totalInteractions = toNumber(
-    profile?.dataQuality?.totalInteractions ?? 
+    profile?.dataQuality?.totalInteractions ??
     profile?.aggregatedStats?.totalInteractionsProcessed ??
     0
   );
-  
-  console.log('🔍 evaluateFinalClassification - totalInteractions:', totalInteractions);
-  console.log('🔍 profile.dataQuality:', profile?.dataQuality);
-  console.log('🔍 profile.aggregatedStats?.totalInteractionsProcessed:', profile?.aggregatedStats?.totalInteractionsProcessed);
-  
-  // TEMPORARY FIX: If totalInteractions is 0 but we know there should be data, use a fallback
-  const actualTotalInteractions = totalInteractions > 0 ? totalInteractions : 202;
   const mlConfidence = computeMlConfidence(profile);
   const diversityScore = computeModeDiversityScore(profile);
   const mlAvailable = profile?.classificationMethod === 'ml-prediction';
   const modeUsage = profile?.aggregatedStats?.modeUsage || {};
   const totalLearningTime = Object.values(modeUsage).reduce(
-    (s, v) => s + toNumber(v?.totalTime),
+    (sum, value) => sum + toNumber(value?.totalTime),
     0
   );
   const activitySum = sumActivityEngagement(profile?.aggregatedStats?.activityEngagement);
@@ -62,6 +56,11 @@ function evaluateFinalClassification(profile) {
     modeOpenCount: totalModeOpenCount(modeUsage)
   });
   const cross = computeCrossSessionFactor(profile?.readinessSignals?.recentActiveDays);
+  const readiness = computeClassificationReadiness(
+    profile?.aggregatedStats,
+    totalInteractions,
+    profile?.readinessSignals?.recentActiveDays || []
+  );
 
   let qualityScore =
     0.58 * mlConfidence +
@@ -69,12 +68,11 @@ function evaluateFinalClassification(profile) {
     0.16 * cross;
   qualityScore *= idleFactor;
 
-  const requiredQuality =
-    actualTotalInteractions < 50 ? 0.72 :
-      actualTotalInteractions < 100 ? 0.64 :
-        actualTotalInteractions < 200 ? 0.58 : 0.45; // Lowered from 0.54 to 0.45
-
-  const isFinal = mlAvailable && actualTotalInteractions > 0 && qualityScore >= requiredQuality;
+  const requiredQuality = readiness.requiredQuality;
+  const isFinal =
+    mlAvailable &&
+    totalInteractions >= MINIMUM_CLASSIFICATION_INTERACTIONS &&
+    qualityScore >= requiredQuality;
 
   return {
     isFinal,
@@ -92,7 +90,6 @@ function evaluateFinalClassification(profile) {
  */
 export async function GET(request) {
   try {
-    // Verify authentication
     const token = request.cookies.get('token')?.value;
     if (!token) {
       return NextResponse.json(
@@ -107,20 +104,14 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Invalid session payload' }, { status: 401 });
     }
 
-    // Connect to database
     await dbConnect();
 
-    // Get or create profile
     let profile = await LearningStyleProfile.findOne({ userId });
-    
     if (!profile) {
-      // Create default profile
       profile = await LearningStyleProfile.create({ userId });
     }
 
-    // Check if profile needs update
     const needsUpdate = profile.needsUpdate();
-
     const mlConfidenceScore = profile.predictionCount > 0 ? computeMlConfidence(profile) : 0;
     const finalStatus = evaluateFinalClassification(profile);
 
@@ -130,7 +121,7 @@ export async function GET(request) {
         profile: {
           dimensions: profile.dimensions,
           confidence: profile.confidence,
-          mlConfidenceScore: mlConfidenceScore, // Only non-zero after classification
+          mlConfidenceScore,
           recommendedModes: profile.recommendedModes,
           dominantStyle: profile.getDominantStyle(),
           classificationMethod: profile.classificationMethod,
@@ -151,7 +142,6 @@ export async function GET(request) {
         hasProfile: profile.predictionCount > 0
       }
     });
-
   } catch (error) {
     console.error('Error fetching learning style profile:', error);
     return NextResponse.json(

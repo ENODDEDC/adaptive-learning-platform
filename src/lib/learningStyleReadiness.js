@@ -13,6 +13,15 @@ export const DEFAULT_MODE_KEYS = [
   'reflectiveLearning'
 ];
 
+export const MINIMUM_CLASSIFICATION_INTERACTIONS = 50;
+
+export function getRequiredQuality(totalInteractions) {
+  if (totalInteractions < 50) return 0.66;
+  if (totalInteractions < 100) return 0.6;
+  if (totalInteractions < 200) return 0.56;
+  return 0.52;
+}
+
 export function sumActivityEngagement(activityEngagement) {
   if (!activityEngagement || typeof activityEngagement !== 'object') return 0;
   return Object.values(activityEngagement).reduce(
@@ -107,10 +116,7 @@ export function computeClassificationReadiness(aggregatedStats, totalInteraction
   baseQuality *= idleFactor;
   const qualityScore = Math.min(1, baseQuality * (0.68 + 0.32 * cross));
 
-  const requiredQuality =
-    totalInteractions < 50 ? 0.66 :
-      totalInteractions < 100 ? 0.6 :
-        totalInteractions < 200 ? 0.56 : 0.52;
+  const requiredQuality = getRequiredQuality(totalInteractions);
 
   return {
     qualityScore,
@@ -120,7 +126,7 @@ export function computeClassificationReadiness(aggregatedStats, totalInteraction
     idleFactor,
     crossSessionFactor: cross,
     activitySum,
-    ready: totalInteractions >= 10 && qualityScore >= requiredQuality
+    ready: totalInteractions >= MINIMUM_CLASSIFICATION_INTERACTIONS && qualityScore >= requiredQuality
   };
 }
 
