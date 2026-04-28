@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import StreamTab from '@/components/StreamTab';
 import ClassworkTab from '@/components/ClassworkTab';
 import CourseScoresTab from '@/components/CourseScoresTab';
@@ -19,7 +20,8 @@ import {
   EllipsisHorizontalIcon,
   UserGroupIcon,
   InformationCircleIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 
 const CourseDetailPage = ({
@@ -31,6 +33,7 @@ const CourseDetailPage = ({
 }) => {
 
   const { slug } = React.use(params); // slug is now courseId
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState('stream'); // Default to 'Stream' tab
   const [user, setUser] = useState(null);
@@ -1010,6 +1013,15 @@ const CourseDetailPage = ({
             <div className="flex items-center justify-between">
               {/* Left Section - Course Info */}
               <div className="flex items-center gap-4">
+                {/* Back Button */}
+                <button
+                  onClick={() => router.push('/home')}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Go to home"
+                >
+                  <ArrowLeftIcon className="w-5 h-5" />
+                </button>
+                
                 {/* Course Icon */}
                 <div className="flex items-center justify-center w-12 h-12 bg-blue-600 rounded-lg flex-shrink-0">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

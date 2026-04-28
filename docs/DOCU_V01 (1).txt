@@ -102,11 +102,13 @@ Scope of the System
 3. Content Generation: The system is capable of taking learning materials and transforming them into other forms of material such as practice quizzes, questions and activities.
 4. Supervised Machine Learning (Regression): The system applies supervised ML, specifically XGBoost, to classify students’ learning styles based on the Felder-Silverman Learning Style Model (FSLSM). This allows the platform to adapt course materials according to individual preferences. Model reliability is validated through R² score and Mean Absolute Error (MAE) from regression evaluation, K-Fold Cross Validation, and ROC curve analysis with AUC scores across all four FSLSM dimensions.
 5. Rule-Based Algorithm: To generate initial labels by mapping students' behaviors, such as time spent on videos, replay counts, or forum participation, into preliminary categories. These labels serve only as a starting point for training the machine learning model and are applied exclusively to the synthetic portion of the dataset. The real eye-tracking data from Bittner et al. (2023) uses independently validated ILS questionnaire labels, eliminating circular logic for the real data component. The rule-based algorithm only applies to the synthetic datasets and not the real eye-tracking data.
+6. Initial Interest Tracking: A behavioral interest detection system for new users who have no learning style classification yet. It passively observes user behavior while reading the initial preview panel and suggests a learning mode when genuine interest is detected.
 Limitations of the System
 1. AI Model: The AI model includes a rate limit as it can vary by the license.
 2. Assistance: The AI-generated content does not provide direct answers to the students’ assigned activities.
 3. Learning Model: The supervised machine learning (XGBoost) requires sufficient labeled training data. The training data consists of real eye-tracking data and synthetic datasets. Predictions may be inaccurate if the dataset is small or unbalanced. 
-4. Datasets: The acquired datasets used to train the machine learning algorithm may not be entirely compatible with the features present within the system.
+4. Interest System: This system is separate from the ML classifier. The interest tracking is a cold start UX feature only.
+5. Datasets: The acquired datasets used to train the machine learning algorithm may not be entirely compatible with the features present within the system.
 ________________
 Chapter 2
 CONCEPTUAL FRAMEWORK
@@ -1964,17 +1966,17 @@ Operations and Testing Procedures
 The operation and testing phase of a Learning Management System (LMS) is a critical quality assurance process designed to bridge the gap between initial development and real-world deployment. By evaluating the software, researchers and developers can guarantee that the platform is effective for educational delivery.
 Before testing is conducted, the environment is prepared where all components are synchronized for full functionality. To mitigate the risk of user error skewing the results, participants were guided through a preliminary demonstration and provided with specific instructional sets. This was critical in the user experience, ensuring that the interactions made with the system are representative of actual operational conditions, resulting in a validated evaluation of the system’s efficacy.
 The testing itself was split to address both the technical and the qualitative aspects of the platform. The functional analysis verified that the underlying architecture—such as database retrieval and module transitions—remained stable. Simultaneously, the efficacy testing evaluated the platform’s success as an educational tool, focusing on how a user could navigate the learning materials and achieve learning objectives.
+FURPS
+Functionality is the capability of the software product to provide functions which meet stated and implied needs when the software is used under specified conditions. Usability is the capability of the software product to be understood, learned, used, and attractive to the user, when used under specified conditions. Reliability is the capability of the software product to maintain a specified level of performance when used under specified conditions. Performance is the capacity of the software product to satisfy operational constraints. Supportability is the ease with which a software system can be maintained, updated, and supported throughout its lifecycle (Al-Qutaish, 2010).
 Pretest and Posttest
 The pretest and posttest design with a control group is a widely used quasi- experimental design. In this design, the researcher selects a group to receive the treatment and another with similar characteristics to serve as the control group. Both groups complete a pretest, after which the treatment group receives the intervention, and finally, both groups complete a posttest. By ensuring similarity between the treatment and control groups, any differences in posttest scores can be attributed to the intervention received by the treatment group (Capili & Anastasi, 2024).
-Together, pre and post-testing form a framework for research and evaluation, offering insights into the effectiveness of interventions and contributing to evidence-based decision-making. In this context, the pretest and posttest design will be used for the following evaluating the efficacy of Generative AI in enhancing student comprehension by tailoring instructional materials to individual learning preferences and by investigating the system's capacity to dynamically adapt content delivery to accommodate diverse learning styles.
+Together, pre and post-testing offer insights into the effectiveness of interventions and contributing to evidence-based decision-making. In this context, the pretest and posttest design will be used for the following evaluating the efficacy of Generative AI in enhancing student comprehension by tailoring instructional materials to individual learning preferences and by investigating the system's capacity to dynamically adapt content delivery to accommodate diverse learning styles.
 1. Define Learning Objectives: Establish and communicate explicit pedagogical goals for all instructional materials.
 2. Develop Assessment: Design validated testing tools, such as multiple-choice and Likert-scale assessments, aligned with the defined objectives.
 3. Conduct Pretest: Execute a pretest to determine the learners' initial knowledge state prior to platform exposure.
 4. Deployment: Implement the AI-driven learning management system, leveraging Machine Learning to deliver personalized content.
 5. Conduct Posttest: Conduct a post-intervention test to quantify knowledge acquisition and retention.
 6. Data Evaluation: Apply statistical treatments to the gathered data to evaluate the efficacy of the AI intervention.
-
-
 Functional Testing
 Different operational elements are highlighted, depending on which type of software testing is being employed as part of the overall testing strategy. Functional testing assesses overall compatibility between different software modules, which has a direct bearing on other related aspects, such as expected user interactions and the viability of the user interface.
 The test environment provided by functional testing is considered an example of black-box testing, in which testers don’t gain insight to the inner machinations of the system (as is found in white-box testing)—and are instead given a “Pass/Fail” report on whether the system and its pipelines function as desired.
@@ -1985,15 +1987,21 @@ The test environment provided by functional testing is considered an example of 
 5. Analysis: Evaluate how actual outputs compare to expected outputs.
 6. Validation: Determine whether the software application works satisfactorily per expectations.
 Evaluation Procedure
-The evaluation procedure was conducted to systematically gather data from the respondents regarding the performance and acceptability of the AVONIC system. The process included selecting respondents, explaining the study, demonstrating the system, allowing user interaction, distributing the questionnaire, collecting responses, and analyzing the data.
+To assess the effectiveness of the learning management system, a structured evaluation protocol was carried out. The session began with a comprehensive system overview and demonstration, followed by a pre-test to establish the participants' baseline knowledge of the subject matter. After interacting with the instructional materials, respondents completed a post-test to measure learning outcomes. The process concluded with a detailed analysis of the data collected from both the assessments and the respondent surveys.
 Sampling Strategy
-The study used purposive sampling in selecting respondents. Purposive sampling is a non-probability sampling technique where participants are selected based on their relevance to the study and their ability to provide meaningful data. (random sampling)
-This method is commonly used in research where respondents must have specific knowledge or experience related to the study (Nyimbili & Nyimbili, 2024). In this study, respondents were selected based on their familiarity with agricultural systems and technology.
+This study utilizes simple random sampling in selecting participants. Simple random sampling is an extensively used sampling method in scientific research. Simple random sampling is selected for populations which are highly homogenous where the members of the research are randomly selected to participate in the research. Simple Random Sampling is the simplest and most common method of selecting a sample, in which the sample is selected unit by unit, with equal probability of selection for each unit at each draw (Noor et al., 2022).
+
+
+
+
+
+
 Research Participants
-The respondents consisted of farmers, relatives of farmers, agricultural students, and individuals interested in agricultural technology. These participants were selected because they represent the potential users of the AVONIC system.
-The participants are students from the college level, instructors who teach college level, and IT professionals with familiarity for AI/ML. These participants were chosen potential users due to their 
+The study's respondents were selected to represent the primary user base of the Intelevo system, encompassing individuals with varying levels of experience in academic and technical environments.
 The following groups of respondents were included in the study:
-* General Users: Consists of general users with varying levels of digital literacy, ranging from non-tech-savvy individuals to regular internet users. This includes students, working professionals, and community members who require foundational or specialized digital skills.
+* Students: As the primary end-users of the learning management system, students provide essential feedback on the tool's daily usability. Their involvement ensures the system effectively supports the learning process, remains engaging, and meets the practical needs of an academic environment.
+* Individuals with varying LMS experience: Including both experienced and novice users helps determine the system's "learnability." Those familiar with other platforms can offer comparative insights on efficiency and features, while first-time users help identify potential hurdles in the user interface or areas where the system may not be intuitive.
+* Individuals with educational or technical training backgrounds: These participants bring a specialized perspective on how well the system delivers complex information. Their background allows them to evaluate the technical stability of the platform and the effectiveness of the instructional design, ensuring the system is robust enough for professional or technical coursework.
 The evaluation procedure for the study was designed to systematically assess the system’s performance, functionality, and overall user satisfaction based on the predefined objectives. The steps below outline the comprehensive process employed to gather reliable and actionable feedback from the respondents.
 1. Each respondent was given a system evaluation questionnaire to measure the system’s performance.
 2. The research objectives were explained, and a system demonstration was conducted to present the system’s functionality.
@@ -2040,139 +2048,166 @@ Chapter 4
 RESULTS AND DISCUSSION  
         This section presents an operational overview of the developed Intelevo system. It provides a detailed discussion of the system’s overall structure, core functionalities, and performance based on actual testing. The section also outlines the specific capabilities and limitations of the system. Lastly, the overall efficacy of Intelevo is evaluated through user assessment results and comprehensive system analysis.
 Project Description
-Intellevo is a learning management system designed to assist learners in finding their preferred learning styles based on the Felder-Silverman Learning Style Model through the use of machine learning and allows learners to transform content based on those learning preferences by utilizing generative artificial intelligence. To ensure that the application runs regardless of where it is deployed, the application will be packaged using Docker. The testing procedure involves testing the system by its ability to adapt to the users preferences and the ability to transform content uploaded to the learning management system.
-
-
-________________
-
-
-
-
+Intelevo is an adaptive learning management system (LMS) designed to provide a more personalized educational experience by tailoring instructional content to each student's unique learning style. While traditional platforms often offer a "one-size-fits-all" approach, Intelevo leverages artificial intelligence and machine learning to identify individual preferences and automatically reformat materials to better suit different types of learners.
 Project Structure
         The overall structure of the Intelevo system integrates artificial intelligence, machine learning, and web-based technologies into a unified adaptive learning platform. The system is designed to personalize educational content by analyzing student interaction data dynamically adjusting learning materials according to individual learning styles. 
         The system begins with user interaction through a web-based interface where students and instructors access the platform. As users engage with lessons, quizzes, and activities, the system continuously collects behavioral data such as navigation patterns, response time, and module, which classifies learners based on The Felder-Silverman Learning Style Model (FSLSM).
         The processed data is then utilized by the content personalization engine, which transforms learning materials into adaptive formats such as textual explanations, visual diagrams, audio narration, and interactive exercises. The system operates entirely online, a centralized web platform.
         The Intelevo interface is designed to provide users with a comprehensive and structured learning environment, including course management, adaptive content delivery, and performance monitoring. The following sections describe the system interface and its key components as presented in the Intelevo platform.
+User Access
+  
 
+	  
 
+	Figure 124. Intelevo - Secure User Access
+	        As shown in Figure 124, The interface serves as the primary security gateway of  the Intelevo platform, it enables users to securely access the system through multiple authentication options while maintaining usability and accessibility. The core features of the interface are as follows:
+Multi-Method Authentication: This feature allows users to log in using traditional email and password credentials or third-party OAuth integration (e.g., Google). This approach enhances both flexibility and security in user authentication.
+Account Recovery and Session Management: The interface includes a “Forgot Password?” function to assist users in recovering their accounts in case of credential loss. Additionally, the “Remember Me” option enables sessions persistence, allowing users to remain logged in across sessions for improved convenience.
+User Onboarding Gateway: A “Create Account” option is provided for new users, facilitating seamless navigation to the registration module. This ensures efficient onboarding and system accessibility for first time users.
+Course Management
+  
 
+	Figure 125. Intelevo - Course Management Dashboard
+	As shown in Figure 125, the interface serves as the central hub for managing the user’s academic environment within the Intevelo web-based platform. It provides an integrated view of courses, schedules, activities, and intelligent support tools.
+  
 
+	Figure 126. Public Courses Display
+	        As shown in Figure 126, the interface provides a list of publicly available courses within the Intelevo web-based platform. It enables users to easily find courses they are interested in. The feature also allows users to search for courses.
+  
 
+	Figure 127. Course Creation
+	        As shown in Figure, the interface facilitates course creation by enabling users to input essential parameters, including the section, subject, schedule, and visibility settings.
+  
 
+	Figure 128. Course Enrollment
+	As depicted in the figure, the interface permits users to join a course via a unique course key. Access is granted exclusively if the course's visibility is set to public.
+Course Dashboard
+  
 
+	Figure 129. Course Feed
+	        As illustrated in Figure 129, the Course Feed serves as the primary dashboard for instructors, providing a centralized interface to broadcast announcements, monitor recent course updates, and track key metrics such as student enrollment and pending grading tasks.
+  
 
-Secure User Access
+	  
 
+	Figure 130. Course Visibility
+	        As shown in Figure 130, this allows instructors to change how users will access their course. Entry is denied if the visibility is set to private. If the course visibility is set to private the user can only enroll in the course through their email address.
+Assignment and Activity Management
+  
+
+	Figure 131. Activity Feed
+	As shown in Figure 131, the interface provides a comprehensive environment for organizing, accessing, and managing academic deliverables and learning resources within the Intelevo web-based platform. It enables users to efficiently track tasks, locate materials, and customize their viewing experience. The core features of the interface are as follows:
+Categorical Filtering and Sorting: This feature provides a multi-layered filtering system that allows users to organize content based on type (e.g., Assignments, Forms, Materials) or urgency (e.g., Due This Week, Overdue, Completed). This improves task prioritization and overall resource management.
+Content-Specific Metadata Cards: Each activity is displayed through structured cards containing relevant metadata such as tags, timestamps, and content type. For learning materials, the system supports interactive previews (e.g., PDF thumbnails), enabling users to quickly verify content without leaving the main interface.
+Global Search and Retrieval: A centralized search function allows users to quickly locate specific assignments or resources using keyword-based queries. This significantly enhances navigation efficiency, especially in large course repositories.
+  
 
 	  
 
 	  
 
-	       Figure 124 . Intelevo - Secure User Access
-        As shown in Figure 124, The interface serves as the primary security gateway of  the Intelevo platform, it enables users to securely access the system through multiple authentication options while maintaining usability and accessibility. The core features of the interface are as follows:
-* Multi-Method Authentication:
-This feature allows users to log in using traditional email and password credentials or third-party OAuth integration (e.g., Google). This approach enhances both flexibility and security in user authentication.
+	Figure 132. Classwork Creation
+	        As illustrated in Figure 132,
 
 
-* Account Recovery and Session Management:
-The interface includes a “Forgot Password?” function to assist users in recovering their accounts in case of credential loss. Additionally, the “Remember Me” option enables sessions persistence, allowing users to remain logged in across sessions for improved convenience.
-* User Onboarding Gateway:
-A “Create Account” option is provided for new users, facilitating seamless navigation to the registration module. This ensures efficient onboarding and system accessibility for first time users.
+  
 
-
-Course Management Dashboard
-
+	Figure 133. Form Creation
+	As depicted in Figure 133,
+  
 
 	  
 
-	
+	Figure 134. Assignment Submission
+	As shown in Figure 134,
+  
 
-	                          Figure 125, Intelevo - Course Management Dashboard
-As shown in Figure 125, the interface serves as the central hub for managing the user’s academic environment within the Intevelo web-based platform. It provides an integrated view of courses, schedules, activities, and intelligent support tools. The core features of the interface are as follows:
-* Global Navigation Sidebar:
-        This feature provides a structured menu that allows users to seamlessly navigate between the home dashboard, course modules, task list, and schedules. It ensures efficient and user-friendly system navigation.
-* Dynamic Course Overview:
-The dashboard centralizes active enrollments into interactive course cards that display key information such as instructor details, class schedules, and real-time counters for learning materials and assignments.
-* Public Course: A searchable repository of available courses within the institution that enables students to explore new subjects, view profiles, and monitor real-time enrollment availability.
-* Activity and Time Tracking:
-A synchronized calendar widget and recent activity feed are integrated into the interface, enabling students to monitor deadlines and track their academic progress in a chronological manner.
+	Figure 135. Form Submission
+	As shown in Figure 135,
+
+
+
+
+
+
+Course Students/Members
+  
+
+	Figure 136. Course Students/Members
+	As depicted in Figure 136,
+  
+
+	  
+
+	  
+
+	Figure 138. Course Invitation - Student
+	As illustrated in Figure 138,
+  
+
+	Figure 139. Course Invitation - Co-Teacher
+	As shown in Figure 139,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 Assignment and Activity Management
+  
 
-
-	  
-
+	Figure 127. Activity Feed
 	
-
-	
-
-	  
-
-	
-
-	Figure 126, Intelevo - Activity and Content Management Interface
-As shown in Figure 126, the interface provides a comprehensive environment for organizing, accessing, and managing academic deliverables and learning resources within the Intelevo web-based platform. It enables users to efficiently track tasks, locate materials, and customize their viewing experience. The core features of the interface are as follows:
-* Categorical Filtering and Sorting
-This feature provides a multi-layered filtering system that allows users to organize content based on type (e.g., Assignments, Forms, Materials) or urgency (e.g., Due This Week, Overdue, Completed). This improves task prioritization and overall resource management.
-* Content-Specific Metadata Cards
-Each activity is displayed through structured cards containing relevant metadata such as tags, timestamps, and content type. For learning materials, the system supports interactive previews (e.g., PDF thumbnails), enabling users to quickly verify content without leaving the main interface.
-* Global Search and Retrieval
-A centralized search function allows users to quickly locate specific assignments or resources using keyword-based queries. This significantly enhances navigation efficiency, especially in large course repositories.
-
 
 Progress Tracking and Monitoring
   
 
-	
+	  
 
 	  
 
-	
+	Figure 127. Intelevo - Progress Tracking and Monitoring
+	As shown in Figure 127, the interface presents a comprehensive overview of the user’s learning behavior and the system’s adaptive learning analysis. It integrates machine learning insights with engagement data to support continuous monitoring and personalization of the learning experience . The following are the core features of the interface:
+Learning Style Classification Progress: Features a milestone-based progress tracker that monitors student interactions within the system. The collected data are used by the machine learning model to refine the student’s learning profile through classification stages such as Initial, Refined, and Stable.
+Engagement Analytics Summary: Displays behavioral metrics such as total interactions, cumulative learning time, and active learning sessions, providing a quantitative overview of student engagement.
+AI Usage Monitoring: Tracks the use of AI assistance modes such as Ask, Research, and Text-to-Docs, helping the system analyze user interaction patterns.
+Learning Mode Usage Records: Provides a detailed breakdown of the frequency and duration of usage in specific instructional modes such as Step-by-step, Diagrams, and Patterns, allowing the system to identify preferred learning formats.
+Recent Activity Logs: Includes a log section that records timestamped user activities, providing transparency in system tracking and supporting continuous adaptive learning analysis.
 
-	  
 
-	
 
-	       Figure 127, Intelevo - Progress Tracking and Monitoring
-               As shown in Figure 127, the interface presents a comprehensive overview of the user’s learning behavior and the system’s adaptive learning analysis. It integrates machine learning insights with engagement data to support continuous monitoring and personalization of the learning experience . The following are the core features of the interface:
-* Learning Style Classification Progress:
-Features a milestone-based progress tracker that monitors student interactions within the system. The collected data are used by the machine learning model to refine the student’s learning profile through classification stages such as Initial, Refined, and Stable..
-* Engagement Analytics Summary:
-        Displays behavioral metrics such as total interactions, cumulative learning time, and active learning sessions, providing a quantitative overview of student engagement.
-* AI Usage Monitoring:
-Tracks the use of AI assistance modes such as Ask, Research, and Text-to-Docs, helping the system analyze user interaction patterns.
-* Learning Mode Usage Records:
-Provides a detailed breakdown of the frequency and duration of usage in specific instructional modes such as Step-by-step, Diagrams, and Patterns, allowing the system to identify preferred learning formats..
-* Recent Activity Logs:
-Includes a log section that records timestamped user activities, providing transparency in system tracking and supporting continuous adaptive learning analysis.
+
 
 
 Adaptive Learning Content 
   
 
-	
-
-
-
-  
-
-	
-
-Figure 128, Intelevo - Adaptive Learning Content 
-
-
-As shown in Figure 128, the interface provides multiple content presentation modes that allow students to access uploaded learning materials in different formats according to their preferences. This feature supports personalized learning by transforming instructional materials into various accessible formats. The following are the core features of the interface:
-* Content Presentation Mode Selection Panel:
-Provides multiple viewing options such as Listen Along, Diagrams, Step-by-step, Overview, Examples, Patterns, Practice, and Think Deeper for presenting the same learning material in different formats.
-
-
-* Adaptive Content Transformation:
-Allows the system to convert uploaded materials such as presentation files, PDFs, and documents into alternative forms to improve accessibility and understanding.
-* Active Mode Indicator:
-Highlights the currently selected content mode, allowing users to easily identify the active presentation format..
-* Personalized Learning Support:
-Enables students to choose the format that best matches their learning preference and comprehension style.
+	Figure 128, Intelevo - Adaptive Learning Content 
+	As shown in Figure 128, the interface provides multiple content presentation modes that allow students to access uploaded learning materials in different formats according to their preferences. This feature supports personalized learning by transforming instructional materials into various accessible formats. The following are the core features of the interface:
+Content Presentation Mode Selection Panel: Provides multiple viewing options such as Listen Along, Diagrams, Step-by-step, Overview, Examples, Patterns, Practice, and Think Deeper for presenting the same learning material in different formats.
+Adaptive Content Transformation: Allows the system to convert uploaded materials such as presentation files, PDFs, and documents into alternative forms to improve accessibility and understanding.
+Active Mode Indicator: Highlights the currently selected content mode, allowing users to easily identify the active presentation format..
+Personalized Learning Support: Enables students to choose the format that best matches their learning preference and comprehension style.
+Project Capabilities
+The system includes standard administrative and instructional tools such as course management, user management, and performance monitoring. For new users without an established profile, the system passively observes behavior during an initial preview to suggest an appropriate learning mode. The platform monitors user behaviors, such as navigation patterns and time spent on modules, to refine its understanding of a student’s learning preferences. Utilizing the Felder-Silverman Learning Style Model (FSLSM) and the XGBoost machine learning algorithm, the system classifies students based on their behavioral data and interactions. The system can transform standard learning materials into various formats, including textual explanations, visual diagrams, audio narrations, and interactive exercises based on the Felder-Silverman Learning Style Model (FSLSM). By integrating Gemini AI, the system generates practice quizzes, questions, and activities from existing learning materials.
+Project Limitations
+While the Intelevo system offers robust adaptive features, it is subject to several technical and operational limitations. The integration of Gemini AI introduces dependencies on external rate limits, which vary by license, and the AI is strictly configured to facilitate learning without providing direct answers to assigned activities. Furthermore, the accuracy of the system’s XGBoost machine learning classifier is heavily dependent on the volume and quality of available training data; small or imbalanced datasets can lead to less precise learning style predictions. Additionally, the behavioral interest detection feature is limited in scope as a "cold start" utility, and some functionalities may be constrained by inconsistencies between the training datasets and the final system features.
 
 
 
@@ -2229,6 +2264,9 @@ Aldahwan, N. S., & Alsaeed, N. I. (2020). Use of artificial Intelligent in Learn
 
 
 Alhakeem, Z. M., Jebur, Y. M., Henedy, S. N., Imran, H., Bernardo, L. F. A., & Hussein, H. M. (2022). Prediction of Ecofriendly Concrete Compressive Strength Using Gradient Boosting Regression Tree Combined with GridSearchCV Hyperparameter-Optimization Techniques. Materials, 15(21), 7432. https://doi.org/10.3390/ma15217432 
+
+
+Al-Qutaish, R. E. (2010). Quality Models in Software Engineering Literature: An Analytical and Comparative Study. Journal of American Science. http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.174.7042
 
 
 Ally, M. (2004). Foundations of educational theory for online learning. Theory and practice of online learning, 2(1), 15-44. 
@@ -2436,6 +2474,9 @@ Nazempour, R., & Darabi, H. (2023). Personalized learning in virtual learning en
 
 
 Next.js docs. (n.d.). Next.js. https://nextjs.org/docs 
+
+
+Noor, Shagofah & Tajik, Omid & Golzar, Jawad. (2022). Simple Random Sampling. 1. 78-82. 10.22034/ijels.2022.162982. 
 
 
 Nti, I. K., Nyarko-Boateng, O., & Aning, J. (2021). Performance of Machine Learning Algorithms with Different K Values in K-fold CrossValidation. International Journal of Information Technology and Computer Science, 13(6), 61–71. https://doi.org/10.5815/ijitcs.2021.06.05 
