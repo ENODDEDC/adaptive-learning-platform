@@ -217,6 +217,18 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
 
     // If on Step 2 — validate non-YouTube video descriptions before proceeding
     if (currentStep === 2) {
+      // Block if any non-YouTube video has no description
+      const nonYouTubeWithoutDesc = videoLinks.filter(
+        v => v.platform !== 'youtube' && !v.videoDescription?.trim()
+      );
+
+      if (nonYouTubeWithoutDesc.length > 0) {
+        setError(
+          `Please add a description for all non-YouTube videos. AI learning modes require a description to generate personalized content for students.`
+        );
+        return;
+      }
+
       const nonYouTubeWithDesc = videoLinks.filter(
         v => v.platform !== 'youtube' && v.videoDescription?.trim()
       );
