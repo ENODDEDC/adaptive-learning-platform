@@ -1015,9 +1015,9 @@ const CourseDetailPage = ({
               <div className="flex items-center gap-4">
                 {/* Back Button */}
                 <button
-                  onClick={() => router.push('/home')}
+                  onClick={() => router.push('/courses')}
                   className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                  aria-label="Go to home"
+                  aria-label="Back to courses"
                 >
                   <ArrowLeftIcon className="w-5 h-5" />
                 </button>
