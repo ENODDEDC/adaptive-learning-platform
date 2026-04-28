@@ -92,6 +92,8 @@ export default function UnifiedFloatingAssistant() {
   const [aiResponse, setAiResponse] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
+  const [generatedDoc, setGeneratedDoc] = useState(null);
+  const [docGenerating, setDocGenerating] = useState(false);
 
   // Format AI response text into readable structure
   const formatMessage = (text, role) => {
@@ -141,11 +143,31 @@ export default function UnifiedFloatingAssistant() {
       tracker.trackAIAssistantInteraction(modeMap[selectedMode], promptText.length);
     }
 
-    // Text to Docs still navigates away
+    // Text to Docs — generate inline floating panel
     if (selectedMode === 'Text to Docs') {
-      router.push(`/text-to-docs?prompt=${encodeURIComponent(promptText)}`);
-      setSelectedTool(null);
+      const docPrompt = promptText.trim();
       setPromptText('');
+      setDocGenerating(true);
+      setGeneratedDoc(null);
+      try {
+        const res = await fetch('/api/generate-document', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: docPrompt })
+        });
+        const data = await res.json();
+        console.log('🔍 generate-document response:', data);
+        if (data.content) {
+          setGeneratedDoc({ content: data.content, prompt: docPrompt });
+        } else {
+          setGeneratedDoc({ content: `Error: ${data.error || 'No content returned from AI'}`, prompt: docPrompt });
+        }
+      } catch (err) {
+        console.error('Doc generation error:', err);
+        setGeneratedDoc({ content: 'Failed to generate document. Please try again.', prompt: docPrompt });
+      } finally {
+        setDocGenerating(false);
+      }
       return;
     }
 
@@ -386,8 +408,147 @@ export default function UnifiedFloatingAssistant() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedTool]);
 
+  const downloadDocument = async (content, title) => {
+    try {
+      const res = await fetch('/api/create-word-doc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, title: title || 'Document' })
+      });
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title || 'document'}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+      alert('Failed to download document');
+    }
+  };
+
   return (
     <>
+      {/* Generated Document Preview Panel - Left Side */}
+      {generatedDoc && (
+        <div className="fixed left-0 top-0 bottom-0 w-[600px] bg-white border-r border-gray-200 shadow-2xl z-50 flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Generated Document</h3>
+                <p className="text-xs text-gray-500">{generatedDoc.prompt}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => downloadDocument(generatedDoc.content, generatedDoc.prompt)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download
+              </button>
+              <button
+                onClick={() => setGeneratedDoc(null)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Document Content */}
+          <div className="flex-1 overflow-y-auto bg-gray-100">
+            {/* Paper-style container */}
+            <div className="max-w-2xl mx-auto my-8 bg-white shadow-md rounded px-16 py-12 min-h-full">
+              {(() => {
+                const content = generatedDoc.content;
+
+                const cleanText = (text) => text
+                  .replace(/\*\*/g, '')
+                  .replace(/\*/g, '')
+                  .replace(/`/g, '')
+                  .replace(/~/g, '')
+                  .replace(/#{1,6}\s*/g, '')
+                  .replace(/^\s*[-*+]\s*/gm, '')
+                  .replace(/^\s*\d+\.\s*/gm, '')
+                  .trim();
+
+                const lines = content.split('\n');
+                const elements = [];
+                let currentList = null;
+                let listItems = [];
+                let firstContentLine = true;
+
+                lines.forEach((line, i) => {
+                  const trimmed = line.trim();
+
+                  if (!trimmed) {
+                    if (currentList) {
+                      elements.push(<ul key={`list-${i}`} className="mb-6 ml-8 space-y-2">{listItems}</ul>);
+                      currentList = null; listItems = [];
+                    }
+                    return;
+                  }
+
+                  if (trimmed.startsWith('#')) {
+                    if (currentList) { elements.push(<ul key={`list-${i}`} className="mb-6 ml-8 space-y-2">{listItems}</ul>); currentList = null; listItems = []; }
+                    firstContentLine = false;
+                    const level = (trimmed.match(/^#+/) || [''])[0].length;
+                    const text = cleanText(trimmed);
+                    if (level === 1) elements.push(<h1 key={i} className="text-3xl font-bold text-gray-900 mt-10 mb-6 text-center border-b-2 border-gray-300 pb-4">{text}</h1>);
+                    else if (level === 2) elements.push(<h2 key={i} className="text-xl font-bold text-gray-900 mt-8 mb-4 border-b border-gray-200 pb-2">{text}</h2>);
+                    else elements.push(<h3 key={i} className="text-lg font-semibold text-gray-900 mt-6 mb-3">{text}</h3>);
+                    return;
+                  }
+
+                  if (trimmed.match(/^[-*•]\s+/)) {
+                    listItems.push(<li key={i} className="text-base leading-7 text-gray-800 list-disc">{cleanText(trimmed)}</li>);
+                    currentList = true; return;
+                  }
+
+                  if (trimmed.match(/^\d+\.\s+/)) {
+                    if (currentList) { elements.push(<ul key={`list-${i}`} className="mb-6 ml-8 space-y-2">{listItems}</ul>); currentList = null; listItems = []; }
+                    const num = (trimmed.match(/^\d+/) || ['1'])[0];
+                    elements.push(<div key={i} className="mb-3 text-base leading-7 text-gray-800 ml-4"><span className="font-bold mr-2">{num}.</span>{cleanText(trimmed)}</div>);
+                    return;
+                  }
+
+                  if (currentList) { elements.push(<ul key={`list-${i}`} className="mb-6 ml-8 space-y-2">{listItems}</ul>); currentList = null; listItems = []; }
+
+                  const cleaned = cleanText(trimmed);
+                  // First non-empty line = document title
+                  if (firstContentLine) {
+                    firstContentLine = false;
+                    elements.push(<h1 key={i} className="text-2xl font-bold text-gray-900 mt-4 mb-8 text-center border-b-2 border-gray-300 pb-4">{cleaned}</h1>);
+                  } else if (trimmed.match(/^[A-Z\s]+:?\s*$/) && trimmed.length < 100) {
+                    elements.push(<h3 key={i} className="text-lg font-bold text-gray-900 mt-8 mb-3 uppercase tracking-wide">{cleaned.replace(/:$/, '')}</h3>);
+                  } else {
+                    elements.push(<p key={i} className="mb-5 text-base leading-7 text-gray-800 text-justify indent-6">{cleaned}</p>);
+                  }
+                });
+
+                if (currentList && listItems.length > 0) elements.push(<ul key="list-final" className="mb-6 ml-8 space-y-2">{listItems}</ul>);
+
+                return elements;
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* AI Assistant Panel */}
       {selectedTool === 'ai' && (
         <div 
@@ -528,19 +689,44 @@ export default function UnifiedFloatingAssistant() {
                   </div>
                 </div>
 
+                {/* Docs mode disclaimer */}
+                {selectedMode === 'Text to Docs' && (
+                  <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <p className="text-xs text-amber-800 leading-relaxed">
+                        <strong>Beta Feature:</strong> This mode is under development. Generated documents may contain inaccuracies or incomplete information. Please review and verify content before use.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between mt-3">
                   <p className="text-xs text-gray-400">
                     <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-gray-500 font-mono">Ctrl+Enter</kbd> to submit
                   </p>
                   <button
                     onClick={handleSubmit}
-                    disabled={!promptText.trim()}
+                    disabled={!promptText.trim() || aiLoading || docGenerating}
                     className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                    Send
+                    {docGenerating ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        {selectedMode === 'Text to Docs' ? 'Generate' : 'Send'}
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

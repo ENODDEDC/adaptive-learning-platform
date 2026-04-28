@@ -23,9 +23,18 @@ export async function POST(request) {
       lengthGuidance = 'Provide balanced coverage (500-800 words).';
     }
 
-    const systemPrompt = `You are a professional document writer. Create well-organized, clearly structured documents. ${lengthGuidance} Use headings, subheadings, and paragraphs. Do not include file format indicators or markdown code blocks.`;
+    const systemPrompt = `You are a professional document writer. Create well-organized, clearly structured documents. ${lengthGuidance}
 
-    const userPrompt = `Create a well-organized document about: "${prompt}"\n\nInclude: Title, Introduction, Main Content sections, and Conclusion.`;
+STRICT RULES:
+- Start with the document title using # (e.g., # What is Bitcoin?)
+- Use ## for section headings (e.g., ## History of Bitcoin)
+- Do NOT include generic structural labels like "Main Content", "Conclusion", "Introduction" as standalone headings
+- Integrate introduction and conclusion naturally as paragraphs without labeling them
+- Use numbered lists (1. 2. 3.) or bullet points (- ) where appropriate
+- Do not include file format indicators or markdown code blocks
+- Write the actual content directly, no meta-commentary like "Here is your document"`;
+
+    const userPrompt = `Write a document about: "${prompt}"`;
 
     const response = await fetch(CEREBRAS_API_URL, {
       method: 'POST',
@@ -57,7 +66,10 @@ export async function POST(request) {
     content = content
       .replace(/^(```markdown|```)\s*/i, '')
       .replace(/```\s*$/i, '')
-      .replace(/^Here's.*?document.*?:/i, '')
+      .replace(/^Here's.*?document.*?:\n?/im, '')
+      .replace(/^Here is.*?document.*?:\n?/im, '')
+      // Remove generic structural labels
+      .replace(/^#{1,3}\s*(Main Content|Introduction|Conclusion|Overview)\s*$/gim, '')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
