@@ -921,7 +921,7 @@ const CourseDetailPage = ({
     !documentPanelOpen &&
     !isCreateClassworkModalOpen;
 
-  const showRightSidebar = !documentPanelOpen && !isCreateClassworkModalOpen && (isInstructor && (activeTab === 'stream' || activeTab === 'classwork'));
+  const showRightSidebar = !documentPanelOpen && !isCreateClassworkModalOpen && (activeTab === 'stream' || activeTab === 'classwork');
 
   const now = new Date();
   const upcomingAssignments = (assignments || [])
@@ -1714,8 +1714,12 @@ const CourseDetailPage = ({
                         </svg>
                       </div>
                       <div>
-                        <h3 className="text-gray-900 font-semibold text-sm">Teaching Overview</h3>
-                        <p className="text-gray-500 text-xs">Course management</p>
+                        <h3 className="text-gray-900 font-semibold text-sm">
+                          {isInstructor ? 'Teaching Overview' : 'My Assignments'}
+                        </h3>
+                        <p className="text-gray-500 text-xs">
+                          {isInstructor ? 'Course management' : 'Upcoming deadlines'}
+                        </p>
                       </div>
                     </div>
                     <button
@@ -1731,84 +1735,110 @@ const CourseDetailPage = ({
 
                 {/* Professional Stats Grid */}
                 <div className="p-4 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    {[
-                      { 
-                        label: 'Active', 
-                        value: upcomingAssignments.length, 
-                        description: 'assignments'
-                      },
-                      { 
-                        label: 'To Grade', 
-                        value: pendingReviewSubmissions.length, 
-                        description: 'submissions'
-                      },
-                      { 
-                        label: 'Students', 
-                        value: students.length, 
-                        description: 'enrolled'
-                      },
-                      { 
-                        label: 'This Week', 
-                        value: dueThisWeekCount, 
-                        description: 'due soon'
-                      }
-                    ].map((stat, index) => (
-                      <div
-                        key={stat.label}
-                        className="p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors"
-                      >
-                        <div className="text-xl font-bold text-gray-900 mb-1">
-                          {stat.value}
-                        </div>
-                        <div className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
-                          {stat.label}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {stat.description}
-                        </div>
+                  {isInstructor ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        {[
+                          { 
+                            label: 'Active', 
+                            value: upcomingAssignments.length, 
+                            description: 'assignments'
+                          },
+                          { 
+                            label: 'To Grade', 
+                            value: pendingReviewSubmissions.length, 
+                            description: 'submissions'
+                          },
+                          { 
+                            label: 'Students', 
+                            value: students.length, 
+                            description: 'enrolled'
+                          },
+                          { 
+                            label: 'This Week', 
+                            value: dueThisWeekCount, 
+                            description: 'due soon'
+                          }
+                        ].map((stat, index) => (
+                          <div
+                            key={stat.label}
+                            className="p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors"
+                          >
+                            <div className="text-xl font-bold text-gray-900 mb-1">
+                              {stat.value}
+                            </div>
+                            <div className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
+                              {stat.label}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {stat.description}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
 
-                  {/* Professional Action Buttons */}
-                  <div className="space-y-2 mb-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Quick Actions</h4>
-                    <button
-                      onClick={() => setActiveTab('classwork')}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
-                    >
-                      <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                      {/* Professional Action Buttons */}
+                      <div className="space-y-2 mb-4">
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Quick Actions</h4>
+                        <button
+                          onClick={() => setActiveTab('classwork')}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
+                        >
+                          <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
+                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900">Manage Classwork</div>
+                            <div className="text-xs text-gray-500">Create and organize assignments</div>
+                          </div>
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('marks')}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
+                        >
+                          <div className="w-7 h-7 bg-green-50 rounded-lg flex items-center justify-center">
+                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900">Review Grades</div>
+                            <div className="text-xs text-gray-500">Grade submissions and feedback</div>
+                          </div>
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
                       </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">Manage Classwork</div>
-                        <div className="text-xs text-gray-500">Create and organize assignments</div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Student Stats */}
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                          <div className="text-xl font-bold text-blue-900 mb-1">
+                            {upcomingAssignments.length}
+                          </div>
+                          <div className="text-xs font-medium text-blue-700 uppercase tracking-wide">
+                            Upcoming
+                          </div>
+                        </div>
+                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-100">
+                          <div className="text-xl font-bold text-amber-900 mb-1">
+                            {dueThisWeekCount}
+                          </div>
+                          <div className="text-xs font-medium text-amber-700 uppercase tracking-wide">
+                            This Week
+                          </div>
+                        </div>
                       </div>
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('marks')}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-left bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
-                    >
-                      <div className="w-7 h-7 bg-green-50 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">Review Grades</div>
-                        <div className="text-xs text-gray-500">Grade submissions and feedback</div>
-                      </div>
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
+                    </>
+                  )}
 
                   {/* Upcoming Deadlines - Professional Style */}
                   {upcomingTasksExpanded && upcomingAssignments.length > 0 && (
