@@ -1586,7 +1586,7 @@ const ClassworkTab = ({
             lightText: 'text-red-600',
             darkText: 'text-white',
             label: 'Overdue',
-            icon: '⚠️'
+            icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           };
         case 'critical':
           return {
@@ -1606,7 +1606,7 @@ const ClassworkTab = ({
             lightText: 'text-red-700',
             darkText: 'text-white',
             label: 'Critical',
-            icon: '🚨'
+            icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
           };
         case 'urgent':
           return {
@@ -1626,7 +1626,7 @@ const ClassworkTab = ({
             lightText: 'text-orange-600',
             darkText: 'text-white',
             label: 'Urgent',
-            icon: '⏰'
+            icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           };
         case 'soon':
           return {
@@ -1646,7 +1646,7 @@ const ClassworkTab = ({
             lightText: 'text-amber-600',
             darkText: 'text-white',
             label: 'Due Soon',
-            icon: '📅'
+            icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
           };
         case 'upcoming':
           return {
@@ -1666,7 +1666,7 @@ const ClassworkTab = ({
             lightText: 'text-blue-600',
             darkText: 'text-white',
             label: 'Upcoming',
-            icon: '📋'
+            icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
           };
         default:
           return {
@@ -1686,7 +1686,7 @@ const ClassworkTab = ({
             lightText: 'text-emerald-600',
             darkText: 'text-white',
             label: 'Normal',
-            icon: '✅'
+            icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
           };
       }
     };
@@ -1709,16 +1709,47 @@ const ClassworkTab = ({
         >
           {/* Clean Header */}
           <div className={gridHeaderClass}>
-            {/* Header with Type and Date */}
+            {/* Header with Type, Status Badge, and Date - all in one row */}
             <div className={`flex items-center justify-between ${compactMode ? 'mb-2' : 'mb-4'}`}>
               <div className={`flex items-center ${compactMode ? 'gap-2.5' : 'gap-3'}`}>
-                <div className={`${compactMode ? 'w-8 h-8 rounded-lg' : 'w-10 h-10 rounded-xl'} bg-gray-100 flex items-center justify-center`}>
-                  <span className={compactMode ? 'text-base' : 'text-lg'}>📄</span>
+                <div className={`${compactMode ? 'w-8 h-8 rounded-lg' : 'w-10 h-10 rounded-xl'} bg-gray-100 flex items-center justify-center text-gray-500`}>
+                  {React.cloneElement(config.icon, { className: compactMode ? 'w-4 h-4' : 'w-5 h-5' })}
                 </div>
-                <div>
+                <div className="flex items-center gap-2">
                   <span className={`inline-flex ${compactMode ? 'px-2.5 py-1' : 'px-3 py-1'} text-xs font-semibold text-gray-700 bg-gray-100 rounded-full`}>
                     {(item.type || 'assignment').charAt(0).toUpperCase() + (item.type || 'assignment').slice(1)}
                   </span>
+                  {/* Status badge inline — students only, assignments only */}
+                  {!isInstructor && itemType === 'assignment' && (
+                    <>
+                      {submission && submission.grade !== null && submission.grade !== undefined ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-full">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          {submission.grade}%
+                        </span>
+                      ) : submission && submission.status === 'submitted' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                          Submitted
+                        </span>
+                      ) : submission && submission.status === 'draft' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                          In Progress
+                        </span>
+                      ) : item.dueDate && new Date(item.dueDate) < new Date() ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-full">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          Missed
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-full">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          Not Started
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
               <div className={`${compactMode ? 'text-[11px]' : 'text-xs'} text-gray-500 flex items-center gap-1`}>
@@ -1728,48 +1759,6 @@ const ClassworkTab = ({
                 {item.createdAt ? format(new Date(item.createdAt), 'MMM dd, yyyy') : ''}
               </div>
             </div>
-
-            {/* Status Badge for Students - Prominent Position */}
-            {!isInstructor && itemType === 'assignment' && (
-              <div className={compactMode ? 'mb-2.5' : 'mb-3'}>
-                {submission && submission.grade !== null && submission.grade !== undefined ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-md">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Graded: {submission.grade}%
-                  </span>
-                ) : submission && submission.status === 'submitted' ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-md">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Submitted
-                  </span>
-                ) : submission && submission.status === 'draft' ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-md">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    In Progress
-                  </span>
-                ) : item.dueDate && new Date(item.dueDate) < new Date() ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-md">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Missed
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-md">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Not Started
-                  </span>
-                )}
-              </div>
-            )}
 
             {/* Title */}
             <h3 className={`${compactMode ? 'text-sm mb-1.5' : 'text-lg mb-3'} font-bold text-gray-900 line-clamp-2 leading-tight`}>
