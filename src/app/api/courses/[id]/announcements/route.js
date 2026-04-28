@@ -113,7 +113,7 @@ export async function POST(request, { params }) {
           sender: newAnnouncement.postedBy,
           course: courseId,
           type: 'announcement',
-          message: `New announcement in ${course.subject}: "${content.substring(0, 50)}..."`,
+          message: `New announcement in ${course.subject}: "${content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 80)}${content.length > 80 ? '...' : ''}"`,
           link: `/courses/${courseId}/announcements/${newAnnouncement._id}`,
         });
         console.log('Notification created successfully for user:', enrolledUserId);
