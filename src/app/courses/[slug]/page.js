@@ -55,6 +55,7 @@ const CourseDetailPage = ({
   const [itemComments, setItemComments] = useState({});
   const [selectedContent, setSelectedContent] = useState(null);
   const [timelineView, setTimelineView] = useState(false);
+  const [forms, setForms] = useState([]);
 
   // Use local state for course page sidebar (independent of main layout sidebar)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -275,6 +276,9 @@ const CourseDetailPage = ({
         classwork: classworkData.classwork?.length || 0,
         forms: formsData.forms?.length || 0
       });
+
+      // Store forms for student grades view
+      setForms(formsData.forms || []);
 
       const combinedItems = [
         ...announcementsData.announcements.map(item => ({ ...item, type: 'announcement' })),
@@ -1381,6 +1385,26 @@ const CourseDetailPage = ({
                       )}
                     </button>
                   )}
+                  {!isInstructor && (
+                    <button
+                      data-tour="my-grades-tab"
+                      className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative group ${activeTab === 'grades'
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-[1.02]'
+                        : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-sm'
+                        }`}
+                      onClick={() => setActiveTab('grades')}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        My Grades
+                      </div>
+                      {activeTab === 'grades' && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/30 rounded-full"></div>
+                      )}
+                    </button>
+                  )}
                 </div>
 
               {/* Scrollable Content Area */}
@@ -1694,6 +1718,202 @@ const CourseDetailPage = ({
                   courseId={courseDetails?._id} 
                   isInstructor={isInstructor} 
                 />
+              )}
+
+              {activeTab === 'grades' && !isInstructor && user && (
+                <div className="space-y-4">
+                  <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">My Grades</h3>
+                    
+                    {/* Helper function to calculate form score */}
+                    {(() => {
+                      const calculateFormScore = (form, studentResponse) => {
+                        if (!studentResponse) return null;
+
+                        let earnedPoints = 0;
+                        let totalPoints = 0;
+
+                        form.questions.forEach(q => {
+                          const studentAnswer = studentResponse.answers?.find(a => a.questionId === q.id)?.answer;
+                          totalPoints += (q.points || 0);
+
+                          if (studentAnswer !== undefined && studentAnswer !== null) {
+                            const correct = q.correctAnswer;
+                            let isCorrect = false;
+
+                            if (q.type === 'checkboxes') {
+                              if (Array.isArray(answer) && Array.isArray(correct)) {
+                                isCorrect = studentAnswer.length === correct.length && studentAnswer.every(val => correct.includes(val));
+                              }
+                            } else if (q.type === 'true_false') {
+                              isCorrect = studentAnswer.toString().toLowerCase() === correct.toString().toLowerCase();
+                            } else {
+                              isCorrect = studentAnswer.toString().trim().toLowerCase() === correct.toString().trim().toLowerCase();
+                            }
+
+                            if (isCorrect) {
+                              earnedPoints += (q.points || 0);
+                            }
+                          }
+                        });
+
+                        return {
+                          earnedPoints,
+                          totalPoints,
+                          percentage: totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0
+                        };
+                      };
+
+                      // Get student's form responses
+                      const studentFormResponses = forms
+                        .map(form => {
+                          const response = form.responses?.find(r => 
+                            (r.studentId?._id || r.studentId) === user._id
+                          );
+                          if (!response) return null;
+                          
+                          const score = calculateFormScore(form, response);
+                          return {
+                            _id: form._id,
+                            title: form.title,
+                            type: 'form',
+                            submittedAt: response.submittedAt,
+                            score: score,
+                            createdAt: form.createdAt
+                          };
+                        })
+                        .filter(Boolean);
+
+                      // Get student's assignment submissions
+                      const studentSubmissions = submissions
+                        .filter(sub => sub.studentId?._id === user._id || sub.studentId === user._id)
+                        .map(submission => ({
+                          ...submission,
+                          type: 'assignment',
+                          title: submission.assignmentId?.title || 'Untitled Assignment',
+                          dueDate: submission.assignmentId?.dueDate
+                        }));
+
+                      // Combine and sort by submission date
+                      const allGrades = [...studentSubmissions, ...studentFormResponses]
+                        .sort((a, b) => new Date(b.submittedAt || b.createdAt) - new Date(a.submittedAt || a.createdAt));
+
+                      return allGrades.length === 0 ? (
+                        <div className="text-center py-12">
+                          <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <h4 className="text-lg font-medium text-gray-900 mb-2">No Submissions Yet</h4>
+                          <p className="text-gray-600">Your grades will appear here once you submit assignments or forms.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {allGrades.map(item => {
+                            const isForm = item.type === 'form';
+                            const isGraded = isForm ? true : (item.grade !== null && item.grade !== undefined);
+                            const isSubmitted = item.status === 'submitted' || isForm;
+                            const gradeValue = isForm ? item.score.percentage : item.grade;
+                            
+                            return (
+                              <div key={item._id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <h4 className="text-base font-medium text-gray-900">
+                                        {item.title}
+                                      </h4>
+                                      
+                                      {/* Type badge */}
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                        isForm 
+                                          ? 'bg-purple-100 text-purple-700' 
+                                          : 'bg-blue-100 text-blue-700'
+                                      }`}>
+                                        {isForm ? 'Form' : 'Assignment'}
+                                      </span>
+                                      
+                                      {/* Grade badge */}
+                                      {isGraded ? (
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                          gradeValue >= 70 
+                                            ? 'bg-green-100 text-green-700' 
+                                            : gradeValue >= 60
+                                              ? 'bg-yellow-100 text-yellow-700'
+                                              : 'bg-red-100 text-red-700'
+                                        }`}>
+                                          {isForm 
+                                            ? `${item.score.earnedPoints}/${item.score.totalPoints} (${gradeValue}%)`
+                                            : `Grade: ${gradeValue}`
+                                          }
+                                        </span>
+                                      ) : isSubmitted ? (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-600">
+                                          Submitted
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                          Draft
+                                        </span>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                                      <div className="flex items-center gap-1.5">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <span>
+                                          {item.submittedAt 
+                                            ? `Submitted ${formatDistanceToNow(new Date(item.submittedAt), { addSuffix: true })}`
+                                            : 'Not submitted yet'
+                                          }
+                                        </span>
+                                      </div>
+                                      {item.dueDate && (
+                                        <div className="flex items-center gap-1.5">
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                          </svg>
+                                          <span>Due {format(new Date(item.dueDate), 'MMM dd, yyyy')}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    {!isForm && item.feedback && (
+                                      <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div className="flex items-start gap-2">
+                                          <svg className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                          </svg>
+                                          <div className="flex-1">
+                                            <p className="text-xs font-medium text-gray-700 mb-1">Instructor Feedback</p>
+                                            <p className="text-sm text-gray-600">{item.feedback}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  <button
+                                    onClick={() => {
+                                      setActiveTab('classwork');
+                                    }}
+                                    className="ml-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                    title={isForm ? "View form" : "View assignment"}
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
               )}
               </div>
             </div>

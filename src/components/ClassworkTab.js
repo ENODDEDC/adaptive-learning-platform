@@ -937,6 +937,7 @@ EnhancedPDFFileThumbnail.displayName = 'EnhancedPDFFileThumbnail';
 const ClassworkTab = ({
   courseDetails,
   isInstructor,
+  currentUser,
   onOpenContent,
   onClassworkCreated,
   onClassworkDeleted,
@@ -1320,6 +1321,18 @@ const ClassworkTab = ({
             }
             break;
         }
+      }
+
+      // Hide answered forms for students (always, regardless of status filter)
+      if (item.itemType === 'form' && !isInstructor) {
+        const responses = item.responses || [];
+        const currentUserId = currentUser?._id || currentUser?.id;
+        const hasResponse = responses.some(r => {
+          const responseStudentId = r.studentId?._id || r.studentId;
+          return responseStudentId === currentUserId;
+        });
+
+        if (hasResponse) return false;
       }
 
       // Status filter
@@ -3751,6 +3764,7 @@ const ClassworkTab = ({
         variant="danger"
         icon={<TrashIcon className="w-6 h-6" />}
       />
+
     </div>
   );
 };
