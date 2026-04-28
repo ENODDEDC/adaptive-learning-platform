@@ -4,7 +4,7 @@ import User from '@/models/User';
 import nodemailer from 'nodemailer';
 import { checkRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
 import { validateEmail, getClientIP } from '@/utils/inputValidator';
-import { generateResetToken, hashToken } from '@/utils/secureOTP';
+import { generateResetToken, hashToken, hashEmailForSearch, decryptEmail } from '@/utils/secureOTP';
 
 export async function POST(req) {
   try {
@@ -31,7 +31,8 @@ export async function POST(req) {
       return rateLimitResponse(rateLimit.retryAfter);
     }
 
-    const user = await User.findOne({ email });
+    const emailHash = hashEmailForSearch(email);
+    const user = await User.findOne({ emailHash });
 
     // Always return success to prevent email enumeration
     if (!user) {
@@ -43,15 +44,18 @@ export async function POST(req) {
 
     // Generate secure reset token (32 bytes = 64 hex characters)
     const resetToken = generateResetToken(32);
-    const passwordResetToken = hashToken(resetToken);
+    const passwordResetTokenHash = hashToken(resetToken); // Hash for storage
     const passwordResetExpires = Date.now() + 3600000; // 1 hour
 
-    user.resetPasswordToken = passwordResetToken;
+    user.resetPasswordTokenHash = passwordResetTokenHash; // Store hashed token
     user.resetPasswordExpires = passwordResetExpires;
 
     await user.save();
 
     const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
+
+    // Decrypt email for sending
+    const decryptedEmail = decryptEmail(user.emailEncrypted);
 
     // Skip email sending if SMTP is not configured
     if (process.env.SMTP_HOST && process.env.SMTP_USER) {
@@ -67,7 +71,7 @@ export async function POST(req) {
 
       const mailOptions = {
         from: process.env.FROM_EMAIL,
-        to: email,
+        to: decryptedEmail, // Use decrypted email
         subject: 'Password Reset Request - Intelevo',
         html: `
           <!DOCTYPE html>

@@ -5,6 +5,7 @@ import User from '@/models/User';
 import jwt from 'jsonwebtoken';
 import { validateEmail, sanitizeInput, getClientIP } from '@/utils/inputValidator';
 import { checkRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
+import { hashEmailForSearch, decryptEmail } from '@/utils/secureOTP';
 
 export async function POST(req) {
   try {
@@ -57,8 +58,9 @@ export async function POST(req) {
     const sanitizedDisplayName = displayName ? sanitizeInput(displayName) : '';
     const sanitizedUid = sanitizeInput(uid);
 
-    // Check if user exists in MongoDB
-    let user = await User.findOne({ email: sanitizedEmail });
+    // Check if user exists in MongoDB using email hash
+    const emailHash = hashEmailForSearch(sanitizedEmail);
+    let user = await User.findOne({ emailHash });
 
     if (!user) {
       // User doesn't exist - return flag to redirect to registration completion
@@ -89,12 +91,15 @@ export async function POST(req) {
       console.log('✅ Existing user updated with Google data:', sanitizedEmail);
     }
 
+    // Decrypt email for response
+    const decryptedEmail = decryptEmail(user.emailEncrypted);
+    
     // Generate JWT token for your app
     const token = jwt.sign(
       { 
         userId: user._id,
         id: user._id, // Keep for backward compatibility
-        email: user.email,
+        email: decryptedEmail,
         role: user.role, // Add role to JWT
         provider: 'google'
       },
@@ -109,7 +114,7 @@ export async function POST(req) {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email,
+        email: decryptedEmail,
         photoURL: user.photoURL,
         role: user.role,
         provider: 'google'

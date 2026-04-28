@@ -1244,6 +1244,13 @@ const ClassworkTab = ({
     window.location.href = `/forms/${form._id}/edit`;
   };
 
+  // Helper function to edit existing classwork/assignment
+  const handleEditClasswork = (classwork) => {
+    setEditingClasswork(classwork);
+    setClassworkType('assignment');
+    setIsCreateClassworkModalOpen(true);
+  };
+
   // Handle smooth view mode transitions
   const handleViewModeChange = (newMode) => {
     if (newMode === viewMode || isTransitioning) return;
