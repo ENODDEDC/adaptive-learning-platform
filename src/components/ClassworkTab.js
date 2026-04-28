@@ -1693,9 +1693,21 @@ const ClassworkTab = ({
 
     const urgencyConfig = getUrgencyConfig();
     const compactStudentCard = compactMode && !isInstructor;
+
+    // Left border accent based on student submission status
+    const getStatusBorderClass = () => {
+      if (isInstructor || itemType !== 'assignment') return '';
+      if (submission?.grade !== null && submission?.grade !== undefined) return 'border-l-4 border-l-green-500';
+      if (submission?.status === 'submitted') return 'border-l-4 border-l-blue-400';
+      if (submission?.status === 'draft') return 'border-l-4 border-l-amber-400';
+      if (item.dueDate && new Date(item.dueDate) < new Date()) return 'border-l-4 border-l-red-400';
+      return 'border-l-4 border-l-orange-400'; // Not Started
+    };
+    const statusBorderClass = getStatusBorderClass();
+
     const gridCardClass = compactMode
-      ? `group relative basis-[calc((100%-2rem)/3)] min-w-[calc((100%-2rem)/3)] max-w-[calc((100%-2rem)/3)] ${compactStudentCard ? 'h-full self-stretch' : 'h-[328px] self-start'} snap-start flex-shrink-0 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.01] flex flex-col`
-      : 'group relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px]';
+      ? `group relative basis-[calc((100%-2rem)/3)] min-w-[calc((100%-2rem)/3)] max-w-[calc((100%-2rem)/3)] ${compactStudentCard ? 'h-full self-stretch' : 'h-[328px] self-start'} snap-start flex-shrink-0 bg-white border border-gray-200 ${statusBorderClass} rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:scale-[1.01] flex flex-col`
+      : `group relative bg-white border border-gray-200 ${statusBorderClass} rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.01] min-h-[320px]`;
     const gridHeaderClass = compactMode ? `p-2.5 ${compactStudentCard ? 'pb-1.5' : 'pb-2'}` : 'p-6 pb-4';
     const gridBodyClass = compactMode ? `flex-1 px-3 ${compactStudentCard ? 'pb-1 flex flex-col' : ''}` : 'flex-1 px-6';
     const gridFooterClass = compactMode ? `px-3 ${compactStudentCard ? 'py-1' : 'py-1.5'} bg-gray-50 border-t border-gray-100` : 'px-6 py-4 bg-gray-50 border-t border-gray-100';
@@ -2927,6 +2939,23 @@ const ClassworkTab = ({
                 <div>
                   <h2 className={`${compactMode ? 'text-[15px]' : 'text-lg'} font-semibold text-gray-900`}>Activities</h2>
                   <p className={`${compactMode ? 'text-xs' : 'text-sm'} text-gray-500 mt-0.5`}>All classwork and assignments</p>
+                  {/* Color legend for students */}
+                  {!isInstructor && (
+                    <div className="flex items-center gap-3 mt-2 flex-wrap">
+                      {[
+                        { color: 'bg-orange-400', label: 'Not Started' },
+                        { color: 'bg-amber-400', label: 'In Progress' },
+                        { color: 'bg-blue-400', label: 'Submitted' },
+                        { color: 'bg-green-500', label: 'Graded' },
+                        { color: 'bg-red-400', label: 'Missed' },
+                      ].map(({ color, label }) => (
+                        <div key={label} className="flex items-center gap-1.5">
+                          <span className={`w-2.5 h-2.5 rounded-sm ${color} flex-shrink-0`}></span>
+                          <span className="text-xs text-gray-500">{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Essential Controls Only */}
