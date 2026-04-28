@@ -44,7 +44,7 @@ export async function POST(req) {
       return NextResponse.json({ message: 'User with this email already exists' }, { status: 409 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
     const newUser = await User.create({
       name,
       surname,
