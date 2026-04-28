@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import SequentialLearning from './SequentialLearning';
 import GlobalLearning from './GlobalLearning';
 import SensingLearning from './SensingLearning';
@@ -39,10 +40,14 @@ const LEARNING_MODES = [
 ];
 
 export default function VideoLinkViewer({ content }) {
+  const router = useRouter();
   const url = content?.url || content?.filePath || content?.cloudStorage?.url || '';
   const platform = content?.platform || content?.cloudStorage?.metadata?.platform || 'unknown';
   const platformLabel = { youtube: 'YouTube', gdrive: 'Google Drive', vimeo: 'Vimeo', direct: 'Video', unknown: 'Video' }[platform] || 'Video';
   const embedUrl = getEmbedUrl(url);
+  
+  // Get course ID from content object
+  const courseId = content?.course || content?.courseId;
   // Direct video or unknown/other platform — use native <video> player
   const isDirectVideo = platform === 'direct' || platform === 'other' ||
     /\.(mp4|webm|mov|avi|mkv|ogv|wmv|flv|3gp|mpeg|mpg)(\?|#|$)/i.test(url || '');
@@ -225,6 +230,17 @@ export default function VideoLinkViewer({ content }) {
       <div className="relative px-4 py-3 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {/* Back Button */}
+            <button
+              onClick={() => window.location.reload()}
+              className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors flex-shrink-0"
+              title="Back to course"
+            >
+              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </button>
+
             {/* Platform Badge - Modern Style */}
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
