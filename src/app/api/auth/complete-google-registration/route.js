@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import { validateEmail, sanitizeInput, getClientIP } from '@/utils/inputValidator';
 import { checkRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
 import ActivityLogger from '@/utils/activityLogger';
+import { encryptEmail, hashEmailForSearch, hashIP } from '@/utils/secureOTP';
 
 export async function POST(req) {
   let email = '';
@@ -177,9 +178,10 @@ export async function POST(req) {
     const sanitizedSuffix = suffix ? sanitizeInput(suffix) : '';
 
     // Check for duplicate email (race condition protection)
-    const existingUser = await User.findOne({ email });
+    const emailHash = hashEmailForSearch(email);
+    const existingUser = await User.findOne({ emailHash });
     if (existingUser) {
-      console.log('⚠️ Duplicate email detected during Google registration:', email);
+      console.log('⚠️ Duplicate email detected during Google registration');
       return NextResponse.json({ 
         success: false,
         message: 'An account with this email already exists. Please try logging in instead.' 
@@ -189,13 +191,18 @@ export async function POST(req) {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Encrypt email and hash IP
+    const emailEncrypted = encryptEmail(email);
+    const lastLoginIPHash = hashIP(clientIP);
+
     // Create user document with Google data and user-provided information
     const newUser = new User({
       name: sanitizedName,
       middleName: sanitizedMiddleName,
       surname: sanitizedSurname,
       suffix: sanitizedSuffix,
-      email,
+      emailHash,
+      emailEncrypted,
       password: hashedPassword, // Hashed password for dual authentication
       googleId,
       photoURL: photoURL || '',
@@ -203,19 +210,19 @@ export async function POST(req) {
       authProvider: 'google',
       role: finalRole, // Always "student" for Google OAuth
       lastLoginAt: new Date(),
-      lastLoginIP: clientIP,
+      lastLoginIPHash,
     });
 
     await newUser.save();
 
-    console.log('✅ Google registration completed for:', email, 'with role:', role);
+    console.log('✅ Google registration completed with role:', role);
 
     // Log the user registration activity
     try {
       await ActivityLogger.logUserRegistration(newUser._id, {
         name: sanitizedName,
         surname: sanitizedSurname,
-        email,
+        email, // Use plain email for logging (not stored in User model)
         authProvider: 'google'
       });
     } catch (activityError) {
@@ -240,7 +247,7 @@ export async function POST(req) {
       user: {
         id: newUser._id,
         name: `${sanitizedName} ${sanitizedSurname}`,
-        email: newUser.email,
+        email, // Return plain email to client
         photoURL: newUser.photoURL,
         role: newUser.role,
         provider: 'google'

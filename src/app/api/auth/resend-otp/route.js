@@ -5,7 +5,7 @@ import nodemailer from 'nodemailer';
 import { otpEmailTemplate } from '@/emails/OtpEmail';
 import { checkRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
 import { validateEmail, getClientIP } from '@/utils/inputValidator';
-import { generateSecureOTP } from '@/utils/secureOTP';
+import { generateSecureOTP, hashOTP, hashEmailForSearch, decryptEmail } from '@/utils/secureOTP';
 
 export async function POST(req) {
   try {
@@ -32,7 +32,9 @@ export async function POST(req) {
       return rateLimitResponse(rateLimit.retryAfter);
     }
 
-    const user = await User.findOne({ email });
+    // Search by email hash
+    const emailHash = hashEmailForSearch(email);
+    const user = await User.findOne({ emailHash });
 
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
@@ -46,7 +48,8 @@ export async function POST(req) {
     const otp = generateSecureOTP(6);
     const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    user.otp = otp;
+    // Hash OTP before storing
+    user.otpHash = hashOTP(otp);
     user.otpExpires = otpExpires;
     await user.save();
 
@@ -63,15 +66,18 @@ export async function POST(req) {
           },
         });
 
+        // Decrypt email for sending
+        const decryptedEmail = decryptEmail(user.emailEncrypted);
+        
         const mailOptions = {
           from: `"AssistEd" <${process.env.FROM_EMAIL}>`,
-          to: email,
+          to: decryptedEmail,
           subject: 'Email Verification OTP - Resent',
           html: otpEmailTemplate(otp),
         };
 
         await transporter.sendMail(mailOptions);
-        console.log('✅ OTP resent successfully to:', email);
+        console.log('✅ OTP resent successfully');
       } catch (emailError) {
         console.error('Failed to resend OTP email:', emailError.message);
         return NextResponse.json({ 

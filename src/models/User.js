@@ -15,26 +15,39 @@ const userSchema = new mongoose.Schema({
   suffix: {
     type: String,
   },
-  email: {
+  // Email - Encrypted + Hash for searching
+  emailHash: {
+    type: String,
+    unique: true,
+    index: true,
+    required: true,
+  },
+  emailEncrypted: {
     type: String,
     required: true,
-    unique: true,
   },
+  
+  // Password - Hashed with bcrypt
   password: {
     type: String,
     required: true,
   },
-  otp: {
+  
+  // OTP - Hashed for security
+  otpHash: {
     type: String,
   },
   otpExpires: {
     type: Date,
   },
+  
   isVerified: {
     type: Boolean,
     default: false,
   },
-  resetPasswordToken: {
+  
+  // Reset Token - Hashed for security
+  resetPasswordTokenHash: {
     type: String,
   },
   resetPasswordExpires: {
@@ -70,14 +83,14 @@ const userSchema = new mongoose.Schema({
   lastLoginAt: {
     type: Date,
   },
-  lastLoginIP: {
+  lastLoginIPHash: {
     type: String,
   },
   passwordChangedAt: {
     type: Date,
   },
   loginHistory: [{
-    ip: String,
+    ipHash: String,  // Hashed for privacy
     userAgent: String,
     timestamp: { type: Date, default: Date.now },
     success: Boolean,

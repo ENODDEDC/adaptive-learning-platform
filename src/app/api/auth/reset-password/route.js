@@ -32,7 +32,7 @@ export async function POST(req) {
 
     // Find user with valid reset token
     const user = await User.findOne({
-      resetPasswordToken: hashedToken,
+      resetPasswordTokenHash: hashedToken, // Use hashed field
       resetPasswordExpires: { $gt: Date.now() },
     });
 
@@ -48,12 +48,13 @@ export async function POST(req) {
 
     // Update user password and clear reset token
     user.password = hashedPassword;
-    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenHash = undefined; // Clear hashed token
     user.resetPasswordExpires = undefined;
+    user.passwordChangedAt = new Date(); // Track password change
 
     await user.save();
 
-    console.log('✅ Password reset successful for:', user.email);
+    console.log('✅ Password reset successful for user ID:', user._id);
 
     return NextResponse.json(
       { message: 'Password has been reset successfully. Redirecting to login...' },

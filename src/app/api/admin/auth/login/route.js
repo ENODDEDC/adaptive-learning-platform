@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import { checkRateLimit, resetRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
 import { validateEmail, getClientIP } from '@/utils/inputValidator';
 import { isAccountLocked, recordFailedAttempt, resetFailedAttempts } from '@/utils/accountLockout';
+import { hashEmailForSearch, hashIP, decryptEmail } from '@/utils/secureOTP';
 
 export async function POST(req) {
   let email = '';
@@ -47,8 +48,9 @@ export async function POST(req) {
       }, { status: 423 });
     }
 
-    // Use constant-time lookup
-    const user = await User.findOne({ email }).select('+password');
+    // Use constant-time lookup with email hash
+    const emailHash = hashEmailForSearch(email);
+    const user = await User.findOne({ emailHash }).select('+password');
 
     let isValidUser = false;
     let isValidPassword = false;
@@ -90,16 +92,18 @@ export async function POST(req) {
     resetFailedAttempts(email);
     resetRateLimit(clientIP, 'login');
 
-    // Update login history
+    // Update login history with hashed IP
     const userAgent = req.headers.get('user-agent') || 'Unknown';
+    const ipHash = hashIP(clientIP);
+    
     user.lastLoginAt = new Date();
-    user.lastLoginIP = clientIP;
+    user.lastLoginIPHash = ipHash;
     user.failedLoginAttempts = 0;
     user.accountLockedUntil = null;
 
     if (!user.loginHistory) user.loginHistory = [];
     user.loginHistory.unshift({
-      ip: clientIP,
+      ipHash,
       userAgent,
       timestamp: new Date(),
       success: true,
@@ -109,6 +113,9 @@ export async function POST(req) {
     }
 
     await user.save();
+
+    // Decrypt email for response
+    const decryptedEmail = decryptEmail(user.emailEncrypted);
 
     const token = jwt.sign({ 
       userId: user._id.toString(),
@@ -122,7 +129,7 @@ export async function POST(req) {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email,
+        email: decryptedEmail,
         role: user.role,
       },
     }, { status: 200 });

@@ -3,6 +3,7 @@ import connectMongoDB from '@/config/mongoConfig';
 import User from '@/models/User';
 import { checkRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
 import { validateEmail, validateOTP, getClientIP } from '@/utils/inputValidator';
+import { hashOTP, hashEmailForSearch } from '@/utils/secureOTP';
 
 export async function POST(req) {
   try {
@@ -34,7 +35,8 @@ export async function POST(req) {
       return rateLimitResponse(rateLimit.retryAfter);
     }
 
-    const user = await User.findOne({ email });
+    const emailHash = hashEmailForSearch(email);
+    const user = await User.findOne({ emailHash });
 
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
@@ -46,7 +48,7 @@ export async function POST(req) {
     }
 
     // Check OTP validity
-    if (!user.otp || !user.otpExpires) {
+    if (!user.otpHash || !user.otpExpires) {
       return NextResponse.json({ message: 'No OTP found. Please request a new one.' }, { status: 400 });
     }
 
@@ -54,13 +56,15 @@ export async function POST(req) {
       return NextResponse.json({ message: 'OTP has expired. Please request a new one.' }, { status: 400 });
     }
 
-    if (user.otp !== otp) {
+    // Verify OTP by comparing hashes
+    const otpHashToVerify = hashOTP(otp);
+    if (user.otpHash !== otpHashToVerify) {
       return NextResponse.json({ message: 'Invalid OTP' }, { status: 400 });
     }
 
     // Verify user
     user.isVerified = true;
-    user.otp = undefined;
+    user.otpHash = undefined;
     user.otpExpires = undefined;
 
     await user.save();
