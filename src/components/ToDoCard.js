@@ -1,150 +1,157 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { getPriorityInfo } from '@/utils/taskPriority';
 import { formatDueDate, getTimeRemaining } from '@/utils/dateFormatting';
 import {
   ClockIcon,
-  CalendarIcon,
+  CalendarDaysIcon,
   ExclamationCircleIcon,
   DocumentTextIcon,
-  ClipboardDocumentCheckIcon
+  ClipboardDocumentCheckIcon,
+  PaperClipIcon,
 } from '@heroicons/react/24/outline';
 
-/**
- * ToDoCard Component
- * Displays an individual task (assignment or form) with priority indicators
- */
+const PRIORITY_CONFIG = {
+  overdue: {
+    accent: '#ef4444',
+    badgeBg: '#fff1f2',
+    badgeText: '#be123c',
+    label: 'Overdue',
+    Icon: ExclamationCircleIcon,
+  },
+  dueSoon: {
+    accent: '#f97316',
+    badgeBg: '#fff7ed',
+    badgeText: '#c2410c',
+    label: 'Due Soon',
+    Icon: ClockIcon,
+  },
+  upcoming: {
+    accent: '#6366f1',
+    badgeBg: '#eef2ff',
+    badgeText: '#4338ca',
+    label: 'Upcoming',
+    Icon: CalendarDaysIcon,
+  },
+};
+
 const ToDoCard = ({ task, onClick }) => {
-  const priorityInfo = getPriorityInfo(task.priority);
-  
-  // Get appropriate icon based on priority
-  const PriorityIcon = task.priority === 'overdue' 
-    ? ExclamationCircleIcon 
-    : task.priority === 'dueSoon'
-    ? ClockIcon
-    : CalendarIcon;
-  
-  // Get task type icon
-  const TaskIcon = task.type === 'form' 
-    ? ClipboardDocumentCheckIcon 
-    : DocumentTextIcon;
-  
-  const handleClick = () => {
-    if (onClick) {
-      onClick(task);
-    }
-  };
-  
+  const [hovered, setHovered] = useState(false);
+  const cfg = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.upcoming;
+  const { Icon: PriorityIcon } = cfg;
+  const TaskIcon = task.type === 'form' ? ClipboardDocumentCheckIcon : DocumentTextIcon;
+
+  const handleClick = () => onClick && onClick(task);
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleClick();
-    }
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); }
   };
-  
+
   return (
     <div
       onClick={handleClick}
       onKeyPress={handleKeyPress}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       role="button"
       tabIndex={0}
-      aria-label={`${task.title} - ${task.courseName} - ${priorityInfo.label}`}
-      className={`
-        relative bg-white rounded-lg border-2 border-l-4 ${priorityInfo.borderColor}
-        shadow-sm hover:shadow-md transition-all duration-200
-        cursor-pointer group overflow-hidden
-        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-      `}
+      aria-label={`${task.title} - ${task.courseName} - ${cfg.label}`}
+      style={{
+        background: '#fff',
+        borderRadius: 14,
+        border: '1px solid #e5e7eb',
+        borderLeft: `4px solid ${cfg.accent}`,
+        padding: '18px 18px 14px',
+        cursor: 'pointer',
+        transition: 'box-shadow 0.15s, transform 0.15s',
+        boxShadow: hovered ? '0 6px 20px rgba(0,0,0,0.09)' : '0 1px 3px rgba(0,0,0,0.04)',
+        transform: hovered ? 'translateY(-2px)' : 'none',
+        outline: 'none',
+        position: 'relative',
+      }}
     >
-      {/* Card Content */}
-      <div className="p-4">
-        {/* Header: Course Badge and Status */}
-        <div className="flex items-start justify-between mb-3">
-          {/* Course Badge */}
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            {task.courseName}
+      {/* Top row: course badge + status */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <span style={{
+          fontSize: 11, fontWeight: 600, background: '#f3f4f6', color: '#374151',
+          borderRadius: 20, padding: '3px 10px', maxWidth: '65%',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {task.courseName}
+        </span>
+        <span style={{
+          fontSize: 11, fontWeight: 600,
+          background: task.status === 'draft' ? '#fefce8' : '#f3f4f6',
+          color: task.status === 'draft' ? '#a16207' : '#6b7280',
+          borderRadius: 20, padding: '3px 10px',
+        }}>
+          {task.status === 'draft' ? 'In Progress' : 'Not Started'}
+        </span>
+      </div>
+
+      {/* Title */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+        <TaskIcon style={{ width: 16, height: 16, color: '#9ca3af', flexShrink: 0, marginTop: 2 }} />
+        <h3 style={{
+          fontSize: 14, fontWeight: 700, color: hovered ? cfg.accent : '#111827',
+          margin: 0, lineHeight: 1.45, transition: 'color 0.15s',
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        }}>
+          {task.title}
+        </h3>
+      </div>
+
+      {/* Description */}
+      {task.description && (
+        <p style={{
+          fontSize: 12, color: '#6b7280', margin: '0 0 10px', lineHeight: 1.5,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        }}>
+          {task.description}
+        </p>
+      )}
+
+      {/* Meta row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <TaskIcon style={{ width: 12, height: 12 }} />
+          {task.type === 'form'
+            ? `Form · ${task.questionCount} questions`
+            : task.assignmentType === 'quiz' ? 'Quiz' : 'Assignment'}
+        </span>
+        {task.attachments?.length > 0 && (
+          <span style={{ fontSize: 11, color: '#9ca3af', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <PaperClipIcon style={{ width: 12, height: 12 }} />
+            {task.attachments.length}
           </span>
-          
-          {/* Status Badge */}
-          <span className={`
-            inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-            ${task.status === 'draft' 
-              ? 'bg-yellow-100 text-yellow-800' 
-              : 'bg-gray-100 text-gray-600'
-            }
-          `}>
-            {task.status === 'draft' ? 'In Progress' : 'Not Started'}
-          </span>
-        </div>
-        
-        {/* Task Title */}
-        <div className="flex items-start gap-2 mb-2">
-          <TaskIcon className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-          <h3 className="text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
-            {task.title}
-          </h3>
-        </div>
-        
-        {/* Task Description */}
-        {task.description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-            {task.description}
-          </p>
-        )}
-        
-        {/* Task Type Info */}
-        <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-          <span className="inline-flex items-center gap-1">
-            {task.type === 'form' ? (
-              <>
-                <ClipboardDocumentCheckIcon className="w-4 h-4" />
-                Form ({task.questionCount} questions)
-              </>
-            ) : (
-              <>
-                <DocumentTextIcon className="w-4 h-4" />
-                {task.assignmentType === 'quiz' ? 'Quiz' : 'Assignment'}
-              </>
-            )}
-          </span>
-          
-          {task.attachments && task.attachments.length > 0 && (
-            <span className="inline-flex items-center gap-1">
-              📎 {task.attachments.length} {task.attachments.length === 1 ? 'file' : 'files'}
-            </span>
-          )}
-        </div>
-        
-        {/* Due Date and Priority */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          {/* Due Date */}
-          <div className="flex items-center gap-2">
-            <PriorityIcon className={`w-4 h-4 ${priorityInfo.textColor}`} />
-            <span className={`text-sm font-medium ${priorityInfo.textColor}`}>
-              {task.dueDate ? formatDueDate(task.dueDate) : 'No due date'}
-            </span>
-          </div>
-          
-          {/* Priority Badge */}
-          <span className={`
-            inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold
-            ${priorityInfo.bgColor} ${priorityInfo.textColor}
-          `}>
-            {priorityInfo.label}
-          </span>
-        </div>
-        
-        {/* Time Remaining (for tasks with due dates) */}
-        {task.dueDate && (
-          <div className="mt-2 text-xs text-gray-500">
-            {getTimeRemaining(task.dueDate)}
-          </div>
         )}
       </div>
-      
-      {/* Hover Indicator */}
-      <div className="absolute inset-0 border-2 border-transparent group-hover:border-blue-400 rounded-lg pointer-events-none transition-colors duration-200" />
+
+      {/* Footer: due date + priority badge */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        paddingTop: 10, borderTop: '1px solid #f3f4f6',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <PriorityIcon style={{ width: 14, height: 14, color: cfg.accent }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: cfg.accent }}>
+            {task.dueDate ? formatDueDate(task.dueDate) : 'No due date'}
+          </span>
+        </div>
+        <span style={{
+          fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+          background: cfg.badgeBg, color: cfg.badgeText, borderRadius: 6, padding: '3px 8px',
+        }}>
+          {cfg.label}
+        </span>
+      </div>
+
+      {/* Time remaining */}
+      {task.dueDate && (
+        <p style={{ fontSize: 11, color: '#9ca3af', margin: '6px 0 0' }}>
+          {getTimeRemaining(task.dueDate)}
+        </p>
+      )}
     </div>
   );
 };

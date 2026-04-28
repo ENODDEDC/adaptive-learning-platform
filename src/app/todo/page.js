@@ -9,409 +9,344 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ArrowPathIcon,
-  HomeIcon
+  HomeIcon,
+  ClockIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 
-/**
- * Standalone To-Do Page
- * Shows all pending tasks across all enrolled courses
- */
 export default function ToDoPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [view, setView] = useState('pending'); // 'pending' or 'completed'
+  const [view, setView] = useState('pending');
   const [tasks, setTasks] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
   const [taskCounts, setTaskCounts] = useState({
-    overdue: 0,
-    dueSoon: 0,
-    upcoming: 0,
-    total: 0,
-    completed: 0
+    overdue: 0, dueSoon: 0, upcoming: 0, total: 0, completed: 0,
   });
-  
-  /**
-   * Fetch pending tasks from API
-   */
+
   const fetchPendingTasks = useCallback(async () => {
     try {
-      console.log('📋 ToDoPage: Fetching pending tasks...');
       setLoading(true);
       setError(null);
-      
       const response = await fetch('/api/students/todo');
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch tasks: ${response.status} ${response.statusText}`);
-      }
-      
+      if (!response.ok) throw new Error(`Failed to fetch tasks: ${response.status}`);
       const data = await response.json();
-      
-      console.log('✅ ToDoPage: Received', data.tasks?.length || 0, 'tasks');
-      console.log('📊 ToDoPage: Counts:', data.counts);
-      
       setTasks(data.tasks || []);
       setTaskCounts(prev => ({ ...prev, ...data.counts }));
-      
     } catch (err) {
-      console.error('❌ ToDoPage: Error fetching tasks:', err);
       setError(err.message || 'Failed to load tasks');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  /**
-   * Fetch completed tasks from API
-   */
   const fetchCompletedTasks = useCallback(async () => {
     try {
-      console.log('✅ ToDoPage: Fetching completed tasks...');
       setLoading(true);
       setError(null);
-      
       const response = await fetch('/api/students/todo/completed');
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch completed tasks: ${response.status} ${response.statusText}`);
-      }
-      
+      if (!response.ok) throw new Error(`Failed to fetch completed tasks: ${response.status}`);
       const data = await response.json();
-      
-      console.log('✅ ToDoPage: Received', data.tasks?.length || 0, 'completed tasks');
-      
       setCompletedTasks(data.tasks || []);
       setTaskCounts(prev => ({ ...prev, completed: data.count || 0 }));
-      
     } catch (err) {
-      console.error('❌ ToDoPage: Error fetching completed tasks:', err);
       setError(err.message || 'Failed to load completed tasks');
     } finally {
       setLoading(false);
     }
   }, []);
-  
-  /**
-   * Refresh tasks
-   */
+
   const refreshTasks = useCallback(() => {
-    console.log('🔄 ToDoPage: Refreshing tasks...');
-    if (view === 'pending') {
-      fetchPendingTasks();
-    } else {
-      fetchCompletedTasks();
-    }
+    if (view === 'pending') fetchPendingTasks();
+    else fetchCompletedTasks();
   }, [view, fetchPendingTasks, fetchCompletedTasks]);
-  
-  /**
-   * Handle task click - navigate to appropriate page
-   */
+
   const handleTaskClick = useCallback((task) => {
-    console.log('🖱️ ToDoPage: Task clicked:', task.title, 'Type:', task.type);
-    
-    if (task.type === 'assignment') {
-      // Navigate to course page where student can view and submit the assignment
-      router.push(`/courses/${task.courseId}`);
-    } else if (task.type === 'form') {
-      // Navigate to form page
-      router.push(`/forms/${task._id}`);
-    }
+    if (task.type === 'assignment') router.push(`/courses/${task.courseId}`);
+    else if (task.type === 'form') router.push(`/forms/${task._id}`);
   }, [router]);
-  
-  // Fetch tasks on component mount
+
   useEffect(() => {
-    console.log('🎬 ToDoPage: Component mounted, fetching tasks...');
     fetchPendingTasks();
     fetchCompletedTasks();
   }, [fetchPendingTasks, fetchCompletedTasks]);
-  
-  // Group tasks by priority
+
   const groupedTasks = groupTasksByPriority(tasks);
-  
-  // Loading State
+
+  // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-gray-600 font-medium">Loading your tasks...</p>
-          </div>
+      <div style={{ minHeight: '100vh', background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: 44, height: 44, border: '3px solid #e5e7eb',
+            borderTopColor: '#6366f1', borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite', margin: '0 auto 16px',
+          }} />
+          <p style={{ color: '#6b7280', fontSize: 14, fontWeight: 500 }}>Loading your tasks…</p>
         </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
-  
-  // Error State
+
+  // ── Error ────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <ExclamationTriangleIcon className="w-8 h-8 text-red-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Unable to Load Tasks
-            </h3>
-            <p className="text-gray-600 mb-6 text-center max-w-md">
-              {error}
-            </p>
-            <button
-              onClick={refreshTasks}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <ArrowPathIcon className="w-5 h-5" />
-              Try Again
-            </button>
+      <div style={{ minHeight: '100vh', background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', maxWidth: 400 }}>
+          <div style={{ width: 56, height: 56, background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <ExclamationTriangleIcon style={{ width: 28, height: 28, color: '#ef4444' }} />
           </div>
+          <h3 style={{ fontSize: 18, fontWeight: 600, color: '#111827', marginBottom: 8 }}>Unable to Load Tasks</h3>
+          <p style={{ color: '#6b7280', marginBottom: 24, fontSize: 14 }}>{error}</p>
+          <button onClick={refreshTasks} style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '10px 20px', background: '#6366f1', color: '#fff',
+            border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 500, fontSize: 14,
+          }}>
+            <ArrowPathIcon style={{ width: 16, height: 16 }} /> Try Again
+          </button>
         </div>
       </div>
     );
   }
-  
-  // Empty State
-  if (tasks.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-4 mb-6">
-              <button
-                onClick={() => router.push('/home')}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
-                aria-label="Go to home"
-              >
-                <HomeIcon className="w-6 h-6" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">My To-Do List</h1>
-                <p className="text-gray-600 mt-1">All your pending tasks in one place</p>
-              </div>
-            </div>
-          </div>
 
-          <div className="flex flex-col items-center justify-center py-16 bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircleIcon className="w-12 h-12 text-green-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              All Caught Up!
-            </h3>
-            <p className="text-gray-600 text-center max-w-md mb-6">
-              You have no pending assignments or forms. Great job staying on top of your work!
-            </p>
-            <button
-              onClick={() => router.push('/home')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <HomeIcon className="w-5 h-5" />
-              Go to Home
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Main Content
+  // ── Stat cards config ────────────────────────────────────────────────────
+  const stats = [
+    taskCounts.overdue > 0 && {
+      label: 'Overdue', count: taskCounts.overdue,
+      bg: '#fff1f2', border: '#fecdd3', text: '#be123c',
+      icon: <ExclamationTriangleIcon style={{ width: 20, height: 20, color: '#e11d48' }} />,
+    },
+    taskCounts.dueSoon > 0 && {
+      label: 'Due Soon', count: taskCounts.dueSoon,
+      bg: '#fff7ed', border: '#fed7aa', text: '#c2410c',
+      icon: <ClockIcon style={{ width: 20, height: 20, color: '#ea580c' }} />,
+    },
+    taskCounts.upcoming > 0 && {
+      label: 'Upcoming', count: taskCounts.upcoming,
+      bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8',
+      icon: <CalendarDaysIcon style={{ width: 20, height: 20, color: '#3b82f6' }} />,
+    },
+  ].filter(Boolean);
+
+  // ── Main ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Horizontal Navigation */}
-      <HorizontalNav />
-      
-      <div className="p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/home')}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
-                aria-label="Go to home"
-              >
-                <HomeIcon className="w-6 h-6" />
-              </button>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f8f9fb' }}>
+      <div style={{ flexShrink: 0 }}>
+        <HorizontalNav />
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
+
+        {/* ── Page Header ── */}
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+
+            {/* Left: title */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">My To-Do List</h1>
-                <p className="text-gray-600 mt-1">
-                  {view === 'pending' 
-                    ? `${taskCounts.total} ${taskCounts.total === 1 ? 'task' : 'tasks'} pending across all courses`
-                    : `${taskCounts.completed} ${taskCounts.completed === 1 ? 'task' : 'tasks'} completed`
-                  }
+                <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111827', margin: 0, letterSpacing: '-0.3px' }}>
+                  My To-Do List
+                </h1>
+                <p style={{ fontSize: 13, color: '#9ca3af', margin: '3px 0 0', fontWeight: 400 }}>
+                  {view === 'pending'
+                    ? `${taskCounts.total} pending ${taskCounts.total === 1 ? 'task' : 'tasks'} across all courses`
+                    : `${taskCounts.completed} completed ${taskCounts.completed === 1 ? 'task' : 'tasks'}`}
                 </p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-3">
-              {/* View Toggle */}
-              <div className="inline-flex bg-white border border-gray-300 rounded-lg p-1 shadow-sm">
-                <button
-                  onClick={() => setView('pending')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    view === 'pending'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Pending ({taskCounts.total})
-                </button>
-                <button
-                  onClick={() => setView('completed')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    view === 'completed'
-                      ? 'bg-green-600 text-white'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Completed ({taskCounts.completed})
-                </button>
+
+            {/* Right: tabs + refresh */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {/* Tab toggle */}
+              <div style={{
+                display: 'flex', background: '#f3f4f6', borderRadius: 10,
+                padding: 4, gap: 2,
+              }}>
+                {[
+                  { key: 'pending', label: `Pending`, count: taskCounts.total },
+                  { key: 'completed', label: `Completed`, count: taskCounts.completed },
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setView(tab.key)}
+                    style={{
+                      padding: '7px 16px', borderRadius: 7, border: 'none', cursor: 'pointer',
+                      fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
+                      background: view === tab.key ? '#fff' : 'transparent',
+                      color: view === tab.key ? '#111827' : '#6b7280',
+                      boxShadow: view === tab.key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                    }}
+                  >
+                    {tab.label}
+                    <span style={{
+                      marginLeft: 6, fontSize: 11, fontWeight: 700,
+                      background: view === tab.key ? (tab.key === 'pending' ? '#6366f1' : '#10b981') : '#d1d5db',
+                      color: view === tab.key ? '#fff' : '#6b7280',
+                      borderRadius: 20, padding: '1px 7px',
+                    }}>
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
               </div>
-              
-              {/* Refresh Button */}
+
+              {/* Refresh */}
               <button
                 onClick={refreshTasks}
-                className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
                 aria-label="Refresh tasks"
+                style={{
+                  width: 38, height: 38, borderRadius: 10, border: '1px solid #e5e7eb',
+                  background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: '#6b7280',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
+                onMouseLeave={e => e.currentTarget.style.background = '#fff'}
               >
-                <ArrowPathIcon className="w-5 h-5" />
-                Refresh
+                <ArrowPathIcon style={{ width: 17, height: 17 }} />
               </button>
             </div>
           </div>
-          
-          {/* Summary Stats - Only show for pending view */}
-          {view === 'pending' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Overdue */}
-            {taskCounts.overdue > 0 && (
-              <div className="bg-white border border-red-200 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-red-800">Overdue</p>
-                    <p className="text-3xl font-bold text-red-900 mt-1">{taskCounts.overdue}</p>
+
+          {/* ── Stat Cards ── */}
+          {view === 'pending' && stats.length > 0 && (
+            <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
+              {stats.map(s => (
+                <div key={s.label} style={{
+                  flex: '1 1 160px', background: s.bg, border: `1px solid ${s.border}`,
+                  borderRadius: 12, padding: '16px 20px',
+                  display: 'flex', alignItems: 'center', gap: 14,
+                }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10,
+                    background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  }}>
+                    {s.icon}
                   </div>
-                  <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center">
-                    <ExclamationTriangleIcon className="w-7 h-7 text-red-600" />
+                  <div>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: s.text, margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
+                    <p style={{ fontSize: 28, fontWeight: 700, color: s.text, margin: '2px 0 0', lineHeight: 1 }}>{s.count}</p>
                   </div>
                 </div>
-              </div>
-            )}
-            
-            {/* Due Soon */}
-            {taskCounts.dueSoon > 0 && (
-              <div className="bg-white border border-orange-200 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-orange-800">Due Soon</p>
-                    <p className="text-3xl font-bold text-orange-900 mt-1">{taskCounts.dueSoon}</p>
-                  </div>
-                  <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center">
-                    <svg className="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Upcoming */}
-            {taskCounts.upcoming > 0 && (
-              <div className="bg-white border border-blue-200 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-blue-800">Upcoming</p>
-                    <p className="text-3xl font-bold text-blue-900 mt-1">{taskCounts.upcoming}</p>
-                  </div>
-                  <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center">
-                    <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
           )}
         </div>
-        
-        {/* Task Sections */}
+
+        {/* ── Content ── */}
         {view === 'pending' ? (
-          <div className="space-y-8">
-            <PrioritySection
-              priority="overdue"
-              tasks={groupedTasks.overdue}
-              onTaskClick={handleTaskClick}
-            />
-            
-            <PrioritySection
-              priority="dueSoon"
-              tasks={groupedTasks.dueSoon}
-              onTaskClick={handleTaskClick}
-            />
-            
-            <PrioritySection
-              priority="upcoming"
-              tasks={groupedTasks.upcoming}
-              onTaskClick={handleTaskClick}
-            />
-          </div>
+          tasks.length === 0 ? (
+            <EmptyState onHome={() => router.push('/home')} />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+              <PrioritySection priority="overdue" tasks={groupedTasks.overdue} onTaskClick={handleTaskClick} />
+              <PrioritySection priority="dueSoon" tasks={groupedTasks.dueSoon} onTaskClick={handleTaskClick} />
+              <PrioritySection priority="upcoming" tasks={groupedTasks.upcoming} onTaskClick={handleTaskClick} />
+            </div>
+          )
         ) : (
-          <div className="space-y-4">
-            {completedTasks.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircleIcon className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Completed Tasks Yet</h3>
-                <p className="text-gray-600">Complete some assignments or forms to see them here!</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {completedTasks.map((task) => (
-                  <div
-                    key={task._id}
-                    onClick={() => handleTaskClick(task)}
-                    className="bg-white rounded-lg border-2 border-l-4 border-green-500 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer p-4"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {task.courseName}
-                      </span>
-                      <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                    </div>
-                    
-                    <h3 className="text-base font-semibold text-gray-900 mb-2 line-clamp-2">
-                      {task.title}
-                    </h3>
-                    
-                    {task.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {task.description}
-                      </p>
-                    )}
-                    
-                    <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
-                      <span>
-                        {task.type === 'form' ? 'Form' : task.assignmentType === 'quiz' ? 'Quiz' : 'Assignment'}
-                      </span>
-                      {task.grade !== null && task.grade !== undefined && (
-                        <span className="font-semibold text-green-600">
-                          Grade: {task.grade}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <CompletedView tasks={completedTasks} onTaskClick={handleTaskClick} />
         )}
       </div>
       </div>
+    </div>
+  );
+}
+
+// ── Empty State ──────────────────────────────────────────────────────────────
+function EmptyState({ onHome }) {
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb',
+      padding: '64px 32px', textAlign: 'center',
+    }}>
+      <div style={{
+        width: 64, height: 64, background: '#f0fdf4', borderRadius: '50%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+      }}>
+        <CheckCircleIcon style={{ width: 32, height: 32, color: '#22c55e' }} />
+      </div>
+      <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>All Caught Up!</h3>
+      <p style={{ color: '#6b7280', fontSize: 14, maxWidth: 360, margin: '0 auto 24px' }}>
+        No pending assignments or forms. Great job staying on top of your work!
+      </p>
+      <button onClick={onHome} style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        padding: '10px 20px', background: '#6366f1', color: '#fff',
+        border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 500, fontSize: 14,
+      }}>
+        <HomeIcon style={{ width: 16, height: 16 }} /> Go to Home
+      </button>
+    </div>
+  );
+}
+
+// ── Completed View ───────────────────────────────────────────────────────────
+function CompletedView({ tasks, onTaskClick }) {
+  if (tasks.length === 0) {
+    return (
+      <div style={{
+        background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb',
+        padding: '64px 32px', textAlign: 'center',
+      }}>
+        <div style={{
+          width: 56, height: 56, background: '#f3f4f6', borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+        }}>
+          <CheckCircleIcon style={{ width: 28, height: 28, color: '#9ca3af' }} />
+        </div>
+        <h3 style={{ fontSize: 18, fontWeight: 600, color: '#111827', margin: '0 0 8px' }}>No Completed Tasks Yet</h3>
+        <p style={{ color: '#6b7280', fontSize: 14 }}>Complete some assignments or forms to see them here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+      {tasks.map(task => (
+        <div
+          key={task._id}
+          onClick={() => onTaskClick(task)}
+          style={{
+            background: '#fff', borderRadius: 14, border: '1px solid #e5e7eb',
+            borderLeft: '4px solid #10b981', padding: '18px 20px',
+            cursor: 'pointer', transition: 'box-shadow 0.15s, transform 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+          onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+            <span style={{
+              fontSize: 11, fontWeight: 600, background: '#f3f4f6', color: '#374151',
+              borderRadius: 20, padding: '3px 10px',
+            }}>{task.courseName}</span>
+            <CheckCircleSolid style={{ width: 18, height: 18, color: '#10b981', flexShrink: 0 }} />
+          </div>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: '0 0 6px', lineHeight: 1.4 }}>
+            {task.title}
+          </h3>
+          {task.description && (
+            <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px', lineHeight: 1.5,
+              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {task.description}
+            </p>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #f3f4f6' }}>
+            <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
+              {task.type === 'form' ? 'Form' : task.assignmentType === 'quiz' ? 'Quiz' : 'Assignment'}
+            </span>
+            {task.grade != null && (
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>{task.grade}%</span>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

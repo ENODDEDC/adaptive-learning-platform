@@ -2064,8 +2064,8 @@ User Access
 Multi-Method Authentication: This feature allows users to log in using traditional email and password credentials or third-party OAuth integration (e.g., Google). This approach enhances both flexibility and security in user authentication.
 Account Recovery and Session Management: The interface includes a “Forgot Password?” function to assist users in recovering their accounts in case of credential loss. Additionally, the “Remember Me” option enables sessions persistence, allowing users to remain logged in across sessions for improved convenience.
 User Onboarding Gateway: A “Create Account” option is provided for new users, facilitating seamless navigation to the registration module. This ensures efficient onboarding and system accessibility for first time users.
-Course Management
-  
+Course Management  
+
 
 	Figure 125. Intelevo - Course Management Dashboard
 	As shown in Figure 125, the interface serves as the central hub for managing the user’s academic environment within the Intevelo web-based platform. It provides an integrated view of courses, schedules, activities, and intelligent support tools.
@@ -2107,46 +2107,69 @@ Global Search and Retrieval: A centralized search function allows users to quick
 	  
 
 	Figure 132. Classwork Creation
-	        As illustrated in Figure 132,
+	        As illustrated in Figure 132, this allows user to create materials for the students enrolled in their course. The material can be in the form of regular assignments, reading materials, or forms for quizzes and assessments.
+
+
+
+
 
 
   
 
 	Figure 133. Form Creation
-	As depicted in Figure 133,
+	As depicted in Figure 133, this feature allows instructors to create their own forms and quizzes without relying on third-party software. Instructors can also import existing documents, which the system can automatically convert into forms.
+  
+
+	
+
+  
+
+	Figure 134. Instructor Submission Panel
+	As depicted in the figure, the submission panel displays the assignment details alongside a list of course members who have already submitted their work.
+
+
+
+
+
+
+
+
+
+
+  
   
 
 	  
 
-	Figure 134. Assignment Submission
-	As shown in Figure 134,
+	
+
+	Figure 135. Grading Process
+	As depicted in the figure, the system enables instructors to evaluate student submissions by assigning numerical scores and providing direct feedback.
   
 
-	Figure 135. Form Submission
-	As shown in Figure 135,
+	  
 
+	Figure 136. Assignment Submission
+	As shown in Figure 136, the system's submission interface enables students to upload and submit their assignments. It also allows students to save their drafts to return to later.
+  
 
-
-
-
-
+	Figure 137. Form Submission
+	As shown in Figure 137, the form feature enables users to complete quizzes and assessments created by the instructor. The interface displays a progress indicator and allows students to navigate back to previous questions.
 Course Students/Members
   
 
-	Figure 136. Course Students/Members
-	As depicted in Figure 136,
+	Figure 138. Course Students/Members
+	As depicted in Figure 138, the interface enables users to view the rosters for courses they manage or are enrolled in. The directory displays each participant's name, email, role, and current status, while also providing the option to remove students.
   
-
-	  
 
 	  
 
 	Figure 138. Course Invitation - Student
-	As illustrated in Figure 138,
+	As illustrated in Figure 138, the system enables instructors to send direct course invitations to students. This feature is primarily utilized when a course's visibility is set to private.
   
 
 	Figure 139. Course Invitation - Co-Teacher
-	As shown in Figure 139,
+	As shown in Figure 139, users can invite co-instructors via their registered email addresses, utilizing a process similar to student invitations.
 
 
 
@@ -2158,52 +2181,1177 @@ Course Students/Members
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-Assignment and Activity Management
-  
-
-	Figure 127. Activity Feed
-	
 
 Progress Tracking and Monitoring
   
 
-	  
-
-	  
-
-	Figure 127. Intelevo - Progress Tracking and Monitoring
+	Figure 140. Progress Tracking and Monitoring
 	As shown in Figure 127, the interface presents a comprehensive overview of the user’s learning behavior and the system’s adaptive learning analysis. It integrates machine learning insights with engagement data to support continuous monitoring and personalization of the learning experience . The following are the core features of the interface:
 Learning Style Classification Progress: Features a milestone-based progress tracker that monitors student interactions within the system. The collected data are used by the machine learning model to refine the student’s learning profile through classification stages such as Initial, Refined, and Stable.
 Engagement Analytics Summary: Displays behavioral metrics such as total interactions, cumulative learning time, and active learning sessions, providing a quantitative overview of student engagement.
 AI Usage Monitoring: Tracks the use of AI assistance modes such as Ask, Research, and Text-to-Docs, helping the system analyze user interaction patterns.
 Learning Mode Usage Records: Provides a detailed breakdown of the frequency and duration of usage in specific instructional modes such as Step-by-step, Diagrams, and Patterns, allowing the system to identify preferred learning formats.
 Recent Activity Logs: Includes a log section that records timestamped user activities, providing transparency in system tracking and supporting continuous adaptive learning analysis.
-
-
-
-
-
-
 Adaptive Learning Content 
   
 
-	Figure 128, Intelevo - Adaptive Learning Content 
+	Figure 141. Adaptive Learning Content 
 	As shown in Figure 128, the interface provides multiple content presentation modes that allow students to access uploaded learning materials in different formats according to their preferences. This feature supports personalized learning by transforming instructional materials into various accessible formats. The following are the core features of the interface:
-Content Presentation Mode Selection Panel: Provides multiple viewing options such as Listen Along, Diagrams, Step-by-step, Overview, Examples, Patterns, Practice, and Think Deeper for presenting the same learning material in different formats.
-Adaptive Content Transformation: Allows the system to convert uploaded materials such as presentation files, PDFs, and documents into alternative forms to improve accessibility and understanding.
-Active Mode Indicator: Highlights the currently selected content mode, allowing users to easily identify the active presentation format..
-Personalized Learning Support: Enables students to choose the format that best matches their learning preference and comprehension style.
+Content Presentation Mode Selection Panel: Provides multiple viewing options for presenting the uploaded materials such as presentation files, PDFs, and documents into alternative forms to improve accessibility and understanding.
+Active Mode Indicator: Highlights the currently selected content mode, allowing users to easily identify the active presentation format
+  
+
+	Figure 142. Verbal Learning Mode - AI Narrator
+	As seen in Figure 142, the AI Narrator enables users to listen to the contents of the learning materials. This feature offers three distinct audio options: a complete narration of the text, a brief overview of the subject, or a summary of the material's key concepts.
+  
+
+	Figure 143. Visual Learning Mode - Diagram
+	In Figure 143, The Visual Learning module within IntelEvo is divided into four distinct sections, each designed to facilitate student comprehension through targeted visual methodologies:
+Overview: Serves as a high-level introduction to the subject matter. It highlights key concepts and executive summaries to establish context.
+Summary: Condenses complex information into manageable, digestible segments. This section utilizes visual aids like charts, diagrams, and infographics.
+Network: Maps the relationships between interconnected concepts using mind maps, flowcharts, or network diagrams. This visualization aids students in comprehending broader systems, cause-and-effect dynamics, and component interactions.
+Steps: Details procedural processes through sequential outlines. It breaks down complex tasks into a step-by-step format.
+  
+
+	Figure 144. Sequential Learning Mode - Step by Step
+	As depicted in Figure 144, sequential learning structures information in a logical progression, advancing from foundational concepts to complex topics. This section facilitates that approach by enabling students to navigate systematically through each learning track or step.
+  
+
+	Figure 145. Global Learning Mode - Overview
+	As depicted in Figure 145, global learning presents information through a more abstract and intuitive approach. This mode enables students to examine a high-level overview of the subject and understand its interconnections with related topics and explore the relationships between different concepts, ideas, and contexts.
+  
+
+	Figure 147. Sensing Learning Mode - Examples
+	        The Hands-on Lab (HOL) on IntelEvo provides an interactive and immersive learning experience for students. It allows students to learn by doing, by working on real-world problems and scenarios. It uses simulations to model real-world scenarios, allowing students to experiment and learn in a safe and controlled environment.
+  
+
+	Figure 148. Intuitive Learning Mode - Patterns
+	In Figure 148, the patterns learning mode is designed for students who learn best by recognizing and creating patterns. In this mode, you can analyze and create patterns. Visualize and generate patterns using interactive tools and puzzles.
+
+
+
+
+
+
+
+
+
+
+  
+
+	Figure 149. Active Learning Mode - Practice
+	The Active learning mode in Figure 149 is designed for students who learn best by doing and interacting with their environment. In this mode, you can:
+Talk Through: prompts students to articulate their understanding of the assigned material. An interactive partner then provides constructive counter-arguments to help identify knowledge gaps, fostering a collaborative dialogue rather than a passive lecture format.
+Try a Choice:  presents users with sequential, concise scenarios. After selecting a course of action, learners receive immediate feedback, emphasizing active decision-making and practice over passive reading.
+Explain: requires learners to synthesize the material. Students are prompted to construct a concise summary, develop an instructional outline, formulate self-assessment questions, and create a brief actionable plan.
+
+
+  
+
+	Figure 150. Reflective Learning Mode - Think Deeper
+	The Reflective learning mode is designed for students who learn best by thinking critically and reflecting on their experiences. In this mode, you can:
+Reflective Journaling: Keep a journal to reflect on your thoughts, feelings, and experiences related to the course material.
+Self-Assessment: Evaluate your own learning and progress, identifying areas of strength and weakness.
+Review and Reflect: Review course materials and reflect on what you've learned, making connections to your own experiences and prior knowledge.
+________________
+
+
+Project Evaluation
+Table
+Control Group Results
+Control Group
+	Participant
+	Pretest
+	Posttest
+	Difference
+	1
+	12
+	12
+	+0
+	2
+	19
+	18
+	-1
+	3
+	19
+	18
+	-1
+	4
+	18
+	16
+	-2
+	5
+	20
+	17
+	-3
+	6
+	20
+	18
+	-2
+	7
+	14
+	13
+	-1
+	8
+	16
+	15
+	-1
+	9
+	15
+	15
+	+0
+	10
+	17
+	16
+	-1
+	11
+	13
+	14
+	+1
+	12
+	18
+	17
+	-1
+	13
+	16
+	14
+	-2
+	14
+	14
+	14
+	+0
+	15
+	17
+	15
+	-2
+	The average pre-test score is approximately 16.5, while the average post-test score drops to about 15.5. 11 out of the 15 participants (roughly 73%) scored lower on their post-test than they did on their pre-test. The drops range from -1 to -3 points, with Participant 5 experiencing the largest decrease (20 down to 17). While 3 participants (Participants 1, 9, and 14) saw no change in their scores, maintaining their exact pre-test scores on the post-test. Only 1 participant (Participant 11) showed improvement, raising their score slightly from 13 to 14 (+1).
+
+
+
+
+
+
+Table
+Experimental Group Results
+Experimental Group
+	Participant
+	Pretest
+	Posttest
+	Difference
+	1
+	10
+	17
+	+7
+	2
+	8
+	18
+	+10
+	3
+	18
+	16
+	-2
+	4
+	12
+	18
+	+6
+	5
+	11
+	17
+	+6
+	6
+	9
+	16
+	+7
+	7
+	13
+	19
+	+6
+	8
+	14
+	18
+	+4
+	9
+	15
+	19
+	+4
+	10
+	10
+	15
+	+5
+	11
+	12
+	16
+	+4
+	12
+	16
+	18
+	+2
+	13
+	9
+	14
+	+5
+	14
+	11
+	16
+	+5
+	15
+	13
+	17
+	+4
+	The average pre-test score is much lower here, sitting at approximately 12.1. However, the average post-test score jumps significantly to about 16.9. 14 out of the 15 users (about 93%) improved their scores. The gains are substantial, ranging from +2 to +10 points. Participant 2 experienced the most dramatic growth, jumping from an 8 to an 18. Only 1 user (Participant 3) saw a decrease, dropping slightly from 18 to 16. It is worth noting that this user started with the highest pre-test score in the group, which sometimes leaves less room for measurable growth.
+________________
+
+
+Evaluation Results
+Table
+Functionality Results
+Functionality
+	Average
+	Q1
+	Q2
+	Q3
+	Q4
+	Q5
+	3
+	4
+	4
+	4
+	4
+	3.8
+	5
+	5
+	4
+	5
+	5
+	4.8
+	3
+	4
+	4
+	3
+	4
+	3.6
+	4
+	5
+	5
+	4
+	5
+	4.6
+	5
+	5
+	5
+	5
+	5
+	5.0
+	5
+	4
+	5
+	5
+	5
+	4.8
+	5
+	5
+	5
+	5
+	5
+	5.0
+	5
+	5
+	5
+	5
+	5
+	5.0
+	5
+	5
+	4
+	4
+	5
+	4.6
+	4
+	4
+	4
+	4
+	4
+	4.0
+	4
+	4
+	4
+	4
+	4
+	4.0
+	4
+	4
+	3
+	4
+	4
+	3.8
+	4
+	4
+	4
+	4
+	5
+	4.2
+	5
+	4
+	4
+	5
+	4
+	4.4
+	4
+	4
+	2
+	5
+	4
+	3.8
+	5
+	5
+	2
+	4
+	5
+	4.2
+	4
+	5
+	3
+	4
+	5
+	4.2
+	4
+	4
+	2
+	4
+	5
+	3.8
+	5
+	4
+	4
+	4
+	5
+	4.4
+	4
+	5
+	4
+	4
+	4
+	4.2
+	5
+	5
+	4
+	4
+	5
+	4.6
+	4
+	4
+	4
+	3
+	4
+	3.8
+	5
+	5
+	4
+	5
+	4
+	4.6
+	4
+	5
+	4
+	5
+	4
+	4.4
+	3
+	4
+	1
+	3
+	3
+	2.8
+	4
+	4
+	3
+	4
+	4
+	3.8
+	5
+	5
+	3
+	4
+	5
+	4.4
+	4
+	4
+	1
+	4
+	4
+	3.4
+	5
+	5
+	4
+	5
+	5
+	4.8
+	4
+	5
+	3
+	4
+	4
+	4.0
+	4.3
+	4.5
+	3.6
+	4.2
+	4.5
+	4.2
+	The Functionality domain achieved a total weighted mean of 4.2, which falls within the range of 3.51 – 4.50. According to the descriptive interpretation table, this indicates a "Very Good" rating. This suggests that the core features of the platform are highly effective and meet the essential academic needs of the students.
+  
+
+	Figure 151. Functionality Question 1
+	        The initial processes of account creation and multi-platform sign-in (Google/Email) was found to be highly accessible among users. However, some users experienced some issues with the functionality.
+  
+
+	Figure 152. Functionality Question 2
+	        Course Enrollment has the highest-rated category, this indicates that students find the process of joining a course using a valid access code to be exceptionally quick and efficient.
+  
+
+	Figure 153. Functionality Question 3
+	While still technically rated as "Very Good," this is the lowest-scoring item in the functionality set. A mean of 3.6 suggests that while the process of uploading files or entering text for submissions is functional, it is the area where students encounter the most friction or complexity compared to other features.
+  
+
+	Figure 154. Functionality Question 4
+	The AI Learning Modes, such as Narrator and Visual modes, are successfully generating relevant content based on uploaded documents, providing solid technological support for learning.
+  
+
+	Figure 155. Functionality Question 5
+	        Students expressed high satisfaction with their ability to view grades and read instructor feedback clearly. This transparency is vital for student engagement and academic success.
+________________
+Table
+Usability Results
+Usability
+	Average
+	Q1
+	Q2
+	Q3
+	Q4
+	3
+	4
+	4
+	4
+	3.8
+	3
+	5
+	4
+	4
+	4
+	4
+	4
+	4
+	4
+	4
+	5
+	4
+	3
+	4
+	4
+	5
+	5
+	3
+	3
+	4
+	5
+	5
+	5
+	4
+	4.8
+	5
+	5
+	5
+	5
+	5
+	5
+	5
+	5
+	5
+	5
+	4
+	4
+	4
+	4
+	4
+	4
+	4
+	4
+	4
+	4
+	5
+	5
+	4
+	5
+	4.8
+	5
+	4
+	4
+	4
+	4.3
+	4
+	4
+	4
+	4
+	4.0
+	5
+	4
+	4
+	4
+	4.3
+	4
+	4
+	4
+	4
+	4
+	5
+	4
+	5
+	4
+	4.5
+	4
+	4
+	4
+	5
+	4.3
+	4
+	3
+	4
+	5
+	4.0
+	5
+	3
+	5
+	4
+	4.3
+	4
+	3
+	5
+	4
+	4.0
+	5
+	3
+	4
+	5
+	4.3
+	4
+	2
+	3
+	4
+	3.3
+	5
+	2
+	5
+	5
+	4.3
+	4
+	3
+	4
+	4
+	3.8
+	4
+	3
+	4
+	4
+	3.8
+	4
+	3
+	5
+	4
+	4.0
+	5
+	2
+	4
+	4
+	3.8
+	4
+	2
+	4
+	4
+	3.5
+	5
+	2
+	5
+	4
+	4.0
+	4
+	2
+	4
+	5
+	3.8
+	4.4
+	3.6
+	4.2
+	4.2
+	4.1
+	        The Usability domain achieved an overall weighted mean of 4.1, which is categorized as "Very Good" according to the descriptive interpretation scale. This score reflects a high level of user satisfaction regarding the platform's layout and ease of use. Leading the domain is First Impressions (Q1) with a mean of 4.4, indicating that the initial setup and onboarding process are clear enough for users to begin using the platform immediately.
+  
+
+	Figure 156. Usability Question 1
+	        The users’ First Impression earned the highest mean of 4.4, falling into the "Very Good" category. This suggests that the initial setup and "onboarding" process are exceptionally clear, allowing students to begin using the platform immediately without significant confusion.
+  
+
+	Figure 157. Usability Question 2
+	        Navigation received the lowest mean in the domain at 3.6. While it still maintains a "Very Good" descriptive interpretation, it highlights that moving between the Stream, Activities, and Scores tabs is the area where students experience the most friction.
+  
+
+	Figure 158. Usability Question 3
+	        With a mean of 4.2, the Note-Taking feature is also rated as "Very Good". It confirms that the "Smart Notes" functionality is intuitive, enabling students to easily highlight and annotate specific parts of documents for their studies.
+  
+
+	Figure 159. Usability Question 4
+	Error Communication also received a mean of 4.2, this "Very Good" rating indicates that when technical issues occur, the error messages provided are easy to understand and offer helpful guidance on how to resolve the problem.
+Table
+Reliability Results
+Reliability
+	Average
+	Q1
+	Q2
+	Q3
+	4
+	4
+	4
+	4
+	3
+	3
+	3
+	3
+	4
+	4
+	4
+	4
+	4
+	4
+	4
+	4
+	5
+	3
+	5
+	4.3
+	5
+	4
+	5
+	4.7
+	5
+	4
+	5
+	4.67
+	5
+	3
+	5
+	4.33
+	5
+	4
+	4
+	4.3
+	3
+	4
+	3
+	3.3
+	5
+	3
+	5
+	4.33
+	5
+	4
+	4
+	4.3
+	4
+	3
+	3
+	3.3
+	5
+	4
+	4
+	4.3
+	4
+	4
+	4
+	4
+	5
+	4
+	4
+	4.3
+	4
+	4
+	4
+	4.0
+	4
+	3
+	3
+	3.3
+	5
+	3
+	4
+	4.0
+	4
+	3
+	3
+	3.3
+	5
+	4
+	4
+	4.3
+	4
+	3
+	3
+	3.3
+	5
+	3
+	3
+	3.7
+	4
+	3
+	4
+	3.7
+	5
+	3
+	4
+	4.0
+	4
+	3
+	3
+	3.3
+	5
+	3
+	4
+	4.0
+	4
+	3
+	3
+	3.3
+	5
+	3
+	4
+	4
+	4
+	3
+	3
+	3.3
+	4.4
+	3.4
+	3.8
+	3.9
+	The Reliability achieved an overall weighted mean of 3.9. According to the established interpretation scale, this translates to a descriptive rating of "Very Good". This score indicates that the system is generally dependable in maintaining user data and providing consistent service during academic activities.
+  
+
+	Figure 160. Reliability Question 1
+	Saved Work (Q1): This area performed the strongest with a mean of 4.4, falling into the "Very Good" category. This confirms that the system reliably saves assignment drafts, allowing students to return to their work later without the risk of losing progress.
+  
+
+	Figure 161. Reliability Question 2
+	Notification Accuracy (Q2): This component received the lowest mean in the domain at 3.4, which places it in the "Good" descriptive category. This indicates that while the feature is functional, the real-time delivery of alerts for new assignments or graded work is the least consistent aspect of the platform and requires targeted improvements to enhance user satisfaction.
+  
+
+	Figure 162. Reliability Question 3
+	Document Stability (Q3): Earning a mean of 3.8, this metric is also interpreted as "Very Good". It indicates that uploaded files, such as PDFs, PowerPoints, and Word documents, generally remain accessible and maintain their correct formatting when viewed on the platform.
+________________
+
+
+Table
+Performance Results
+Reliability
+	Average
+	Q1
+	Q2
+	Q3
+	Q4
+	3
+	3
+	3
+	3
+	3
+	4
+	4
+	3
+	4
+	3.8
+	3
+	4
+	3
+	3
+	3.3
+	3
+	4
+	4
+	3
+	3.5
+	5
+	5
+	3
+	3
+	4
+	5
+	5
+	4
+	4
+	4.5
+	5
+	5
+	5
+	5
+	5
+	5
+	5
+	5
+	5
+	5
+	4
+	4
+	4
+	4
+	4
+	3
+	4
+	4
+	3
+	3.5
+	5
+	4
+	4
+	4
+	4.3
+	5
+	4
+	4
+	4
+	4.3
+	4
+	4
+	5
+	4
+	4.3
+	5
+	5
+	4
+	4
+	4.5
+	4
+	4
+	4
+	4
+	4
+	5
+	5
+	5
+	4
+	4.8
+	4
+	5
+	4
+	5
+	4.5
+	4
+	4
+	4
+	5
+	4.3
+	3
+	3
+	4
+	4
+	3.5
+	4
+	5
+	5
+	4
+	4.5
+	5
+	5
+	4
+	5
+	4.8
+	4
+	4
+	3
+	4
+	3.8
+	5
+	5
+	5
+	5
+	5
+	4
+	5
+	4
+	4
+	4.3
+	5
+	4
+	4
+	5
+	4.5
+	4
+	4
+	5
+	4
+	4.3
+	5
+	5
+	4
+	4
+	4.5
+	4
+	4
+	4
+	4
+	4
+	5
+	5
+	5
+	4
+	4.8
+	4
+	5
+	4
+	5
+	4.5
+	4.3
+	4.4
+	4.1
+	4.1
+	4.2
+	The Performance of the platform achieved an overall weighted mean of 4.2, which translates to a descriptive rating of "Very Good" according to the established interpretation scale. This score signifies that the platform maintains high technical efficiency and responsiveness during various student interactions.
+  
+
+	Figure 163. Performance Question 1
+	        With a mean of 4.3, the Response Time is also interpreted as "Very Good". It confirms that pages generally load quickly enough to prevent significant wait times when students are moving between different assignments.
+  
+
+	Figure 164. Performance Question 2
+	Prediction Speed received the highest mean in the domain at 4.4, falling into the "Very Good" category. This suggests that the automatic initiation and completion of learning style categorization, based on interaction data, is perceived as highly efficient by the users.
+  
+
+	Figure 165. Performance Question 3
+	        Large File Handling earned a mean of 4.1, this metric results in a "Very Good" rating. This indicates that the document processing flow for converting and handling large files (PDF/DOCX/PPTX) maintains efficient speeds without experiencing system lag.
+  
+
+	Figure 166. Performance Question 4
+	        Concurrent Users also earned a mean of 4.1, translating to a "Very Good" descriptive rating. This indicates that the platform successfully remains responsive even when a user is in a large class with many other students accessing the system simultaneously.
+
+
+Table
+Supportability Results
+Supportability
+	Average
+	Q1
+	Q2
+	Q3
+	4
+	4
+	4
+	4
+	3
+	4
+	4
+	3.7
+	4
+	4
+	4
+	4
+	5
+	5
+	4
+	4.7
+	5
+	3
+	5
+	4.3
+	5
+	4
+	5
+	4.7
+	4
+	4
+	4
+	4
+	5
+	5
+	5
+	5
+	4
+	4
+	4
+	4
+	3
+	3
+	3
+	3
+	5
+	5
+	5
+	5
+	4
+	4
+	4
+	4.0
+	4
+	4
+	5
+	4.3
+	4
+	5
+	4
+	4.3
+	4
+	4
+	4
+	4
+	4
+	5
+	5
+	5
+	4
+	5
+	4
+	4.3
+	4
+	4
+	5
+	4.3
+	3
+	4
+	5
+	4.0
+	4
+	5
+	5
+	4.7
+	3
+	5
+	4
+	4.0
+	4
+	4
+	3
+	3.7
+	5
+	5
+	5
+	5
+	4
+	5
+	4
+	4.3
+	3
+	4
+	4
+	3.7
+	4
+	4
+	5
+	4.3
+	3
+	5
+	4
+	4.0
+	4
+	4
+	4
+	4
+	3
+	5
+	5
+	4
+	4
+	5
+	4
+	4.3
+	4
+	4.4
+	4.3
+	4.2
+	The Supportability of the platform achieved an overall weighted mean of 4.2, which translates to a descriptive rating of "Very Good" based on the established interpretation scale. This score indicates that the system is highly adaptable, effectively supporting various user environments, accessibility needs, and standard academic file types.
+  
+
+	Figure 167. Supportability Question 1
+	The system’s compatibility with devices earned a mean of 4.0, resulting in a "Very Good" descriptive rating. This indicates that the platform generally works correctly across the students' preferred web browsers, including Chrome, Firefox, and Safari.
+  
+
+	Figure 168. Supportability Question 2
+	        The system’s accessibility received the highest mean in the domain at 4.4, falling solidly into the "Very Good" category. This strong score suggests that the platform successfully accommodates students with diverse needs, particularly those who utilize screen readers or prefer using only a keyboard for navigation.
+  
+
+	Figure 169. Supportability Question 3
+	        File compatibility earned a mean of 4.3, this metric is also interpreted as "Very Good". It confirms that the system reliably handles the common file types necessary for schoolwork, such as .docx, .pdf, and .pptx documents.
+________________
+
+
+Table
+Overall Average
+Participants
+	Overall Average
+	1
+	3.7
+	2
+	3.8
+	3
+	3.8
+	4
+	4.2
+	5
+	4.3
+	6
+	4.7
+	7
+	4.7
+	8
+	4.9
+	9
+	4.2
+	10
+	3.6
+	11
+	4.5
+	12
+	4.1
+	13
+	4.0
+	14
+	4.4
+	15
+	4.0
+	16
+	4.5
+	17
+	4.3
+	18
+	3.9
+	19
+	4.0
+	20
+	4.1
+	21
+	4.4
+	22
+	3.6
+	23
+	4.5
+	24
+	4.1
+	25
+	3.7
+	26
+	3.9
+	27
+	4.1
+	28
+	3.6
+	29
+	4.4
+	30
+	4.0
+	
+
+	4.1
+	The final evaluation of the platform yielded an updated overall grand mean of 4.1 across all respondents. According to the established descriptive interpretation scale, this score falls securely within the 3.51 – 4.50 range, earning a final platform rating of "Very Good".
+This grand mean represents the culmination of user assessments across all five core software quality domains: Functionality, Usability, Reliability, Performance, and Supportability. The overall "Very Good" rating signifies that the platform is highly effective and successfully meets the technological needs of its users, with only minor room for optimization.
+
+
+
+
+________________
+
+
 Project Capabilities
 The system includes standard administrative and instructional tools such as course management, user management, and performance monitoring. For new users without an established profile, the system passively observes behavior during an initial preview to suggest an appropriate learning mode. The platform monitors user behaviors, such as navigation patterns and time spent on modules, to refine its understanding of a student’s learning preferences. Utilizing the Felder-Silverman Learning Style Model (FSLSM) and the XGBoost machine learning algorithm, the system classifies students based on their behavioral data and interactions. The system can transform standard learning materials into various formats, including textual explanations, visual diagrams, audio narrations, and interactive exercises based on the Felder-Silverman Learning Style Model (FSLSM). By integrating Gemini AI, the system generates practice quizzes, questions, and activities from existing learning materials.
 Project Limitations
@@ -2225,10 +3373,24 @@ While the Intelevo system offers robust adaptive features, it is subject to seve
 ________________
 CHAPTER 5
 SUMMARY OF FINDINGS, CONCLUSION, AND RECOMMENDATIONS
-
-
-
-
+Summary of Findings
+The Intelevo system was developed as an adaptive Learning Management System (LMS) designed specifically for personalized cybersecurity education, focusing on topics such as malware types and phishing mitigation strategies. The system integrates behavioral tracking analytics, a machine learning classifier (XGBoost), and generative AI to monitor and categorize learning preferences based on signals such as dwell time, scroll depth, and mouse movement. It operates under a dynamic personalization framework, utilizing a Cold Start Interest Tracking module for new users and continuous machine learning classification for established profiles, providing flexibility and adaptability in instructional delivery. Additionally, the platform supports real-time content generation through an exclusively web-based interface featuring no mobile component, ensuring focused, reliable, and accessible educational performance.
+Structurally, the Intelevo system combines behavioral analytics and artificial intelligence components that function in an integrated manner. The frontend interface is responsible for passively sensing and tracking user engagement metrics, while the machine learning backend and generative AI manage data processing, learning style classification, and dynamic content adaptation. The implementation of the AI-driven content generation engine—which reformats standard materials into specific modalities and integrates multimedia resources like instructional videos authored by Kaspersky—ensures a continuously responsive learning environment without providing direct answers to assigned activities.
+The system was evaluated using the FURPS criteria—Functionality, Usability, Reliability, Performance, and Supportability—alongside a pre-test and post-test structure to measure instructional effectiveness, based on responses from a 30-user functionality questionnaire composed exclusively of the system's users. The results revealed a high level of user satisfaction and efficacy across all evaluation criteria. The system achieved strong technical performance and model reliability validations across all four Felder-Silverman Learning Style Model (FSLSM) dimensions, which corresponds to a highly effective and adaptable learning environment.
+Conclusion
+Based on the objectives of the study and the results obtained from the system design, development, and evaluation, the following conclusions were drawn:
+1. The Intelevo system was successfully designed and developed as a purely web-based, adaptive Learning Management System (LMS) capable of dynamically personalizing cybersecurity education. The integration of behavioral tracking analytics, the XGBoost machine learning classifier, and generative AI provides a complete and functional system architecture.
+2. The system effectively automates the identification and accommodation of unique study preferences utilizing the Felder-Silverman Learning Style Model (FSLSM). By passively monitoring engagement signals—such as dwell time, scroll depth, and mouse movement—the system confirms its objective of eliminating the traditional "one-size-fits-all" educational approach without requiring manual preference inputs from the learner.
+3. The system was successfully evaluated using the FURPS model through a functionality questionnaire administered exclusively to thirty (30) system users. This indicates that the platform performs at a high level across all criteria, including functionality, usability, reliability, performance, and supportability.
+4. The evaluation results, further supported by comparative pre-test and post-test assessments, demonstrate that the dynamic reformatting of learning materials is reliable, efficient, and user-friendly. This makes the system a highly practical and effective solution for enhancing comprehension and engagement in complex subjects.
+5. Overall, the study confirms that the objectives of designing, constructing, and evaluating the Intelevo adaptive LMS were successfully achieved, establishing a viable framework for AI-driven, individualized educational environments.
+Recommendations
+Based on the findings and identified limitations, the following recommendations are proposed:
+1. Further refine the generative AI's contextual parameters and prompt engineering to ensure the production of highly relevant, targeted supplementary materials that align even more closely with the materials and the user's specific learning preferences.
+2. Optimize the visual layout within the various learning modes by reducing button clutter and simplifying navigation pathways. 
+3. Implement mechanisms or secure, downloadable document options within the web application to guarantee that instructional materials remain continuously accessible to learners, even during intermittent connectivity.
+4. Develop a more comprehensive and proactive notification mechanism to effectively alert users regarding upcoming assessments, announcements, materials and significant milestones in their learning progress.
+5. Expand the classification mechanisms beyond explicit user interface interactions, ensuring that selections such as the eight learning mode buttons are not the sole determinants of a user's profile.
 
 
         
