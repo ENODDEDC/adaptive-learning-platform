@@ -1733,40 +1733,39 @@ const ClassworkTab = ({
             {!isInstructor && itemType === 'assignment' && (
               <div className={compactMode ? 'mb-2.5' : 'mb-3'}>
                 {submission && submission.grade !== null && submission.grade !== undefined ? (
-                  // Graded - Show grade prominently
-                  <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg shadow-sm ${submission.grade >= 90 ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-2 border-green-200' :
-                        submission.grade >= 70 ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-2 border-blue-200' :
-                          submission.grade >= 50 ? 'bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 border-2 border-yellow-200' :
-                            'bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-2 border-red-200'
-                      }`}>
-                      <span className="text-base">✅</span>
-                      <span>Graded: {submission.grade}%</span>
-                    </span>
-                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-md">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Graded: {submission.grade}%
+                  </span>
                 ) : submission && submission.status === 'submitted' ? (
-                  // Submitted but not graded
-                  <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-blue-700 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg shadow-sm">
-                    <span className="text-base">📝</span>
-                    <span>Submitted - Awaiting Grade</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-md">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Submitted
                   </span>
                 ) : submission && submission.status === 'draft' ? (
-                  // In Progress
-                  <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-amber-700 bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-lg shadow-sm">
-                    <span className="text-base">🔄</span>
-                    <span>In Progress</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-md">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    In Progress
                   </span>
                 ) : item.dueDate && new Date(item.dueDate) < new Date() ? (
-                  // Missed/Overdue - No submission and past due date
-                  <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-red-700 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200 rounded-lg shadow-sm">
-                    <span className="text-base">❌</span>
-                    <span>Missed</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-md">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Missed
                   </span>
                 ) : (
-                  // Not Started - No submission but not overdue yet
-                  <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 rounded-lg shadow-sm">
-                    <span className="text-base">⭕</span>
-                    <span>Not Started</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-md">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Not Started
                   </span>
                 )}
               </div>
