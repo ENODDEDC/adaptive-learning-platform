@@ -149,7 +149,8 @@ export default function VideoLinkViewer({ content }) {
         body: JSON.stringify({ 
           content: text, 
           mode: mode.db,
-          title: content?.title || platformLabel
+          title: content?.title || platformLabel,
+          contentId: content?._id || content?.id || (typeof content === 'string' ? content : null)
         })
       });
       
@@ -158,7 +159,12 @@ export default function VideoLinkViewer({ content }) {
         const generatedContent = data.content || '';
         setRightPanelContent(generatedContent);
         
-        // Store in cache
+        // Show cache indicator if it came from DB
+        if (data.isCached) {
+          console.log(`🚀 [CACHE HIT] Loaded ${mode.db} from database for video`);
+        }
+        
+        // Store in session cache
         setRightPanelCache(prev => ({
           ...prev,
           [modeKey]: generatedContent
