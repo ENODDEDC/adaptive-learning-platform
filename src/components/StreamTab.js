@@ -194,24 +194,24 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
   };
 
   const sectionCardClass = compactMode
-    ? 'p-5 sm:p-6'
-    : 'p-6 sm:p-8';
+    ? 'p-4 sm:p-5'
+    : 'p-5 sm:p-6';
   const sectionTitleClass = compactMode
-    ? 'text-xl'
-    : 'text-2xl';
+    ? 'text-lg'
+    : 'text-xl';
   const itemCardClass = compactMode
-    ? 'p-5'
-    : 'p-6';
+    ? 'p-3'
+    : 'p-4';
   const stackClass = compactMode
-    ? 'space-y-5'
-    : 'space-y-6';
+    ? 'space-y-3'
+    : 'space-y-4';
 
   return (
     <div className={stackClass}>
       
 
       {isInstructor && (
-        <div className={`group ${sectionCardClass} overflow-hidden bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-300/60 transition-all duration-300 hover:scale-[1.01]`}>
+        <div className={`${sectionCardClass} bg-white border border-gray-200 rounded-xl`}>
           <div className="mb-3 flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
@@ -255,7 +255,7 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
       )}
 
       {pinnedItems.length > 0 && (
-        <div className={`${sectionCardClass} bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-gray-500/10 hover:border-gray-300/60 transition-all duration-300 hover:scale-[1.01]`}>
+        <div className={`${sectionCardClass} bg-white border border-gray-200 rounded-xl`}>
           <div className={`flex items-center gap-3 ${compactMode ? 'mb-5' : 'mb-6'}`}>
             <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
               <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,11 +266,11 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
           </div>
           <div className={stackClass}>
             {pinnedItems.map((item) => (
-              <div key={item._id} className={`group ${itemCardClass} bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border border-blue-200/60 rounded-xl hover:shadow-lg hover:scale-[1.01] transition-all duration-200`}>
+              <div key={item._id} className={`group ${itemCardClass} bg-blue-50/30 border border-blue-200 rounded-xl`}>
                 {/* Header Section */}
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-full shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600">
-                    <span className="text-sm font-semibold text-white">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600">
+                    <span className="text-xs font-semibold text-white">
                       {item.postedBy?.name ? item.postedBy.name.charAt(0).toUpperCase() : 'U'}
                     </span>
                   </div>
@@ -440,7 +440,7 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
         </div>
       )}
 
-      <div className={`${sectionCardClass} bg-white border border-gray-200/60 shadow-sm rounded-2xl hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-300/60 transition-all duration-300 hover:scale-[1.01]`}>
+      <div className={`${sectionCardClass} bg-white border border-gray-200 rounded-xl`}>
         <div className={`flex flex-col ${compactMode ? 'gap-4 mb-6' : 'gap-6 mb-8'} sm:flex-row sm:items-center sm:justify-between`}>
           <div>
             <h2 className={`${sectionTitleClass} font-bold text-gray-900 mb-1`}>Activity Feed</h2>
@@ -540,7 +540,7 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                 );
               }
               return filteredItems.map((item) => (
-              <div key={item._id} className={`group ${itemCardClass} bg-white border border-gray-200/60 rounded-xl hover:bg-gray-50/50 hover:border-gray-300/60 hover:shadow-md transition-all duration-200`}>
+              <div key={item._id} className={`${itemCardClass} bg-white border border-gray-200 rounded-xl`}>
                 {/* Header Section */}
                 <div className="flex items-start gap-4 mb-4">
                   <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-full shadow-lg bg-gradient-to-br from-blue-500 to-blue-600">
@@ -551,14 +551,14 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className="font-semibold text-gray-900 text-base">{item.postedBy?.name || 'Unknown User'}</span>
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className="font-semibold text-gray-900 text-sm">{item.postedBy?.name || 'Unknown User'}</span>
                           {isInstructor && (
-                            <span className="px-2.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-full border border-emerald-200">Instructor</span>
+                            <span className="px-2 py-0.5 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-full border border-emerald-200">Instructor</span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border ${
+                          <span className={`flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full border ${
                             item.type === 'announcement'
                               ? 'text-blue-700 bg-blue-50 border-blue-200'
                               : item.type === 'form'
@@ -588,8 +588,8 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                               </>
                             )}
                           </span>
-                          <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <span>{format(new Date(item.createdAt), 'MMM dd, yyyy • h:mm a')}</span>
@@ -625,21 +625,21 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                 </div>
 
                 {/* Content Section */}
-                <div className="mb-4">
-                  <h3 className="mb-3 text-lg font-semibold text-gray-900 leading-tight">{item.title}</h3>
-                  <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: item.content || item.description }} />
+                <div className="mb-3">
+                  <h3 className="mb-2 text-base font-semibold text-gray-900 leading-tight">{item.title}</h3>
+                  <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-sm" dangerouslySetInnerHTML={{ __html: item.content || item.description }} />
                 </div>
 
                 {/* Attachments Section */}
                 {item.attachments && item.attachments.length > 0 && (
-                  <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                       </svg>
-                      <span className="text-sm font-medium text-gray-700">Attachments ({item.attachments.length})</span>
+                      <span className="text-xs font-medium text-gray-700">Attachments ({item.attachments.length})</span>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {item.attachments.map((attachment, index) => (
                         <AttachmentPreview 
                           key={index} 
@@ -655,27 +655,27 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                   </div>
                 )}
                 {/* Comments Section */}
-                <div className="pt-6 mt-6 border-t border-gray-200/60">
+                <div className="pt-3 mt-3 border-t border-gray-200/60">
                   <button
                     onClick={() => toggleComments(item._id, item.type)}
-                    className="flex items-center gap-2 mb-4 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-all duration-200 hover:scale-105"
+                    className="flex items-center gap-1.5 mb-3 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-all duration-200"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                     <span>{visibleComments[item._id] ? 'Hide Comments' : `View Comments (${itemComments[item._id]?.length || 0})`}</span>
                   </button>
 
                   {visibleComments[item._id] && (
-                    <div className="bg-gray-50/50 rounded-lg border border-gray-200/60 p-4">
-                      <div className="flex items-center gap-2 mb-4">
-                        <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="bg-gray-50/50 rounded-lg border border-gray-200/60 p-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
-                        <h4 className="text-base font-semibold text-gray-900">Comments ({itemComments[item._id]?.length || 0})</h4>
+                        <h4 className="text-sm font-semibold text-gray-900">Comments ({itemComments[item._id]?.length || 0})</h4>
                       </div>
 
-                      <div className="space-y-3 mb-4">
+                      <div className="space-y-2 mb-3">
                         {itemComments[item._id]?.length === 0 ? (
                           <div className="text-center py-6">
                             <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-white border border-gray-200 rounded-full">
