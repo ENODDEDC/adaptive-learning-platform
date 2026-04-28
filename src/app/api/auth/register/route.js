@@ -100,7 +100,7 @@ export async function POST(req) {
       });
 
       const mailOptions = {
-        from: `"AssistEd" <${process.env.FROM_EMAIL}>`,
+        from: `"Intelevo" <${process.env.FROM_EMAIL}>`,
         to: email,
         subject: 'Email Verification OTP',
         html: otpEmailTemplate(otp),

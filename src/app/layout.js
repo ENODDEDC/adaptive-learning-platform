@@ -14,7 +14,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "AssistEd",
+  title: "Intelevo",
   description: "A modern learning platform designed to enhance educational experiences",
   icons: {
     icon: '/favicon.svg',
