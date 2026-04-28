@@ -1820,19 +1820,19 @@ const CourseDetailPage = ({
                     <>
                       {/* Student Stats */}
                       <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                          <div className="text-xl font-bold text-blue-900 mb-1">
+                        <div className="p-3 bg-white rounded-lg border border-gray-200">
+                          <div className="text-xl font-bold text-gray-900 mb-1">
                             {upcomingAssignments.length}
                           </div>
-                          <div className="text-xs font-medium text-blue-700 uppercase tracking-wide">
+                          <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">
                             Upcoming
                           </div>
                         </div>
-                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-100">
-                          <div className="text-xl font-bold text-amber-900 mb-1">
+                        <div className="p-3 bg-white rounded-lg border border-gray-200">
+                          <div className="text-xl font-bold text-gray-900 mb-1">
                             {dueThisWeekCount}
                           </div>
-                          <div className="text-xs font-medium text-amber-700 uppercase tracking-wide">
+                          <div className="text-xs font-medium text-gray-600 uppercase tracking-wide">
                             This Week
                           </div>
                         </div>
