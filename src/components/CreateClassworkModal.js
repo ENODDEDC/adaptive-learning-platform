@@ -368,8 +368,75 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
         setDescription(initialData.description || '');
         setDueDate(initialData.dueDate ? format(new Date(initialData.dueDate), 'yyyy-MM-dd') : '');
         setType(initialData.type || 'assignment');
-        setFiles(initialData.attachments?.filter(a => a.type !== 'video-link') || []);
-        setVideoLinks(initialData.attachments?.filter(a => a.type === 'video-link') || []);
+        // Separate files and video links based on type OR platform
+        const attachments = initialData.attachments || [];
+        console.log('Loading attachments for editing:', attachments);
+        console.log('Full attachment details:', JSON.stringify(attachments, null, 2));
+        
+        // Check for video links by multiple criteria
+        const videoLinkAttachments = attachments.filter(a => {
+          // Check if it's explicitly a video-link type
+          if (a.type === 'video-link' || a.contentType === 'video-link') return true;
+          // Check if it has a video platform in cloudStorage metadata
+          if (a.cloudStorage?.metadata?.platform) return true;
+          if (a.cloudStorage?.metadata?.videoLinkType) return true;
+          // Check if it has a video platform
+          if (a.platform && ['youtube', 'gdrive', 'vimeo'].includes(a.platform)) return true;
+          // Check if the URL looks like a video link
+          if (a.url && /youtube\.com|youtu\.be|drive\.google\.com|vimeo\.com/.test(a.url)) return true;
+          if (a.filePath && /youtube\.com|youtu\.be|drive\.google\.com|vimeo\.com/.test(a.filePath)) return true;
+          // Check if originalName or title contains video platform names
+          if (a.originalName && /youtube|vimeo|google drive/i.test(a.originalName)) return true;
+          return false;
+        });
+        
+        const fileAttachments = attachments.filter(a => !videoLinkAttachments.includes(a));
+        
+        console.log('Video links:', videoLinkAttachments);
+        console.log('Files:', fileAttachments);
+        
+        // Ensure video links have all necessary fields
+        const formattedVideoLinks = videoLinkAttachments.map(link => {
+          // Get platform from multiple sources
+          let platform = link.platform || link.cloudStorage?.metadata?.platform || 'unknown';
+          
+          // If platform is unknown, try to detect from URL
+          const url = link.url || link.filePath || '';
+          if (platform === 'unknown' && url) {
+            if (/youtube\.com|youtu\.be/.test(url)) {
+              platform = 'youtube';
+            } else if (/drive\.google\.com/.test(url)) {
+              platform = 'gdrive';
+            } else if (/vimeo\.com/.test(url)) {
+              platform = 'vimeo';
+            }
+          }
+          
+          // Access videoDescription from multiple sources
+          const videoDescription = link.description || link.cloudStorage?.metadata?.videoDescription || link.videoDescription || '';
+          
+          console.log('Processing video link:', {
+            url,
+            platform,
+            videoDescription,
+            cloudStorage: link.cloudStorage,
+            rawLink: link
+          });
+          
+          return {
+            ...link,
+            _id: link._id || `video-link-${Date.now()}`,
+            type: link.type || 'video-link',
+            videoDescription: videoDescription,
+            platform: platform,
+            url: url
+          };
+        });
+        
+        console.log('Formatted video links:', formattedVideoLinks);
+        
+        setFiles(fileAttachments);
+        setVideoLinks(formattedVideoLinks);
       } else {
         setTitle('');
         setDescription('');
@@ -429,8 +496,15 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
       console.log('🔍 CLASSWORK: Creating classwork with data:', {
         title,
         type,
-        attachmentCount: uploadedFiles.length,
-        attachments: uploadedFiles.map(f => ({ name: f.originalName || f.fileName, url: f.url }))
+        attachmentCount: uploadedFiles.length + videoLinks.length,
+        videoLinks: videoLinks,
+        videoLinksWithDescription: videoLinks.map(v => ({
+          url: v.url,
+          platform: v.platform,
+          videoDescription: v.videoDescription,
+          hasDescription: !!v.videoDescription
+        })),
+        fullClassworkData: classworkData
       });
 
       const method = initialData ? 'PUT' : 'POST';
@@ -952,18 +1026,23 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                                 </button>
                               </div>
 
-                              {/* Description field — only for non-YouTube */}
-                              {link.platform !== 'youtube' && (
-                                <div className="px-3 pb-3 border-t border-slate-200 pt-2">
+                              {/* Description field for all video links */}
+                              <div className="px-3 pb-3 border-t border-slate-200 pt-2">
                                   <div className="flex items-center gap-1.5 mb-1.5">
                                     <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span className="text-xs font-semibold text-blue-700">Add description for AI learning modes</span>
+                                    <span className="text-xs font-semibold text-blue-700">
+                                      {link.platform === 'youtube' ? 'Add description (optional)' : 'Add description for AI learning modes'}
+                                    </span>
                                   </div>
                                   <textarea
                                     rows={3}
-                                    placeholder="Describe what this video is about — topic, key concepts, or a summary. This enables the 7 AI learning modes for students."
+                                    placeholder={
+                                      link.platform === 'youtube' 
+                                        ? "Describe what this video is about — topic, key concepts, or a summary. (Optional: YouTube videos can auto-extract transcripts)"
+                                        : "Describe what this video is about — topic, key concepts, or a summary. This enables the 7 AI learning modes for students."
+                                    }
                                     value={link.videoDescription || ''}
                                     onChange={(e) => handleUpdateVideoLinkDescription(link._id, e.target.value)}
                                     className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none placeholder:text-gray-400 text-gray-700"
@@ -973,11 +1052,12 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                                       <CheckCircleIcon className="w-3 h-3" />
                                       AI learning modes enabled
                                     </p>
+                                  ) : link.platform === 'youtube' ? (
+                                    <p className="text-xs text-gray-500 mt-1">YouTube videos can use auto-extracted transcripts for AI learning modes.</p>
                                   ) : (
                                     <p className="text-xs text-amber-600 mt-1">Without a description, AI learning modes won&apos;t be available for this video.</p>
                                   )}
                                 </div>
-                              )}
                             </div>
                           ))}
                         </div>
@@ -1180,16 +1260,13 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                       isUploadingFiles ||
                       isCheckingDescription ||
                       // Block if on video tab with text typed but not yet added
-                      (currentStep === 2 && attachTab === 'video' && videoLinkInput.trim().length > 0) ||
-                      // Block if any non-YouTube video link is missing a description
-                      (currentStep === 2 && videoLinks.some(v => v.platform !== 'youtube' && !v.videoDescription?.trim()))
+                      (currentStep === 2 && attachTab === 'video' && videoLinkInput.trim().length > 0)
+                      // Note: Video descriptions are now optional for all platforms
                     }
                     title={
                       currentStep === 2 && attachTab === 'video' && videoLinkInput.trim().length > 0
                         ? 'Click "Add" to attach the video link first'
-                        : currentStep === 2 && videoLinks.some(v => v.platform !== 'youtube' && !v.videoDescription?.trim())
-                          ? 'Add a description for all non-YouTube video links to continue'
-                          : undefined
+                        : undefined
                     }
                     className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-2"
                   >

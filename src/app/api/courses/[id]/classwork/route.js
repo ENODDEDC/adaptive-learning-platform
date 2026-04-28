@@ -76,6 +76,7 @@ export async function POST(request, { params }) {
             const contentData = {
               courseId: id,
               title: attachment.title || attachment.originalName || 'Video Link',
+              description: attachment.videoDescription || '', // Save video description to top-level field
               originalName: attachment.originalName || 'Video Link',
               filename: attachment.originalName || 'Video Link',
               filePath: attachment.url,
@@ -266,7 +267,13 @@ export async function GET(request, { params }) {
       type: item.type,
       createdAt: item.createdAt,
       dueDate: item.dueDate,
-      attachmentsCount: item.attachments?.length || 0
+      attachmentsCount: item.attachments?.length || 0,
+      attachments: item.attachments?.map(att => ({
+        _id: att._id,
+        contentType: att.contentType,
+        description: att.description,
+        cloudStorage: att.cloudStorage
+      }))
     })));
 
     return NextResponse.json({ classwork }, { status: 200 });
