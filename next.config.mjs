@@ -4,6 +4,10 @@ const nextConfig = {
   experimental: {
     // Avoid flaky parallel prerender "Cannot find module for page" on some environments
     staticGenerationMaxConcurrency: 1,
+    // File upload size limit for API routes (Backblaze B2 free tier: 10GB total)
+    serverActions: {
+      bodySizeLimit: '15mb', // Conservative limit for free tier
+    },
   },
   images: {
     remotePatterns: [
