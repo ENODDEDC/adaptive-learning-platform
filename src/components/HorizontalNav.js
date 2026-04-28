@@ -8,6 +8,7 @@ import {
   CalendarIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 
 export default function HorizontalNav() {
@@ -17,6 +18,7 @@ export default function HorizontalNav() {
   const navItems = [
     { href: '/home', label: 'Home', icon: HomeIcon },
     { href: '/courses', label: 'Courses', icon: BookOpenIcon },
+    { href: '/learn/my-courses', label: 'My Learning', icon: AcademicCapIcon },
     { href: '/todo', label: 'To-Do', icon: CheckCircleIcon },
     { href: '/schedule', label: 'Schedule', icon: CalendarIcon },
     { href: '/settings', label: 'Settings', icon: Cog6ToothIcon },
