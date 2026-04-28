@@ -1,52 +1,79 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const CEREBRAS_API_URL = 'https://api.cerebras.ai/v1/chat/completions';
+const MODEL = 'llama3.1-8b';
+
+const SYSTEM_PROMPT = `You are an AI assistant for IntelEvo, an adaptive learning platform. Help students and instructors use the platform.
+
+Platform features:
+- Courses: Students join with a class code. Instructors create and manage courses.
+- Feed Tab: Announcements, assignments, and forms from instructors. Students can comment.
+- Activities Tab: All assignments, quizzes, materials, forms. Status badges: Not Started, In Progress, Submitted, Graded, Missed. Completed forms are hidden.
+- Members Tab: All teachers and students in the course.
+- My Grades Tab (students only): All submissions and grades for assignments and forms.
+- Scores Tab (instructors only): Grade table for all students.
+- Assignments: Students submit files, links, or text. Instructors grade and give feedback.
+- Forms: Auto-graded quizzes (multiple choice, checkboxes, short answer).
+- Materials: PDFs, DOCX, videos for reference.
+- AI Assistant: Ask questions, research topics, generate documents.
+- Smart Notes: Take notes while viewing course content.
+- Learning Modes: Visual/Verbal, Active/Reflective, Sensing/Intuitive, Sequential/Global.
+
+IMPORTANT FORMATTING RULES:
+- Always put each numbered step on its own line
+- Use "1. Step one" format with a newline after each step
+- Keep responses concise and easy to read
+- Do not write long run-on paragraphs`;
 
 export async function POST(request) {
   try {
-    const { query, conversationHistory } = await request.json();
+    const { query, conversationHistory, mode } = await request.json();
 
     if (!query) {
-      return NextResponse.json(
-        { error: 'Query is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-flash-lite-latest' });
-
-    // Build context-aware prompt with conversation history
-    let contextualPrompt = '';
+    const messages = [{ role: 'system', content: SYSTEM_PROMPT }];
 
     if (conversationHistory && conversationHistory.length > 0) {
-      const recentHistory = conversationHistory.slice(-4); // Last 4 messages for context
-      const historyText = recentHistory
-        .map(msg => `${msg.sender === 'user' ? 'User' : 'Assistant'}: ${msg.text}`)
-        .join('\n');
-
-      contextualPrompt = `Previous conversation context:\n${historyText}\n\nCurrent question: ${query}`;
-    } else {
-      contextualPrompt = query;
+      const recentHistory = conversationHistory.slice(-4);
+      recentHistory.forEach(msg => {
+        messages.push({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.text
+        });
+      });
     }
 
-    const result = await model.generateContent(contextualPrompt);
+    messages.push({ role: 'user', content: query });
 
-    const response = await result.response;
-    let text = response.text();
-    // Remove markdown asterisks
-    text = text.replace(/\*\*/g, '');
-    text = text.replace(/\*/g, '');
+    const response = await fetch(CEREBRAS_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.CEREBRAS_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages,
+        max_tokens: 1024,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error('Cerebras API error:', err);
+      return NextResponse.json({ error: 'AI request failed', details: err }, { status: 500 });
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || '';
 
     return NextResponse.json({ response: text });
 
   } catch (error) {
     console.error('Error generating AI response:', error);
-    console.error('Error details:', error.message);
-    console.error('Error stack:', error.stack);
-    return NextResponse.json(
-      { error: 'Failed to generate AI response', details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to generate AI response', details: error.message }, { status: 500 });
   }
 }

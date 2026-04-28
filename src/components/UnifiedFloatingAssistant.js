@@ -89,26 +89,94 @@ export default function UnifiedFloatingAssistant() {
     }
   }, [pathname]);
 
-  const handleSubmit = () => {
-    if (promptText.trim()) {
-      const tracker = getLearningBehaviorTracker();
-      if (tracker) {
-        const modeMap = {
-          'Ask': 'ask',
-          'Research': 'research',
-          'Text to Docs': 'textToDocs'
-        };
-        tracker.trackAIAssistantInteraction(modeMap[selectedMode], promptText.length);
-      }
-      
-      if (selectedMode === 'Ask') {
-        router.push(`/ask?q=${encodeURIComponent(promptText)}`);
-      } else if (selectedMode === 'Text to Docs') {
-        router.push(`/text-to-docs?prompt=${encodeURIComponent(promptText)}`);
-      }
-      
+  const [aiResponse, setAiResponse] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+
+  // Format AI response text into readable structure
+  const formatMessage = (text, role) => {
+    if (role === 'user') return <span>{text}</span>;
+
+    // Split into lines and process
+    const lines = text.split('\n').filter(l => l.trim() !== '');
+    
+    return (
+      <div className="space-y-1.5">
+        {lines.map((line, i) => {
+          const trimmed = line.trim();
+          // Numbered step: "1. Something" or "1) Something"
+          const numberedMatch = trimmed.match(/^(\d+)[.)]\s+(.+)/);
+          if (numberedMatch) {
+            return (
+              <div key={i} className="flex gap-2">
+                <span className="flex-shrink-0 w-5 h-5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center justify-center mt-0.5">
+                  {numberedMatch[1]}
+                </span>
+                <span className="text-sm leading-relaxed">{numberedMatch[2]}</span>
+              </div>
+            );
+          }
+          // Bullet: "- Something" or "• Something"
+          if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+            return (
+              <div key={i} className="flex gap-2">
+                <span className="flex-shrink-0 w-1.5 h-1.5 bg-gray-400 rounded-full mt-2"></span>
+                <span className="text-sm leading-relaxed">{trimmed.replace(/^[-•]\s+/, '')}</span>
+              </div>
+            );
+          }
+          // Regular paragraph
+          return <p key={i} className="text-sm leading-relaxed">{trimmed}</p>;
+        })}
+      </div>
+    );
+  };
+
+  const handleSubmit = async () => {
+    if (!promptText.trim()) return;
+
+    const tracker = getLearningBehaviorTracker();
+    if (tracker) {
+      const modeMap = { 'Ask': 'ask', 'Research': 'research', 'Text to Docs': 'textToDocs' };
+      tracker.trackAIAssistantInteraction(modeMap[selectedMode], promptText.length);
+    }
+
+    // Text to Docs still navigates away
+    if (selectedMode === 'Text to Docs') {
+      router.push(`/text-to-docs?prompt=${encodeURIComponent(promptText)}`);
       setSelectedTool(null);
       setPromptText('');
+      return;
+    }
+
+    // Ask & Research — answer inline in the panel
+    const userMessage = promptText.trim();
+    setPromptText('');
+    setAiLoading(true);
+    setAiResponse('');
+
+    // Add user message to chat
+    setChatHistory(prev => [...prev, { role: 'user', text: userMessage }]);
+
+    try {
+      const res = await fetch('/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: userMessage,
+          mode: selectedMode,
+          conversationHistory: chatHistory
+        })
+      });
+
+      const data = await res.json();
+      const reply = data.response || 'Sorry, I could not generate a response.';
+      setAiResponse(reply);
+      setChatHistory(prev => [...prev, { role: 'assistant', text: reply }]);
+    } catch {
+      setAiResponse('Something went wrong. Please try again.');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -341,89 +409,142 @@ export default function UnifiedFloatingAssistant() {
           })()}
           className="fixed z-40"
         >
-          <div className="w-[420px] max-w-[calc(100vw-2rem)]">
-            <div className="bg-white rounded-lg shadow-xl border border-gray-200">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">AI Assistant</h3>
-                <button
-                  onClick={() => setSelectedTool(null)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+          <div className="w-[400px] max-w-[calc(100vw-2rem)]">
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">AI Assistant</h3>
+                    <p className="text-xs text-gray-500">Knows IntelEvo platform</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  {chatHistory.length > 0 && (
+                    <button
+                      onClick={() => { setChatHistory([]); setAiResponse(''); }}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Clear chat"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSelectedTool(null)}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
-              <div className="p-6">
-                <div className="relative mb-4">
+              {/* Mode Selector */}
+              <div className="px-5 pt-4">
+                <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg">
+                  {[
+                    { label: 'Ask', mode: 'Ask', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /> },
+                    { label: 'Research', mode: 'Research', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /> },
+                    { label: 'Docs', mode: 'Text to Docs', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /> },
+                  ].map(({ label, mode, icon }) => (
+                    <button
+                      key={mode}
+                      onClick={() => {
+                        setSelectedMode(mode);
+                        const tracker = getLearningBehaviorTracker();
+                        if (tracker) tracker.trackAIAssistantMode(mode === 'Ask' ? 'ask' : mode === 'Research' ? 'research' : 'textToDocs');
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md transition-all ${
+                        selectedMode === mode
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">{icon}</svg>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Chat History */}
+              {chatHistory.length > 0 && (
+                <div className="px-5 pt-4 max-h-64 overflow-y-auto space-y-3">
+                  {chatHistory.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] px-3 py-2.5 rounded-xl text-sm leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-blue-600 text-white rounded-br-sm'
+                          : 'bg-gray-100 text-gray-800 rounded-bl-sm'
+                      }`}>
+                        {formatMessage(msg.text, msg.role)}
+                      </div>
+                    </div>
+                  ))}
+                  {aiLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 px-3 py-2 rounded-xl rounded-bl-sm">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Textarea */}
+              <div className="px-5 pt-3 pb-4">
+                <div className="relative">
                   <textarea
                     value={promptText}
                     onChange={(e) => setPromptText(e.target.value)}
-                    placeholder="Ask anything..."
-                    className="w-full p-3 text-sm text-gray-700 placeholder-gray-400 border border-gray-300 resize-none bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSubmit();
+                    }}
+                    placeholder={
+                      selectedMode === 'Ask' ? 'Ask me anything...' :
+                      selectedMode === 'Research' ? 'What do you want to research?' :
+                      'Describe the document you want to generate...'
+                    }
+                    className="w-full px-4 py-3 text-sm text-gray-800 placeholder-gray-400 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-colors"
                     rows="4"
                     maxLength={500}
                     autoFocus
                   />
-                  <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+                  <div className="absolute bottom-2.5 right-3 text-xs text-gray-400">
                     {promptText.length}/500
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-xs text-gray-400">
+                    <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-gray-500 font-mono">Ctrl+Enter</kbd> to submit
+                  </p>
                   <button
-                    onClick={() => {
-                      setSelectedMode('Ask');
-                      const tracker = getLearningBehaviorTracker();
-                      if (tracker) tracker.trackAIAssistantMode('ask');
-                    }}
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      selectedMode === 'Ask'
-                        ? 'text-white bg-blue-600'
-                        : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
-                    }`}
+                    onClick={handleSubmit}
+                    disabled={!promptText.trim()}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    Ask
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedMode('Research');
-                      const tracker = getLearningBehaviorTracker();
-                      if (tracker) tracker.trackAIAssistantMode('research');
-                    }}
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      selectedMode === 'Research'
-                        ? 'text-white bg-blue-600'
-                        : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
-                    }`}
-                  >
-                    Research
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedMode('Text to Docs');
-                      const tracker = getLearningBehaviorTracker();
-                      if (tracker) tracker.trackAIAssistantMode('textToDocs');
-                    }}
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      selectedMode === 'Text to Docs'
-                        ? 'text-white bg-blue-600'
-                        : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
-                    }`}
-                  >
-                    Docs
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    Send
                   </button>
                 </div>
-
-                <button
-                  onClick={handleSubmit}
-                  disabled={!promptText.trim()}
-                  className="w-full py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Submit
-                </button>
               </div>
+
             </div>
           </div>
         </div>
@@ -550,16 +671,16 @@ export default function UnifiedFloatingAssistant() {
               setSelectedTool(selectedTool === 'ai' ? null : 'ai');
               setIsExpanded(true);
             }}
-            className={`option-button flex items-center gap-3 px-5 py-3 rounded-full shadow-lg transition-all duration-300 ${
+            className={`option-button flex items-center gap-3 px-5 py-3 rounded-xl shadow-md transition-all duration-300 border ${
               selectedTool === 'ai'
-                ? 'bg-blue-600 text-white ring-4 ring-blue-200'
-                : 'bg-white text-gray-700 hover:bg-blue-50 hover:shadow-xl'
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:shadow-lg'
             }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
-            <span className="text-sm font-medium whitespace-nowrap">AI Assistant</span>
+            <span className="text-sm font-semibold whitespace-nowrap">AI Assistant</span>
           </button>
 
           <button
@@ -568,29 +689,35 @@ export default function UnifiedFloatingAssistant() {
               setSelectedTool(selectedTool === 'notes' ? null : 'notes');
               setIsExpanded(true);
             }}
-            className={`option-button flex items-center gap-3 px-5 py-3 rounded-full shadow-lg transition-all duration-300 ${
+            className={`option-button flex items-center gap-3 px-5 py-3 rounded-xl shadow-md transition-all duration-300 border ${
               selectedTool === 'notes'
-                ? 'bg-purple-600 text-white ring-4 ring-purple-200'
-                : 'bg-white text-gray-700 hover:bg-purple-50 hover:shadow-xl'
+                ? 'bg-purple-600 text-white border-purple-600'
+                : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:shadow-lg'
             }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
-            <span className="text-sm font-medium whitespace-nowrap">Smart Notes</span>
+            <span className="text-sm font-semibold whitespace-nowrap">Smart Notes</span>
           </button>
         </div>
         )}
 
         {/* Main Button */}
         <button
-          className={`flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full shadow-lg transition-all duration-300 ${
-            isExpanded ? 'scale-110 rotate-180' : 'scale-100 hover:scale-110'
+          className={`flex items-center justify-center w-14 h-14 bg-gray-900 rounded-2xl shadow-lg transition-all duration-300 ${
+            isExpanded ? 'scale-110' : 'scale-100 hover:scale-110 hover:bg-gray-800'
           }`}
         >
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-          </svg>
+          {isExpanded ? (
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
         </button>
 
 
