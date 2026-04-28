@@ -99,36 +99,73 @@ export default function UnifiedFloatingAssistant() {
   const formatMessage = (text, role) => {
     if (role === 'user') return <span>{text}</span>;
 
-    // Split into lines and process
     const lines = text.split('\n').filter(l => l.trim() !== '');
-    
+
+    // Helper to render inline bold (**text**) and citations ([1])
+    const renderInline = (str) => {
+      const parts = str.split(/(\*\*[^*]+\*\*|\[[0-9]+\])/g);
+      return parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i} className="font-semibold text-gray-900">{part.slice(2, -2)}</strong>;
+        }
+        if (/^\[[0-9]+\]$/.test(part)) {
+          return <sup key={i} className="text-blue-500 text-xs font-medium">{part}</sup>;
+        }
+        return part;
+      });
+    };
+
     return (
       <div className="space-y-1.5">
         {lines.map((line, i) => {
           const trimmed = line.trim();
-          // Numbered step: "1. Something" or "1) Something"
-          const numberedMatch = trimmed.match(/^(\d+)[.)]\s+(.+)/);
+
+          // Numbered step: "1. Something" or "1**Something**"
+          const numberedMatch = trimmed.match(/^(\d+)[.)]\s*(.+)/);
           if (numberedMatch) {
             return (
               <div key={i} className="flex gap-2">
                 <span className="flex-shrink-0 w-5 h-5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center justify-center mt-0.5">
                   {numberedMatch[1]}
                 </span>
-                <span className="text-sm leading-relaxed">{numberedMatch[2]}</span>
+                <span className="text-sm leading-relaxed">{renderInline(numberedMatch[2])}</span>
               </div>
             );
           }
-          // Bullet: "- Something" or "• Something"
+
+          // Bullet
           if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
             return (
               <div key={i} className="flex gap-2">
                 <span className="flex-shrink-0 w-1.5 h-1.5 bg-gray-400 rounded-full mt-2"></span>
-                <span className="text-sm leading-relaxed">{trimmed.replace(/^[-•]\s+/, '')}</span>
+                <span className="text-sm leading-relaxed">{renderInline(trimmed.replace(/^[-•]\s+/, ''))}</span>
               </div>
             );
           }
+
+          // References section — render URLs as clickable links
+          if (trimmed.match(/^\[[0-9]+\]\s*https?:\/\//)) {
+            const urlMatch = trimmed.match(/^(\[[0-9]+\])\s*(https?:\/\/\S+)/);
+            if (urlMatch) {
+              return (
+                <div key={i} className="flex gap-2 text-xs">
+                  <span className="text-blue-500 font-medium flex-shrink-0">{urlMatch[1]}</span>
+                  <a href={urlMatch[2]} target="_blank" rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline break-all">
+                    {urlMatch[2]}
+                  </a>
+                </div>
+              );
+            }
+          }
+
+          // "References:" header
+          if (trimmed.toLowerCase() === 'references:' || trimmed.toLowerCase() === 'references') {
+            return <p key={i} className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-3 pt-2 border-t border-gray-200">{trimmed}</p>;
+          }
+
           // Regular paragraph
-          return <p key={i} className="text-sm leading-relaxed">{trimmed}</p>;
+          return <p key={i} className="text-sm leading-relaxed">{renderInline(trimmed)}</p>;
         })}
       </div>
     );
