@@ -8,7 +8,7 @@ import ActivityLogger from '@/utils/activityLogger';
 import { checkRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
 import { validateRegistrationData, getClientIP } from '@/utils/inputValidator';
 import { validatePassword } from '@/utils/passwordValidator';
-import { generateSecureOTP } from '@/utils/secureOTP';
+import { generateSecureOTP, hashOTP, encryptEmail, hashEmailForSearch } from '@/utils/secureOTP';
 
 export async function POST(req) {
   try {
@@ -44,8 +44,9 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: validation.sanitized.email });
+    // Check if user already exists (search by email hash)
+    const emailHash = hashEmailForSearch(validation.sanitized.email);
+    const existingUser = await User.findOne({ emailHash });
     if (existingUser) {
       return NextResponse.json({ message: 'User already exists' }, { status: 400 });
     }
@@ -54,6 +55,7 @@ export async function POST(req) {
 
     // Generate cryptographically secure OTP
     const otp = generateSecureOTP(6);
+    const otpHash = hashOTP(otp); // Hash OTP for storage
     const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // Reduced to 5 minutes
 
     const newUser = new User({
@@ -61,9 +63,10 @@ export async function POST(req) {
       middleName: validation.sanitized.middleName,
       surname: validation.sanitized.surname,
       suffix: validation.sanitized.suffix,
-      email: validation.sanitized.email,
+      emailHash,
+      emailEncrypted: encryptEmail(validation.sanitized.email),
       password: hashedPassword,
-      otp,
+      otpHash, // Store hashed OTP
       otpExpires,
     });
 

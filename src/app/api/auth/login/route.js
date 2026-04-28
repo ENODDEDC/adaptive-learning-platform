@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import { checkRateLimit, resetRateLimit, rateLimitResponse } from '@/utils/rateLimiter';
 import { validateEmail, getClientIP } from '@/utils/inputValidator';
 import { isAccountLocked, recordFailedAttempt, resetFailedAttempts } from '@/utils/accountLockout';
+import { hashIP, hashEmailForSearch, decryptEmail } from '@/utils/secureOTP';
 
 export async function POST(req) {
   let email = '';
@@ -47,8 +48,9 @@ export async function POST(req) {
       }, { status: 423 }); // 423 Locked
     }
 
-    // Use constant-time lookup to prevent timing attacks
-    const user = await User.findOne({ email }).select('+password');
+    // Find user by email hash
+    const emailHash = hashEmailForSearch(email);
+    const user = await User.findOne({ emailHash }).select('+password');
 
     // Constant-time response for invalid credentials
     let isValidUser = false;
@@ -97,14 +99,14 @@ export async function POST(req) {
     // Update login history
     const userAgent = req.headers.get('user-agent') || 'Unknown';
     user.lastLoginAt = new Date();
-    user.lastLoginIP = clientIP;
+    user.lastLoginIPHash = hashIP(clientIP); // Hash IP for privacy
     user.failedLoginAttempts = 0;
     user.accountLockedUntil = null;
 
     // Keep only last 10 login history entries
     if (!user.loginHistory) user.loginHistory = [];
     user.loginHistory.unshift({
-      ip: clientIP,
+      ipHash: hashIP(clientIP), // Hash IP for privacy
       userAgent,
       timestamp: new Date(),
       success: true,
@@ -130,7 +132,7 @@ export async function POST(req) {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email,
+        email: decryptEmail(user.emailEncrypted), // Decrypt for response
         photoURL: user.photoURL,
         role: user.role,
       },
