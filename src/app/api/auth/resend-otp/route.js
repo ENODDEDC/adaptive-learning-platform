@@ -70,7 +70,7 @@ export async function POST(req) {
         const decryptedEmail = decryptEmail(user.emailEncrypted);
         
         const mailOptions = {
-          from: `"AssistEd" <${process.env.FROM_EMAIL}>`,
+          from: `"Intelevo" <${process.env.FROM_EMAIL}>`,
           to: decryptedEmail,
           subject: 'Email Verification OTP - Resent',
           html: otpEmailTemplate(otp),
