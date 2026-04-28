@@ -257,6 +257,7 @@ export async function GET(request, { params }) {
     }
 
     const classwork = await Assignment.find({ courseId: id })
+      .populate('postedBy', 'name email') // Populate user who posted the assignment
       .populate('attachments') // Populate the attachments with full Content data
       .sort({ createdAt: -1 }); // Sort by creation date, newest first
 

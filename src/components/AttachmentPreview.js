@@ -201,6 +201,7 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
   };
 
   const isVideo = attachment?.contentType === 'video' || attachment?.mimeType?.startsWith('video/');
+  const isVideoLink = attachment?.contentType === 'video-link' || attachment?.type === 'video-link';
   const isAudio = attachment?.contentType === 'audio' || attachment?.mimeType?.startsWith('audio/');
   const isDocument = attachment?.contentType === 'document' || attachment?.mimeType?.startsWith('application/');
   const isDocx = attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -222,7 +223,7 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
   };
   
   const getFileTypeIcon = () => {
-    if (isVideo) return '🎥';
+    if (isVideo || isVideoLink) return '🎥';
     if (isAudio) return '🎵';
     if (isImage) return '🖼️';
     if (isPdf) return '📄';
@@ -232,6 +233,13 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
   };
 
   const getFileTypeLabel = () => {
+    if (isVideoLink) {
+      const platform = attachment.platform || attachment.cloudStorage?.metadata?.platform || 'unknown';
+      if (platform === 'youtube') return 'YouTube Video';
+      if (platform === 'vimeo') return 'Vimeo Video';
+      if (platform === 'gdrive') return 'Google Drive Video';
+      return 'Video Link';
+    }
     if (isVideo) return 'Video';
     if (isAudio) return 'Audio';
     if (isImage) return 'Image';
@@ -252,6 +260,61 @@ const AttachmentPreview = ({ attachment, onPreview }) => {
   };
 
   const renderAttachment = () => {
+    // Handle video-link type (YouTube, Vimeo, Google Drive, etc.)
+    if (isVideoLink) {
+      const videoUrl = attachment.url || attachment.filePath || attachment.cloudStorage?.url || '';
+      const platform = attachment.platform || attachment.cloudStorage?.metadata?.platform || 'unknown';
+      const thumbnailUrl = attachment.thumbnailUrl || attachment.cloudStorage?.metadata?.thumbnailUrl;
+      
+      return (
+        <div className="flex items-center justify-between p-3 border rounded-lg bg-slate-50/50 hover:bg-slate-100 transition-colors">
+          <div className="flex items-center gap-4 min-w-0">
+            {/* Video thumbnail */}
+            <div className="relative w-20 h-14 bg-black rounded-md overflow-hidden flex-shrink-0">
+              {thumbnailUrl ? (
+                <img 
+                  src={thumbnailUrl} 
+                  alt={attachment.title} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500 to-red-600">
+                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                  </svg>
+                </div>
+              )}
+              {/* Platform badge */}
+              <div className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/80 rounded text-white text-xs font-semibold">
+                {platform === 'youtube' ? 'YT' : platform === 'vimeo' ? 'VM' : platform === 'gdrive' ? 'GD' : 'VID'}
+              </div>
+            </div>
+            
+            <div className="min-w-0">
+              <p className="font-semibold text-slate-800 truncate">{attachment.title}</p>
+              <div className="flex items-center gap-2 text-sm text-slate-500">
+                <span>🎥</span>
+                <span>{getFileTypeLabel()}</span>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              if (typeof onPreview === 'function') {
+                onPreview(attachment);
+              } else {
+                setShowViewer(true);
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white border rounded-lg hover:bg-slate-50 flex-shrink-0"
+          >
+            <EyeIcon className="w-5 h-5" />
+            <span>Watch</span>
+          </button>
+        </div>
+      );
+    }
+    
     if (isVideo) {
       return (
         <video controls className="w-full rounded-lg max-h-96 bg-black" src={attachment.filePath}>

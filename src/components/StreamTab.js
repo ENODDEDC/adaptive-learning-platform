@@ -281,8 +281,11 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                         {isInstructor && (
                           <span className="px-2.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-full border border-emerald-200">Instructor</span>
                         )}
-                        <span className="px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full border border-blue-200">
-                          📌 Pinned Announcement
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full border border-blue-200">
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
+                          </svg>
+                          Pinned Announcement
                         </span>
                       </div>
                       {isInstructor && (
@@ -443,15 +446,15 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
             <h2 className={`${sectionTitleClass} font-bold text-gray-900 mb-1`}>Activity Feed</h2>
             <p className="text-sm text-gray-600">Latest announcements and course updates</p>
           </div>
-          <div className={`flex flex-wrap items-center ${compactMode ? 'gap-2.5' : 'gap-3'}`}>
+          <div className={`flex flex-wrap items-center ${compactMode ? 'gap-2' : 'gap-2.5'}`}>
               {['all','announcement','assignment'].map((key) => (
                 <button
                   key={key}
                   onClick={() => setFilter(key)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-300 hover:scale-105 active:scale-95 ${
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-200 hover:scale-105 active:scale-95 ${
                     filter === key
-                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white border-blue-600 shadow-lg shadow-blue-500/25'
-                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:border-gray-300 hover:shadow-md'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white border-blue-600 shadow-md'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
                   }`}
                 >
                   {key === 'all' ? 'All Items' : key.charAt(0).toUpperCase() + key.slice(1) + (key==='assignment'?'s':'')}
@@ -460,7 +463,7 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 text-sm font-medium border border-gray-200 rounded-lg bg-white hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
+                className="px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg bg-white hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -546,21 +549,52 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="font-semibold text-gray-900 text-base">{item.postedBy?.name || 'Unknown User'}</span>
-                        {isInstructor && (
-                          <span className="px-2.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-full border border-emerald-200">Instructor</span>
-                        )}
-                        <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${
-                          item.type === 'announcement'
-                            ? 'text-blue-700 bg-blue-50 border-blue-200'
-                            : item.type === 'form'
-                              ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                              : 'text-purple-700 bg-purple-50 border-purple-200'
-                        }`}>
-                          {item.type === 'announcement' ? '📢 Announcement' : item.type === 'form' ? '📝 Form' : '📋 Assignment'}
-                        </span>
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className="font-semibold text-gray-900 text-base">{item.postedBy?.name || 'Unknown User'}</span>
+                          {isInstructor && (
+                            <span className="px-2.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-full border border-emerald-200">Instructor</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border ${
+                            item.type === 'announcement'
+                              ? 'text-blue-700 bg-blue-50 border-blue-200'
+                              : item.type === 'form'
+                                ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                                : 'text-purple-700 bg-purple-50 border-purple-200'
+                          }`}>
+                            {item.type === 'announcement' ? (
+                              <>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                                </svg>
+                                Announcement
+                              </>
+                            ) : item.type === 'form' ? (
+                              <>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Form
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                </svg>
+                                Assignment
+                              </>
+                            )}
+                          </span>
+                          <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>{format(new Date(item.createdAt), 'MMM dd, yyyy • h:mm a')}</span>
+                          </div>
+                        </div>
                       </div>
                       {isInstructor && item.type === 'announcement' && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -586,12 +620,6 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                           </button>
                         </div>
                       )}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{format(new Date(item.createdAt), 'MMM dd, yyyy • h:mm a')}</span>
                     </div>
                   </div>
                 </div>

@@ -279,7 +279,11 @@ const CourseDetailPage = ({
       const combinedItems = [
         ...announcementsData.announcements.map(item => ({ ...item, type: 'announcement' })),
         ...classworkData.classwork.map(item => ({ ...item, type: item.type || 'assignment' })),
-        ...formsData.forms.map(item => ({ ...item, type: 'form' })),
+        ...formsData.forms.map(item => ({ 
+          ...item, 
+          type: 'form',
+          postedBy: item.createdBy // Normalize createdBy to postedBy for forms
+        })),
       ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
       console.log('🔍 DEBUG: Combined items details:', combinedItems.map(item => ({
