@@ -77,7 +77,7 @@ function CustomAnnouncementEditor({ value, onChange, placeholder = 'Share an upd
   );
 }
 
-const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, newAnnouncementContent, setNewAnnouncementContent, handlePostAnnouncement, handleDeleteAnnouncement, newCommentContent, setNewCommentContent, handlePostComment, onOpenContent, compactMode = false, documentPanelOpen, setDocumentPanelOpen, setSidePanelDocument: setParentSidePanelDocument }) => {
+const StreamTab = ({ courseDetails, isInstructor, currentUser, forms = [], streamItems: propStreamItems, newAnnouncementContent, setNewAnnouncementContent, handlePostAnnouncement, handleDeleteAnnouncement, newCommentContent, setNewCommentContent, handlePostComment, onOpenContent, compactMode = false, documentPanelOpen, setDocumentPanelOpen, setSidePanelDocument: setParentSidePanelDocument }) => {
   const [pinnedItems, setPinnedItems] = useState([]);
   const [itemComments, setItemComments] = useState({});
   const [error, setError] = useState('');
@@ -329,15 +329,37 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                   
                   {item.type === 'form' && (
                     <div className="mt-4">
-                      <button
-                        onClick={() => window.open(`/forms/${item._id}`, '_blank')}
-                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Open Form
-                      </button>
+                      {(() => {
+                        const currentUserId = currentUser?._id || currentUser?.id;
+                        // Look up the full form data (with responses) from the forms prop
+                        const fullForm = forms.find(f => f._id === item._id || f._id?.toString() === item._id?.toString());
+                        const hasResponded = fullForm?.responses?.some(r =>
+                          (r.studentId?._id || r.studentId) === currentUserId
+                        );
+
+                        if (!isInstructor && hasResponded) {
+                          return (
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 text-green-700 font-medium rounded-xl text-sm">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Completed
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <button
+                            onClick={() => window.open(`/forms/${item._id}`, '_blank')}
+                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Open Form
+                          </button>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
@@ -628,6 +650,72 @@ const StreamTab = ({ courseDetails, isInstructor, streamItems: propStreamItems, 
                 <div className="mb-3">
                   <h3 className="mb-2 text-base font-semibold text-gray-900 leading-tight">{item.title}</h3>
                   <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-sm" dangerouslySetInnerHTML={{ __html: item.content || item.description }} />
+                  
+                  {item.type === 'form' && (
+                    <div className="mt-3">
+                      {(() => {
+                        const currentUserId = currentUser?._id || currentUser?.id;
+                        const fullForm = forms.find(f => f._id === item._id || f._id?.toString() === item._id?.toString());
+                        const hasResponded = fullForm?.responses?.some(r =>
+                          (r.studentId?._id || r.studentId) === currentUserId
+                        );
+
+                        return (
+                          <div className="border border-gray-200 rounded-lg overflow-hidden">
+                            {/* Attachments-style header */}
+                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200">
+                              <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              <span className="text-xs font-medium text-gray-600">Form</span>
+                            </div>
+
+                            {/* Form row — matches attachment row style */}
+                            <div className="flex items-center justify-between px-3 py-3 bg-white">
+                              <div className="flex items-center gap-3">
+                                {/* Form icon */}
+                                <div className="w-10 h-10 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">{item.title}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {fullForm?.questions?.length || 0} question{(fullForm?.questions?.length || 0) !== 1 ? 's' : ''}
+                                    {hasResponded && !isInstructor && (
+                                      <span className="ml-2 text-green-600 font-medium">· Answered</span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Action button */}
+                              {!isInstructor && hasResponded ? (
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-lg">
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  Completed
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => window.open(`/forms/${item._id}`, '_blank')}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                  Open Form
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
 
                 {/* Attachments Section */}

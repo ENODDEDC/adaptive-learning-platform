@@ -1245,6 +1245,8 @@ const CourseDetailPage = ({
                   <StreamTab
                     courseDetails={courseDetails}
                     isInstructor={isInstructor}
+                    currentUser={user}
+                    forms={forms}
                     streamItems={streamItems}
                     newAnnouncementContent={newAnnouncementContent}
                     setNewAnnouncementContent={setNewAnnouncementContent}
@@ -1414,6 +1416,8 @@ const CourseDetailPage = ({
                 <StreamTab
                   courseDetails={courseDetails}
                   isInstructor={isInstructor}
+                  currentUser={user}
+                  forms={forms}
                   streamItems={streamItems}
                   newAnnouncementContent={newAnnouncementContent}
                   setNewAnnouncementContent={setNewAnnouncementContent}
