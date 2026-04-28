@@ -1109,7 +1109,13 @@ export default function Home() {
                     notifications.map((notif) => (
                       <div
                         key={notif._id}
-                        onClick={() => notif.link && router.push(notif.link)}
+                        onClick={() => {
+                          if (notif.link) {
+                            // Navigate to course page instead of non-existent announcement deep link
+                            const courseMatch = notif.link.match(/\/courses\/([^/]+)/);
+                            if (courseMatch) router.push(`/courses/${courseMatch[1]}`);
+                          }
+                        }}
                         className={`rounded-xl border p-3 transition-all cursor-pointer ${
                           notif.read
                             ? 'bg-white border-gray-200 hover:border-gray-300'
