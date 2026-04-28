@@ -9,8 +9,12 @@ import { initAutoClassificationChecker } from '@/utils/autoClassificationChecker
  */
 export default function AutoClassificationWrapper({ children }) {
   useEffect(() => {
-    // Initialize the checker when component mounts
-    initAutoClassificationChecker();
+    try {
+      // Initialize the checker when component mounts
+      initAutoClassificationChecker();
+    } catch (error) {
+      console.error('❌ Error in AutoClassificationWrapper:', error);
+    }
   }, []);
 
   return <>{children}</>;

@@ -74,6 +74,9 @@ const CourseDetailPage = ({
   const [showEditVisibilityModal, setShowEditVisibilityModal] = useState(false);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
 
+  // Storage state
+  const [storageInfo, setStorageInfo] = useState(null);
+
   // Auto-collapse course sidebar when document panel opens
   useEffect(() => {
     if (documentPanelOpen) {
@@ -90,6 +93,21 @@ const CourseDetailPage = ({
       }
     }
   }, [documentPanelOpen]);
+
+  // Hide/Show main sidebar based on PDF viewing state
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (selectedContent) {
+        // PDF is being viewed - hide sidebar
+        window.dispatchEvent(new Event('hideMainSidebar'));
+        console.log('🔍 PDF: Hiding main sidebar (selectedContent active)');
+      } else {
+        // PDF closed - show sidebar again
+        window.dispatchEvent(new Event('showMainSidebar'));
+        console.log('🔍 PDF: Showing main sidebar (selectedContent cleared)');
+      }
+    }
+  }, [selectedContent]);
 
   // Scores Tab State
   const [submissions, setSubmissions] = useState([]);
@@ -161,12 +179,8 @@ const CourseDetailPage = ({
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/courses/${slug}`); // No need for manual token header, cookie is sent automatically
-
-      if (!res.ok) {
-        throw new Error(`Error: ${res.status} ${res.statusText}`);
-      }
-
+      const res = await fetch(`/api/courses/${slug}`);
+      if (!res.ok) throw new Error(`Error: ${res.status} ${res.statusText}`);
       const data = await res.json();
       setCourseDetails(data.course);
     } catch (err) {
@@ -176,6 +190,18 @@ const CourseDetailPage = ({
       setLoading(false);
     }
   }, [slug]);
+
+  const fetchStorageInfo = useCallback(async (courseId) => {
+    try {
+      const res = await fetch(`/api/courses/${courseId}/storage`);
+      if (res.ok) {
+        const data = await res.json();
+        setStorageInfo(data);
+      }
+    } catch {
+      // Non-critical — silently fail
+    }
+  }, []);
 
   const fetchCurrentUser = useCallback(async () => {
     try {
@@ -418,8 +444,9 @@ const CourseDetailPage = ({
     if (courseDetails) {
       fetchAssignments();
       fetchPeople();
+      fetchStorageInfo(courseDetails._id);
     }
-  }, [courseDetails, fetchAssignments, fetchPeople]);
+  }, [courseDetails, fetchAssignments, fetchPeople, fetchStorageInfo]);
 
   const calculateStatistics = useCallback((submissionsData) => {
     
@@ -1057,6 +1084,18 @@ const CourseDetailPage = ({
                         <p className="mt-0.5 text-sm font-medium text-gray-900 truncate">
                           {courseDetails.subject}
                         </p>
+                        {/* Storage info */}
+                        {storageInfo && (
+                          <div className="mt-2 flex items-center gap-1.5">
+                            <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                            </svg>
+                            <span className="text-xs text-gray-500">
+                              <span className="font-semibold text-gray-700">{storageInfo.formatted}</span>
+                              {' '}used · {storageInfo.fileCount} file{storageInfo.fileCount !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="py-1">
@@ -1229,6 +1268,7 @@ const CourseDetailPage = ({
                       setTimeout(() => setSelectedContent(content), 180);
                     }}
                     onClassworkCreated={handleClassworkCreated}
+                    onClassworkDeleted={() => fetchStorageInfo(courseDetails._id)}
                     isCreateClassworkModalOpen={isCreateClassworkModalOpen}
                     setIsCreateClassworkModalOpen={setIsCreateClassworkModalOpen}
                     editingClasswork={editingClasswork}
@@ -1371,19 +1411,15 @@ const CourseDetailPage = ({
                   submissions={submissions}
                   currentUser={user}
                   onOpenContent={(content) => {
+                    // Hide main sidebar completely when PDF is opened
                     try {
-                      console.log('🔍 WINDOW: Dispatching collapseSidebar event for classwork');
-                      console.log('🔍 WINDOW: Window available:', typeof window !== 'undefined');
                       if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new Event('collapseSidebar'));
-                        console.log('🔍 WINDOW: Event dispatched successfully');
-                      } else {
-                        console.log('🔍 WINDOW: Cannot dispatch event - not on client');
+                        window.dispatchEvent(new Event('hideMainSidebar'));
+                        console.log('🔍 PDF: Hiding main sidebar completely');
                       }
                     } catch (error) {
-                      console.log('🔍 WINDOW: Error dispatching event:', error);
+                      console.log('🔍 PDF: Error hiding sidebar:', error);
                     }
-                    // Slight delay to let the sidebar collapse animate smoothly
                     setTimeout(() => setSelectedContent(content), 180);
                   }}
                   onClassworkCreated={handleClassworkCreated}
@@ -1393,6 +1429,7 @@ const CourseDetailPage = ({
                   setEditingClasswork={setEditingClasswork}
                   classworkType={classworkType}
                   setClassworkType={setClassworkType}
+                  onClassworkDeleted={() => fetchStorageInfo(courseDetails._id)}
                   compactMode={true}
                 />
               )}

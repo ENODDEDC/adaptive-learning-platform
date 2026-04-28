@@ -46,6 +46,7 @@
     "lexical": "^0.35.0",
     "libreoffice-convert": "^1.6.1",
     "mammoth": "^1.11.0",
+    "mermaid": "^11.14.0",
     "mongodb": "^6.18.0",
     "mongoose": "^8.17.1",
     "multer": "^2.0.2",

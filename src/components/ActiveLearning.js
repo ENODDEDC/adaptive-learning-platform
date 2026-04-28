@@ -575,14 +575,14 @@ const ActiveLearning = ({
         <div
             className="fixed inset-0 left-0 top-0 z-[100020] flex flex-col overflow-hidden bg-stone-950 text-stone-100 antialiased"
             style={{
-                paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0',
+                paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '16px' : '0',
                 backgroundImage:
                     'radial-gradient(ellipse 90% 55% at 50% -20%, rgba(251,191,36,0.07), transparent 55%), radial-gradient(ellipse 55% 45% at 100% 100%, rgba(217,119,6,0.06), transparent 50%)'
             }}
             data-active-learning-root
         >
             <header className="border-b border-amber-950/40 bg-stone-950/95 px-3 py-2 backdrop-blur-md sm:px-4">
-                <div className="mx-auto flex max-w-[min(1200px,calc(100%-0.25rem))] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                     <div className="flex min-w-0 items-center gap-2">
                         <button
                             type="button"

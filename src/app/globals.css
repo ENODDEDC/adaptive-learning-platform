@@ -2380,6 +2380,38 @@ Slide-up animation for bottom notifications */
   animation: slide-up 0.3s ease-out;
 }
 
+@keyframes slide-down {
+  from {
+    transform: translate(-50%, -20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
+}
+
+/* Animation delays for modern loading spinners */
+.animation-delay-150 {
+  animation-delay: 150ms;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
 /* Slide-in-right animation for side panels */
 @keyframes slideInRight {
   from {
@@ -2571,4 +2603,171 @@ Slide-up animation for bottom notifications */
 
 .active-learning-scroll::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, rgb(252 211 77 / 0.55) 0%, rgb(245 158 11 / 0.5) 100%);
+}
+
+/* Cold Start Panel Highlighting Animations */
+@keyframes cold-start-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes cold-start-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.3), 0 0 40px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(147, 51, 234, 0.5), 0 0 60px rgba(59, 130, 246, 0.3);
+  }
+}
+
+@keyframes cold-start-pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes cold-start-float-particles {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 1;
+  }
+  25% {
+    transform: translateY(-8px) translateX(2px);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-4px) translateX(-2px);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translateY(-6px) translateX(1px);
+    opacity: 0.9;
+  }
+}
+
+@keyframes cold-start-gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Cold Start Animation Classes */
+.animate-cold-start-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  background-size: 200% 100%;
+  animation: cold-start-shimmer 2s infinite;
+}
+
+.animate-cold-start-glow {
+  animation: cold-start-glow 2s ease-in-out infinite;
+}
+
+.animate-cold-start-pulse-ring {
+  animation: cold-start-pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+
+.animate-cold-start-particles {
+  animation: cold-start-float-particles 3s ease-in-out infinite;
+}
+
+.animate-cold-start-gradient {
+  background-size: 200% 200%;
+  animation: cold-start-gradient-shift 3s ease infinite;
+}
+
+/* Cold Start Highlight Utilities */
+.cold-start-highlight {
+  position: relative;
+  overflow: visible;
+}
+
+.cold-start-highlight::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #9333ea, #3b82f6, #6366f1, #8b5cf6);
+  background-size: 400% 400%;
+  border-radius: inherit;
+  z-index: -1;
+  animation: cold-start-gradient-shift 3s ease infinite;
+}
+
+.cold-start-highlight::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  border-radius: inherit;
+  z-index: -1;
+}
+/* Interest Overlay Animations */
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-10px) rotate(2deg);
+  }
+  66% {
+    transform: translateY(-5px) rotate(-2deg);
+  }
+}
+
+@keyframes overlay-spotlight {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-overlay-spotlight {
+  animation: overlay-spotlight 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }

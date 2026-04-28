@@ -28,7 +28,7 @@ const contentSchema = new Schema({
   },
   contentType: {
     type: String,
-    enum: ['document', 'video', 'audio', 'material'],
+    enum: ['document', 'video', 'audio', 'material', 'video-link'],
     required: true,
   },
   fileSize: {
@@ -88,7 +88,7 @@ const contentSchema = new Schema({
   cloudStorage: {
     provider: {
       type: String,
-      enum: ['local', 'backblaze-b2', 'aws-s3', 'firebase'],
+      enum: ['local', 'backblaze-b2', 'aws-s3', 'firebase', 'external'],
       default: 'local',
     },
     key: {
@@ -106,6 +106,15 @@ const contentSchema = new Schema({
     metadata: {
       type: Schema.Types.Mixed, // Additional provider-specific metadata
     },
+  },
+  extractedText: {
+    type: String, // Cached text content for PDF/Docx
+    default: '',
+  },
+  coldStartCache: {
+    type: Map,
+    of: String,
+    default: {},
   },
 }, {
   timestamps: true

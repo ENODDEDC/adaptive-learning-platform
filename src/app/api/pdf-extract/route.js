@@ -4,6 +4,8 @@ import path from 'path';
 import os from 'os';
 import { spawn } from 'child_process';
 import backblazeService from '@/services/backblazeService';
+import Content from '@/models/Content';
+import connectToDatabase from '@/lib/mongodb';
 
 function normalizeExtractedText(text) {
   return (text || '')
@@ -192,13 +194,35 @@ async function extractTextWithPoppler(pdfBuffer) {
 
 export async function POST(request) {
   try {
-    const { fileKey, filePath } = await request.json();
+    const { fileKey, filePath, contentId } = await request.json();
 
-    if (!fileKey && !filePath) {
+    if (!fileKey && !filePath && !contentId) {
       return NextResponse.json(
-        { error: 'Either fileKey or filePath is required' },
+        { error: 'Either fileKey, filePath, or contentId is required' },
         { status: 400 }
       );
+    }
+
+    await connectToDatabase();
+
+    // 1. Check if we already have the text in the DB
+    let contentDoc = null;
+    if (contentId) {
+      contentDoc = await Content.findById(contentId);
+    } else if (fileKey) {
+      contentDoc = await Content.findOne({ 'cloudStorage.key': fileKey });
+    }
+
+    if (contentDoc?.extractedText) {
+      console.log('🚀 Found cached text in Database, returning immediately.');
+      return NextResponse.json({
+        success: true,
+        content: {
+          rawText: contentDoc.extractedText,
+          extractionMethod: 'database-cache'
+        },
+        message: 'PDF text retrieved from cache'
+      });
     }
 
     console.log('📄 Starting PDF text extraction...');
@@ -215,6 +239,11 @@ export async function POST(request) {
       } else {
         finalFileKey = filePath;
       }
+    }
+
+    // If we still don't have a key but have a content doc, use its key
+    if (!finalFileKey && contentDoc?.cloudStorage?.key) {
+      finalFileKey = contentDoc.cloudStorage.key;
     }
 
     console.log('🔑 Final file key:', finalFileKey);
@@ -234,7 +263,7 @@ export async function POST(request) {
         console.error('❌ Failed to load local PDF:', localError);
         throw new Error(`Failed to load local PDF: ${localError.message}`);
       }
-    } else {
+    } else if (finalFileKey) {
       // Download from Backblaze B2
       console.log('📥 Downloading PDF from Backblaze B2...');
       try {
@@ -247,8 +276,12 @@ export async function POST(request) {
     }
 
     if (!pdfBuffer || pdfBuffer.length === 0) {
-      throw new Error('PDF buffer is empty');
+      throw new Error('PDF buffer is empty or could not be retrieved');
     }
+
+    let extractedText = '';
+    let extractionMethod = '';
+    let pageCount = 0;
 
     // Extract text from PDF with non-AI parser first (no credits).
     console.log('📄 Attempting non-AI PDF parsing first...');
@@ -260,84 +293,72 @@ export async function POST(request) {
 
       if (quality.looksValid) {
         console.log('✅ Non-AI PDF parsing successful');
-        return NextResponse.json({
-          success: true,
-          content: {
-            rawText: quality.cleaned,
-            pageCount: pdfData.numpages,
-            wordCount: quality.wordCount,
-            characterCount: quality.length,
-            meaningfulTextRatio: quality.alphaNumericRatio,
-            extractionMethod: 'pdf-parse'
-          },
-          message: 'PDF text extracted successfully using non-AI parser'
-        });
+        extractedText = quality.cleaned;
+        extractionMethod = 'pdf-parse';
+        pageCount = pdfData.numpages;
       }
-
-      console.warn('⚠️ pdf-parse returned low-quality text, trying better fallback...', {
-        weirdCharRatio: quality.weirdCharRatio,
-        pdfArtifactRatio: quality.pdfArtifactRatio,
-        preview: quality.cleaned.substring(0, 160)
-      });
     } catch (parseError) {
       console.warn('⚠️ Non-AI parsing failed:', parseError?.message);
     }
 
     // Secondary non-AI fallback: pdf.js server-side text extraction.
-    const pdfJsResult = await extractTextWithPdfJs(pdfBuffer);
-    const pdfJsQuality = getExtractionQuality(pdfJsResult.text);
-    if (pdfJsQuality.looksValid) {
-      return NextResponse.json({
-        success: true,
-        content: {
-          rawText: pdfJsQuality.cleaned,
-          pageCount: pdfJsResult.pageCount || 'Unknown',
-          wordCount: pdfJsQuality.wordCount,
-          characterCount: pdfJsQuality.length,
-          meaningfulTextRatio: pdfJsQuality.alphaNumericRatio,
-          extractionMethod: 'pdfjs-text'
-        },
-        message: 'PDF text extracted using pdf.js'
-      });
+    if (!extractedText) {
+      const pdfJsResult = await extractTextWithPdfJs(pdfBuffer);
+      const pdfJsQuality = getExtractionQuality(pdfJsResult.text);
+      if (pdfJsQuality.looksValid) {
+        extractedText = pdfJsQuality.cleaned;
+        extractionMethod = 'pdfjs-text';
+        pageCount = pdfJsResult.pageCount;
+      }
     }
 
-    // Third parser path: poppler pdftotext, better for some encoded/layout-heavy PDFs.
-    const popplerText = await extractTextWithPoppler(pdfBuffer);
-    const popplerQuality = getExtractionQuality(popplerText);
-    if (popplerQuality.looksValid) {
-      return NextResponse.json({
-        success: true,
-        content: {
-          rawText: popplerQuality.cleaned,
-          pageCount: 'Unknown',
-          wordCount: popplerQuality.wordCount,
-          characterCount: popplerQuality.length,
-          meaningfulTextRatio: popplerQuality.alphaNumericRatio,
-          extractionMethod: 'poppler-pdftotext'
-        },
-        message: 'PDF text extracted using Poppler'
-      });
+    // Third parser path: poppler pdftotext
+    if (!extractedText) {
+      const popplerText = await extractTextWithPoppler(pdfBuffer);
+      const popplerQuality = getExtractionQuality(popplerText);
+      if (popplerQuality.looksValid) {
+        extractedText = popplerQuality.cleaned;
+        extractionMethod = 'poppler-pdftotext';
+      }
     }
 
-    // Final parser path: best-effort extraction from PDF text objects, but reject PDF internals.
-    const structureText = extractTextFromPdfStructure(pdfBuffer);
-    const structureQuality = getExtractionQuality(structureText);
-    if (structureQuality.looksValid) {
-      return NextResponse.json({
-        success: true,
-        content: {
-          rawText: structureQuality.cleaned,
-          pageCount: 'Unknown',
-          wordCount: structureQuality.wordCount,
-          characterCount: structureQuality.length,
-          meaningfulTextRatio: structureQuality.alphaNumericRatio,
-          extractionMethod: 'pdf-structure-fallback'
-        },
-        message: 'PDF text extracted using structure fallback'
-      });
+    // Final parser path: structure extraction
+    if (!extractedText) {
+      const structureText = extractTextFromPdfStructure(pdfBuffer);
+      const structureQuality = getExtractionQuality(structureText);
+      if (structureQuality.looksValid) {
+        extractedText = structureQuality.cleaned;
+        extractionMethod = 'pdf-structure-fallback';
+      }
     }
 
-    throw new Error('No clean extractable text found in PDF (possibly scanned, image-only, encrypted, or highly encoded)');
+    if (!extractedText) {
+      throw new Error('No clean extractable text found in PDF (possibly scanned, image-only, encrypted, or highly encoded)');
+    }
+
+    // 2. Save the extracted text back to the database
+    if (contentDoc) {
+      contentDoc.extractedText = extractedText;
+      await contentDoc.save();
+      console.log(`💾 [DB SAVE] Extracted text saved to Database for content ${contentDoc._id}`);
+    } else if (finalFileKey) {
+      // Try to find the doc by key if we didn't have contentId
+      const updateResult = await Content.updateOne(
+        { 'cloudStorage.key': finalFileKey },
+        { $set: { extractedText: extractedText } }
+      );
+      console.log(`💾 [DB UPDATE] Extracted text updated via fileKey. Matches: ${updateResult.matchedCount}`);
+    }
+
+    return NextResponse.json({
+      success: true,
+      content: {
+        rawText: extractedText,
+        pageCount: pageCount || 'Unknown',
+        extractionMethod: extractionMethod
+      },
+      message: 'PDF text extracted and cached successfully'
+    });
 
   } catch (error) {
     console.error('❌ PDF extraction error:', error);

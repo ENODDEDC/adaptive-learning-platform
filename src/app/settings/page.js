@@ -11,6 +11,7 @@ import {
   ChartBarIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
+import HorizontalNav from '@/components/HorizontalNav';
 import ProfileSettings from '@/components/settings/ProfileSettings';
 import AccountSettings from '@/components/settings/AccountSettings';
 import LearningPreferences from '@/components/settings/LearningPreferences';
@@ -127,42 +128,11 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="bg-gray-50">
+    <div className="bg-white min-h-screen">
       <Toaster position="top-right" />
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Manage your account settings and preferences
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">
-                  {user?.name} {user?.surname}
-                </p>
-                <p className="text-sm text-gray-600">{user?.email}</p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center overflow-hidden">
-                {user?.profilePicture ? (
-                  <img 
-                    src={user.profilePicture} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-sm font-medium text-white">
-                    {(user?.name?.[0] || 'U').toUpperCase()}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      
+      {/* Horizontal Navigation */}
+      <HorizontalNav />
 
       {/* Settings Navigation */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

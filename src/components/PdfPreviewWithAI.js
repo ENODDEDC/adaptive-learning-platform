@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   SparklesIcon,
   AcademicCapIcon,
@@ -18,8 +19,11 @@ import SensingLearning from './SensingLearning';
 import IntuitiveLearning from './IntuitiveLearning';
 import ActiveLearning from './ActiveLearning';
 import ReflectiveLearning from './ReflectiveLearning';
+import MermaidDiagram from './MermaidDiagram';
 import CacheIndicator from './CacheIndicator';
+import ColdStartInterestOverlay from './ColdStartInterestOverlay';
 import { useLearningModeTracking } from '@/hooks/useLearningModeTracking';
+import { useColdStartInterestTracking } from '@/hooks/useColdStartInterestTracking';
 import { databaseModeToButtonLabel } from '@/constants/learningModeLabels';
 
 /**
@@ -31,7 +35,8 @@ const PdfPreviewWithAI = ({
   pdfUrl,
   notes = [],
   injectOverrideStyles,
-  disableTools = false
+  disableTools = false,
+  onClose = null
 }) => {
   const [showAITutor, setShowAITutor] = useState(false);
   const [showVisualContent, setShowVisualContent] = useState(false);
@@ -79,6 +84,16 @@ const PdfPreviewWithAI = ({
   const [allRecommendations, setAllRecommendations] = useState([]);
   const [hasClassification, setHasClassification] = useState(false);
   const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
+
+  // Cold Start: right panel for new users (no classification yet)
+  const [coldStartPanelContent, setColdStartPanelContent] = useState(null);
+  const [coldStartPanelCache, setColdStartPanelCache] = useState({}); // Cache for generated modes
+  const [coldStartPanelLoading, setColdStartPanelLoading] = useState(false);
+  const [coldStartPanelError, setColdStartPanelError] = useState(null);
+  const [coldStartPanelMode, setColdStartPanelMode] = useState('Global Learning'); // default mode
+  const [coldStartDismissed, setColdStartDismissed] = useState(false);
+  const coldStartModeQueue = ['Global Learning', 'Sequential Learning', 'Visual Learning', 'Hands-On Lab', 'Concept Constellation', 'Active Learning Hub', 'Reflective Learning'];
+  const [coldStartModeIndex, setColdStartModeIndex] = useState(0);
   const [showPdfView, setShowPdfView] = useState(false); // Start with generated content view when mode is active
   const [willAutoLoad, setWillAutoLoad] = useState(false); // Track if we're going to auto-load a mode
   const [currentRecommendationIndex, setCurrentRecommendationIndex] = useState(0); // Track current position in carousel
@@ -88,15 +103,148 @@ const PdfPreviewWithAI = ({
   const [analysisMeta, setAnalysisMeta] = useState({ method: null, confidence: null, contentType: null, verified: false, unavailableReason: null, reasoning: null, evidence: [] });
   const [showAnalysisToast, setShowAnalysisToast] = useState(false);
   const [isAIAvailable, setIsAIAvailable] = useState(true);
+  const [isPdfLoaded, setIsPdfLoaded] = useState(false); // Track when PDF is fully loaded
+  const [recommendationPanelCollapsed, setRecommendationPanelCollapsed] = useState(false);
   const isVerifiedNonEducationalError = analysisMeta.verified === true && isContentEducational === false;
+  const recommendationAutoTransitionRef = useRef(false);
 
   // Automatic time tracking for ML classification
   useLearningModeTracking('aiNarrator', aiTutorActive);
   useLearningModeTracking('visualLearning', showVisualContent);
 
+  // Cold Start Interest Tracking
+  const {
+    shouldShowOverlay,
+    overlayTriggeredFor,
+    interestData,
+    handleScroll,
+    handleMouseMove,
+    handleMouseEnter,
+    handleMouseLeave,
+    dismissOverlay,
+    getCurrentModeData
+  } = useColdStartInterestTracking(
+    coldStartPanelMode,
+    !hasClassification && !coldStartDismissed && coldStartPanelContent && isContentEducational
+  );
+
+  // Refs for learning mode buttons (for overlay targeting)
+  const learningModeButtonRefs = useRef({});
+
+  // Cold Start: auto-generate right panel for new users
+  useEffect(() => {
+    if (!hasClassification && !coldStartDismissed && !coldStartPanelContent && !coldStartPanelLoading && pdfUrl) {
+      triggerColdStartPanel(coldStartModeQueue[0]);
+    }
+  }, [hasClassification, coldStartDismissed, pdfUrl]);
+
+  // Reset PDF loaded state when content changes
+  useEffect(() => {
+    setIsPdfLoaded(false);
+  }, [pdfUrl, content]);
+
+  const triggerColdStartPanel = async (modeName) => {
+    // Check cache first
+    if (coldStartPanelCache[modeName]) {
+      setColdStartPanelMode(modeName);
+      setColdStartPanelContent(coldStartPanelCache[modeName]);
+      setColdStartPanelError(null); // Clear any previous errors
+      return;
+    }
+
+    setColdStartPanelLoading(true);
+    setColdStartPanelMode(modeName);
+    setColdStartPanelError(null); // Clear any previous errors
+    setColdStartPanelContent(null); // Clear previous content
+    setIsContentEducational(true); // Reset educational status for retry
+    
+    try {
+      // Extract PDF content if not already done
+      const textContent = pdfContent || await extractPdfContent();
+      if (!textContent || !textContent.trim()) {
+        setColdStartPanelError('Unable to extract text from this PDF document.');
+        setColdStartPanelLoading(false);
+        return;
+      }
+      
+      const response = await fetch('/api/generate-cold-start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          content: textContent, 
+          mode: modeName, 
+          title: content?.title || '',
+          contentId: content?._id || content?.id || (typeof content === 'string' ? content : null)
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const generatedContent = data.content || '';
+        setColdStartPanelContent(generatedContent);
+        
+        // Show cache indicator if it came from DB
+        if (data.isCached) {
+          setIsCached(true);
+          setShowCacheIndicator(true);
+          // Auto-hide after 2 seconds
+          setTimeout(() => setShowCacheIndicator(false), 2000);
+        }
+
+        // Store in local cache for this session
+        setColdStartPanelCache(prev => ({
+          ...prev,
+          [modeName]: generatedContent
+        }));
+      } else {
+        // Handle API errors (including educational validation failures)
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.details || errorData.error || 'Failed to generate content';
+        
+        console.error('Cold start panel API error:', {
+          status: response.status,
+          error: errorMessage,
+          mode: modeName
+        });
+        
+        // If it's an educational validation failure, mark content as non-educational
+        if (response.status === 400 && errorMessage.includes('not suitable for learning modes')) {
+          setIsContentEducational(false);
+        }
+        
+        setColdStartPanelError(errorMessage);
+      }
+    } catch (e) {
+      console.error('Cold start panel error:', e);
+      setColdStartPanelError('Network error occurred while generating content. Please try again.');
+    } finally {
+      setColdStartPanelLoading(false);
+    }
+  };
+
+  const activeLearningModeName = showVisualContent
+    ? 'Visual Learning'
+    : showSequentialLearning
+      ? 'Sequential Learning'
+      : showGlobalLearning
+        ? 'Global Learning'
+        : showSensingLearning
+          ? 'Hands-On Lab'
+          : showIntuitiveLearning
+            ? 'Concept Constellation'
+            : showActiveLearning
+              ? 'Active Learning Hub'
+              : showReflectiveLearning
+                ? 'Reflective Learning'
+                : null;
+
+  const isCurrentModeRecommended = activeLearningModeName
+    ? filteredRecommendations.some((recommendation) => recommendation.mode === activeLearningModeName)
+    : false;
+
   // Set data attribute for conditional styling based on ML recommendations
   useEffect(() => {
-    if (hasClassification && filteredRecommendations.length > 0) {
+    if (hasClassification && isCurrentModeRecommended) {
       document.body.setAttribute('data-has-ml-nav', 'true');
     } else {
       document.body.removeAttribute('data-has-ml-nav');
@@ -104,7 +252,7 @@ const PdfPreviewWithAI = ({
     return () => {
       document.body.removeAttribute('data-has-ml-nav');
     };
-  }, [hasClassification, filteredRecommendations.length]);
+  }, [hasClassification, isCurrentModeRecommended]);
 
   // Clear willAutoLoad flag when any mode starts loading
   useEffect(() => {
@@ -185,6 +333,48 @@ const PdfPreviewWithAI = ({
     fetchRecommendations();
   }, []);
 
+  function activateRecommendationAtIndex(targetIndex) {
+    if (filteredRecommendations.length === 0) return;
+
+    const targetRecommendation = filteredRecommendations[targetIndex];
+    if (!targetRecommendation) return;
+
+    setRecommendationPanelCollapsed(true);
+    setCurrentRecommendationIndex(targetIndex);
+    setShowVisualContent(false);
+    setShowSequentialLearning(false);
+    setShowGlobalLearning(false);
+    setShowSensingLearning(false);
+    setShowIntuitiveLearning(false);
+    setShowActiveLearning(false);
+    setShowReflectiveLearning(false);
+    setShowPdfView(false);
+
+    if (targetRecommendation.mode === 'AI Narrator') {
+      setTimeout(() => handleAITutorClick(), 100);
+      return;
+    }
+
+    const modeHandlers = {
+      'Visual Learning': handleVisualContentClick,
+      'Sequential Learning': handleSequentialLearningClick,
+      'Global Learning': handleGlobalLearningClick,
+      'Hands-On Lab': handleSensingLearningClick,
+      'Concept Constellation': handleIntuitiveLearningClick,
+      'Active Learning Hub': handleActiveLearningClick,
+      'Reflective Learning': handleReflectiveLearningClick
+    };
+
+      const handler = modeHandlers[targetRecommendation.mode];
+      if (handler) {
+        setTimeout(() => {
+          handler();
+        }, 100);
+      }
+    }
+
+  const visibleRecommendationTabs = filteredRecommendations.slice(0, 4);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -253,13 +443,7 @@ const PdfPreviewWithAI = ({
         if (!analysisResult.isEducational) {
           console.log('⚠️ Non-educational content detected during auto-load - showing notification');
 
-          const errorMessage = `This document does not appear to contain educational or learning material suitable for AI learning features.
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-AI learning features work best with instructional content, lessons, or study materials.`;
+          const errorMessage = `Not educational content.`;
 
           setIsContentEducational(false); // Mark content as non-educational - hide AI buttons
           setErrorSource('auto-load'); // Mark this error as coming from auto-load
@@ -289,8 +473,11 @@ AI learning features work best with instructional content, lessons, or study mat
           console.log(`✨ Triggering ${topRecommendation.mode} automatically...`);
           // Small delay to ensure UI is ready
           setTimeout(() => {
-            handler();
-            setWillAutoLoad(false); // Clear the flag after triggering
+            recommendationAutoTransitionRef.current = true;
+            Promise.resolve(handler()).finally(() => {
+              recommendationAutoTransitionRef.current = false;
+              setWillAutoLoad(false);
+            });
           }, 500);
         } else {
           console.warn('⚠️ No handler found for mode:', topRecommendation.mode);
@@ -355,6 +542,13 @@ AI learning features work best with instructional content, lessons, or study mat
   const extractPdfContent = async () => {
     if (pdfContent) return pdfContent;
 
+    // Check if the content object already has extractedText from the database
+    if (content?.extractedText) {
+      console.log('🚀 Using pre-extracted text from Database property');
+      setPdfContent(content.extractedText);
+      return content.extractedText;
+    }
+
     setExtractionError('');
 
     try {
@@ -373,7 +567,8 @@ AI learning features work best with instructional content, lessons, or study mat
 
       const requestBody = {
         fileKey: extractedKey,
-        filePath: content.filePath
+        filePath: content.filePath,
+        contentId: content._id // Send the content ID to enable DB caching
       };
 
       const response = await fetch('/api/pdf-extract', {
@@ -836,6 +1031,12 @@ ${error.message}
   }, [showAnalysisToast]);
 
   const handleAITutorClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     if (aiTutorActive) {
       // Stop current session
       setAiTutorActive(false);
@@ -876,18 +1077,7 @@ ${error.message}
       });
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for AI narration. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-AI Narrator works best with instructional content, lessons, or study materials.
-
-DEBUG INFO:
-- Content Length: ${extractedContent.length} characters
-- Word Count: ${extractedContent.split(/\s+/).length} words
-- First 100 chars: "${extractedContent.substring(0, 100)}..."`;
+        const errorMessage = `Not educational content.`;
 
         setIsContentEducational(false); // Mark content as non-educational
         setErrorSource('manual'); // Mark as manual click
@@ -918,6 +1108,12 @@ DEBUG INFO:
 
   // Visual Learning Handler
   const handleVisualContentClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsVisualLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
@@ -936,13 +1132,7 @@ DEBUG INFO:
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for visual learning materials. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Visual Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -980,6 +1170,12 @@ Visual Learning needs readable text to create diagrams and visual content.`;
 
   // Sequential Learning Handler
   const handleSequentialLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsSequentialLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
@@ -997,13 +1193,7 @@ Visual Learning needs readable text to create diagrams and visual content.`;
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for sequential learning. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Sequential Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -1024,6 +1214,12 @@ Sequential Learning works best with instructional content, lessons, or study mat
 
   // Global Learning Handler
   const handleGlobalLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsGlobalLearningLoading(true);
       setGlobalLearningStatusMessage('Checking if this content is educational...');
@@ -1043,7 +1239,7 @@ Sequential Learning works best with instructional content, lessons, or study mat
       if (analysisResult.verified === true && !analysisResult.isEducational) {
         const reason = analysisResult.reasoning || 'This content is not suitable for global learning.';
         setErrorSource('manual');
-        setExtractionError(`This document does not appear to contain educational or learning material suitable for global learning.\n\nReason: ${reason}`);
+        setExtractionError(`Not educational content.`);
         return;
       }
 
@@ -1071,6 +1267,12 @@ Sequential Learning works best with instructional content, lessons, or study mat
 
   // Sensing Learning Handler
   const handleSensingLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsSensingLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
@@ -1088,13 +1290,7 @@ Sequential Learning works best with instructional content, lessons, or study mat
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for sensing learning. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Sensing Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -1115,6 +1311,12 @@ Sensing Learning works best with instructional content, lessons, or study materi
 
   // Intuitive Learning Handler
   const handleIntuitiveLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsIntuitiveLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
@@ -1132,13 +1334,7 @@ Sensing Learning works best with instructional content, lessons, or study materi
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for intuitive learning. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Intuitive Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -1159,6 +1355,12 @@ Intuitive Learning works best with instructional content, lessons, or study mate
 
   // Active Learning Handler
   const handleActiveLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsActiveLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
@@ -1176,13 +1378,7 @@ Intuitive Learning works best with instructional content, lessons, or study mate
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for active learning. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Active Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -1203,6 +1399,12 @@ Active Learning works best with instructional content, lessons, or study materia
 
   // Reflective Learning Handler
   const handleReflectiveLearningClick = async () => {
+    if (!recommendationAutoTransitionRef.current) {
+      setRecommendationPanelCollapsed(true);
+    }
+    // Dismiss interest tracking overlay when any learning mode is clicked
+    dismissOverlay();
+    
     try {
       setIsReflectiveLearningLoading(true);
       const extractedContent = pdfContent || await extractPdfContent();
@@ -1220,13 +1422,7 @@ Active Learning works best with instructional content, lessons, or study materia
       }
 
       if (analysisResult.verified === true && !analysisResult.isEducational) {
-        const errorMessage = `This document does not appear to contain educational or learning material suitable for reflective learning. 
-
-AI Analysis: ${analysisResult.reasoning}
-Content Type: ${analysisResult.contentType}
-Confidence: ${Math.round(analysisResult.confidence * 100)}%
-
-Reflective Learning works best with instructional content, lessons, or study materials.`;
+        const errorMessage = `Not educational content.`;
 
         setErrorSource('manual'); // Mark as manual click
         setExtractionError(errorMessage); // Use extractionError to show modal
@@ -1245,49 +1441,37 @@ Reflective Learning works best with instructional content, lessons, or study mat
     }
   };
 
+  // Handle overlay activation - triggers the corresponding learning mode
+  const handleOverlayActivation = useCallback((mode) => {
+    console.log(`🎯 Overlay activated for mode: ${mode}`);
+    
+    // Map mode to handler function
+    const modeHandlers = {
+      'Global Learning': handleGlobalLearningClick,
+      'Sequential Learning': handleSequentialLearningClick,
+      'Visual Learning': handleVisualContentClick,
+      'Hands-On Lab': handleSensingLearningClick,
+      'Concept Constellation': handleIntuitiveLearningClick,
+      'Active Learning Hub': handleActiveLearningClick,
+      'Reflective Learning': handleReflectiveLearningClick,
+      'AI Narrator': handleAITutorClick
+    };
+
+    const handler = modeHandlers[mode];
+    if (handler) {
+      // Dismiss cold start panel first
+      setColdStartDismissed(true);
+      // Activate the learning mode
+      handler();
+    }
+  }, []);
+
   // Carousel Navigation Functions
   const handleNextRecommendation = () => {
     if (filteredRecommendations.length === 0) return;
 
     const nextIndex = (currentRecommendationIndex + 1) % filteredRecommendations.length;
-    setCurrentRecommendationIndex(nextIndex);
-    const nextRec = filteredRecommendations[nextIndex];
-
-    console.log(`🎠 Navigating to recommendation ${nextIndex + 1}/${filteredRecommendations.length}:`, nextRec.mode);
-
-    // Close current mode
-    setShowVisualContent(false);
-    setShowSequentialLearning(false);
-    setShowGlobalLearning(false);
-    setShowSensingLearning(false);
-    setShowIntuitiveLearning(false);
-    setShowActiveLearning(false);
-    setShowReflectiveLearning(false);
-
-    // Special handling for AI Narrator - activate it automatically
-    if (nextRec.mode === 'AI Narrator') {
-      console.log('🎙️ AI Narrator selected - activating audio narration');
-      // All modes are already closed above, so PDF will be visible
-      // Trigger AI Narrator functionality
-      setTimeout(() => handleAITutorClick(), 100);
-      return;
-    }
-
-    // Trigger the next mode
-    const modeHandlers = {
-      'Visual Learning': handleVisualContentClick,
-      'Sequential Learning': handleSequentialLearningClick,
-      'Global Learning': handleGlobalLearningClick,
-      'Hands-On Lab': handleSensingLearningClick,
-      'Concept Constellation': handleIntuitiveLearningClick,
-      'Active Learning Hub': handleActiveLearningClick,
-      'Reflective Learning': handleReflectiveLearningClick
-    };
-
-    const handler = modeHandlers[nextRec.mode];
-    if (handler) {
-      setTimeout(() => handler(), 100);
-    }
+    activateRecommendationAtIndex(nextIndex);
   };
 
   const handlePrevRecommendation = () => {
@@ -1296,47 +1480,48 @@ Reflective Learning works best with instructional content, lessons, or study mat
     const prevIndex = currentRecommendationIndex === 0
       ? filteredRecommendations.length - 1
       : currentRecommendationIndex - 1;
-    setCurrentRecommendationIndex(prevIndex);
-    const prevRec = filteredRecommendations[prevIndex];
-
-    console.log(`🎠 Navigating to recommendation ${prevIndex + 1}/${filteredRecommendations.length}:`, prevRec.mode);
-
-    // Close current mode
-    setShowVisualContent(false);
-    setShowSequentialLearning(false);
-    setShowGlobalLearning(false);
-    setShowSensingLearning(false);
-    setShowIntuitiveLearning(false);
-    setShowActiveLearning(false);
-    setShowReflectiveLearning(false);
-
-    // Special handling for AI Narrator - activate it automatically
-    if (prevRec.mode === 'AI Narrator') {
-      console.log('🎙️ AI Narrator selected - activating audio narration');
-      // All modes are already closed above, so PDF will be visible
-      // Trigger AI Narrator functionality
-      setTimeout(() => handleAITutorClick(), 100);
-      return;
-    }
-
-    // Trigger the previous mode
-    const modeHandlers = {
-      'Visual Learning': handleVisualContentClick,
-      'Sequential Learning': handleSequentialLearningClick,
-      'Global Learning': handleGlobalLearningClick,
-      'Hands-On Lab': handleSensingLearningClick,
-      'Concept Constellation': handleIntuitiveLearningClick,
-      'Active Learning Hub': handleActiveLearningClick,
-      'Reflective Learning': handleReflectiveLearningClick
-    };
-
-    const handler = modeHandlers[prevRec.mode];
-    if (handler) {
-      setTimeout(() => handler(), 100);
-    }
+    activateRecommendationAtIndex(prevIndex);
   };
 
   const fileName = content.title || content.originalName || 'Document.pdf';
+
+  const stripColdStartDecorators = (value = '') => value
+    .replace(/^[\s\u{1F300}-\u{1FAFF}❓💭💡✍️🔍🧠🔗🌐🔑📋🖼️📌🗂️🔄🎯🤔🌟🔬🛠️📊]+/gu, '')
+    .trim();
+
+  const normalizeColdStartLine = (value = '') => {
+    const cleaned = value
+      .replace(/\r/g, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/^#{1,6}\s*/, '')
+      .trim();
+
+    return stripColdStartDecorators(cleaned);
+  };
+
+  const parseTaggedColdStartLine = (line) => {
+    if (line.startsWith('SECTION_HEADER:')) {
+      return { type: 'section', title: normalizeColdStartLine(line.replace('SECTION_HEADER:', '')) };
+    }
+
+    if (line.startsWith('EXAMPLE_CARD:') || line.startsWith('EXERCISE_BLOCK:') || line.startsWith('SCENARIO_BLOCK:') || line.startsWith('CARD:')) {
+      const payload = line.replace(/^(EXAMPLE_CARD:|EXERCISE_BLOCK:|SCENARIO_BLOCK:|CARD:)/, '');
+      const [title = '', description = ''] = payload.split('|');
+      return {
+        type: 'card',
+        title: normalizeColdStartLine(title),
+        description: normalizeColdStartLine(description)
+      };
+    }
+
+    if (line.startsWith('STEP:')) {
+      return { type: 'step', text: normalizeColdStartLine(line.replace('STEP:', '')) };
+    }
+
+    return null;
+  };
 
   // Check if any learning mode is active
   const hasActiveLearningMode = showVisualContent || showSequentialLearning || showGlobalLearning ||
@@ -1371,16 +1556,16 @@ Reflective Learning works best with instructional content, lessons, or study mat
           </div>
         )}
 
-        {/* Toast Notification - Compact Design */}
+        {/* Toast Notification - Center Top Position */}
         {extractionError && (
-          <div className="fixed bottom-6 left-6 z-50 pointer-events-auto animate-slide-up">
-            <div className="bg-white rounded-xl shadow-2xl max-w-sm border-l-4 border-amber-500 overflow-hidden">
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 pointer-events-auto animate-slide-down">
+            <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl max-w-md border border-gray-200/80 overflow-hidden">
               <div className="p-4">
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   {/* Icon */}
                   <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
                     </div>
@@ -1389,60 +1574,23 @@ Reflective Learning works best with instructional content, lessons, or study mat
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                      {isVerifiedNonEducationalError ? 'Learning Features Not Available' : 'Something Went Wrong'}
+                      {isVerifiedNonEducationalError ? 'Not Educational Content' : 'Analysis Failed'}
                     </h3>
-                    <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                    <p className="text-xs text-gray-600 leading-relaxed">
                       {isVerifiedNonEducationalError
-                        ? "This document doesn't contain educational content. Zero-shot analysis allows learning modes only for instructional material."
-                        : (extractionError || 'An unexpected error happened while preparing learning features.')}
+                        ? "Not educational content."
+                        : (extractionError || "Analysis failed.")}
                     </p>
-                    {isVerifiedNonEducationalError && (analysisMeta.unavailableReason || !analysisMeta.verified) && (
-                      <p className="text-[11px] text-amber-700 leading-relaxed mb-2">
-                        Reason: {analysisMeta.unavailableReason || analysisMeta.reasoning || extractionError || 'Zero-shot metadata missing (analysis may not have executed for this action).'}
-                      </p>
-                    )}
-
-                    {/* Quick Info */}
-                    {isVerifiedNonEducationalError && (
-                    <div className="flex items-center gap-3 text-xs">
-                      <div className="flex items-center gap-1">
-                        <span className="text-gray-500">Type:</span>
-                        <span className="font-medium text-gray-700">
-                          {analysisMeta.contentType || 'Unknown'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-gray-500">Confidence:</span>
-                        <span className="font-medium text-green-600">
-                          {typeof analysisMeta.confidence === 'number' ? `${Math.round(analysisMeta.confidence * 100)}%` : 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                    )}
                   </div>
 
                   {/* Close Button */}
                   <button
                     onClick={() => setExtractionError('')}
-                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors p-1"
                   >
-                    <XMarkIcon className="w-5 h-5" />
+                    <XMarkIcon className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
-
-              {/* Footer with AI badge */}
-              <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                  <span>{isVerifiedNonEducationalError ? (analysisMeta.verified ? 'Zero-shot Analysis (Verified)' : 'Zero-shot Analysis (Unavailable)') : 'Runtime Error'}</span>
-                </div>
-                <button
-                  onClick={() => setExtractionError('')}
-                  className="text-xs font-medium text-amber-600 hover:text-amber-700 transition-colors"
-                >
-                  Dismiss
-                </button>
               </div>
             </div>
           </div>
@@ -1451,12 +1599,15 @@ Reflective Learning works best with instructional content, lessons, or study mat
         {/* Content Analysis Loading */}
         {(isAITutorLoading || isVisualLearningLoading || isSequentialLearningLoading || isGlobalLearningLoading || isSensingLearningLoading || isIntuitiveLearningLoading || isActiveLearningLoading || isReflectiveLearningLoading) && (
           <div className="absolute bottom-4 left-4 z-10 max-w-sm">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-lg">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <div className="flex-1">
-                  <p className="text-sm text-blue-800 font-medium">Analyzing Content</p>
-                  <p className="text-xs text-blue-600 mt-1">Extracting text from PDF and checking educational content...</p>
+            <div className="bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-xl p-4 shadow-2xl shadow-black/10">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 w-5 h-5 border border-gray-100 rounded-full"></div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-900 font-medium tracking-tight">Analyzing Content</p>
+                  <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">Validating educational content and extracting key concepts...</p>
                 </div>
               </div>
             </div>
@@ -1496,7 +1647,9 @@ Reflective Learning works best with instructional content, lessons, or study mat
                       </div>
                     )}
 
-                    <div className="flex-1">
+                    <div className="flex-1 flex">
+                      {/* PDF */}
+                      <div className={!hasClassification && !coldStartDismissed ? 'flex-1 min-w-0' : 'flex-1'}>
                       {pdfUrl ? (
                         <CleanPDFViewer
                           content={{
@@ -1520,18 +1673,322 @@ Reflective Learning works best with instructional content, lessons, or study mat
                           isIntuitiveLearningLoading={isIntuitiveLearningLoading}
                           isActiveLearningLoading={isActiveLearningLoading}
                           isReflectiveLearningLoading={isReflectiveLearningLoading}
+                          // Cold start highlighting props
+                          coldStartActive={!hasClassification && !coldStartDismissed}
+                          coldStartHighlightMode={coldStartPanelMode}
+                          coldStartPanelError={coldStartPanelError}
+                          // Button refs for overlay targeting
+                          learningModeButtonRefs={learningModeButtonRefs}
                           // ML Recommendations
                           topRecommendation={topRecommendation}
                           allRecommendations={allRecommendations}
                           hasClassification={hasClassification}
                           // Content Educational Status
                           isContentEducational={isContentEducational}
+                          // PDF Loading callback
+                          onPdfLoaded={() => setIsPdfLoaded(true)}
+                          // Back navigation
+                          onClose={onClose}
                         />
                       ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center">
-                            <div className="w-8 h-8 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-gray-600">Loading PDF...</p>
+                        <div className="flex-1 h-full p-4 space-y-3">
+                          {/* PDF Skeleton Loading */}
+                          <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
+                          <div className="h-32 bg-gray-200 rounded animate-pulse w-full mt-4"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                          <div className="h-32 bg-gray-200 rounded animate-pulse w-full mt-4"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
+                        </div>
+                      )}
+                      </div>
+
+                      {/* Cold Start Right Panel - Modern Design */}
+                      {!hasClassification && !coldStartDismissed && (
+                        <div
+                          className="w-80 flex-shrink-0 bg-white flex flex-col backdrop-blur-sm border-l border-gray-200 shadow-xl"
+                          style={{ minWidth: '300px', maxWidth: '340px', height: '100%', maxHeight: '100vh', position: 'sticky', top: 0 }}
+                          onWheel={e => e.stopPropagation()}
+                        >
+                          {/* Modern Header with Clean Design */}
+                          <div className="relative px-4 py-3 bg-gray-50/80 backdrop-blur-md border-b border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-gray-800 flex items-center justify-center shadow-lg">
+                                  <SparklesIcon className="w-4 h-4 text-white" />
+                                </div>
+                                <div>
+                                  <h3 className="text-sm font-semibold text-gray-900">
+                                    {databaseModeToButtonLabel(coldStartPanelMode)}
+                                  </h3>
+                                  <p className="text-xs text-gray-500">AI-Generated Content</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => { setColdStartDismissed(true); }}
+                                className="w-8 h-8 rounded-lg bg-white/80 hover:bg-white text-gray-400 hover:text-gray-600 transition-all duration-200 flex items-center justify-center shadow-sm"
+                                title="Dismiss"
+                              >
+                                <XMarkIcon className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Modern Mode Switcher */}
+                          <div className="px-3 py-3 border-b border-gray-100">
+                            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+                              {coldStartModeQueue.map((mode, idx) => (
+                                <button
+                                  key={mode}
+                                  onClick={() => {
+                                    setColdStartModeIndex(idx);
+                                    if (!coldStartPanelCache[mode]) {
+                                      setColdStartPanelContent(null);
+                                      setColdStartPanelError(null);
+                                    }
+                                    triggerColdStartPanel(mode);
+                                  }}
+                                  className={`text-xs px-3 py-2 rounded-xl whitespace-nowrap transition-all duration-200 font-medium ${
+                                    coldStartPanelMode === mode 
+                                      ? 'bg-gray-900 text-white shadow-lg' 
+                                      : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200 shadow-sm'
+                                  }`}
+                                >
+                                  {databaseModeToButtonLabel(mode)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Modern Content Area */}
+                          <div
+                            className="flex-1 overflow-y-auto overscroll-contain"
+                            style={{ minHeight: 0 }}
+                            onWheel={e => e.stopPropagation()}
+                            onScroll={handleScroll}
+                            onMouseMove={handleMouseMove}
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            {coldStartPanelLoading || !isPdfLoaded ? (
+                              <div className="p-4 space-y-4">
+                                {/* Modern Loading Skeleton */}
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gray-200 rounded-xl animate-pulse"></div>
+                                    <div className="flex-1 space-y-2">
+                                      <div className="h-3 bg-gray-200 rounded-lg animate-pulse w-2/3"></div>
+                                      <div className="h-2 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
+                                    <div className="h-4 bg-gray-200 rounded-lg animate-pulse w-full"></div>
+                                    <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                                    <div className="h-3 bg-gray-200 rounded animate-pulse w-4/5"></div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
+                                    <div className="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <div className="h-3 bg-gray-200 rounded animate-pulse w-full"></div>
+                                    <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                                    <div className="h-3 bg-gray-200 rounded animate-pulse w-5/6"></div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : coldStartPanelError ? (
+                              <div className="p-4 space-y-4">
+                                {/* Modern Error Display */}
+                                <div className="bg-red-50 rounded-2xl p-4 border border-red-100">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center shadow-lg">
+                                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                                      </svg>
+                                    </div>
+                                    <div className="flex-1">
+                                      <h3 className="text-sm font-semibold text-gray-900 mb-1">Content Analysis</h3>
+                                      <p className="text-sm text-gray-600 leading-relaxed">
+                                        This document appears to contain primarily administrative or procedural content rather than educational material.
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                                  <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    Recommended content types
+                                  </p>
+                                  <div className="space-y-2">
+                                    {[
+                                      "Academic papers and research",
+                                      "Educational textbooks and materials", 
+                                      "Technical documentation and guides"
+                                    ].map((item, i) => (
+                                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                                        <div className="w-6 h-6 rounded-lg bg-gray-800 flex items-center justify-center">
+                                          <span className="text-white text-xs font-bold">{i + 1}</span>
+                                        </div>
+                                        <span className="text-xs text-gray-700">{item}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setColdStartPanelError(null);
+                                      setIsContentEducational(true);
+                                      triggerColdStartPanel(coldStartPanelMode);
+                                    }}
+                                    className="flex-1 px-4 py-3 bg-gray-900 text-white text-xs font-semibold rounded-xl hover:bg-gray-800 transition-all duration-200 shadow-lg"
+                                  >
+                                    Retry Analysis
+                                  </button>
+                                  <button
+                                    onClick={() => setColdStartDismissed(true)}
+                                    className="px-4 py-3 bg-white border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
+                                  >
+                                    Dismiss
+                                  </button>
+                                </div>
+                              </div>
+                            ) : coldStartPanelContent ? (
+                              coldStartPanelMode === 'Visual Learning' ? (
+                                <div className="p-4 space-y-3">
+                                  {(() => {
+                                    const diagramMatch = coldStartPanelContent.match(/DIAGRAM:\s*([\s\S]*?)(?=DESCRIPTIONS:|$)/);
+                                    const descMatch = coldStartPanelContent.match(/DESCRIPTIONS:\s*([\s\S]*?)$/);
+                                    const diagramCode = diagramMatch?.[1]?.trim() || coldStartPanelContent;
+                                    const descLines = descMatch?.[1]?.trim().split('\n').filter((l) => l.trim()) || [];
+
+                                    return (
+                                      <>
+                                        <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm" style={{ minHeight: '220px' }}>
+                                          <MermaidDiagram chart={diagramCode} />
+                                        </div>
+
+                                        {descLines.length > 0 && (
+                                          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
+                                            <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">Diagram Concepts</p>
+                                            {descLines.map((line, i) => {
+                                              const colonIdx = line.indexOf(':');
+                                              if (colonIdx === -1) return null;
+                                              const desc = normalizeColdStartLine(line.slice(colonIdx + 1).replace(/^\[|\]$/g, ''));
+                                              const nodeId = normalizeColdStartLine(line.slice(0, colonIdx));
+                                              const nodeLabel = normalizeColdStartLine(diagramCode.match(new RegExp(`${nodeId}\\[([^\\]]+)\\]`))?.[1] || nodeId);
+
+                                              return (
+                                                <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                                  <p className="text-xs font-semibold text-gray-800">{nodeLabel}</p>
+                                                  <p className="text-xs text-gray-600 leading-relaxed mt-0.5">{desc}</p>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              ) : (
+                                <div className="p-4 space-y-2.5">
+                                  {coldStartPanelContent.split('\n').map((rawLine, i) => {
+                                    const line = rawLine.trim();
+                                    if (!line) return null;
+
+                                    const taggedLine = parseTaggedColdStartLine(line);
+                                    if (taggedLine?.type === 'section') {
+                                      return (
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                                          <h3 className="text-xs font-semibold tracking-wide text-gray-800 uppercase">{taggedLine.title}</h3>
+                                        </div>
+                                      );
+                                    }
+
+                                    if (taggedLine?.type === 'card') {
+                                      return (
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+                                          {taggedLine.title && <h4 className="text-xs font-semibold text-gray-900">{taggedLine.title}</h4>}
+                                          {taggedLine.description && <p className="text-xs text-gray-600 leading-relaxed mt-1">{taggedLine.description}</p>}
+                                        </div>
+                                      );
+                                    }
+
+                                    if (taggedLine?.type === 'step') {
+                                      return (
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2.5">
+                                          <p className="text-xs text-gray-700 leading-relaxed">{taggedLine.text}</p>
+                                        </div>
+                                      );
+                                    }
+
+                                    const normalized = normalizeColdStartLine(line);
+                                    if (!normalized) return null;
+
+                                    const numberedStepMatch = normalized.match(/^Step\s+(\d+):\s*(.*)$/i);
+                                    if (numberedStepMatch) {
+                                      return (
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2.5">
+                                          <p className="text-xs font-semibold text-gray-800">Step {numberedStepMatch[1]}</p>
+                                          <p className="text-xs text-gray-600 leading-relaxed mt-1">{normalizeColdStartLine(numberedStepMatch[2])}</p>
+                                        </div>
+                                      );
+                                    }
+
+                                    if (/^[•\-]\s+/.test(normalized)) {
+                                      return (
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                          <p className="text-xs text-gray-700 leading-relaxed">{normalized.replace(/^[•\-]\s+/, '')}</p>
+                                        </div>
+                                      );
+                                    }
+
+                                    if (/^[A-Z][A-Z\s&-]{3,}$/.test(normalized) || /^.+:\s*$/.test(normalized)) {
+                                      return (
+                                        <div key={i} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                                          <h3 className="text-xs font-semibold tracking-wide text-gray-800 uppercase">
+                                            {normalized.replace(/:\s*$/, '')}
+                                          </h3>
+                                        </div>
+                                      );
+                                    }
+
+                                    return (
+                                      <div key={i} className="rounded-lg border border-gray-200 bg-white px-3 py-2.5">
+                                        <p className="text-xs text-gray-700 leading-relaxed">{normalized}</p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )
+                            ) : (
+                              <div className="flex flex-col items-center justify-center h-full gap-2">
+                                <p className="text-xs text-gray-400 text-center">Read the PDF to start generating personalized content</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Modern Footer */}
+                          <div className="px-4 py-3 bg-gray-50 backdrop-blur-sm border-t border-gray-100">
+                            <div className="flex items-center justify-center gap-2">
+                              <div className="w-2 h-2 bg-gray-800 rounded-full animate-pulse"></div>
+                              <p className="text-xs text-gray-500 font-medium">Switch between learning modes above</p>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1541,25 +1998,46 @@ Reflective Learning works best with instructional content, lessons, or study mat
 
                 {/* Loading State - Show when loading a mode OR planning to auto-load */}
                 {(isLoadingAnyMode || willAutoLoad) && !hasActiveLearningMode && !isGlobalLearningLoading && (
-                  <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-                    <div className="text-center">
-                      <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                      <p className="text-lg font-medium text-gray-900 mb-2">Preparing Your Personalized Learning Experience</p>
-                      <p className="text-sm text-gray-600">
-                        {willAutoLoad ? 'Extracting content and preparing your recommended learning mode...' : 'Generating content based on your learning style...'}
-                      </p>
+                  <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100">
+                    <div className="text-center p-8">
+                      {/* Modern animated spinner with multiple rings */}
+                      <div className="relative w-16 h-16 mx-auto mb-6">
+                        <div className="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+                        <div className="absolute inset-2 border-3 border-transparent border-t-purple-400 rounded-full animate-spin animation-delay-150"></div>
+                        <div className="absolute inset-4 border-2 border-transparent border-t-indigo-300 rounded-full animate-spin animation-delay-300"></div>
+                      </div>
+                      
+                      {/* Modern text with subtle animation */}
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-gray-900 tracking-tight">Analyzing Content</h3>
+                        <p className="text-sm text-gray-600 max-w-xs mx-auto leading-relaxed">
+                          Preparing your personalized learning experience
+                        </p>
+                        
+                        {/* Progress dots */}
+                        <div className="flex justify-center space-x-1 pt-2">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse animation-delay-200"></div>
+                          <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse animation-delay-400"></div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {isGlobalLearningLoading && !showGlobalLearning && (
-                  <div className="fixed inset-0 z-[10010] flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
-                    <div className="mx-4 w-full max-w-md rounded-2xl border border-white/50 bg-white/85 p-8 text-center shadow-2xl backdrop-blur-md">
-                      <div className="mx-auto mb-5 h-14 w-14 rounded-full border-4 border-orange-200 border-t-orange-600 animate-spin" />
-                      <p className="mb-2 text-lg font-semibold text-gray-900">{databaseModeToButtonLabel('Global Learning')}</p>
-                      <p className="text-sm text-gray-700">
-                        {globalLearningStatusMessage || 'Checking if this content is educational...'}
-                      </p>
+                  <div className="fixed inset-0 z-[10010] flex items-center justify-center bg-black/30 backdrop-blur-sm">
+                    <div className="mx-4 w-full max-w-md rounded-2xl border border-white/20 bg-white/95 backdrop-blur-md p-8 text-center shadow-2xl">
+                      {/* Modern animated spinner */}
+                      <div className="relative w-14 h-14 mx-auto mb-4">
+                        <div className="absolute inset-0 border-3 border-gray-200 rounded-full"></div>
+                        <div className="absolute inset-0 border-3 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+                        <div className="absolute inset-1 border-2 border-transparent border-t-purple-400 rounded-full animate-spin animation-delay-150"></div>
+                      </div>
+                      
+                      <h3 className="text-base font-semibold text-gray-900 mb-2">Global Learning</h3>
+                      <p className="text-sm text-gray-600">Generating big-picture overview...</p>
                     </div>
                   </div>
                 )}
@@ -1569,7 +2047,8 @@ Reflective Learning works best with instructional content, lessons, or study mat
                   <div className="flex-1 flex flex-col">
                     {/* Top Navigation Bar - Learning Mode Carousel */}
                     <div className="bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-b border-gray-300 shadow-sm px-6 py-3">
-                      <div className="flex items-center justify-between gap-6">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-6">
                         {/* Left: Mode Info */}
                         <div className="flex items-center gap-3">
                           <span className="text-sm font-semibold text-gray-800">
@@ -1623,6 +2102,31 @@ Reflective Learning works best with instructional content, lessons, or study mat
                             <span>View PDF</span>
                           </button>
                         </div>
+                      </div>
+
+                        {visibleRecommendationTabs.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                              Recommended for you
+                            </span>
+                            {visibleRecommendationTabs.map((recommendation, index) => {
+                              const isActive = currentRecommendationIndex === index;
+                              return (
+                                <button
+                                  key={`${recommendation.mode}-${index}`}
+                                  onClick={() => activateRecommendationAtIndex(index)}
+                                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                                    isActive
+                                      ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
+                                      : 'border-blue-200 bg-white text-blue-700 hover:border-blue-400 hover:bg-blue-50'
+                                  }`}
+                                >
+                                  {databaseModeToButtonLabel(recommendation.mode)}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1726,68 +2230,66 @@ Reflective Learning works best with instructional content, lessons, or study mat
           })()}
         </div>
 
-        {/* Fixed Top Navigation Bar - Shows above all learning modes ONLY when user has ML recommendations */}
-        {hasActiveLearningMode && filteredRecommendations.length > 0 && hasClassification && (
-          <div className="fixed top-0 left-0 right-0 z-[10003] bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-b border-gray-300 shadow-md" style={{ height: '48px' }}>
-            <div className="max-w-full mx-auto px-6 py-2.5">
-              <div className="flex items-center justify-between gap-6">
-                {/* Left: Mode Info */}
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-gray-800">
-                    Currently viewing: {filteredRecommendations[currentRecommendationIndex]?.mode || 'Loading...'}
+          {typeof document !== 'undefined' && hasActiveLearningMode && filteredRecommendations.length > 0 && hasClassification && isCurrentModeRecommended &&
+            createPortal(
+            recommendationPanelCollapsed ? (
+              <button
+                onClick={() => setRecommendationPanelCollapsed(false)}
+                className="fixed right-6 top-24 z-[200000] rounded-full border border-slate-200 bg-white/95 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600 shadow-lg backdrop-blur hover:bg-slate-50"
+              >
+                Show recommendations
+              </button>
+            ) : (
+              <div className="fixed right-6 top-24 z-[200000] w-[min(90vw,560px)] rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Recommended for you
                   </span>
-                  <span className="text-xs text-gray-600 px-2.5 py-1 bg-white/80 border border-gray-200 rounded-md shadow-sm">
-                    Recommendation {currentRecommendationIndex + 1} of {filteredRecommendations.length}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setRecommendationPanelCollapsed(true)}
+                      className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                    >
+                      Hide
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowVisualContent(false);
+                        setShowSequentialLearning(false);
+                        setShowGlobalLearning(false);
+                        setShowSensingLearning(false);
+                        setShowIntuitiveLearning(false);
+                        setShowActiveLearning(false);
+                        setShowReflectiveLearning(false);
+                      }}
+                      className="rounded-full border border-blue-200 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                    >
+                      View PDF
+                    </button>
+                  </div>
                 </div>
-
-                {/* Right: Navigation Controls + View PDF */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handlePrevRecommendation}
-                    disabled={filteredRecommendations.length <= 1}
-                    className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
-                    title="Previous recommendation"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={handleNextRecommendation}
-                    disabled={filteredRecommendations.length <= 1}
-                    className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-white/60 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-gray-200 shadow-sm"
-                    title="Next recommendation"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      // Close all learning modes to show PDF
-                      setShowVisualContent(false);
-                      setShowSequentialLearning(false);
-                      setShowGlobalLearning(false);
-                      setShowSensingLearning(false);
-                      setShowIntuitiveLearning(false);
-                      setShowActiveLearning(false);
-                      setShowReflectiveLearning(false);
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-medium shadow-md hover:shadow-lg ml-2"
-                    title="View original PDF document"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>View PDF</span>
-                  </button>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {visibleRecommendationTabs.map((recommendation, index) => {
+                    const isActive = currentRecommendationIndex === index;
+                    return (
+                      <button
+                        key={`floating-${recommendation.mode}-${index}`}
+                        onClick={() => activateRecommendationAtIndex(index)}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                          isActive
+                            ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
+                            : 'border-blue-200 bg-white text-blue-700 hover:border-blue-400 hover:bg-blue-50'
+                        }`}
+                      >
+                        {databaseModeToButtonLabel(recommendation.mode)}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            ),
+            document.body
+          )}
 
         {/* AI Narrator Mode Selection - Platform Aligned */}
         {showModeSelection && (
@@ -1973,6 +2475,17 @@ Reflective Learning works best with instructional content, lessons, or study mat
         fileName={fileName}
         docxContent={pdfContent}
       />
+
+      {/* Cold Start Interest Overlay */}
+      <ColdStartInterestOverlay
+        isVisible={shouldShowOverlay}
+        targetMode={overlayTriggeredFor}
+        onDismiss={dismissOverlay}
+        onActivateMode={handleOverlayActivation}
+        buttonRef={learningModeButtonRefs.current[overlayTriggeredFor]}
+        excludeRightPx={!hasClassification && !coldStartDismissed ? 320 : 0}
+      />
+
     </>
   );
 };

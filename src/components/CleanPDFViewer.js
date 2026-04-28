@@ -70,7 +70,17 @@ const CleanPDFViewer = ({
   allRecommendations = [],
   hasClassification = false,
   // Content Educational Status
-  isContentEducational = true
+  isContentEducational = true,
+  // Cold start highlighting props
+  coldStartActive = false,
+  coldStartHighlightMode = null,
+  coldStartPanelError = null,
+  // Button refs for overlay targeting
+  learningModeButtonRefs = { current: {} },
+  // PDF Loading callback
+  onPdfLoaded = null,
+  // Back navigation
+  onClose = null
 }) => {
   // State management
   const [currentPage, setCurrentPage] = useState(1);
@@ -104,6 +114,12 @@ const CleanPDFViewer = ({
     buttonLabelToDatabaseMode[buttonName] || buttonName;
 
   const getModeDisplayName = (databaseName) => databaseModeToButtonLabel(databaseName);
+
+  // Helper function to check if a mode should be highlighted by cold start
+  const isColdStartHighlighted = (modeDbKey) => {
+    if (!coldStartActive || !coldStartHighlightMode || !isContentEducational || coldStartPanelError) return false;
+    return coldStartHighlightMode === modeDbKey;
+  };
 
   // Get tour attribute for learning mode buttons
   const getTourAttribute = (dbKey) => {
@@ -382,6 +398,10 @@ const CleanPDFViewer = ({
     const getPDFPageCount = async () => {
       if (!content?.filePath && !content?.url) {
         setIsLoading(false);
+        // Notify parent that PDF is loaded (even if no content)
+        if (onPdfLoaded) {
+          onPdfLoaded();
+        }
         return;
       }
 
@@ -442,6 +462,10 @@ const CleanPDFViewer = ({
         setTotalPages(1);
       } finally {
         setIsLoading(false);
+        // Notify parent that PDF is loaded
+        if (onPdfLoaded) {
+          onPdfLoaded();
+        }
       }
     };
 
@@ -553,12 +577,22 @@ const CleanPDFViewer = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading PDF document...</p>
-          <p className="text-sm text-gray-500 mt-2">Preparing clean PDF viewer</p>
-        </div>
+      <div className="flex-1 h-full p-4 space-y-3 bg-gray-50">
+        {/* PDF Document Skeleton Loading */}
+        <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
+        <div className="h-32 bg-gray-200 rounded animate-pulse w-full mt-4"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+        <div className="h-32 bg-gray-200 rounded animate-pulse w-full mt-4"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5"></div>
       </div>
     );
   }
@@ -588,6 +622,11 @@ const CleanPDFViewer = ({
             {allModes.map(mode => (
               <div key={mode.name} className="relative">
                 <button
+                  ref={(el) => {
+                    if (learningModeButtonRefs.current) {
+                      learningModeButtonRefs.current[mode.dbKey] = el;
+                    }
+                  }}
                   data-tour={getTourAttribute(mode.dbKey)}
                   onClick={mode.handler}
                   disabled={mode.loading}
@@ -598,23 +637,67 @@ const CleanPDFViewer = ({
                     setShowTooltip({ mode: mode.name, content: tooltip });
                   }}
                   onMouseLeave={() => setShowTooltip({ mode: null, content: null })}
-                  className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    recommendedModeNames.includes(mode.name)
+                  className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden ${
+                    isColdStartHighlighted(mode.dbKey)
+                      ? 'bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100 border-2 border-purple-400 text-purple-800 shadow-lg transform scale-105 ring-2 ring-purple-300 ring-opacity-50'
+                      : recommendedModeNames.includes(mode.name)
                       ? 'bg-blue-50 border border-blue-200 text-blue-700 ring-1 ring-blue-300'
                       : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
                   }`}
                   title=""
                 >
-                  {mode.loading ? (
-                    <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-                  ) : (
-                    <LearningModeToolbarIcon databaseMode={mode.dbKey} className="w-5 h-5 flex-shrink-0 text-current" />
+                  {/* Cold start highlight animation overlay */}
+                  {isColdStartHighlighted(mode.dbKey) && (
+                    <>
+                      {/* Pulsing glow effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-blue-400/20 to-indigo-400/20 animate-pulse rounded-lg"></div>
+                      
+                      {/* Shimmer effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer rounded-lg"></div>
+                      
+                      {/* Floating particles effect */}
+                      <div className="absolute top-1 right-1 w-1 h-1 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                      <div className="absolute top-2 right-3 w-0.5 h-0.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="absolute top-3 right-2 w-0.5 h-0.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    </>
                   )}
-                  <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
+                  
+                  {mode.loading ? (
+                    <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin flex-shrink-0 z-10"></div>
+                  ) : (
+                    <div className="relative z-10">
+                      <LearningModeToolbarIcon 
+                        databaseMode={mode.dbKey} 
+                        className={`w-5 h-5 flex-shrink-0 transition-all duration-300 ${
+                          isColdStartHighlighted(mode.dbKey) 
+                            ? 'text-purple-700 drop-shadow-sm animate-pulse' 
+                            : 'text-current'
+                        }`} 
+                      />
+                    </div>
+                  )}
+                  
+                  <span className={`text-xs font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap overflow-hidden z-10 ${
+                    isColdStartHighlighted(mode.dbKey) 
+                      ? 'opacity-100 font-semibold text-purple-800' 
+                      : ''
+                  }`}>
                     {mode.name}
+                    {isColdStartHighlighted(mode.dbKey) && (
+                      <span className="ml-1 text-xs animate-pulse">← Preview Active</span>
+                    )}
                   </span>
-                  {recommendedModeNames.includes(mode.name) && (
-                    <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  
+                  {/* Enhanced indicator for highlighted mode */}
+                  {isColdStartHighlighted(mode.dbKey) && (
+                    <div className="flex items-center gap-1 z-10">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-ping"></div>
+                      <div className="w-1.5 h-1.5 bg-purple-600 rounded-full"></div>
+                    </div>
+                  )}
+                  
+                  {recommendedModeNames.includes(mode.name) && !isColdStartHighlighted(mode.dbKey) && (
+                    <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
                   )}
                 </button>
                 
@@ -674,6 +757,19 @@ const CleanPDFViewer = ({
         <div className={`flex items-center justify-between px-4 py-2 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           {/* Left - File Info */}
           <div className="flex items-center gap-3">
+            {/* Back Button */}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${isDarkMode ? 'text-gray-300 hover:bg-gray-700 border-gray-600' : 'text-gray-600 hover:bg-gray-100 border-gray-300'}`}
+                title="Back to course"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Back</span>
+              </button>
+            )}
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

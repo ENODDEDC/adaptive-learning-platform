@@ -41,6 +41,19 @@ export async function POST(request) {
 
     for (const file of files) {
       if (file instanceof File) {
+        // Block video file uploads — videos must use the Video Link feature
+        const videoMimeTypes = [
+          'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+          'video/x-msvideo', 'video/x-matroska', 'video/mpeg', 'video/3gpp', 'video/wmv'
+        ];
+        const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'ogv', 'wmv', 'flv', '3gp', 'mpeg', 'mpg'];
+        const fileExt = file.name.split('.').pop()?.toLowerCase();
+        if (videoMimeTypes.includes(file.type) || videoExtensions.includes(fileExt)) {
+          return NextResponse.json({
+            message: `Video files cannot be uploaded directly. Please use the Video Link feature to add videos via URL. File rejected: ${file.name}`
+          }, { status: 400 });
+        }
+
         // Convert file to buffer
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);

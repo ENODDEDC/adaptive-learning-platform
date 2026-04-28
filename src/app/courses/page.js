@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import EmptyState from '@/components/EmptyState';
-import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import CoursePreviewModal from '@/components/CoursePreviewModal';
 import Tooltip from '@/components/Tooltip';
 import AdaptiveLayout from '@/components/AdaptiveLayout';
 import CourseFilterSort from '@/components/CourseFilterSort';
 import ProfessionalCourseCard from '@/components/ProfessionalCourseCard';
+import HorizontalNav from '@/components/HorizontalNav';
 import preferenceLearningService from '@/services/preferenceLearningService';
 import cacheService from '@/services/cacheService';
 import predictiveLoadingService from '@/services/predictiveLoadingService';
@@ -520,58 +520,6 @@ const CourseContent = () => {
     );
   }
 
-  // Show loading state with skeleton screens
-  if (loading) {
-    return (
-      <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="skeleton-text mb-2 h-8 w-40 rounded"></div>
-              <div className="skeleton-text h-4 w-64 rounded"></div>
-            </div>
-            <div className="skeleton-button h-10 w-10 rounded-lg"></div>
-          </div>
-        </div>
-
-        <div className="bg-white border-b border-gray-200 px-6">
-          <div className="flex items-center gap-4 py-3">
-            <div className="skeleton-button h-10 w-24 rounded-lg"></div>
-            <div className="skeleton-button h-10 w-24 rounded-lg"></div>
-            <div className="skeleton-button h-10 w-24 rounded-lg"></div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-2">
-          <div className="mb-6 space-y-3">
-            <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-              <div className="flex items-start gap-3">
-                <div className="h-6 w-6 rounded bg-blue-200"></div>
-                <div className="flex-1">
-                  <div className="skeleton-text mb-2 h-4 w-40 rounded bg-blue-200"></div>
-                  <div className="skeleton-text h-3 w-72 rounded bg-blue-200"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative mb-8 ml-4 mr-4">
-            <div className="w-full transition-all duration-500 ease-in-out">
-              <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory custom-scrollbar">
-                {[...Array(5)].map((_, index) => (
-                  <CourseCardSkeleton
-                    key={`skeleton-${index}`}
-                    index={index}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Show error state
   if (error) {
     return (
@@ -589,13 +537,58 @@ const CourseContent = () => {
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#4f46e5 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}></div>
       
+      {/* Horizontal Navigation */}
+      <HorizontalNav />
+      
       <div className="relative z-10 flex flex-col h-full">
-      {/* Simple Header */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-6">
+      {/* Compact Header with Tabs */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Courses</h1>
-            <p className="text-sm font-medium text-slate-500 mt-1">Manage and explore your learning journey</p>
+          <div className="flex items-center gap-6">
+            {/* Tabs */}
+            <div className="flex gap-1">
+              <button
+                onClick={() => {
+                  setActiveTab('courses');
+                  trackInteraction('navigation', { path: 'courses_tab' });
+                }}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                  activeTab === 'courses'
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                Courses
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('clusters');
+                  trackInteraction('navigation', { path: 'clusters_tab' });
+                }}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                  activeTab === 'clusters'
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Clusters
+              </button>
+              <button
+                onClick={() => router.push('/archive')}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                Archive
+              </button>
+            </div>
           </div>
           
           <div className="relative">
@@ -672,44 +665,6 @@ const CourseContent = () => {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6">
-        <div className="flex items-center gap-4 py-3">
-          <button
-            onClick={() => {
-              setActiveTab('courses');
-              trackInteraction('navigation', { path: 'courses_tab' });
-            }}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === 'courses'
-                ? 'text-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            Courses
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab('clusters');
-              trackInteraction('navigation', { path: 'clusters_tab' });
-            }}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === 'clusters'
-                ? 'text-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            Clusters
-          </button>
-          <button
-            onClick={() => router.push('/archive')}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
-          >
-            Archive
-          </button>
-        </div>
-      </div>
-
       {/* Content Area */}
       <div className={`flex-1 relative ${courses.length === 0 && activeTab === 'courses' ? 'p-0' : 'px-6 py-2'}`} style={{ overflowY: 'auto', overflowX: 'hidden' }}>
 
@@ -774,13 +729,7 @@ const CourseContent = () => {
           <AdaptiveLayout componentType="courses" trackInteractions={true} adaptiveMode={true}>
             <div className="flex gap-6 pb-6 pt-2">
           {activeTab === 'courses' ? (
-          loading ? (
-            <div className="flex gap-6 w-full px-10 py-6">
-              {[...Array(3)].map((_, i) => (
-                <CourseCardSkeleton key={i} index={i} />
-              ))}
-            </div>
-          ) : filteredCourses.length === 0 ? (
+          filteredCourses.length === 0 ? (
             <div className="w-full py-20 flex flex-col items-center justify-center">
               <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
                 <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -819,7 +768,11 @@ const CourseContent = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.3 }}
-                  className="flex gap-6 w-full"
+                  className={`grid gap-6 w-full ${
+                    filteredCourses.length === 2 
+                      ? 'grid-cols-2' 
+                      : 'grid-cols-3'
+                  }`}
                 >
                   {filteredCourses.slice(coursePageIndex * coursesPerPage, (coursePageIndex + 1) * coursesPerPage).map((course, index) => {
                   // Utility function to normalize and ensure proper color format
@@ -883,7 +836,7 @@ const CourseContent = () => {
                     <Link 
                       key={course.id} 
                       href={`/courses/${course.id}`} 
-                      className="flex-shrink-0 w-[calc(33.333%-1rem)] group"
+                      className="group"
                       draggable
                       onDragStart={(e) => handleDragStart(e, course, index)}
                       onDragOver={(e) => handleDragOver(e, index)}
@@ -892,84 +845,112 @@ const CourseContent = () => {
                       onDragEnd={handleDragEnd}
                       onDrop={(e) => handleDrop(e, index)}
                     >
-                  <div className={`relative flex flex-col h-full bg-white border border-gray-100 cursor-pointer rounded-2xl transition-all duration-500 hover:-translate-y-1 hover:shadow-lg overflow-hidden ${
-                    dragOverIndex === index ? 'border-blue-500 ring-4 ring-blue-50' : 'hover:border-gray-200'
+                  <div className={`relative flex flex-col h-full bg-white border-2 border-gray-300 cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl overflow-hidden shadow-lg ${
+                    dragOverIndex === index ? 'border-blue-500 ring-4 ring-blue-50' : 'hover:border-gray-400'
                   }`}>
-                    {/* Clean Solid Header */}
-                    <div className={`relative px-5 py-6 overflow-hidden ${colorVariations.base} transition-all duration-300`}>
-                      <div className="absolute inset-0 opacity-[0.06]">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-12 translate-x-12"></div>
+                    {/* Colored Header - Modern & Clean */}
+                    <div className={`relative px-5 py-5 ${colorVariations.base}`}>
+                      {/* Subtle pattern overlay */}
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
+                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-black rounded-full translate-y-12 -translate-x-12"></div>
                       </div>
 
-                      <div className="relative z-10 space-y-3.5">
-                        {/* Simple White Badge */}
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg text-xs font-bold text-gray-800 shadow-sm border border-gray-100">
-                          <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
-                          </svg>
-                          <span className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider">Section</span>
-                          <span className="text-gray-900">{course.code}</span>
+                      <div className="relative z-10">
+                        {/* Section Badge - Minimal */}
+                        <div className="mb-3">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg text-xs font-bold text-gray-800 shadow-sm">
+                            <span className="text-gray-500 font-medium">SECTION</span>
+                            <span className="text-gray-900">{course.code}</span>
+                          </span>
                         </div>
 
-                        {/* Course Title */}
-                        <h3 className="text-xl font-bold text-white leading-snug line-clamp-2">
+                        {/* Course Title - Clean Typography */}
+                        <h3 className="text-xl font-bold text-white leading-tight line-clamp-2" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>
                           {course.title}
                         </h3>
                       </div>
                     </div>
 
-                    {/* Content Section */}
+                    {/* Content Section - Clean Layout */}
                     <div className="flex-1 px-5 py-5 flex flex-col bg-white">
-                      {/* Instructor */}
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="relative flex items-center justify-center w-10 h-10 bg-slate-50 rounded-full flex-shrink-0 shadow-sm overflow-hidden border border-gray-100 transition-colors">
+                      {/* Instructor - Minimal Design */}
+                      <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+                        <div className="relative flex items-center justify-center w-10 h-10 bg-gray-200 rounded-full flex-shrink-0 overflow-hidden border-2 border-gray-300">
                           {course.instructorProfilePicture ? (
-                            <img 
-                              src={course.instructorProfilePicture} 
-                              alt={course.instructor}
-                              className="absolute inset-0 w-full h-full object-cover"
-                            />
+                            <>
+                              <img 
+                                src={course.instructorProfilePicture} 
+                                alt={course.instructor}
+                                className="absolute inset-0 w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                              <span className="text-sm font-bold text-gray-700">
+                                {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                              </span>
+                            </>
                           ) : (
-                            <span className="text-sm font-bold text-slate-400">
+                            <span className="text-sm font-bold text-gray-700">
                               {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                             </span>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Instructor</div>
-                          <div className="text-sm font-bold text-slate-800 truncate transition-colors">{course.instructor}</div>
+                          <div className="text-xs font-medium text-gray-500 mb-0.5">Instructor</div>
+                          <div className="text-sm font-bold text-gray-900 truncate">{course.instructor}</div>
                         </div>
                       </div>
 
-                      {/* Schedule Display */}
+                      {/* Schedule Display - Fixed height */}
                       {course.schedules && course.schedules.length > 0 && (
-                        <div className="mb-4 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                          <div className="flex items-center gap-2 mb-2">
-                            <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em]">Schedule</span>
+                        <div className="my-4 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">Schedule</span>
+                            </div>
+                            {course.schedules.length > 2 && (
+                              <span className="text-xs text-gray-500 font-medium">
+                                +{course.schedules.length - 2} more
+                              </span>
+                            )}
                           </div>
-                          <div className="space-y-1.5">
-                            {(expandedSchedules[course.id] ? course.schedules : course.schedules.slice(0, 2)).map((schedule, idx) => (
-                              <div key={idx} className="flex items-center justify-between text-xs">
-                                <span className="font-bold text-slate-600">{schedule.day.slice(0, 3)}</span>
-                                <span className="text-slate-500 font-medium">{schedule.startTime} - {schedule.endTime}</span>
-                              </div>
-                            ))}
+                          <div className="h-16 px-3 py-2 overflow-y-auto">
+                            <div className="space-y-1.5">
+                              {course.schedules.slice(0, 2).map((schedule, idx) => (
+                                <div key={idx} className="flex items-center justify-between text-xs">
+                                  <span className="font-bold text-gray-700">{schedule.day.slice(0, 3)}</span>
+                                  <span className="text-gray-600 font-medium">{schedule.startTime} - {schedule.endTime}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
 
-                      {/* Unified Metrics Bar */}
-                      <div className="mt-auto grid grid-cols-2 gap-3 pt-4 border-t border-slate-50">
-                        <div className="flex flex-col items-center justify-center p-3 bg-slate-50 rounded-xl border border-transparent transition-all duration-500">
-                          <div className="text-lg font-black text-slate-900 mb-0.5">{course.moduleCount || 0}</div>
-                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Materials</div>
+                      {/* Metrics - Compact Grid */}
+                      <div className="grid grid-cols-2 gap-2 pt-3 mt-auto">
+                        <div className="flex flex-col items-center justify-center p-2 bg-gray-50 rounded-lg border border-gray-200">
+                          <svg className="w-4 h-4 text-gray-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-gray-900 leading-none mb-0.5">{course.moduleCount || 0}</div>
+                            <div className="text-[10px] font-medium text-gray-600">Materials</div>
+                          </div>
                         </div>
-                        <div className="flex flex-col items-center justify-center p-3 bg-slate-50 rounded-xl border border-transparent transition-all duration-500">
-                          <div className="text-lg font-black text-slate-900 mb-0.5">{course.studentCount || 0}</div>
-                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Students</div>
+                        <div className="flex flex-col items-center justify-center p-2 bg-gray-50 rounded-lg border border-gray-200">
+                          <svg className="w-4 h-4 text-gray-600 mb-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                          </svg>
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-gray-900 leading-none mb-0.5">{course.studentCount || 0}</div>
+                            <div className="text-[10px] font-medium text-gray-600">Students</div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -977,6 +958,95 @@ const CourseContent = () => {
                 </Link>
                   );
                 })}
+
+                {/* Placeholder Cards - Show when only 1 or 2 courses */}
+                {filteredCourses.length === 1 && (
+                  <>
+                    <div className="relative flex flex-col h-full bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl overflow-hidden shadow-lg">
+                      <div className="relative px-5 py-5 bg-gradient-to-br from-gray-100 to-gray-200 border-b-2 border-gray-300">
+                        <div className="flex items-center justify-center">
+                          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center border-2 border-gray-300 shadow-md">
+                            <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex-1 px-5 py-5 flex flex-col items-center justify-center text-center bg-white">
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">
+                          Create or Join More Courses
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                          Expand your learning by creating new courses or joining existing ones
+                        </p>
+                        <div className="mt-auto pt-4 border-t border-gray-200 w-full">
+                          <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                            </svg>
+                            <span className="font-medium">Build your course library</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative flex flex-col h-full bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl overflow-hidden shadow-lg">
+                      <div className="relative px-5 py-5 bg-gradient-to-br from-gray-100 to-gray-200 border-b-2 border-gray-300">
+                        <div className="flex items-center justify-center">
+                          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center border-2 border-gray-300 shadow-md">
+                            <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex-1 px-5 py-5 flex flex-col items-center justify-center text-center bg-white">
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">
+                          Organize with Clusters
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                          Group related courses together for better organization
+                        </p>
+                        <div className="mt-auto pt-4 border-t border-gray-200 w-full">
+                          <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                            </svg>
+                            <span className="font-medium">Stay organized and focused</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {filteredCourses.length === 2 && (
+                  <div className="relative flex flex-col h-full bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl overflow-hidden shadow-lg">
+                    <div className="relative px-5 py-5 bg-gradient-to-br from-gray-100 to-gray-200 border-b-2 border-gray-300">
+                      <div className="flex items-center justify-center">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center border-2 border-gray-300 shadow-md">
+                          <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex-1 px-5 py-5 flex flex-col items-center justify-center text-center bg-white">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">
+                        Add More Courses
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                        Continue building your learning path
+                      </p>
+                      <div className="mt-auto pt-4 border-t border-gray-200 w-full">
+                        <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                          </svg>
+                          <span className="font-medium">Keep learning and growing</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 </motion.div>
               </AnimatePresence>
               {filteredCourses.length > coursesPerPage && (

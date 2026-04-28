@@ -258,6 +258,17 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview, compactMod
       attachment?.title?.toLowerCase().endsWith('.pptx');
   };
 
+  const isVideoFile = (attachment) => {
+    const videoMimeTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+    const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'ogv', 'wmv', 'flv'];
+    const ext = (attachment?.originalName || attachment?.title || '').split('.').pop()?.toLowerCase();
+    return videoMimeTypes.includes(attachment?.mimeType) || videoExtensions.includes(ext);
+  };
+
+  const getVideoUrl = (attachment) => {
+    return attachment?.cloudStorage?.url || attachment?.url || attachment?.filePath || '';
+  };
+
   useEffect(() => {
     // Check cache first
     const cachedUrl = thumbnailCache.getThumbnailUrl(attachment._id);
@@ -283,6 +294,7 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview, compactMod
     } else if (isPptxFile(attachment)) {
       generatePptxThumbnail();
     }
+    // Video files use native browser preview — no thumbnail generation needed
   }, []);
 
   const generatePdfThumbnail = async () => {
@@ -409,6 +421,60 @@ const StableThumbnailComponent = React.memo(({ attachment, onPreview, compactMod
   };
 
   const fileName = attachment.originalName || attachment.title || 'Document';
+
+  // Video file — render inline preview card instead of thumbnail
+  if (isVideoFile(attachment)) {
+    const videoUrl = getVideoUrl(attachment);
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onPreview) onPreview(attachment);
+        }}
+        className={`w-full group ${compactMode && compactVariant === 'student' ? 'h-full flex flex-col' : ''}`}
+      >
+        <div className={`relative w-full ${compactMode ? (compactVariant === 'student' ? 'h-full mb-0' : 'h-40 mb-2') : 'aspect-[4/3] mb-3'} bg-black rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
+          {videoUrl ? (
+            <video
+              src={videoUrl}
+              preload="metadata"
+              muted
+              className="w-full h-full object-cover pointer-events-none"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900">
+              <svg className="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+              </svg>
+              <span className="text-xs text-gray-400">Video</span>
+            </div>
+          )}
+          {/* VIDEO badge */}
+          <div className="absolute top-2 right-2 bg-slate-700 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm">
+            VIDEO
+          </div>
+          {/* Play button overlay on hover */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+            <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg">
+              <svg className="w-6 h-6 text-slate-800" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        {!compactMode && (
+          <div className="text-left w-full min-w-0">
+            <p className="font-medium text-gray-900 text-sm truncate group-hover:text-slate-700 transition-colors" title={fileName}>
+              {fileName}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : 'Video File'}
+            </p>
+          </div>
+        )}
+      </button>
+    );
+  }
 
   return (
     <button
@@ -526,6 +592,17 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview, compactMod
       attachment?.title?.toLowerCase().endsWith('.pptx');
   };
 
+  const isVideoFile = (attachment) => {
+    const videoMimeTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+    const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'ogv', 'wmv', 'flv'];
+    const ext = (attachment?.originalName || attachment?.title || '').split('.').pop()?.toLowerCase();
+    return videoMimeTypes.includes(attachment?.mimeType) || videoExtensions.includes(ext);
+  };
+
+  const getVideoUrl = (attachment) => {
+    return attachment?.cloudStorage?.url || attachment?.url || attachment?.filePath || '';
+  };
+
   useEffect(() => {
     // Check cache first
     const cachedUrl = thumbnailCache.getThumbnailUrl(attachment._id);
@@ -551,6 +628,7 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview, compactMod
     } else if (isPptxFile(attachment)) {
       generatePptxThumbnail();
     }
+    // Video files use native browser preview — no thumbnail generation needed
   }, []);
 
   const generatePdfThumbnail = async () => {
@@ -678,6 +756,75 @@ const EnhancedPDFFileThumbnail = React.memo(({ attachment, onPreview, compactMod
 
   const fileName = attachment.originalName || attachment.title || 'Document';
 
+  // Video file — render video card with native preview
+  if (isVideoFile(attachment)) {
+    const videoUrl = getVideoUrl(attachment);
+    return (
+      <div className="w-full bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group">
+        {/* Video Header */}
+        <div className="px-4 py-2 flex items-center justify-between bg-gradient-to-r from-slate-700 to-slate-800">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
+              <span className="text-white text-sm font-bold">🎥</span>
+            </div>
+            <span className="text-white font-semibold text-sm">Video</span>
+          </div>
+          <div className="text-white/70 text-xs">
+            {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : ''}
+          </div>
+        </div>
+
+        {/* Video Preview */}
+        <div className={compactMode ? 'p-3' : 'p-4'}>
+          <div className={`relative w-full ${compactMode ? 'h-40 mb-2' : 'aspect-[4/3] mb-3'} bg-black rounded-lg overflow-hidden shadow-inner`}>
+            {videoUrl ? (
+              <video
+                src={videoUrl}
+                preload="metadata"
+                muted
+                className="w-full h-full object-cover pointer-events-none"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900">
+                <svg className="w-12 h-12 text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                </svg>
+                <span className="text-sm text-slate-400 font-medium">Video Preview</span>
+              </div>
+            )}
+            {/* Play button overlay on hover */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 transform scale-75 group-hover:scale-100 transition-all duration-300">
+                <svg className="w-6 h-6 text-slate-800" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* File Info */}
+          <div className="text-center">
+            <h4 className="font-semibold text-white text-sm mb-1 truncate group-hover:text-slate-300 transition-colors">
+              {fileName}
+            </h4>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onPreview) onPreview(attachment);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md bg-slate-600 hover:bg-slate-500"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              Play Video
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group">
       {/* File Header */}
@@ -792,6 +939,7 @@ const ClassworkTab = ({
   isInstructor,
   onOpenContent,
   onClassworkCreated,
+  onClassworkDeleted,
   // Props from parent for create classwork panel
   isCreateClassworkModalOpen,
   setIsCreateClassworkModalOpen,
@@ -1132,11 +1280,15 @@ const ClassworkTab = ({
           item.title?.toLowerCase().includes(query) ||
           item.description?.toLowerCase().includes(query) ||
           item.type?.toLowerCase().includes(query);
-        if (!matchesSearch) return false;
+        if (!matchesSearch) {
+          return false;
+        }
       }
 
       // Type filter
-      if (filter !== 'all' && item.type !== filter && item.itemType !== filter) return false;
+      if (filter !== 'all' && item.type !== filter && item.itemType !== filter) {
+        return false;
+      }
 
       // Date range filter (only for assignments, forms don't have due dates)
       if (dateRange !== 'all' && item.itemType === 'assignment' && item.dueDate) {
@@ -1146,13 +1298,19 @@ const ClassworkTab = ({
 
         switch (dateRange) {
           case 'thisWeek':
-            if (daysDiff < 0 || daysDiff > 7) return false;
+            if (daysDiff < 0 || daysDiff > 7) {
+              return false;
+            }
             break;
           case 'thisMonth':
-            if (daysDiff < 0 || daysDiff > 30) return false;
+            if (daysDiff < 0 || daysDiff > 30) {
+              return false;
+            }
             break;
           case 'overdue':
-            if (daysDiff >= 0) return false;
+            if (daysDiff >= 0) {
+              return false;
+            }
             break;
         }
       }
@@ -1167,18 +1325,26 @@ const ClassworkTab = ({
 
           switch (statusFilter) {
             case 'notStarted':
-              if (submission) return false;
+              if (submission) {
+                return false;
+              }
               break;
             case 'inProgress':
-              if (!isInProgress) return false;
+              if (!isInProgress) {
+                return false;
+              }
               break;
             case 'completed':
-              if (!isCompleted) return false;
+              if (!isCompleted) {
+                return false;
+              }
               break;
           }
         } else if (item.itemType === 'form') {
           // Forms are always considered "not started" for status filtering
-          if (statusFilter !== 'notStarted') return false;
+          if (statusFilter !== 'notStarted') {
+            return false;
+          }
         }
       }
 
@@ -1217,7 +1383,7 @@ const ClassworkTab = ({
     });
 
     return filtered;
-  }, [assignments, submissions, searchQuery, filter, dateRange, statusFilter, sortBy]);
+  }, [assignments, forms, submissions, searchQuery, filter, dateRange, statusFilter, sortBy]);
 
   // Note: Dropdown menu replaced with right-click context menu
 
@@ -1610,6 +1776,45 @@ const ClassworkTab = ({
             ) : Array.isArray(item.attachments) && item.attachments.length > 0 && (
               <div className={compactStudentCard ? 'mb-0 flex-1 flex' : compactMode ? 'mb-2' : 'mb-4'}>
                 {item.attachments.slice(0, 1).map((attachment, index) => {
+                  // Video link attachment
+                  if (attachment.type === 'video-link' || attachment.contentType === 'video-link') {
+                    const videoUrl = attachment.url || attachment.filePath || attachment.cloudStorage?.url || '';
+                    const platform = attachment.platform || attachment.cloudStorage?.metadata?.platform || 'unknown';
+                    const platformLabel = { youtube: 'YouTube', gdrive: 'Google Drive', vimeo: 'Vimeo', direct: 'Video', unknown: 'Video' }[platform] || 'Video';
+                    const thumb = attachment.thumbnailUrl || null;
+                    return (
+                      <button
+                        key={attachment._id || index}
+                        onClick={(e) => { e.stopPropagation(); if (onOpenContent) onOpenContent(attachment); }}
+                        className={`w-full group ${compactMode && compactStudentCard ? 'h-full flex flex-col' : ''}`}
+                      >
+                        <div className={`relative w-full ${compactMode ? (compactStudentCard ? 'h-full mb-0' : 'h-40 mb-2') : 'aspect-[4/3] mb-3'} bg-black rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300`}>
+                          {thumb ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={thumb} alt="" className="w-full h-full object-cover pointer-events-none" />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900">
+                              <svg className="w-10 h-10 text-slate-500 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                              </svg>
+                              <span className="text-xs text-slate-400">{platformLabel}</span>
+                            </div>
+                          )}
+                          {/* Platform badge */}
+                          <div className="absolute top-2 right-2 bg-slate-800/90 text-white px-2 py-0.5 rounded text-xs font-semibold">
+                            {platformLabel}
+                          </div>
+                          {/* Play overlay */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <div className="bg-white/90 rounded-full p-2.5 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-lg">
+                              <svg className="w-5 h-5 text-slate-800" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  }
+
                   // Enhanced DOCX thumbnail with AI narrator for DOCX files
                   if (attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                     attachment.originalName?.toLowerCase().endsWith('.docx') ||
@@ -2463,7 +2668,7 @@ const ClassworkTab = ({
         throw new Error(errorData.message || `Error: ${res.status} ${res.statusText}`);
       }
       showToast('Classwork deleted successfully!', 'success');
-
+      if (onClassworkDeleted) onClassworkDeleted();
       fetchAssignments(); // Refresh assignments list
       fetchForms(); // Also refresh forms list
     } catch (err) {
@@ -3476,54 +3681,47 @@ const ClassworkTab = ({
       `}</style>
 
       {/* Toast Notification System */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
+      <div className="fixed bottom-6 left-6 z-50 space-y-2">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg backdrop-blur-sm border transform transition-all duration-300 animate-in slide-in-from-right-5 ${toast.type === 'success'
-              ? 'bg-emerald-50/90 border-emerald-200 text-emerald-800'
-              : toast.type === 'error'
-                ? 'bg-red-50/90 border-red-200 text-red-800'
-                : toast.type === 'warning'
-                  ? 'bg-amber-50/90 border-amber-200 text-amber-800'
-                  : 'bg-blue-50/90 border-blue-200 text-blue-800'
-              }`}
+            className="flex items-start gap-3 px-4 py-3.5 rounded-xl shadow-2xl border bg-zinc-900 border-zinc-800 text-zinc-100 transform transition-all duration-300 animate-in slide-in-from-bottom-5 max-w-sm"
           >
             {/* Toast Icon */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center mt-0.5">
               {toast.type === 'success' && (
-                <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               )}
               {toast.type === 'error' && (
-                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               )}
               {toast.type === 'warning' && (
-                <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               )}
               {toast.type === 'info' && (
-                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               )}
             </div>
 
             {/* Toast Message */}
-            <div className="flex-1 font-medium text-sm">
+            <div className="flex-1 text-sm font-medium leading-snug pt-0.5">
               {toast.message}
             </div>
 
             {/* Close Button */}
             <button
               onClick={() => removeToast(toast.id)}
-              className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              className="flex-shrink-0 text-zinc-600 hover:text-zinc-400 transition-colors duration-200"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>

@@ -6,6 +6,7 @@ import LearningStyleProfile from '@/models/LearningStyleProfile';
 import { verifyToken } from '@/lib/auth';
 import {
   computeClassificationReadiness,
+  MINIMUM_CLASSIFICATION_INTERACTIONS,
   mergeRecentActiveDay
 } from '@/lib/learningStyleReadiness';
 
@@ -389,7 +390,8 @@ export async function POST(request) {
     
     // Update data quality indicators
     profile.dataQuality.totalInteractions = totalInteractionsFromAggregates;
-    profile.dataQuality.sufficientForML = totalInteractionsFromAggregates >= 10;
+    profile.dataQuality.sufficientForML =
+      totalInteractionsFromAggregates >= MINIMUM_CLASSIFICATION_INTERACTIONS;
     profile.dataQuality.dataCompleteness = Math.min(100, (totalInteractionsFromAggregates / 200) * 100);
     profile.dataQuality.lastDataUpdate = new Date();
     

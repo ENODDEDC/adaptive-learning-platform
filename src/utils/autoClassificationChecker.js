@@ -107,17 +107,21 @@ export async function checkAndTriggerClassification() {
 export function initAutoClassificationChecker() {
   if (typeof window === 'undefined') return;
 
-  // Check on initial load
-  setTimeout(() => {
-    checkAndTriggerClassification();
-  }, 2000); // Wait 2 seconds for page to settle
-
-  // Check on visibility change (when user returns to tab)
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
+  try {
+    // Check on initial load
+    setTimeout(() => {
       checkAndTriggerClassification();
-    }
-  });
+    }, 2000); // Wait 2 seconds for page to settle
 
-  console.log('✅ Auto-classification checker initialized');
+    // Check on visibility change (when user returns to tab)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        checkAndTriggerClassification();
+      }
+    });
+
+    console.log('✅ Auto-classification checker initialized');
+  } catch (error) {
+    console.error('❌ Error initializing auto-classification checker:', error);
+  }
 }

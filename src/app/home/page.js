@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -17,6 +17,7 @@ import EmptyState from '@/components/EmptyState';
 import { useLayout } from '../../context/LayoutContext';
 import { getLearningBehaviorTracker } from '@/utils/learningBehaviorTracker';
 import HomeTour from '@/components/HomeTour';
+import HorizontalNav from '@/components/HorizontalNav';
 import useViewportInfo from '@/hooks/useViewportInfo';
 
 // Utility function to normalize and ensure proper color format
@@ -155,6 +156,26 @@ export default function Home() {
   const { height: viewportHeight, isShortHeight, isVeryShortHeight, isNarrowWidth, isCompactUi } = useViewportInfo();
 
   const recentActivities = [];
+  const isSearchingPublicCourses = publicCoursesSearch.trim().length > 0;
+
+  const sortedPublicCourses = useMemo(
+    () => [...publicCourses].sort((a, b) => (b.studentCount || 0) - (a.studentCount || 0)),
+    [publicCourses]
+  );
+  const featuredPublicCourses = useMemo(
+    () => sortedPublicCourses.slice(0, 3),
+    [sortedPublicCourses]
+  );
+  const remainingPublicCourses = useMemo(
+    () => sortedPublicCourses.slice(3),
+    [sortedPublicCourses]
+  );
+  const publicCourseTitleClass = 'text-sm font-semibold text-gray-900 leading-tight';
+  const publicCourseTeacherClass = 'text-xs text-gray-600';
+  const publicCourseMetaClass = 'text-[11px] text-gray-500';
+  const publicCoursePrimaryButtonClass = 'text-[11px] px-2.5 py-1 font-semibold rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors';
+  const publicModalPrimaryButtonClass = 'flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70';
+  const publicModalSecondaryButtonClass = 'flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50';
 
   useEffect(() => {
     setIsMounted(true);
@@ -525,65 +546,64 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col bg-gray-50 overflow-hidden" style={{ height: `${viewportHeight}px` }}>
+    <div className="flex flex-col bg-gray-100 overflow-hidden" style={{ height: `${viewportHeight}px` }}>
       {/* Tour Component */}
       <HomeTour show={showTour} onComplete={() => setShowTour(false)} />
       
-      {/* Compact Welcome Header - Clean Design */}
-      <div className={`welcome-header relative ${isVeryShortHeight ? 'mx-2.5 mt-1.5' : 'mx-3 mt-2'} bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md transition-shadow duration-300`}>
-        {/* Subtle accent line - Single color */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 rounded-t-2xl"></div>
-
-        <div className={`relative ${isVeryShortHeight ? 'px-4 py-2.5' : 'px-5 py-3'}`}>
-          <div className={`flex items-center justify-between ${isVeryShortHeight ? 'gap-3' : 'gap-4'}`}>
-            {/* Left Section - Compact Welcome */}
-            <div className="flex items-center gap-3 flex-1 min-w-0">
+      {/* Simple Clean Header */}
+      <div className={`welcome-header relative ${isVeryShortHeight ? 'mx-2.5 mt-1.5' : 'mx-3 mt-2'} bg-white border border-gray-300 shadow-md rounded-xl hover:shadow-lg transition-shadow duration-200`}>
+        <div className={`relative ${isVeryShortHeight ? 'px-5 py-3' : 'px-6 py-4'}`}>
+          <div className={`flex items-center justify-between ${isVeryShortHeight ? 'gap-4' : 'gap-6'}`}>
+            {/* Left Section - Simple Welcome */}
+            <div className="flex items-center gap-4 flex-1 min-w-0">
               <div className="relative flex-shrink-0">
-                <div className="flex items-center justify-center w-11 h-11 bg-blue-500 rounded-xl shadow-sm">
-                  <SparklesIcon className="w-6 h-6 text-white" />
+                <div className="flex items-center justify-center w-12 h-12 bg-gray-200 rounded-xl border border-gray-300 shadow-sm">
+                  <SparklesIcon className="w-6 h-6 text-gray-700" />
                 </div>
-                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
               </div>
               <div className="flex flex-col justify-center flex-1 min-w-0">
-                <h1 className={`${isVeryShortHeight ? 'text-[1.45rem]' : isShortHeight ? 'text-[1.6rem]' : 'text-[1.75rem]'} font-bold text-gray-900 leading-tight`}>
+                <h1 className={`${isVeryShortHeight ? 'text-[1.5rem]' : isShortHeight ? 'text-[1.65rem]' : 'text-[1.85rem]'} font-bold text-gray-900 leading-tight`}>
                   {(() => {
                     const hour = new Date().getHours();
                     const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
                     return greeting;
-                  })()}, <span className="text-blue-600">
-                    {user ? `${user.name} ${user.surname}` : 'User'}
-                  </span>!
+                  })()}, <span className="text-gray-900">
+                    {user ? `${user.name}` : 'User'}
+                  </span>
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-600 flex items-center gap-2">
-                  Welcome back to your learning dashboard
+                <div className="flex items-center gap-3 mt-1">
+                  <p className="text-sm text-gray-600">
+                    Welcome back to your learning dashboard
+                  </p>
                   <button
                     onClick={() => setShowTour(true)}
-                    className="text-blue-600 hover:text-blue-700 underline text-xs font-medium"
+                    className="text-xs text-gray-700 hover:text-gray-900 underline font-medium"
                     title="Start tour"
                   >
                     Take a tour
                   </button>
-                </p>
+                </div>
               </div>
             </div>
 
-            {/* Right Section - Compact Calendar */}
+            {/* Right Section - Simple Calendar */}
             <div className={`flex-shrink-0 ${isNarrowWidth ? 'scale-95 origin-right' : ''}`}>
-              <div className="flex items-center justify-center gap-2 text-[11px] text-gray-500 mb-1.5">
-                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-600 mb-2 font-medium">
+                <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span className="font-semibold">This Week</span>
+                <span>This Week</span>
               </div>
-              <div className="bg-gray-50 rounded-xl p-2 border border-gray-200">
-                <div className="text-center mb-1">
-                  <div className="text-xs text-blue-700 font-bold">
+              <div className="bg-gray-50 rounded-xl p-2.5 border border-gray-300 shadow-sm">
+                <div className="text-center mb-1.5">
+                  <div className="text-xs text-gray-900 font-semibold">
                     {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </div>
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center">
                   {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-                    <div key={`header-${index}`} className="text-[10px] text-blue-600 font-bold mb-1">
+                    <div key={`header-${index}`} className="text-[10px] text-gray-600 font-semibold mb-1">
                       {day}
                     </div>
                   ))}
@@ -602,12 +622,12 @@ export default function Home() {
                       days.push(
                         <div
                           key={i}
-                        className={`text-[11px] font-semibold w-6 h-6 flex items-center justify-center rounded-lg ${
+                          className={`text-[11px] font-semibold w-6 h-6 flex items-center justify-center rounded-md transition-colors ${
                             isToday
-                              ? 'bg-blue-500 text-white'
+                              ? 'bg-gray-900 text-white shadow-sm'
                               : isPast
-                              ? 'bg-gray-100 text-gray-400'
-                              : 'bg-white text-gray-700 border border-gray-200'
+                              ? 'bg-gray-200 text-gray-400'
+                              : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400 shadow-sm'
                           }`}
                         >
                           {currentDate.getDate()}
@@ -623,11 +643,14 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Horizontal Navigation */}
+      <HorizontalNav />
+
       {/* Main Content Grid - Optimized for single viewport */}
       <div className={`flex-1 min-h-0 grid grid-cols-1 ${isVeryShortHeight ? 'gap-2.5 mx-2.5 my-1.5' : 'gap-3 mx-3 my-2'} lg:grid-cols-3 overflow-hidden`}>
         {/* Unified Courses Section */}
         <div className="joined-courses-section lg:col-span-2 flex min-h-0 flex-col overflow-hidden">
-          <div className={`flex-1 flex min-h-0 flex-col ${isVeryShortHeight ? 'p-2.5' : 'p-3'} bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300`}>
+          <div className={`flex-1 flex min-h-0 flex-col ${isVeryShortHeight ? 'p-2.5' : 'p-3'} bg-white border border-gray-300 shadow-md rounded-2xl overflow-hidden hover:shadow-lg transition-shadow duration-300`}>
                 <div className={`flex items-center justify-between ${isVeryShortHeight ? 'mb-2.5 pb-2.5' : 'mb-3 pb-3'} flex-shrink-0 border-b border-gray-200`}>
                   <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
                     <div className={`${isVeryShortHeight ? 'w-8 h-8' : 'w-9 h-9'} flex items-center justify-center bg-blue-500 rounded-2xl shadow-sm flex-shrink-0`}>
@@ -715,38 +738,36 @@ export default function Home() {
                             href={`/courses/${course.id}`} 
                             className={`course-card flex-shrink-0 ${isCompactUi ? 'w-[calc(50%-5px)] min-w-[260px] max-w-[360px]' : 'w-[calc(50%-6px)] min-w-[280px] max-w-[390px]'} snap-start group`}
                           >
-                            <div className="relative flex flex-col h-full bg-white border border-gray-200 cursor-pointer rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-gray-300 overflow-hidden">
-                              {/* Colored Header - Optimized */}
-                              <div className={`relative ${isVeryShortHeight ? 'px-4 py-3' : 'px-4 py-4'} overflow-hidden ${colorVariations.base} transition-all duration-300`}>
-                                <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/15"></div>
-                                <div className="absolute inset-0 opacity-[0.06]">
-                                  <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-12 translate-x-12"></div>
+                            <div className="relative flex flex-col h-full bg-white border-2 border-gray-300 cursor-pointer rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-gray-400 overflow-hidden shadow-lg">
+                              {/* Colored Header - Modern & Clean */}
+                              <div className={`relative ${isVeryShortHeight ? 'px-5 py-4' : 'px-5 py-5'} ${colorVariations.base}`}>
+                                {/* Subtle pattern overlay */}
+                                <div className="absolute inset-0 opacity-10">
+                                  <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
+                                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-black rounded-full translate-y-12 -translate-x-12"></div>
                                 </div>
 
-                                <div className="relative z-10 space-y-2.5">
-                                  {/* Section Badge - Improved */}
-                                  <div>
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/95 backdrop-blur-sm rounded-lg text-[11px] font-bold text-gray-800 shadow-sm border border-white/50">
-                                      <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
-                                      </svg>
-                                      <span className="text-gray-600 text-[10px] font-semibold uppercase tracking-wider">Section</span>
+                                <div className="relative z-10">
+                                  {/* Section Badge - Minimal */}
+                                  <div className="mb-3">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg text-xs font-bold text-gray-800 shadow-sm">
+                                      <span className="text-gray-500 font-medium">SECTION</span>
                                       <span className="text-gray-900">{course.code}</span>
                                     </span>
                                   </div>
 
-                                  {/* Course Title - Better Typography */}
-                                  <h3 className="text-lg font-bold text-white leading-snug line-clamp-2 pr-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5)' }}>
+                                  {/* Course Title - Clean Typography */}
+                                  <h3 className="text-xl font-bold text-white leading-tight line-clamp-2" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>
                                     {course.title}
                                   </h3>
                                 </div>
                               </div>
 
-                              {/* Content Section - Optimized Spacing */}
-                              <div className={`flex-1 ${isVeryShortHeight ? 'px-4 py-3' : 'px-4 py-4'} flex flex-col`}>
-                                {/* Instructor - Better Visual Weight */}
-                                <div className="flex items-center gap-3 mb-3">
-                                  <div className="relative flex items-center justify-center w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex-shrink-0 shadow-sm overflow-hidden">
+                              {/* Content Section - Clean Layout */}
+                              <div className={`flex-1 ${isVeryShortHeight ? 'px-5 py-4' : 'px-5 py-5'} flex flex-col bg-white`}>
+                                {/* Instructor - Minimal Design */}
+                                <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+                                  <div className="relative flex items-center justify-center w-10 h-10 bg-gray-200 rounded-full flex-shrink-0 overflow-hidden border-2 border-gray-300">
                                     {course.instructorProfilePicture ? (
                                       <>
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -758,112 +779,93 @@ export default function Home() {
                                             e.target.style.display = 'none';
                                           }}
                                         />
-                                        <span className="text-sm font-bold text-white">
+                                        <span className="text-sm font-bold text-gray-700">
                                           {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                         </span>
                                       </>
                                     ) : (
-                                      <span className="text-sm font-bold text-white">
+                                      <span className="text-sm font-bold text-gray-700">
                                         {course.instructor.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                       </span>
                                     )}
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="text-xs font-medium text-gray-500 mb-0.5">Instructor</div>
-                                    <div className="text-xs font-semibold text-gray-900 truncate">{course.instructor}</div>
+                                    <div className="text-sm font-bold text-gray-900 truncate">{course.instructor}</div>
                                   </div>
                                 </div>
 
-                                {/* Schedule Display */}
+                                {/* Schedule Display - Fixed height */}
                                 {course.schedules && course.schedules.length > 0 && (
-                                  <div className={`${isVeryShortHeight ? 'mb-2.5 p-2' : 'mb-3 p-2.5'} bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100`}>
-                                    <div className="flex items-center gap-2 mb-1.5">
-                                      <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                      </svg>
-                                      <span className="text-xs font-bold text-indigo-900 uppercase tracking-wide">Schedule</span>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                      {(expandedSchedules[course.id] ? course.schedules : course.schedules.slice(0, 2)).map((schedule, idx) => (
-                                        <div key={idx} className="flex items-center justify-between text-xs">
-                                          <span className="font-semibold text-indigo-700">{schedule.day.slice(0, 3)}</span>
-                                          <span className="text-indigo-600">{schedule.startTime} - {schedule.endTime}</span>
-                                        </div>
-                                      ))}
+                                  <div className={`${isVeryShortHeight ? 'my-3' : 'my-4'} bg-gray-50 rounded-lg border border-gray-200 overflow-hidden`}>
+                                    <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+                                      <div className="flex items-center gap-2">
+                                        <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">Schedule</span>
+                                      </div>
                                       {course.schedules.length > 2 && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setExpandedSchedules(prev => ({
-                                              ...prev,
-                                              [course.id]: !prev[course.id]
-                                            }));
-                                          }}
-                                          className="w-full text-xs text-indigo-600 hover:text-indigo-700 font-semibold text-center pt-1 transition-colors flex items-center justify-center gap-1"
-                                        >
-                                          {expandedSchedules[course.id] ? (
-                                            <>
-                                              <span>Show less</span>
-                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                              </svg>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <span>+{course.schedules.length - 2} more</span>
-                                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                              </svg>
-                                            </>
-                                          )}
-                                        </button>
+                                        <span className="text-xs text-gray-500 font-medium">
+                                          +{course.schedules.length - 2} more
+                                        </span>
                                       )}
+                                    </div>
+                                    {/* Fixed height container - reduced since no "+X more" text inside */}
+                                    <div className="h-16 px-3 py-2 overflow-y-auto">
+                                      <div className="space-y-1.5">
+                                        {course.schedules.slice(0, 2).map((schedule, idx) => (
+                                          <div key={idx} className="flex items-center justify-between text-xs">
+                                            <span className="font-bold text-gray-700">{schedule.day.slice(0, 3)}</span>
+                                            <span className="text-gray-600 font-medium">{schedule.startTime} - {schedule.endTime}</span>
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
                                   </div>
                                 )}
 
-                                {/* Metrics - Improved Layout */}
-                                <div className={`flex items-stretch ${isVeryShortHeight ? 'gap-1.5 pt-2.5' : 'gap-2 pt-3'} border-t border-gray-200 mt-auto`}>
+                                {/* Metrics - Compact Grid */}
+                                <div className={`grid grid-cols-2 ${isVeryShortHeight ? 'gap-2 pt-2' : 'gap-2 pt-3'} mt-auto`}>
                                   {course.isCreator ? (
                                     <>
-                                      <div className="flex flex-col items-center justify-center flex-1 px-2.5 py-2.5 bg-blue-50 rounded-xl border border-blue-100 transition-all hover:bg-blue-100">
-                                        <svg className="w-5 h-5 text-blue-600 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                      <div className="flex flex-col items-center justify-center p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                        <svg className="w-4 h-4 text-gray-600 mb-1" fill="currentColor" viewBox="0 0 20 20">
                                           <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                                         </svg>
                                         <div className="text-center">
-                                          <div className="text-lg font-bold text-gray-900 leading-none mb-1">{course.studentCount}</div>
-                                          <div className="text-xs font-medium text-gray-600">Students</div>
+                                          <div className="text-lg font-bold text-gray-900 leading-none mb-0.5">{course.studentCount}</div>
+                                          <div className="text-[10px] font-medium text-gray-600">Students</div>
                                         </div>
                                       </div>
-                                      <div className="flex flex-col items-center justify-center flex-1 px-2.5 py-2.5 bg-purple-50 rounded-xl border border-purple-100 transition-all hover:bg-purple-100">
-                                        <svg className="w-5 h-5 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <div className="flex flex-col items-center justify-center p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                        <svg className="w-4 h-4 text-gray-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                         </svg>
                                         <div className="text-center">
-                                          <div className="text-lg font-bold text-gray-900 leading-none mb-1">{course.moduleCount}</div>
-                                          <div className="text-xs font-medium text-gray-600">Materials</div>
+                                          <div className="text-lg font-bold text-gray-900 leading-none mb-0.5">{course.moduleCount}</div>
+                                          <div className="text-[10px] font-medium text-gray-600">Materials</div>
                                         </div>
                                       </div>
                                     </>
                                   ) : (
                                     <>
-                                      <div className="flex flex-col items-center justify-center flex-1 px-2.5 py-2.5 bg-purple-50 rounded-xl border border-purple-100 transition-all hover:bg-purple-100">
-                                        <svg className="w-5 h-5 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <div className="flex flex-col items-center justify-center p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                        <svg className="w-4 h-4 text-gray-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                         </svg>
                                         <div className="text-center">
-                                          <div className="text-lg font-bold text-gray-900 leading-none mb-1">{course.moduleCount}</div>
-                                          <div className="text-xs font-medium text-gray-600">Materials</div>
+                                          <div className="text-lg font-bold text-gray-900 leading-none mb-0.5">{course.moduleCount}</div>
+                                          <div className="text-[10px] font-medium text-gray-600">Materials</div>
                                         </div>
                                       </div>
-                                      <div className="flex flex-col items-center justify-center flex-1 px-2.5 py-2.5 bg-emerald-50 rounded-xl border border-emerald-100 transition-all hover:bg-emerald-100">
-                                        <svg className="w-5 h-5 text-emerald-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <div className="flex flex-col items-center justify-center p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                        <svg className="w-4 h-4 text-gray-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                                         </svg>
                                         <div className="text-center">
-                                          <div className="text-lg font-bold text-gray-900 leading-none mb-1">{course.assignmentCount}</div>
-                                          <div className="text-xs font-medium text-gray-600">Assignments</div>
+                                          <div className="text-lg font-bold text-gray-900 leading-none mb-0.5">{course.assignmentCount}</div>
+                                          <div className="text-[10px] font-medium text-gray-600">Assignments</div>
                                         </div>
                                       </div>
                                     </>
@@ -874,6 +876,44 @@ export default function Home() {
                           </Link>
                           );
                         })}
+
+                        {/* Placeholder Card - Show when only 1 course */}
+                        {allCourses.length === 1 && (
+                          <div className="flex-shrink-0 flex-1 snap-start">
+                            <div className="relative flex flex-col h-full bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl overflow-hidden shadow-lg">
+                              {/* Header */}
+                              <div className={`relative ${isVeryShortHeight ? 'px-5 py-4' : 'px-5 py-5'} bg-gradient-to-br from-gray-100 to-gray-200 border-b-2 border-gray-300`}>
+                                <div className="flex items-center justify-center">
+                                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center border-2 border-gray-300 shadow-md">
+                                    <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Content */}
+                              <div className={`flex-1 ${isVeryShortHeight ? 'px-5 py-4' : 'px-5 py-5'} flex flex-col items-center justify-center text-center bg-white`}>
+                                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                                  Explore More Courses
+                                </h3>
+                                <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                                  Browse public courses to expand your learning journey
+                                </p>
+
+                                {/* Stats */}
+                                <div className="mt-auto pt-4 border-t border-gray-200 w-full">
+                                  <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                                    </svg>
+                                    <span className="font-medium">Discover new learning opportunities</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Enhanced Navigation Controls - Modern Design */}
@@ -963,47 +1003,53 @@ export default function Home() {
 
         {/* Public Courses Sidebar */}
         <div className="recent-activities flex min-h-0 flex-col overflow-hidden">
-          <div className={`flex-1 flex min-h-0 flex-col ${isVeryShortHeight ? 'p-2.5' : 'p-3'} bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow duration-300`}>
-            <div className={`flex items-center gap-2.5 ${isVeryShortHeight ? 'mb-2.5 pb-2.5' : 'mb-3 pb-3'} border-b border-gray-200 flex-shrink-0`}>
-              <div className="flex items-center justify-center w-6 h-6 bg-blue-100 rounded-lg">
-                <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+          <div className={`flex-1 flex min-h-0 flex-col ${isVeryShortHeight ? 'p-2.5' : 'p-3'} bg-white border border-gray-300 shadow-md rounded-2xl overflow-hidden hover:shadow-lg transition-shadow duration-300`}>
+            <div className={`flex items-center justify-between gap-2 ${isVeryShortHeight ? 'mb-2.5 pb-2.5' : 'mb-3 pb-3'} border-b border-gray-200 flex-shrink-0`}>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center w-7 h-7 bg-slate-100 rounded-lg border border-slate-200">
+                  <GlobeAltIcon className="w-4 h-4 text-slate-700" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800">Public Courses</h3>
+                  <p className="text-[11px] text-gray-500">Discover classes you can join</p>
+                </div>
               </div>
-              <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Public Courses</h3>
+              <span className="text-[11px] font-semibold px-2 py-1 bg-slate-100 text-slate-700 rounded-md border border-slate-200">
+                {publicCourses.length}
+              </span>
             </div>
 
             {/* Search Input */}
-            <div style={{ marginBottom: '12px', flexShrink: 0 }}>
-              <div style={{ position: 'relative' }}>
+            <div className="mb-3 flex-shrink-0">
+              <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search courses..."
+                  placeholder="Search by subject or teacher"
                   value={publicCoursesSearch}
                   onChange={(e) => setPublicCoursesSearch(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 32px 8px 12px',
-                    fontSize: '13px',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    outline: 'none'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-9 text-xs text-gray-700 outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
-                <svg 
-                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: '#9ca3af', pointerEvents: 'none' }}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
+                <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
+                {publicCoursesSearch && (
+                  <button
+                    onClick={() => {
+                      setPublicCoursesSearch('');
+                      fetchPublicCourses();
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    aria-label="Clear search"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
               {publicCourses.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center py-8">
@@ -1017,46 +1063,90 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                publicCourses.map((course) => (
-                  <div key={course._id} className="p-3 border-2 border-gray-200 cursor-pointer group bg-white rounded-xl hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all">
-                    <div className="flex items-start gap-2.5">
-                      <div 
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                        style={{ backgroundColor: course.coverColor || '#3b82f6' }}
-                      >
-                        {course.subject?.charAt(0) || 'C'}
+                <>
+                  {!isSearchingPublicCourses && featuredPublicCourses.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Featured</p>
+                        <span className="text-[11px] text-gray-400">Top enrolled</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-gray-900 truncate mb-0.5">
-                          {course.subject}
-                        </h4>
-                        <p className="text-xs text-gray-600 truncate mb-1.5">{course.teacherName}</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500 font-medium">{course.studentCount} students</span>
-                          <button
-                            onClick={() => setSelectedPublicCourse(course)}
-                            className="text-xs px-2 py-1 font-semibold rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
-                          >
-                            Join
-                          </button>
+                      {featuredPublicCourses.map((course, index) => (
+                        <div key={course._id} className="rounded-xl border border-gray-200 bg-gradient-to-r from-slate-50 to-white p-3 shadow-sm hover:shadow-md transition-all">
+                          <div className="flex items-start gap-2.5">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: course.coverColor || '#3b82f6' }}>
+                              {course.subject?.charAt(0) || 'C'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className={`${publicCourseTitleClass} line-clamp-2`}>{course.subject}</h4>
+                                <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md border border-amber-200">
+                                  #{index + 1}
+                                </span>
+                              </div>
+                              <p className={`${publicCourseTeacherClass} truncate mt-0.5`}>{course.teacherName}</p>
+                              <div className="mt-2 flex items-center justify-between">
+                                <span className={publicCourseMetaClass}>{course.studentCount} students</span>
+                                <button
+                                  onClick={() => setSelectedPublicCourse(course)}
+                                  className={publicCoursePrimaryButtonClass}
+                                >
+                                  Join
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                        {isSearchingPublicCourses ? 'Search Results' : 'More Courses'}
+                      </p>
+                      {!isSearchingPublicCourses && remainingPublicCourses.length > 0 && (
+                        <span className="text-[11px] text-gray-400">{remainingPublicCourses.length} available</span>
+                      )}
+                    </div>
+
+                    {(isSearchingPublicCourses ? sortedPublicCourses : remainingPublicCourses).map((course) => (
+                      <div key={course._id} className="rounded-xl border border-gray-200 bg-white p-3 hover:border-blue-300 hover:bg-blue-50/40 transition-colors">
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-xs flex-shrink-0" style={{ backgroundColor: course.coverColor || '#3b82f6' }}>
+                            {course.subject?.charAt(0) || 'C'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className={`${publicCourseTitleClass} truncate`}>{course.subject}</h4>
+                            <p className={`${publicCourseTeacherClass} truncate`}>{course.teacherName}</p>
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              <div className={`flex items-center gap-1.5 min-w-0 ${publicCourseMetaClass}`}>
+                                <span className="truncate">{course.studentCount} students</span>
+                                {course.section && <span className="truncate">• {course.section}</span>}
+                              </div>
+                              <button
+                                onClick={() => setSelectedPublicCourse(course)}
+                                className={publicCoursePrimaryButtonClass}
+                              >
+                                Join
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))
+                </>
               )}
             </div>
 
             {publicCourses.length > 0 && (
               <div className="pt-3 mt-3 border-t border-gray-200 flex-shrink-0">
                 <button 
-                  onClick={() => {
-                    // Scroll to top of public courses
-                    document.querySelector('.recent-activities .overflow-y-auto')?.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="w-full text-sm font-semibold text-blue-600 hover:text-blue-700 py-1 hover:bg-blue-50 rounded-lg transition-colors"
+                  onClick={() => fetchPublicCourses()}
+                  className="w-full text-xs font-semibold text-slate-700 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  View All Courses
+                  Refresh Public Courses
                 </button>
               </div>
             )}
@@ -1066,52 +1156,42 @@ export default function Home() {
 
       {/* Join Course Confirmation Modal */}
       {selectedPublicCourse && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', maxWidth: '450px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '16px', color: '#111827' }}>Join Course</h3>
-            
-            <div style={{ marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'start', gap: '16px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                <div 
-                  style={{ 
-                    width: '60px', 
-                    height: '60px', 
-                    borderRadius: '12px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    color: 'white', 
-                    fontWeight: '700', 
-                    fontSize: '24px',
-                    backgroundColor: selectedPublicCourse.coverColor || '#3b82f6',
-                    flexShrink: 0
-                  }}
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Join Course</h3>
+              <p className="mt-1 text-xs text-gray-500">Review course details before enrolling.</p>
+            </div>
+
+            <div className="mb-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div className="flex items-start gap-3">
+                <div
+                  className="h-14 w-14 rounded-xl flex items-center justify-center text-white text-xl font-bold flex-shrink-0"
+                  style={{ backgroundColor: selectedPublicCourse.coverColor || '#3b82f6' }}
                 >
                   {selectedPublicCourse.subject?.charAt(0) || 'C'}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
-                    {selectedPublicCourse.subject}
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px', color: '#6b7280' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="min-w-0 flex-1">
+                  <h4 className={`${publicCourseTitleClass} line-clamp-2`}>{selectedPublicCourse.subject}</h4>
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
-                      <span>{selectedPublicCourse.teacherName}</span>
+                      <span className={`${publicCourseTeacherClass} truncate`}>{selectedPublicCourse.teacherName}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
-                      <span>{selectedPublicCourse.studentCount} students</span>
+                      <span className={publicCourseMetaClass}>{selectedPublicCourse.studentCount} students</span>
                     </div>
                     {selectedPublicCourse.section && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex items-center gap-2">
+                        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
                         </svg>
-                        <span>Section: {selectedPublicCourse.section}</span>
+                        <span className={`${publicCourseMetaClass} truncate`}>Section: {selectedPublicCourse.section}</span>
                       </div>
                     )}
                   </div>
@@ -1119,40 +1199,18 @@ export default function Home() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div className="flex gap-2.5">
               <button
                 onClick={() => setSelectedPublicCourse(null)}
                 disabled={joiningCourse}
-                style={{ 
-                  flex: 1,
-                  padding: '10px 16px', 
-                  fontSize: '14px', 
-                  fontWeight: '600', 
-                  color: '#374151', 
-                  backgroundColor: 'white', 
-                  border: '1px solid #d1d5db', 
-                  borderRadius: '8px', 
-                  cursor: joiningCourse ? 'not-allowed' : 'pointer',
-                  opacity: joiningCourse ? 0.5 : 1
-                }}
+                className={publicModalSecondaryButtonClass}
               >
                 Cancel
               </button>
               <button
                 onClick={handleJoinPublicCourse}
                 disabled={joiningCourse}
-                style={{ 
-                  flex: 1,
-                  padding: '10px 16px', 
-                  fontSize: '14px', 
-                  fontWeight: '600', 
-                  color: 'white', 
-                  backgroundColor: '#3b82f6', 
-                  border: 'none', 
-                  borderRadius: '8px', 
-                  cursor: joiningCourse ? 'not-allowed' : 'pointer',
-                  opacity: joiningCourse ? 0.7 : 1
-                }}
+                className={publicModalPrimaryButtonClass}
               >
                 {joiningCourse ? 'Joining...' : 'Join Course'}
               </button>
@@ -1163,34 +1221,23 @@ export default function Home() {
 
       {/* Success Modal */}
       {joinSuccessModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', maxWidth: '420px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            {/* Success Icon */}
-            <div style={{ width: '80px', height: '80px', margin: '0 auto 20px', backgroundColor: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: '48px', height: '48px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+              <svg className="h-9 w-9 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </div>
 
-            <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '12px', color: '#111827' }}>Successfully Joined!</h3>
-            <p style={{ fontSize: '15px', color: '#6b7280', marginBottom: '24px' }}>
-              You've been enrolled in <span style={{ fontWeight: '600', color: '#111827' }}>{joinSuccessModal.subject}</span>
+            <h3 className="text-lg font-semibold text-gray-900">Successfully Joined!</h3>
+            <p className="mt-2 mb-5 text-xs text-gray-600">
+              You are now enrolled in <span className="font-semibold text-gray-900">{joinSuccessModal.subject}</span>.
             </p>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div className="flex gap-2.5">
               <button
                 onClick={() => setJoinSuccessModal(null)}
-                style={{ 
-                  flex: 1,
-                  padding: '12px 20px', 
-                  fontSize: '14px', 
-                  fontWeight: '600', 
-                  color: '#374151', 
-                  backgroundColor: 'white', 
-                  border: '1px solid #d1d5db', 
-                  borderRadius: '8px', 
-                  cursor: 'pointer'
-                }}
+                className={publicModalSecondaryButtonClass.replace(' disabled:cursor-not-allowed disabled:opacity-50', '')}
               >
                 Close
               </button>
@@ -1199,17 +1246,7 @@ export default function Home() {
                   setJoinSuccessModal(null);
                   router.push(`/courses/${joinSuccessModal._id}`);
                 }}
-                style={{ 
-                  flex: 1,
-                  padding: '12px 20px', 
-                  fontSize: '14px', 
-                  fontWeight: '600', 
-                  color: 'white', 
-                  backgroundColor: '#10b981', 
-                  border: 'none', 
-                  borderRadius: '8px', 
-                  cursor: 'pointer'
-                }}
+                className="flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
               >
                 Go to Course
               </button>

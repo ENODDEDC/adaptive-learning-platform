@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import HorizontalNav from '@/components/HorizontalNav';
 import toast from 'react-hot-toast';
 
 const timeSlots = Array.from({ length: 15 }, (_, i) => {
@@ -65,21 +66,25 @@ const SchedulePage = () => {
   }, []);
 
   return (
-    <div className="h-screen overflow-hidden bg-gray-50 p-4">
-      <div className="flex h-full flex-col gap-4">
-        <div className="mx-3 mt-1 rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      {/* Horizontal Navigation */}
+      <HorizontalNav />
+      
+      <div className="flex-1 flex flex-col p-4 min-h-0">
+      <div className="flex flex-col gap-4 h-full">
+        <div className="mx-3 mt-1 rounded-2xl border border-gray-200 bg-white shadow-sm flex-shrink-0">
           <div className="h-1 rounded-t-2xl bg-blue-500"></div>
-          <div className="px-6 py-5">
+          <div className="px-4 py-3">
             <div className="flex items-center justify-between gap-6">
               <div className="flex min-w-0 items-center gap-4">
-                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-600 shadow-sm">
-                  <svg className="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-sm">
+                  <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-[1.9rem] font-bold leading-tight text-gray-900">Weekly Schedule</h1>
-                  <p className="text-sm text-gray-600">A focused view of your enrolled courses across the week.</p>
+                  <h1 className="text-xl font-bold leading-tight text-gray-900">Weekly Schedule</h1>
+                  <p className="text-xs text-gray-600">A focused view of your enrolled courses across the week.</p>
                 </div>
               </div>
 
@@ -206,6 +211,7 @@ const SchedulePage = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

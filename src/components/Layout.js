@@ -7,6 +7,7 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import AdminSidebar from './AdminSidebar';
 import AdminNavbar from './AdminNavbar';
+import HorizontalNav from './HorizontalNav';
 import CreateCourseModal from '@/components/CreateCourseModal';
 import JoinCourseModal from '@/components/JoinCourseModal';
 import CreateClusterModal from '@/components/CreateClusterModal';
@@ -105,16 +106,36 @@ const Layout = ({ children }) => {
       console.log('🔍 LAYOUT: Received collapseMainSidebar event - collapsing sidebar');
       setIsSidebarCollapsed(true);
     };
+    const handleHideMainSidebar = () => {
+      console.log('🔍 LAYOUT: Received hideMainSidebar event - hiding sidebar completely');
+      setIsSidebarCollapsed(true);
+      // Add a CSS class to completely hide the sidebar
+      if (typeof document !== 'undefined') {
+        document.body.classList.add('hide-main-sidebar');
+      }
+    };
+    const handleShowMainSidebar = () => {
+      console.log('🔍 LAYOUT: Received showMainSidebar event - showing sidebar again');
+      setIsSidebarCollapsed(false);
+      // Remove the CSS class to show the sidebar
+      if (typeof document !== 'undefined') {
+        document.body.classList.remove('hide-main-sidebar');
+      }
+    };
     
     if (typeof window !== 'undefined') {
       window.addEventListener('collapseSidebar', handleCollapseRequest);
       window.addEventListener('collapseMainSidebar', handleCollapseMainSidebar);
-      console.log('🔍 LAYOUT: Event listeners added for sidebar collapse');
+      window.addEventListener('hideMainSidebar', handleHideMainSidebar);
+      window.addEventListener('showMainSidebar', handleShowMainSidebar);
+      console.log('🔍 LAYOUT: Event listeners added for sidebar collapse/hide/show');
     }
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('collapseSidebar', handleCollapseRequest);
         window.removeEventListener('collapseMainSidebar', handleCollapseMainSidebar);
+        window.removeEventListener('hideMainSidebar', handleHideMainSidebar);
+        window.removeEventListener('showMainSidebar', handleShowMainSidebar);
       }
     };
   }, []);
@@ -274,9 +295,21 @@ const Layout = ({ children }) => {
 
   return (
     <div className="bg-base-light overflow-hidden" style={{ height: `${viewportHeight}px` }}>
-      {!immersiveLearningShell && (
-        <Sidebar pathname={pathname} isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
-      )}
+      {/* CSS for hiding sidebar completely */}
+      <style jsx global>{`
+        .hide-main-sidebar aside[data-sidebar="main-container"] {
+          display: none !important;
+        }
+        .hide-main-sidebar .main-content {
+          margin-left: 0 !important;
+        }
+        /* Hide sidebar for non-admin pages */
+        aside[data-sidebar="main-container"] {
+          display: none !important;
+        }
+      `}</style>
+      
+      {/* Sidebar hidden - using horizontal nav instead */}
       <CreateCourseModal
         isOpen={isCreateCourseModalOpen}
         onClose={closeCreateCourseModal}
@@ -386,9 +419,10 @@ const Layout = ({ children }) => {
         }}
       />
       <div
-        className={`transition-all duration-500 ease-in-out ${mainContentMargin} h-full overflow-hidden flex flex-col ${immersiveLearningShell ? 'pl-0' : 'pl-4'}`}
+        className="main-content relative transition-all duration-500 ease-in-out ml-0 h-full overflow-hidden flex flex-col"
       >
         <Navbar user={user} onCreateCourseClick={openCreateCourseModal} onJoinCourseClick={openJoinCourseModal} />
+        
         <main className="flex-1 overflow-hidden">
           {React.isValidElement(children) && typeof children.type !== 'string'
             ? React.cloneElement(children, {

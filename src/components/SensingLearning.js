@@ -817,13 +817,13 @@ const SensingLearning = ({ isActive, onClose, docxContent, fileName }) => {
     <div
       className={`fixed inset-0 left-0 top-0 z-[100020] flex flex-col bg-slate-950 text-slate-100 antialiased ${labMono.variable} font-sans`}
       style={{
-        paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0',
+        paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '16px' : '0',
         backgroundImage:
           'radial-gradient(ellipse 90% 60% at 50% -25%, rgba(6,182,212,0.08), transparent 50%), radial-gradient(ellipse 60% 40% at 100% 100%, rgba(13,148,136,0.06), transparent)'
       }}
     >
       <header className="border-b border-slate-800/90 bg-slate-950/95 px-3 py-2 backdrop-blur-md sm:px-4">
-        <div className="mx-auto flex max-w-[min(1200px,calc(100%-0.25rem))] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <button
               type="button"

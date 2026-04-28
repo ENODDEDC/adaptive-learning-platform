@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import PrioritySection from '@/components/PrioritySection';
+import HorizontalNav from '@/components/HorizontalNav';
 import { groupTasksByPriority } from '@/utils/taskPriority';
 import {
   CheckCircleIcon,
@@ -217,7 +218,11 @@ export default function ToDoPage() {
   
   // Main Content
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Horizontal Navigation */}
+      <HorizontalNav />
+      
+      <div className="p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -405,6 +410,7 @@ export default function ToDoPage() {
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

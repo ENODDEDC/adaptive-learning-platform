@@ -12,7 +12,9 @@ import {
   PaperClipIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  ClockIcon
+  ClockIcon,
+  LinkIcon,
+  VideoCameraIcon
 } from '@heroicons/react/24/outline';
 
 const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, initialData = null, type: initialType = 'assignment' }) => {
@@ -32,9 +34,178 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
   const fileUploadRef = useState(null);
   const [startWidth, setStartWidth] = useState(35);
 
+  // Video link state
+  const [videoLinks, setVideoLinks] = useState([]);
+  const [videoLinkInput, setVideoLinkInput] = useState('');
+  const [videoLinkError, setVideoLinkError] = useState('');
+  const [attachTab, setAttachTab] = useState('files'); // 'files' | 'video'
+
+  // Detect video platform from URL
+  const detectVideoPlatform = (url) => {
+    if (!url) return null;
+    if (/youtube\.com\/watch|youtu\.be\//.test(url)) return 'youtube';
+    if (/drive\.google\.com/.test(url)) return 'gdrive';
+    if (/vimeo\.com/.test(url)) return 'vimeo';
+    if (/\.(mp4|webm|mov|avi|mkv|ogv|wmv|flv|3gp|mpeg|mpg)(\?|#|$)/i.test(url)) return 'direct';
+    return 'other'; // unknown but potentially valid — will be verified
+  };
+
+  const getYouTubeId = (url) => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?#\s]+)/);
+    return match ? match[1] : null;
+  };
+
+  const getYouTubeThumbnail = (url) => {
+    const id = getYouTubeId(url);
+    return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null;
+  };
+
+  const getPlatformLabel = (platform) => {
+    switch (platform) {
+      case 'youtube': return 'YouTube';
+      case 'gdrive': return 'Google Drive';
+      case 'vimeo': return 'Vimeo';
+      case 'direct': return 'Video File';
+      default: return 'Video';
+    }
+  };
+
+  const [isVerifyingUrl, setIsVerifyingUrl] = useState(false);
+
+  const handleAddVideoLink = async () => {
+    setVideoLinkError('');
+    const trimmed = videoLinkInput.trim();
+    if (!trimmed) return;
+
+    // Basic URL validation
+    try {
+      new URL(trimmed);
+    } catch {
+      setVideoLinkError('Please enter a valid URL.');
+      return;
+    }
+
+    // Check duplicate
+    if (videoLinks.some(v => v.url === trimmed)) {
+      setVideoLinkError('This link has already been added.');
+      return;
+    }
+
+    // Only 1 video link allowed
+    if (videoLinks.length >= 1) {
+      setVideoLinkError('Only one video link can be attached. Remove the existing one first.');
+      return;
+    }
+
+    const platform = detectVideoPlatform(trimmed);
+
+    // Known platforms — accept immediately, no verification needed
+    const knownPlatforms = ['youtube', 'gdrive', 'vimeo', 'direct'];
+    if (!knownPlatforms.includes(platform)) {
+      // Unknown URL — verify via server HEAD request
+      setIsVerifyingUrl(true);
+      try {
+        const res = await fetch('/api/verify-video-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: trimmed }),
+        });
+        const data = await res.json();
+        if (!data.isVideo) {
+          setVideoLinkError(data.reason || 'This URL does not appear to be a video. Make sure it links directly to a video file or embeddable video.');
+          setIsVerifyingUrl(false);
+          return;
+        }
+      } catch {
+        setVideoLinkError('Could not verify this URL. Please check your connection and try again.');
+        setIsVerifyingUrl(false);
+        return;
+      } finally {
+        setIsVerifyingUrl(false);
+      }
+    }
+
+    const newLink = {
+      _id: `video-link-${Date.now()}`,
+      type: 'video-link',
+      platform,
+      url: trimmed,
+      originalName: `${getPlatformLabel(platform)} Video`,
+      title: `${getPlatformLabel(platform)} Video`,
+      thumbnailUrl: platform === 'youtube' ? getYouTubeThumbnail(trimmed) : null,
+    };
+
+    setVideoLinks(prev => [...prev, newLink]);
+    setVideoLinkInput('');
+
+    // For non-YouTube direct video URLs, generate thumbnail from first frame
+    if (platform !== 'youtube' && platform !== 'gdrive' && platform !== 'vimeo') {
+      generateVideoThumbnail(trimmed, newLink._id);
+    }
+  };
+
+  const generateVideoThumbnail = (videoUrl, linkId) => {
+    try {
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.preload = 'metadata';
+      video.muted = true;
+      video.style.display = 'none';
+      document.body.appendChild(video);
+
+      const cleanup = () => {
+        try { document.body.removeChild(video); } catch {}
+      };
+
+      video.onloadeddata = () => {
+        // Seek to 1 second or 10% of duration for a meaningful frame
+        video.currentTime = Math.min(1, video.duration * 0.1);
+      };
+
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 320;
+          canvas.height = 180;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          // Update the link with the generated thumbnail
+          setVideoLinks(prev => prev.map(v =>
+            v._id === linkId ? { ...v, thumbnailUrl: dataUrl } : v
+          ));
+        } catch {
+          // Canvas tainted by CORS — can't capture, leave as null
+        } finally {
+          cleanup();
+        }
+      };
+
+      video.onerror = cleanup;
+
+      // Timeout fallback — if video doesn't load in 10s, give up
+      setTimeout(cleanup, 10000);
+
+      video.src = videoUrl;
+      video.load();
+    } catch {
+      // Silently fail — thumbnail is optional
+    }
+  };
+
+  const handleRemoveVideoLink = (id) => {
+    setVideoLinks(prev => prev.filter(v => v._id !== id));
+  };
+
+  const handleUpdateVideoLinkDescription = (id, desc) => {
+    setVideoLinks(prev => prev.map(v => v._id === id ? { ...v, videoDescription: desc } : v));
+  };
+
   const handleFilesReady = useCallback((newFiles) => {
     setFiles(newFiles);
   }, []);
+
+  const [isCheckingDescription, setIsCheckingDescription] = useState(false);
 
   // Function to handle Next Step - auto-upload files on Step 2
   const handleNextStep = async () => {
@@ -44,15 +215,46 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
       return;
     }
 
-    // If on Step 2 and there are pending files, upload them first
+    // If on Step 2 — validate non-YouTube video descriptions before proceeding
     if (currentStep === 2) {
+      const nonYouTubeWithDesc = videoLinks.filter(
+        v => v.platform !== 'youtube' && v.videoDescription?.trim()
+      );
+
+      if (nonYouTubeWithDesc.length > 0) {
+        setIsCheckingDescription(true);
+        setError('');
+        try {
+          for (const link of nonYouTubeWithDesc) {
+            const res = await fetch('/api/content/educational-gate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: link.videoDescription }),
+            });
+            const data = await res.json();
+
+            if (data.isEducational === false) {
+              setError(
+                `Description is not educational. Write a proper topic description so students can use AI learning modes. (${data.reasoning || 'Classified as non-educational.'})`
+              );
+              setIsCheckingDescription(false);
+              return;
+            }
+          }
+        } catch {
+          // Gate unavailable — allow through, learning modes will handle it
+        } finally {
+          setIsCheckingDescription(false);
+        }
+      }
+
+      // Upload pending files if any
       const pendingFiles = files.filter(file => !file.url && !file._id);
       if (pendingFiles.length > 0) {
         setIsUploadingFiles(true);
         setError('');
         
         try {
-          // Trigger file upload via FileUpload component
           const formData = new FormData();
           pendingFiles.forEach(file => {
             formData.append('files', file);
@@ -72,12 +274,8 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
           }
 
           const result = await response.json();
-          
-          // Update files with uploaded data
           const uploadedFiles = files.filter(file => file.url || file._id);
           setFiles([...uploadedFiles, ...result.files]);
-          
-          // Move to next step
           setCurrentStep(currentStep + 1);
         } catch (err) {
           setError('Failed to upload files. Please try again.');
@@ -170,14 +368,19 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
         setDescription(initialData.description || '');
         setDueDate(initialData.dueDate ? format(new Date(initialData.dueDate), 'yyyy-MM-dd') : '');
         setType(initialData.type || 'assignment');
-        setFiles(initialData.attachments || []);
+        setFiles(initialData.attachments?.filter(a => a.type !== 'video-link') || []);
+        setVideoLinks(initialData.attachments?.filter(a => a.type === 'video-link') || []);
       } else {
         setTitle('');
         setDescription('');
         setDueDate('');
         setType(initialType);
         setFiles([]);
+        setVideoLinks([]);
       }
+      setAttachTab('files');
+      setVideoLinkInput('');
+      setVideoLinkError('');
       setError('');
     }
   }, [isOpen, initialData, initialType]);
@@ -220,7 +423,7 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
         description,
         dueDate: dueDate || null,
         type,
-        attachments: uploadedFiles // Only include uploaded files
+        attachments: [...uploadedFiles, ...videoLinks]
       };
 
       console.log('🔍 CLASSWORK: Creating classwork with data:', {
@@ -432,9 +635,9 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
 
           {/* Error Display */}
           {error && (
-            <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-              <ExclamationTriangleIcon className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="mx-6 mt-3 p-2.5 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+              <ExclamationTriangleIcon className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-700 leading-snug">{error}</p>
             </div>
           )}
 
@@ -590,56 +793,213 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
 
               {/* Step 2: Attachments - Modern Design (Assignments & Materials only) */}
               {currentStep === 2 && type !== 'form' && (
-                <div className="space-y-6">
-                  {/* Header Section */}
-                  <div className="text-center py-8 px-6 bg-white border border-gray-200 rounded-lg">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-lg mb-4">
-                      <PaperClipIcon className="w-8 h-8 text-white" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      Attach Your Resources
-                    </h3>
-                    <p className="text-sm text-gray-600 max-w-md mx-auto">
-                      Share documents, presentations, videos, and more with your students.
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Supports PDF, DOCX, PPTX, images, and videos
-                    </p>
+                <div className="space-y-4">
+                  {/* Tab switcher */}
+                  <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setAttachTab('files')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                        attachTab === 'files'
+                          ? 'bg-white text-blue-700 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <PaperClipIcon className="w-4 h-4" />
+                      Files
+                      {files.length > 0 && (
+                        <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">{files.length}</span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAttachTab('video')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                        attachTab === 'video'
+                          ? 'bg-white text-blue-700 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <VideoCameraIcon className="w-4 h-4" />
+                      Video Link
+                      {videoLinks.length > 0 && (
+                        <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">{videoLinks.length}</span>
+                      )}
+                    </button>
                   </div>
 
-                  {/* File Upload Component */}
-                  <FileUpload
-                    onFilesReady={handleFilesReady}
-                    initialFiles={files}
-                    folder={`classwork/${courseId}`}
-                  />
-
-                  {/* Success Message */}
-                  {files.length > 0 && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-                            <CheckCircleIcon className="w-6 h-6 text-white" />
-                          </div>
+                  {/* Files tab */}
+                  {attachTab === 'files' && (
+                    <div className="space-y-4">
+                      <div className="text-center py-6 px-6 bg-white border border-gray-200 rounded-lg">
+                        <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-lg mb-3">
+                          <PaperClipIcon className="w-7 h-7 text-white" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 mb-1">
-                            {files.length} {files.length === 1 ? 'file' : 'files'} ready to share
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            Students will be able to view and download these attachments
-                          </p>
-                        </div>
+                        <h3 className="text-base font-semibold text-gray-900 mb-1">Attach Files</h3>
+                        <p className="text-xs text-gray-500">PDF, DOCX, PPTX, images — no video files</p>
                       </div>
+                      <FileUpload
+                        onFilesReady={handleFilesReady}
+                        initialFiles={files}
+                        folder={`classwork/${courseId}`}
+                      />
+                      {files.length > 0 && (
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                          <p className="text-sm text-green-800 font-medium">
+                            {files.length} {files.length === 1 ? 'file' : 'files'} ready
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* No Files State */}
-                  {files.length === 0 && (
-                    <div className="text-center py-4 px-4 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-sm text-gray-600">
-                        No attachments yet — you can skip this step if you'd like
+                  {/* Video Link tab */}
+                  {attachTab === 'video' && (
+                    <div className="space-y-4">
+                      <div className="bg-white border border-gray-200 rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <VideoCameraIcon className="w-5 h-5 text-slate-600" />
+                          <h3 className="text-sm font-semibold text-gray-900">Add Video Link</h3>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Paste any video URL — YouTube, Google Drive, Vimeo, or any direct video link.
+                        </p>
+
+                        {/* Only show input if no video added yet */}
+                        {videoLinks.length === 0 ? (
+                          <>
+                            <div className="flex gap-2">
+                              <div className="relative flex-1">
+                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                  type="url"
+                                  placeholder="https://youtube.com/watch?v=..."
+                                  value={videoLinkInput}
+                                  onChange={(e) => { setVideoLinkInput(e.target.value); setVideoLinkError(''); }}
+                                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddVideoLink())}
+                                  className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleAddVideoLink}
+                                disabled={isVerifyingUrl}
+                                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors flex-shrink-0 disabled:opacity-60 flex items-center gap-2"
+                              >
+                                {isVerifyingUrl ? (
+                                  <>
+                                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Verifying...
+                                  </>
+                                ) : 'Add'}
+                              </button>
+                            </div>
+                            {videoLinkError && (
+                              <p className="mt-2 text-xs text-red-600 flex items-center gap-1">
+                                <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                                {videoLinkError}
+                              </p>
+                            )}
+                            {!videoLinkError && videoLinkInput.trim().length > 0 && (
+                              <p className="mt-2 text-xs text-amber-600 flex items-center gap-1">
+                                <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                                Click &quot;Add&quot; to attach this video before proceeding.
+                              </p>
+                            )}
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {['YouTube', 'Google Drive', 'Vimeo', 'Direct .mp4', 'Any video URL'].map(platform => (
+                                <span key={platform} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                  ✓ {platform}
+                                </span>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                            <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            One video link attached. Remove it to add a different one.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Added video links */}
+                      {videoLinks.length > 0 && (
+                        <div className="space-y-3">
+                          {videoLinks.map((link) => (
+                            <div key={link._id} className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden">
+                              {/* Link row */}
+                              <div className="flex items-center gap-3 p-3">
+                                {/* Thumbnail or icon */}
+                                <div className="w-16 h-10 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0 flex items-center justify-center">
+                                  {link.thumbnailUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={link.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <VideoCameraIcon className="w-5 h-5 text-slate-400" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-gray-800">{getPlatformLabel(link.platform)}</p>
+                                  <p className="text-xs text-gray-500 truncate">{link.url}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveVideoLink(link._id)}
+                                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                                >
+                                  <XMarkIcon className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              {/* Description field — only for non-YouTube */}
+                              {link.platform !== 'youtube' && (
+                                <div className="px-3 pb-3 border-t border-slate-200 pt-2">
+                                  <div className="flex items-center gap-1.5 mb-1.5">
+                                    <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-xs font-semibold text-blue-700">Add description for AI learning modes</span>
+                                  </div>
+                                  <textarea
+                                    rows={3}
+                                    placeholder="Describe what this video is about — topic, key concepts, or a summary. This enables the 7 AI learning modes for students."
+                                    value={link.videoDescription || ''}
+                                    onChange={(e) => handleUpdateVideoLinkDescription(link._id, e.target.value)}
+                                    className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none placeholder:text-gray-400 text-gray-700"
+                                  />
+                                  {link.videoDescription ? (
+                                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                                      <CheckCircleIcon className="w-3 h-3" />
+                                      AI learning modes enabled
+                                    </p>
+                                  ) : (
+                                    <p className="text-xs text-amber-600 mt-1">Without a description, AI learning modes won&apos;t be available for this video.</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {videoLinks.length === 0 && (
+                        <div className="text-center py-6 bg-gray-50 border border-dashed border-gray-300 rounded-xl">
+                          <VideoCameraIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500">No video links added yet</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Combined count */}
+                  {(files.length > 0 || videoLinks.length > 0) && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs text-blue-700 font-medium">
+                        {[
+                          files.length > 0 && `${files.length} file${files.length > 1 ? 's' : ''}`,
+                          videoLinks.length > 0 && `${videoLinks.length} video link${videoLinks.length > 1 ? 's' : ''}`
+                        ].filter(Boolean).join(' + ')} will be attached
                       </p>
                     </div>
                   )}
@@ -742,6 +1102,36 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                           </div>
                         </div>
                       )}
+
+                      {/* Video Links */}
+                      {videoLinks.length > 0 && (
+                        <div>
+                          <div className="flex items-center space-x-2 mb-3">
+                            <VideoCameraIcon className="w-5 h-5 text-gray-600" />
+                            <h4 className="text-sm font-semibold text-gray-900">
+                              Video Links ({videoLinks.length})
+                            </h4>
+                          </div>
+                          <div className="space-y-2">
+                            {videoLinks.map((link) => (
+                              <div key={link._id} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div className="w-16 h-10 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0 flex items-center justify-center">
+                                  {link.thumbnailUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={link.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <VideoCameraIcon className="w-5 h-5 text-slate-400" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-gray-800">{getPlatformLabel(link.platform)}</p>
+                                  <p className="text-xs text-gray-500 truncate">{link.url}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -785,13 +1175,33 @@ const CreateClassworkModal = ({ isOpen, onClose, courseId, onClassworkCreated, i
                   <button
                     type="button"
                     onClick={handleNextStep}
-                    disabled={(currentStep === 1 && !isFormValid()) || isUploadingFiles}
+                    disabled={
+                      (currentStep === 1 && !isFormValid()) ||
+                      isUploadingFiles ||
+                      isCheckingDescription ||
+                      // Block if on video tab with text typed but not yet added
+                      (currentStep === 2 && attachTab === 'video' && videoLinkInput.trim().length > 0) ||
+                      // Block if any non-YouTube video link is missing a description
+                      (currentStep === 2 && videoLinks.some(v => v.platform !== 'youtube' && !v.videoDescription?.trim()))
+                    }
+                    title={
+                      currentStep === 2 && attachTab === 'video' && videoLinkInput.trim().length > 0
+                        ? 'Click "Add" to attach the video link first'
+                        : currentStep === 2 && videoLinks.some(v => v.platform !== 'youtube' && !v.videoDescription?.trim())
+                          ? 'Add a description for all non-YouTube video links to continue'
+                          : undefined
+                    }
                     className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg flex items-center space-x-2"
                   >
                     {isUploadingFiles ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         <span>Uploading files...</span>
+                      </>
+                    ) : isCheckingDescription ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Checking description...</span>
                       </>
                     ) : (
                       <span>Next Step →</span>

@@ -3,6 +3,10 @@ import connectDB from '@/lib/mongodb';
 import LearningBehavior from '@/models/LearningBehavior';
 import LearningStyleProfile from '@/models/LearningStyleProfile';
 import { verifyToken } from '@/lib/auth';
+import {
+  computeClassificationReadiness,
+  MINIMUM_CLASSIFICATION_INTERACTIONS
+} from '@/lib/learningStyleReadiness';
 
 /**
  * Seed 49 interactions for demo/defense purposes
@@ -243,11 +247,17 @@ export async function POST(request) {
     
     profile.aggregatedStats.totalInteractionsProcessed = totalInteractions;
     profile.dataQuality.totalInteractions = totalInteractions;
-    profile.dataQuality.sufficientForML = totalInteractions >= 10;
+    profile.dataQuality.sufficientForML =
+      totalInteractions >= MINIMUM_CLASSIFICATION_INTERACTIONS;
     profile.dataQuality.dataCompleteness = Math.min(100, (totalInteractions / 200) * 100);
     profile.dataQuality.lastDataUpdate = new Date();
     
     await profile.save();
+    const readiness = computeClassificationReadiness(
+      profile.aggregatedStats,
+      totalInteractions,
+      profile.readinessSignals?.recentActiveDays || []
+    );
 
     return NextResponse.json({
       success: true,
@@ -257,8 +267,10 @@ export async function POST(request) {
         previousCount: existingCount,
         currentCount: newCount,
         totalInteractions,
-        remainingToClassification: Math.max(0, 50 - totalInteractions),
-        readyForClassification: totalInteractions >= 50
+        remainingToClassification: Math.max(0, MINIMUM_CLASSIFICATION_INTERACTIONS - totalInteractions),
+        readyForClassification: readiness.ready,
+        qualityScore: Number(readiness.qualityScore.toFixed(3)),
+        requiredQuality: Number(readiness.requiredQuality.toFixed(3))
       }
     });
 
@@ -300,6 +312,12 @@ export async function GET(request) {
                              profile?.dataQuality?.totalInteractions || 
                              await LearningBehavior.getTotalInteractions(userId);
 
+    const readiness = computeClassificationReadiness(
+      profile?.aggregatedStats,
+      totalInteractions,
+      profile?.readinessSignals?.recentActiveDays || []
+    );
+
     return NextResponse.json({
       success: true,
       data: {
@@ -307,8 +325,10 @@ export async function GET(request) {
         totalInteractions,
         seededInteractions: seededCount,
         realInteractions: currentCount - seededCount,
-        remainingToClassification: Math.max(0, 50 - totalInteractions),
-        readyForClassification: totalInteractions >= 50
+        remainingToClassification: Math.max(0, MINIMUM_CLASSIFICATION_INTERACTIONS - totalInteractions),
+        readyForClassification: readiness.ready,
+        qualityScore: Number(readiness.qualityScore.toFixed(3)),
+        requiredQuality: Number(readiness.requiredQuality.toFixed(3))
       }
     });
 

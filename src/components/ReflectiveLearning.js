@@ -137,13 +137,13 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
     <div
       className="fixed inset-0 left-0 top-0 z-[100020] flex flex-col overflow-hidden bg-slate-950 text-slate-100 antialiased"
       style={{
-        paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '48px' : '0',
+        paddingTop: typeof document !== 'undefined' && document.body.hasAttribute('data-has-ml-nav') ? '16px' : '0',
         backgroundImage:
           'radial-gradient(ellipse 80% 50% at 50% -15%, rgba(45,212,191,0.06), transparent 55%), radial-gradient(ellipse 50% 40% at 100% 100%, rgba(99,102,241,0.05), transparent 50%)'
       }}
     >
       <header className="shrink-0 border-b border-slate-800/90 bg-slate-950/95 px-3 py-2 backdrop-blur sm:px-4">
-        <div className="mx-auto flex max-w-[min(960px,calc(100%-0.25rem))] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-2">
                         <button
               type="button"
@@ -180,7 +180,7 @@ const ReflectiveLearning = ({ isActive, onClose, docxContent, fileName }) => {
                     </div>
                 </div>
 
-        <div className="mx-auto mt-2 flex max-w-[min(960px,calc(100%-0.25rem))] gap-1 border-t border-slate-800/80 pt-2 sm:gap-2">
+        <div className="mt-2 flex w-full gap-1 border-t border-slate-800/80 pt-2 sm:gap-2">
           {TABS.map((t) => {
             const Icon = t.Icon;
             const on = activePhase === t.key;

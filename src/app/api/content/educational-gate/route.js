@@ -37,106 +37,33 @@ function normalizeText(raw) {
     .trim();
 }
 
-function buildMultiSectionSample(text, maxChars) {
-  if (!text) return [];
-  if (text.length <= maxChars) return [{ label: 'FULL', text }];
+function buildSimpleSample(text, maxChars) {
+  if (!text) return { sampledText: '', chunksUsed: 0 };
+  if (text.length <= maxChars) return { sampledText: text, chunksUsed: 1 };
 
-  const sectionSize = Math.max(500, Math.floor(maxChars / 3));
+  const sectionSize = Math.floor(maxChars / 4); // 2,000 chars per section
   const totalLen = text.length;
 
-  const start = text.slice(0, sectionSize);
-  const middleStart = Math.max(0, Math.floor((totalLen - sectionSize) / 2));
-  const middle = text.slice(middleStart, middleStart + sectionSize);
-  const end = text.slice(Math.max(0, totalLen - sectionSize));
-
-  return [
-    { label: 'START', text: start },
-    { label: 'MIDDLE', text: middle },
-    { label: 'END', text: end }
+  // Calculate 4 evenly distributed positions for better coverage
+  const positions = [
+    0, // Start (0%)
+    Math.floor(totalLen * 0.25), // Early-middle (25%)
+    Math.floor(totalLen * 0.5), // Middle (50%)
+    Math.floor(totalLen * 0.75)  // Late-middle (75%)
   ];
-}
 
-function splitIntoChunks(text, targetSize = 450) {
-  if (!text) return [];
-  const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
-  const chunks = [];
-  let current = '';
+  const sections = positions.map((pos, index) => {
+    const start = Math.max(0, pos);
+    const end = Math.min(totalLen, start + sectionSize);
+    const sectionText = text.slice(start, end);
+    const label = ['START', 'EARLY-MID', 'MIDDLE', 'LATE-MID'][index];
+    return `[${label}]\n${sectionText}`;
+  });
 
-  for (const sentence of sentences) {
-    if ((current + ' ' + sentence).trim().length > targetSize && current) {
-      chunks.push(current.trim());
-      current = sentence;
-    } else {
-      current = `${current} ${sentence}`.trim();
-    }
-  }
-  if (current) chunks.push(current.trim());
-
-  // Fallback for text without sentence punctuation.
-  if (chunks.length === 0) {
-    for (let i = 0; i < text.length; i += targetSize) {
-      chunks.push(text.slice(i, i + targetSize));
-    }
-  }
-  return chunks;
-}
-
-function scoreChunk(chunk) {
-  let score = 0;
-  if (!chunk) return score;
-
-  const educationalSignals = /\b(define|definition|example|objective|learning|concept|theory|explain|step|procedure|lesson|module|activity|quiz|problem|solution|because|therefore|how|why)\b/i;
-  const adminNoiseSignals = /\b(invoice|receipt|amount due|balance|payment|po number|signature|approved by|memo|announcement|schedule|room|attendance|time in|time out|price|total|subtotal)\b/i;
-  const explanatoryPattern = /[A-Za-z]{4,}\s+(is|are|means|refers to|because|therefore|consists of)/i;
-
-  if (educationalSignals.test(chunk)) score += 2;
-  if (explanatoryPattern.test(chunk)) score += 2;
-  if (adminNoiseSignals.test(chunk)) score -= 2;
-
-  const digitDensity = (chunk.match(/\d/g) || []).length / Math.max(1, chunk.length);
-  if (digitDensity > 0.2) score -= 1;
-
-  return score;
-}
-
-function buildScoredSample(text, maxChars) {
-  const sections = buildMultiSectionSample(text, maxChars);
-  if (sections.length === 0) return { sampledText: '', chunksUsed: 0 };
-
-  const allChunks = [];
-  for (const section of sections) {
-    const chunks = splitIntoChunks(section.text);
-    chunks.forEach((chunk, idx) => {
-      allChunks.push({
-        section: section.label,
-        index: idx,
-        chunk,
-        score: scoreChunk(chunk)
-      });
-    });
-  }
-
-  // Keep educationally stronger chunks first; stable by original order on ties.
-  allChunks.sort((a, b) => (b.score - a.score) || (a.index - b.index));
-
-  const selected = [];
-  let used = 0;
-  for (const item of allChunks) {
-    const formatted = `[${item.section}]\n${item.chunk}`;
-    const nextLen = used + formatted.length + (selected.length ? 2 : 0);
-    if (nextLen > maxChars) continue;
-    selected.push(formatted);
-    used = nextLen;
-    if (used >= maxChars * 0.95) break;
-  }
-
-  if (selected.length === 0) {
-    // Last-resort fallback keeps prior behavior guarantees.
-    const fallback = sections.map(s => `[${s.label}]\n${s.text}`).join('\n\n').slice(0, maxChars);
-    return { sampledText: fallback, chunksUsed: sections.length };
-  }
-
-  return { sampledText: selected.join('\n\n'), chunksUsed: selected.length };
+  return { 
+    sampledText: sections.join('\n\n'), 
+    chunksUsed: 4 
+  };
 }
 
 function extractJson(text) {
@@ -167,7 +94,7 @@ export async function POST(request) {
 
     const { content } = await request.json();
     const normalized = normalizeText(content);
-    const { sampledText, chunksUsed } = buildScoredSample(normalized, gateMaxChars());
+    const { sampledText, chunksUsed } = buildSimpleSample(normalized, gateMaxChars());
 
     if (!sampledText || sampledText.length < 20) {
       return NextResponse.json({
@@ -182,46 +109,37 @@ export async function POST(request) {
     }
 
     const systemPrompt = [
-      'You are a content classifier for an adaptive learning platform.',
-      'The platform has 8 learning modes (AI Narrator, Visual Learning, Sequential, Global, Sensing/Hands-On, Intuitive/Theory, Active, Reflective).',
-      'Decide whether the given document text is SUITABLE for these learning modes.',
+      'You are an intelligent content analyzer for an educational platform.',
+      'Your task is to determine if the given document contains content that students could learn from.',
       '',
-      'PRIMARY DECISION RULE:',
-      '- Return isEducational = true when the text contains enough meaningful educational or informational content that a learner could study from.',
-      '- Do NOT reject just because some parts are non-educational (headers, notices, admin notes, forms, ads, menus, or mixed snippets).',
-      '- Return isEducational = false only when educational/informational signal is too weak, too little, or mostly absent.',
+      'Analyze the document and decide: Can a student gain knowledge, understanding, or skills from this content?',
       '',
-      'ACCEPT examples:',
-      '- Lessons, tutorials, lecture notes, textbook chapters',
-      '- Articles, research papers, reports, case studies',
-      '- Technical documentation, manuals, how-to guides',
-      '- Weekly progress reports, project write-ups, reflections about a topic',
-      '- News or opinion articles with real information',
-      '- Any document explaining, describing, or analyzing a topic',
+      'Consider the document as educational if it:',
+      '- Teaches concepts, ideas, or skills',
+      '- Provides information that expands knowledge',
+      '- Explains processes, theories, or methods',
+      '- Contains analysis, research, or insights',
+      '- Offers instructional or informational value',
       '',
-      'REJECT examples (unless mixed with strong educational content):',
-      '- Advertisements, marketing flyers, promotional coupons',
-      '- Receipts, invoices, billing statements, order confirmations',
-      '- Restaurant menus, price lists',
-      '- Blank forms with only labels/fields, no explanation',
-      '- Navigation menus, link lists, site maps',
-      '- Random binary noise, garbled/scanned text, gibberish',
-      '- Pure lorem ipsum filler text',
+      'Consider it non-educational if it:',
+      '- Is purely administrative (forms, schedules, invoices)',
+      '- Contains only procedural information without learning value',
+      '- Is primarily promotional or marketing material',
+      '- Lacks substantive informational content',
       '',
-      'Reply with a single JSON object only (no markdown fences, no text before or after).',
-      'Schema:',
-      '{ "isEducational": <true|false>, "confidence": <0-1 number>, "category": "<short label>", "reasoning": "<one sentence>", "evidence": ["<snippet1>", "<snippet2>"] }',
-      'Use at most 2 evidence strings; each should be a short quote from the document when possible.'
+      'Use your intelligence to make this judgment - focus on the overall learning potential rather than specific keywords.',
+      '',
+      'Respond with only a JSON object:',
+      '{ "isEducational": <true|false>, "confidence": <0-1>, "reasoning": "<brief explanation>" }'
     ].join('\n');
 
-    const userPrompt = `Document sampled sections to classify (start, middle, end):\n\n"""\n${sampledText}\n"""`;
+    const userPrompt = `Please analyze this document content and determine if it has educational value. The content is sampled from 4 sections (start, early-middle, middle, late-middle) for comprehensive coverage:\n\n"""\n${sampledText}\n"""`;
 
     const model = gateModel();
-    // Do not use response_format json_object — Groq returns 400 json_validate_failed for several models.
     const requestBody = {
       model,
-      temperature: 0,
-      max_tokens: 400,
+      temperature: 0.1, // Slightly higher for more nuanced analysis
+      max_tokens: 200, // Reduced since we simplified the response
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
@@ -285,13 +203,6 @@ export async function POST(request) {
         ? Math.max(0, Math.min(1, parsed.confidence))
         : 0.5;
 
-    const evidenceArr = Array.isArray(parsed.evidence)
-      ? parsed.evidence
-          .filter(e => typeof e === 'string' && e.trim().length >= 10)
-          .slice(0, 2)
-          .map(text => ({ text: text.slice(0, 220), score: confidence }))
-      : [];
-
     return NextResponse.json({
       success: true,
       isEducational: parsed.isEducational,
@@ -299,15 +210,15 @@ export async function POST(request) {
       margin: confidence,
       method: 'cerebras-llama',
       model,
-      topLabel: parsed.category || (parsed.isEducational ? 'Learnable content' : 'Non-learnable content'),
+      topLabel: parsed.isEducational ? 'Educational content' : 'Non-educational content',
       reasoning: parsed.reasoning || null,
-      rejectionReason: parsed.isEducational ? null : (parsed.reasoning || 'Classified as non-learnable content.'),
-      evidence: evidenceArr,
+      rejectionReason: parsed.isEducational ? null : (parsed.reasoning || 'Content lacks educational value.'),
+      evidence: [], // Simplified - no evidence extraction needed
       decision: {
         meetsReadability: true,
-        meetsConfidence: confidence >= 0.6,
+        meetsConfidence: confidence >= 0.5,
         meetsMargin: true,
-        hasEvidence: evidenceArr.length > 0,
+        hasEvidence: true,
         chunksUsed
       }
     });
