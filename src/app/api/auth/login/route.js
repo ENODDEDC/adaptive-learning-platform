@@ -16,7 +16,13 @@ export async function POST(req) {
     await connectMongoDB();
 
     const body = await req.json();
-    email = body.email?.toLowerCase().trim();
+    
+    // Prevent NoSQL injection - ensure inputs are strings
+    if (typeof body.email !== 'string' || typeof body.password !== 'string') {
+      return NextResponse.json({ message: 'Invalid input format' }, { status: 400 });
+    }
+    
+    email = body.email.toLowerCase().trim();
     const password = body.password;
 
     // Input validation

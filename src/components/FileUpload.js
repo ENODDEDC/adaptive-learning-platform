@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { validateFileSize, formatFileSize, getFileSizeLimit, getFileTypeLabel } from '@/config/uploadLimits';
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 const Toast = ({ toast, onDismiss }) => {
@@ -133,6 +134,8 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork', cou
 
   const handleFileChange = async (e) => {
     const selectedFiles = Array.from(e.target.files);
+    
+    // Check for video files
     const videoFiles = selectedFiles.filter(isVideoFile);
     if (videoFiles.length > 0) {
       showToast(
@@ -143,7 +146,36 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork', cou
       e.target.value = '';
       return;
     }
-    setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
+
+    // Validate file sizes
+    const oversizedFiles = [];
+    const validFiles = [];
+    
+    for (const file of selectedFiles) {
+      const validation = validateFileSize(file);
+      if (!validation.valid) {
+        oversizedFiles.push({ name: file.name, size: formatFileSize(file.size), limit: validation.limit });
+      } else {
+        validFiles.push(file);
+      }
+    }
+
+    // Show error for oversized files
+    if (oversizedFiles.length > 0) {
+      const fileList = oversizedFiles.map(f => `${f.name} (${f.size}, limit: ${f.limit})`).join(', ');
+      showToast(
+        `${oversizedFiles.length} file(s) exceed size limits`,
+        'Please compress or reduce file size before uploading.',
+        `Rejected: ${fileList}`
+      );
+    }
+
+    // Add valid files
+    if (validFiles.length > 0) {
+      setFiles((prevFiles) => [...prevFiles, ...validFiles]);
+    }
+    
+    e.target.value = '';
   };
 
   const handleRemoveFile = (fileIdentifier, isUploaded = false) => {
@@ -202,6 +234,8 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork', cou
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const droppedFiles = Array.from(e.dataTransfer.files);
+      
+      // Check for video files
       const videoFiles = droppedFiles.filter(isVideoFile);
       if (videoFiles.length > 0) {
         showToast(
@@ -212,7 +246,35 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork', cou
         e.dataTransfer.clearData();
         return;
       }
-      setFiles((prevFiles) => [...prevFiles, ...droppedFiles]);
+
+      // Validate file sizes
+      const oversizedFiles = [];
+      const validFiles = [];
+      
+      for (const file of droppedFiles) {
+        const validation = validateFileSize(file);
+        if (!validation.valid) {
+          oversizedFiles.push({ name: file.name, size: formatFileSize(file.size), limit: validation.limit });
+        } else {
+          validFiles.push(file);
+        }
+      }
+
+      // Show error for oversized files
+      if (oversizedFiles.length > 0) {
+        const fileList = oversizedFiles.map(f => `${f.name} (${f.size}, limit: ${f.limit})`).join(', ');
+        showToast(
+          `${oversizedFiles.length} file(s) exceed size limits`,
+          'Please compress or reduce file size before uploading.',
+          `Rejected: ${fileList}`
+        );
+      }
+
+      // Add valid files
+      if (validFiles.length > 0) {
+        setFiles((prevFiles) => [...prevFiles, ...validFiles]);
+      }
+      
       e.dataTransfer.clearData();
     }
   }, []);
@@ -222,7 +284,16 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork', cou
     try {
       await uploadToBackblaze(files);
     } catch (error) {
-      showToast('Upload failed', error.message, 'Check your connection and try again.');
+      console.error('Upload error:', error);
+      // Parse error message for file size limit errors
+      let errorMessage = error.message;
+      let errorHint = 'Check your connection and try again.';
+      
+      if (error.message.includes('exceeds') || error.message.includes('limit')) {
+        errorHint = 'Please compress or reduce file size before uploading.';
+      }
+      
+      showToast('Upload failed', errorMessage, errorHint);
     }
   };
 
@@ -253,8 +324,14 @@ const FileUpload = ({ onFilesReady, initialFiles = [], folder = 'classwork', cou
               <svg className="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              <p className="text-gray-500">
+              <p className="text-gray-500 mb-1">
                 {isUploading ? 'Uploading...' : 'Drag and drop files here, or click to select files'}
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                <span className="font-semibold">File size limits:</span> PDFs (5 MB), Documents (3 MB), Presentations (10 MB), Images (2 MB), Audio (10 MB)
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Videos not allowed - use Video Link feature instead
               </p>
             </div>
           </label>

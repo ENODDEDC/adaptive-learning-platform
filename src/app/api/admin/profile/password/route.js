@@ -24,7 +24,7 @@ export async function PUT(req) {
       return NextResponse.json({ message: 'Admin not found' }, { status: 404 });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
     admin.password = hashedPassword;
     await admin.save();
 

@@ -5,6 +5,7 @@ import connectDB from '@/config/mongoConfig';
 import Content from '@/models/Content';
 import Course from '@/models/Course';
 import { getUserIdFromToken, getUserFromToken } from '@/services/authService';
+import { validateFileSize, formatFileSize } from '@/config/uploadLimits';
 
 export async function POST(request, { params }) {
   console.log('Upload API called');
@@ -52,6 +53,18 @@ export async function POST(request, { params }) {
     if (!file) {
       console.log('No file provided');
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    }
+
+    // Validate file size
+    const sizeValidation = validateFileSize(file);
+    if (!sizeValidation.valid) {
+      console.error('❌ File size validation failed:', sizeValidation.error);
+      return NextResponse.json({
+        error: sizeValidation.error,
+        fileName: file.name,
+        fileSize: formatFileSize(file.size),
+        limit: sizeValidation.limit,
+      }, { status: 413 }); // 413 Payload Too Large
     }
 
     // Create upload directory if it doesn't exist

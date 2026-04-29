@@ -3,6 +3,7 @@ import backblazeService from '@/services/backblazeService';
 import { verifyToken } from '@/utils/auth';
 import connectMongoDB from '@/config/mongoConfig';
 import Content from '@/models/Content';
+import { validateFileSize, formatFileSize, getFileSizeLimit } from '@/config/uploadLimits';
 
 export async function POST(request) {
   try {
@@ -52,6 +53,18 @@ export async function POST(request) {
           return NextResponse.json({
             message: `Video files cannot be uploaded directly. Please use the Video Link feature to add videos via URL. File rejected: ${file.name}`
           }, { status: 400 });
+        }
+
+        // Validate file size
+        const sizeValidation = validateFileSize(file);
+        if (!sizeValidation.valid) {
+          console.error('❌ File size validation failed:', sizeValidation.error);
+          return NextResponse.json({
+            message: sizeValidation.error,
+            fileName: file.name,
+            fileSize: formatFileSize(file.size),
+            limit: sizeValidation.limit,
+          }, { status: 413 }); // 413 Payload Too Large
         }
 
         // Convert file to buffer

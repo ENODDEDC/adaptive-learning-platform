@@ -9,8 +9,6 @@ import {
   AcademicCapIcon,
   Cog6ToothIcon,
   ChartBarIcon,
-  ArrowLeftOnRectangleIcon,
-  XMarkIcon,
   MegaphoneIcon,
   UserGroupIcon,
 } from '@heroicons/react/24/outline';
@@ -34,7 +32,7 @@ const navigation = [
   { name: 'Settings', href: '/admin/settings', icon: Cog6ToothIcon, iconSolid: Cog6ToothIconSolid },
 ];
 
-export default function AdminSidebar({ isCollapsed, toggleSidebar }) {
+export default function AdminSidebar() {
   const pathname = usePathname();
   const [adminData, setAdminData] = React.useState({
     name: 'Admin User',
@@ -61,31 +59,17 @@ export default function AdminSidebar({ isCollapsed, toggleSidebar }) {
   }, []);
 
   return (
-    <div
-      className={`fixed inset-y-0 left-0 z-50 bg-slate-900 text-white transition-all duration-300 ease-in-out shadow-2xl ${
-        isCollapsed ? 'w-16' : 'w-52'
-      } flex flex-col border-r border-slate-700/50`}
-    >
+    <div className="fixed inset-y-0 left-0 z-50 bg-slate-900 text-white w-52 flex flex-col border-r border-slate-700/50 shadow-2xl">
       {/* Header */}
-      <div className="flex items-center justify-between h-20 px-6 bg-blue-600 shadow-lg">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
+      <div className="flex items-center justify-center h-20 px-6 bg-blue-600 shadow-lg">
+        <div className="flex items-center">
           <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl backdrop-blur-sm">
             <AcademicCapIcon className="w-6 h-6 text-white" />
           </div>
-          <span className={`ml-3 text-xl font-bold text-white ${isCollapsed ? 'hidden' : 'block'}`}>
+          <span className="ml-3 text-xl font-bold text-white">
             Admin Panel
           </span>
         </div>
-        <button
-          onClick={toggleSidebar}
-          className="p-2 transition-all duration-200 rounded-lg text-white/70 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
-        >
-          {isCollapsed ? (
-            <ArrowLeftOnRectangleIcon className="w-5 h-5 rotate-180" aria-hidden="true" />
-          ) : (
-            <ArrowLeftOnRectangleIcon className="w-5 h-5" aria-hidden="true" />
-          )}
-        </button>
       </div>
 
       {/* Navigation */}
@@ -115,16 +99,9 @@ export default function AdminSidebar({ isCollapsed, toggleSidebar }) {
                 }`}
                 aria-hidden="true"
               />
-              <span className={`relative transition-all duration-200 ${isCollapsed ? 'hidden opacity-0' : 'block opacity-100'}`}>
+              <span className="relative transition-all duration-200">
                 {item.name}
               </span>
-
-              {/* Tooltip for collapsed state */}
-              {isCollapsed && (
-                <div className="absolute px-2 py-1 ml-2 text-sm text-white transition-opacity duration-200 bg-gray-900 rounded-lg opacity-0 pointer-events-none left-full group-hover:opacity-100 whitespace-nowrap">
-                  {item.name}
-                </div>
-              )}
             </Link>
           );
         })}
@@ -132,7 +109,7 @@ export default function AdminSidebar({ isCollapsed, toggleSidebar }) {
 
       {/* Footer */}
       <div className="p-4 border-t border-slate-700/50">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
+        <div className="flex items-center">
           {adminData.photoURL ? (
             <img
               src={adminData.photoURL}
@@ -144,7 +121,7 @@ export default function AdminSidebar({ isCollapsed, toggleSidebar }) {
               <span className="text-sm font-semibold text-white">{adminData.name.charAt(0)}</span>
             </div>
           )}
-          <div className={`ml-3 ${isCollapsed ? 'hidden' : 'block'}`}>
+          <div className="ml-3">
             <p className="text-sm font-medium text-white">{adminData.name}</p>
             <p className="text-xs text-gray-400">Super Admin</p>
           </div>
