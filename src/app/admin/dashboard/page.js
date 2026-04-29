@@ -299,7 +299,7 @@ export default function AdminDashboard() {
 
       {/* Charts and Activity */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        {/* Chart - Heatmap Style */}
+        {/* Chart - Modern Line/Area Chart */}
         <div className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Platform Growth</h3>
@@ -327,82 +327,176 @@ export default function AdminDashboard() {
             </div>
           </div>
           
-          {/* Heatmap Grid */}
-          <div className="overflow-x-auto">
-            <div className="inline-block min-w-full">
-              {/* Month labels */}
-              <div className="flex mb-2 ml-12">
-                {dashboardData.chartData.map((data, index) => (
-                  <div key={`month-${index}`} className="flex-1 min-w-[60px] text-center">
-                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{data.month}</span>
-                  </div>
-                ))}
-              </div>
+          {/* SVG Line Chart */}
+          <div className="relative h-64">
+            {(() => {
+              const data = dashboardData.chartData;
+              const values = data.map(d => chartView === 'users' ? d.users : d.courses);
+              const maxValue = Math.max(...values, 1);
+              const minValue = Math.min(...values, 0);
+              const range = maxValue - minValue || 1;
               
-              {/* Heatmap rows */}
-              <div className="space-y-1">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, dayIndex) => (
-                  <div key={day} className="flex items-center">
-                    <div className="w-10 text-xs font-medium text-gray-500 dark:text-gray-400">{day}</div>
-                    <div className="flex flex-1 gap-1">
-                      {dashboardData.chartData.map((data, monthIndex) => {
-                        const value = chartView === 'users' ? data.users : data.courses;
-                        const maxValue = Math.max(...dashboardData.chartData.map(d => chartView === 'users' ? d.users : d.courses), 1);
-                        
-                        // Create variation for each day (simulate daily data)
-                        const dayValue = Math.floor(value / 7) + Math.floor(Math.random() * (value / 7));
-                        const intensity = maxValue > 0 ? (dayValue / maxValue) * 4 : 0;
-                        
-                        // Determine color intensity (light to dark)
-                        let bgColor = 'bg-gray-100 dark:bg-gray-700';
-                        if (intensity > 3) {
-                          bgColor = chartView === 'users' ? 'bg-purple-600 dark:bg-purple-600' : 'bg-indigo-600 dark:bg-indigo-600';
-                        } else if (intensity > 2) {
-                          bgColor = chartView === 'users' ? 'bg-purple-500 dark:bg-purple-500' : 'bg-indigo-500 dark:bg-indigo-500';
-                        } else if (intensity > 1) {
-                          bgColor = chartView === 'users' ? 'bg-purple-400 dark:bg-purple-400' : 'bg-indigo-400 dark:bg-indigo-400';
-                        } else if (intensity > 0) {
-                          bgColor = chartView === 'users' ? 'bg-purple-200 dark:bg-purple-200' : 'bg-indigo-200 dark:bg-indigo-200';
-                        }
-                        
-                        return (
-                          <div
-                            key={`${day}-${monthIndex}`}
-                            className={`relative flex-1 min-w-[60px] h-8 ${bgColor} rounded transition-all duration-200 hover:ring-2 hover:ring-offset-1 dark:hover:ring-offset-gray-800 ${
-                              chartView === 'users' ? 'hover:ring-purple-400 dark:hover:ring-purple-500' : 'hover:ring-indigo-400 dark:hover:ring-indigo-500'
-                            } group cursor-pointer`}
-                            title={`${dayValue} ${chartView === 'users' ? 'users' : 'courses'}`}
-                          >
-                            {/* Tooltip */}
-                            <div className="absolute z-10 px-2 py-1 text-xs font-medium text-white transition-opacity duration-200 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 rounded opacity-0 pointer-events-none bottom-full left-1/2 group-hover:opacity-100 whitespace-nowrap mb-1">
-                              {dayValue} {chartView === 'users' ? 'users' : 'courses'}
-                              <div className="absolute w-2 h-2 transform rotate-45 -translate-x-1/2 bg-gray-900 dark:bg-gray-700 left-1/2 -bottom-1"></div>
-                            </div>
+              const width = 100;
+              const height = 100;
+              const padding = 10;
+              const chartWidth = width - padding * 2;
+              const chartHeight = height - padding * 2;
+              
+              // Calculate points for the line
+              const points = data.map((d, i) => {
+                const value = chartView === 'users' ? d.users : d.courses;
+                const x = padding + (i / (data.length - 1)) * chartWidth;
+                const y = padding + chartHeight - ((value - minValue) / range) * chartHeight;
+                return { x, y, value, month: d.month };
+              });
+              
+              // Create path for line
+              const linePath = points.map((p, i) => 
+                `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+              ).join(' ');
+              
+              // Create path for area (fill under line)
+              const areaPath = `${linePath} L ${points[points.length - 1].x} ${padding + chartHeight} L ${points[0].x} ${padding + chartHeight} Z`;
+              
+              // Create smooth curve path
+              const smoothPath = points.map((p, i) => {
+                if (i === 0) return `M ${p.x} ${p.y}`;
+                const prev = points[i - 1];
+                const cpx1 = prev.x + (p.x - prev.x) / 3;
+                const cpy1 = prev.y;
+                const cpx2 = prev.x + 2 * (p.x - prev.x) / 3;
+                const cpy2 = p.y;
+                return `C ${cpx1} ${cpy1}, ${cpx2} ${cpy2}, ${p.x} ${p.y}`;
+              }).join(' ');
+              
+              const smoothAreaPath = `${smoothPath} L ${points[points.length - 1].x} ${padding + chartHeight} L ${points[0].x} ${padding + chartHeight} Z`;
+              
+              return (
+                <>
+                  <svg 
+                    viewBox={`0 0 ${width} ${height}`} 
+                    className="w-full h-full"
+                    preserveAspectRatio="none"
+                  >
+                    {/* Grid lines */}
+                    {[0, 1, 2, 3, 4].map(i => {
+                      const y = padding + (i / 4) * chartHeight;
+                      return (
+                        <line
+                          key={`grid-${i}`}
+                          x1={padding}
+                          y1={y}
+                          x2={width - padding}
+                          y2={y}
+                          stroke="currentColor"
+                          strokeWidth="0.1"
+                          className="text-gray-200 dark:text-gray-700"
+                          opacity="0.5"
+                        />
+                      );
+                    })}
+                    
+                    {/* Area fill with gradient */}
+                    <defs>
+                      <linearGradient id={`gradient-${chartView}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop 
+                          offset="0%" 
+                          stopColor={chartView === 'users' ? '#9333ea' : '#4f46e5'} 
+                          stopOpacity="0.3"
+                        />
+                        <stop 
+                          offset="100%" 
+                          stopColor={chartView === 'users' ? '#9333ea' : '#4f46e5'} 
+                          stopOpacity="0.05"
+                        />
+                      </linearGradient>
+                    </defs>
+                    
+                    <path
+                      d={smoothAreaPath}
+                      fill={`url(#gradient-${chartView})`}
+                      className="transition-all duration-500"
+                    />
+                    
+                    {/* Line */}
+                    <path
+                      d={smoothPath}
+                      fill="none"
+                      stroke={chartView === 'users' ? '#9333ea' : '#4f46e5'}
+                      strokeWidth="0.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="transition-all duration-500"
+                    />
+                    
+                    {/* Data points */}
+                    {points.map((point, i) => (
+                      <g key={i}>
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="1"
+                          fill="white"
+                          stroke={chartView === 'users' ? '#9333ea' : '#4f46e5'}
+                          strokeWidth="0.5"
+                          className="transition-all duration-500 hover:r-2"
+                        />
+                      </g>
+                    ))}
+                  </svg>
+                  
+                  {/* Interactive overlay for tooltips */}
+                  <div className="absolute inset-0 flex">
+                    {points.map((point, i) => (
+                      <div
+                        key={i}
+                        className="relative flex-1 group"
+                      >
+                        <div className="absolute inset-0 cursor-pointer" />
+                        {/* Tooltip */}
+                        <div className="absolute z-10 px-3 py-2 text-xs font-medium text-white transition-opacity duration-200 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-700 rounded-lg opacity-0 pointer-events-none bottom-full left-1/2 group-hover:opacity-100 whitespace-nowrap mb-2 shadow-lg">
+                          <div className="font-semibold">{point.month}</div>
+                          <div className="mt-1">
+                            {point.value} {chartView === 'users' ? 'users' : 'courses'}
                           </div>
-                        );
-                      })}
-                    </div>
+                          <div className="absolute w-2 h-2 transform rotate-45 -translate-x-1/2 bg-gray-900 dark:bg-gray-700 left-1/2 -bottom-1"></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </>
+              );
+            })()}
           </div>
           
-          {/* Legend */}
-          <div className="flex items-center justify-between mt-6">
-            <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-              <span>Less</span>
-              <div className="flex gap-1">
-                <div className="w-4 h-4 bg-gray-100 dark:bg-gray-700 rounded"></div>
-                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-purple-200 dark:bg-purple-200' : 'bg-indigo-200 dark:bg-indigo-200'}`}></div>
-                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-purple-400 dark:bg-purple-400' : 'bg-indigo-400 dark:bg-indigo-400'}`}></div>
-                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-purple-500 dark:bg-purple-500' : 'bg-indigo-500 dark:bg-indigo-500'}`}></div>
-                <div className={`w-4 h-4 rounded ${chartView === 'users' ? 'bg-purple-600 dark:bg-purple-600' : 'bg-indigo-600 dark:bg-indigo-600'}`}></div>
+          {/* X-axis labels */}
+          <div className="flex justify-between mt-4 px-2">
+            {dashboardData.chartData.map((data, index) => (
+              <div key={index} className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                {data.month}
               </div>
-              <span>More</span>
+            ))}
+          </div>
+          
+          {/* Stats summary */}
+          <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
+              <p className={`text-lg font-bold mt-1 ${chartView === 'users' ? 'text-purple-600 dark:text-purple-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                {dashboardData.chartData.reduce((sum, d) => sum + (chartView === 'users' ? d.users : d.courses), 0)}
+              </p>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              Showing {chartView === 'users' ? 'user registrations' : 'course creations'} over the last 6 months
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Average</p>
+              <p className={`text-lg font-bold mt-1 ${chartView === 'users' ? 'text-purple-600 dark:text-purple-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                {Math.round(dashboardData.chartData.reduce((sum, d) => sum + (chartView === 'users' ? d.users : d.courses), 0) / dashboardData.chartData.length)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Peak</p>
+              <p className={`text-lg font-bold mt-1 ${chartView === 'users' ? 'text-purple-600 dark:text-purple-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                {Math.max(...dashboardData.chartData.map(d => chartView === 'users' ? d.users : d.courses))}
+              </p>
             </div>
           </div>
         </div>

@@ -475,16 +475,29 @@
 }
 
 html {
-  overflow: hidden !important;
+  overflow-x: hidden;
+  overflow-y: auto;
   height: 100%;
   width: 100%;
-  scrollbar-width: none;
+  scrollbar-width: thin;
 }
 
 html::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+  width: 8px;
+  height: 8px;
+}
+
+html::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
 }
 
 body {
@@ -494,8 +507,9 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-weight: 500;

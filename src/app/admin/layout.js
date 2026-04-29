@@ -62,18 +62,7 @@ export default function AdminLayout({ children }) {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-        {/* Theme Toggle - Fixed position in top right */}
-        <div className="fixed top-4 right-4 z-50">
-          <ThemeToggle />
-        </div>
-        
-        <main className="p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl">
-            {children}
-          </div>
-        </main>
-      </div>
+      {children}
     </ThemeProvider>
   );
 }

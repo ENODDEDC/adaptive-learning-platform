@@ -270,14 +270,16 @@ const Layout = ({ children }) => {
   }
 
   if (isAdminPage) {
-    const sidebarState = isSidebarCollapsed;
-    const mainContentMargin = isSidebarCollapsed ? 'ml-16' : 'ml-52';
     return (
-      <div className="min-h-screen bg-gray-100">
-        <AdminSidebar isCollapsed={sidebarState} toggleSidebar={toggleSidebar} />
-        <div className={`transition-all duration-500 ease-in-out ${mainContentMargin}`}>
-          <AdminNavbar toggleSidebar={toggleSidebar} />
-          <main>{children}</main>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+        <AdminSidebar />
+        <div className="ml-52">
+          <AdminNavbar />
+          <main className="p-6 lg:p-8">
+            <div className="mx-auto max-w-7xl">
+              {children}
+            </div>
+          </main>
         </div>
       </div>
     );

@@ -11,8 +11,6 @@ import {
   BellIcon,
   ChevronDownIcon,
   MagnifyingGlassIcon,
-  SunIcon,
-  MoonIcon,
   Cog6ToothIcon,
   ArrowLeftOnRectangleIcon
 } from '@heroicons/react/24/outline';
@@ -25,9 +23,8 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
-export default function AdminNavbar({ toggleSidebar }) {
+export default function AdminNavbar() {
   const pathname = usePathname();
-  const [darkMode, setDarkMode] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [adminData, setAdminData] = React.useState({
     name: 'Admin User',
@@ -55,11 +52,6 @@ export default function AdminNavbar({ toggleSidebar }) {
     fetchAdminProfile();
   }, []);
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    // Add dark mode toggle logic here
-  };
-
   const handleRefresh = () => {
     setIsRefreshing(true);
     // Add refresh logic here
@@ -70,21 +62,12 @@ export default function AdminNavbar({ toggleSidebar }) {
   const isDashboard = pathname === '/admin/dashboard' || pathname === '/admin';
 
   return (
-    <nav className="sticky top-0 z-40 border-b shadow-sm bg-white/80 dark:bg-[#1e293b] backdrop-blur-xl border-gray-200/50 dark:border-blue-900/50">
+    <nav className="z-40 border-b shadow-sm bg-white/80 dark:bg-[#1e293b] backdrop-blur-xl border-gray-200/50 dark:border-blue-900/50">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center">
-         <button
-            type="button"
-            className="p-2 text-gray-600 dark:text-gray-300 transition-all duration-200 rounded-lg hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 dark:focus:ring-offset-[#1e293b]"
-            onClick={toggleSidebar}
-          >
-            <span className="sr-only">Open sidebar</span>
-            <Bars3Icon className="w-6 h-6" aria-hidden="true" />
-          </button> 
-
           {/* Page-specific header */}
           {isDashboard && (
-            <div className="ml-6">
+            <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Dashboard Overview
               </h1>
@@ -94,7 +77,7 @@ export default function AdminNavbar({ toggleSidebar }) {
 
           {/* Other page headers can be added here */}
           {pathname.includes('/courses') && !isDashboard && (
-            <div className="ml-6">
+            <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Course Management
               </h1>
@@ -103,7 +86,7 @@ export default function AdminNavbar({ toggleSidebar }) {
           )}
 
           {pathname.includes('/users') && (
-            <div className="ml-6">
+            <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 User Management
               </h1>
@@ -112,7 +95,7 @@ export default function AdminNavbar({ toggleSidebar }) {
           )}
 
           {pathname.includes('/settings') && (
-            <div className="ml-6">
+            <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Settings
               </h1>
@@ -162,16 +145,19 @@ export default function AdminNavbar({ toggleSidebar }) {
             />
           </div>
 
-          {/* Dark mode toggle */}
+          {/* Theme Toggle */}
           <button
-            onClick={toggleDarkMode}
+            onClick={() => {
+              document.documentElement.classList.toggle('dark');
+            }}
             className="p-2 text-gray-600 dark:text-gray-300 transition-all duration-200 rounded-lg hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            {darkMode ? (
-              <SunIcon className="w-5 h-5" />
-            ) : (
-              <MoonIcon className="w-5 h-5" />
-            )}
+            <svg className="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <svg className="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
           </button>
 
           {/* Notifications */}
